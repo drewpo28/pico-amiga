@@ -54,6 +54,9 @@ static const Option opt_drives[] = {
     { "Auto (one per disk of an .m3u set)", 0, "Auto" },
     { "1 (DF0)", 1, "1" }, { "2 (DF0, DF1)", 2, "2" }, { "3", 3 }, { "4", 4 },
 };
+static const Option opt_hpos[] = {
+    { "Centred", 0 }, { "Left overscan (+12 columns)", 1, "Left overscan" },
+};
 static const Option opt_theme[] = {
     { "Slate", 0 }, { "ZX Spectrum", 1 },
 };
@@ -269,6 +272,7 @@ static const Node kAudio[] = {
 };
 
 static const Node kVideo[] = {
+    NM_RADIO("Picture position", SET_HPOS, opt_hpos, nullptr),
     NM_BOOL("HDMI audio", SET_HDMI_AUDIO, nullptr),
 };
 
@@ -303,6 +307,8 @@ static const Node kDebug[] = {
     // TX-only 115200 log on the board's DBG_UART_TX_PIN: boot messages and a
     // PERF line a second. Reboot-class (the keyboard may move off the pin).
     NM_BOOL("UART log", SET_DBG_UART, p_dbgUartPin),
+    // Denise's rendering shared with core 1 (off: all on core 0, as before).
+    NM_BOOL("Render on core 1", SET_RENDER_C1, nullptr),
 };
 
 static const Node kHelp[] = {

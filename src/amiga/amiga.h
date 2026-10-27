@@ -16,8 +16,11 @@ extern "C" {
 
 // ---- Display ---------------------------------------------------------------
 // The framebuffer is AMIGA_FB_H rows, one per PAL line from beam line
-// AMIGA_FB_Y0; column 0 is lowres DIW coordinate AMIGA_FB_X0 (the standard
-// DIWSTRT $2C81 window lands at (32, 18)).  It is shown as 720x576: every row
+// AMIGA_FB_Y0; column 0 is lowres DIW coordinate x0 (amiga_set_fb_x0):
+// AMIGA_FB_X0_CENTRE puts the standard DIWSTRT $2C81 window at (20, 18),
+// 20 columns of border each side; AMIGA_FB_X0_WIDE at (32, 18), for overscan
+// screens that start further left (the line ends 5 columns past the standard
+// window, so the right side has nothing more to show).  Shown as 720x576: every row
 // covers two output lines and 720 output pixels (one per HIRES pixel).
 //
 // Each row picks its own storage so that 288 rows fit in ~245 KB:
@@ -34,7 +37,8 @@ extern "C" {
 #define AMIGA_FB_W   360    // lowres columns
 #define AMIGA_OUT_W  720    // output pixels per line
 #define AMIGA_FB_H   288
-#define AMIGA_FB_X0  0x61   // lowres DIW x shown in column 0
+#define AMIGA_FB_X0_CENTRE 0x6D   // lowres DIW x shown in column 0: centred
+#define AMIGA_FB_X0_WIDE   0x61   // left overscan
 #define AMIGA_FB_Y0  26     // beam line shown in row 0
 
 enum { AMIGA_ROW_DIRECT = 0, AMIGA_ROW_IDX8 = 1, AMIGA_ROW_LACE4 = 2 };
@@ -55,6 +59,8 @@ typedef struct {
 void amiga_fb_line(const amiga_row_t *row, int sub, uint16_t out[AMIGA_OUT_W]);
 // Paint the whole framebuffer one colour (DIRECT rows), e.g. for boot errors.
 void amiga_fb_fill(amiga_row_t *fb, uint16_t colour);
+// The lowres DIW x shown in framebuffer column 0, from the next line on.
+void amiga_set_fb_x0(int x0);
 // Framebuffer rows [y0, y1) carry a platform overlay (row_done); y1 <= y0: none.
 void amiga_set_overlay_rows(int y0, int y1);
 // Denise on another core: with async on, the emulation queues the display

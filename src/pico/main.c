@@ -148,11 +148,11 @@ int main(void) {
     cfg.row_done = ui_stats_row;     // the Alt+F12 band, drawn on its rows before they are shown
     cfg.prof_clock = board_cycles;   // where the frame time goes (Alt+F12, second page)
     amiga_init(&cfg);
-    amiga_render_async(true);        // Denise on core 1
     if (card) machine_restore_disks();
 
     audio_out_start(audio_ring, AUDIO_FRAMES, settings_audio_out());
     settings_apply_sound();
+    settings_apply_video();
     printf("kickstart %s, audio %s\n", machine_rom_name(), audio_out_name());
 
     uint32_t vf = video_frames();

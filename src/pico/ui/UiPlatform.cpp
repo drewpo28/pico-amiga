@@ -48,6 +48,11 @@ extern "C" bool settings_dbg_uart(void) { return Config::dbg_uart; }
 extern "C" int settings_flash_mhz(void) { return Config::max_flash_freq; }
 extern "C" int settings_psram_mhz(void) { return Config::max_psram_freq; }
 
+extern "C" void settings_apply_video(void) {
+    amiga_set_fb_x0(Config::hpos ? AMIGA_FB_X0_WIDE : AMIGA_FB_X0_CENTRE);
+    amiga_render_async(Config::render_c1);
+}
+
 extern "C" void settings_apply_sound(void) {
     audio_set_volume(Config::volume * 16);
     hdmi_audio_set_enabled(Config::hdmi_audio);

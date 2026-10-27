@@ -27,10 +27,12 @@ uint16_t Config::max_flash_freq = 66;
 #define DBG_UART_DEFAULT 0
 #endif
 bool     Config::dbg_uart     = DBG_UART_DEFAULT;
+bool     Config::render_c1    = true;
 uint16_t Config::max_psram_freq = 166;
 uint8_t  Config::audio_out    = 0;
 uint8_t  Config::volume       = 16;
 bool     Config::hdmi_audio   = true;
+uint8_t  Config::hpos         = 0;
 std::string Config::kick      = "ks13";
 std::string Config::df0       = "";
 bool     Config::df0_wp       = false;
@@ -111,6 +113,7 @@ void Config::load() {
     nvs_get_u16("max_psram_freq", max_psram_freq, sts);
     nvs_get_u8 ("audio_out",     audio_out,    sts);
     nvs_get_b  ("dbg_uart",      dbg_uart,     sts);
+    nvs_get_b  ("render_c1",     render_c1,    sts);
     nvs_get_u8 ("volume",        volume,       sts);
     nvs_get_b  ("hdmi_audio",    hdmi_audio,   sts);
     if (cpu_mhz != 252 && cpu_mhz != 378 && cpu_mhz != 504) cpu_mhz = CPU_MHZ;
@@ -123,6 +126,8 @@ void Config::load() {
     nvs_get_u8 ("df0_disk",      df0_disk,     sts);
     nvs_get_u8 ("drives",        drives,       sts);
     if (drives > 4) drives = 0;
+    nvs_get_u8 ("hpos",          hpos,         sts);
+    if (hpos > 1) hpos = 0;
 }
 
 // ---- writing -------------------------------------------------------------------------
@@ -190,6 +195,7 @@ bool Config::save() {
     nvs_set_i(buf, "max_psram_freq", max_psram_freq);
     nvs_set_i(buf, "audio_out",     audio_out);
     nvs_set_b(buf, "dbg_uart",      dbg_uart);
+    nvs_set_b(buf, "render_c1",     render_c1);
     nvs_set_i(buf, "volume",        volume);
     nvs_set_b(buf, "hdmi_audio",    hdmi_audio);
     nvs_set_str(buf, "kick",        kick.c_str());
@@ -197,6 +203,7 @@ bool Config::save() {
     nvs_set_b(buf, "df0_wp",        df0_wp);
     nvs_set_i(buf, "df0_disk",      df0_disk);
     nvs_set_i(buf, "drives",        drives);
+    nvs_set_i(buf, "hpos",          hpos);
     // f_sync before the rename, so a stalled card cannot leave a half-written file
     // under the real name.
     const FRESULT sy = buf.ok ? f_sync(&f) : FR_DISK_ERR;

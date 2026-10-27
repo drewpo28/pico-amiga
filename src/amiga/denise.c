@@ -29,7 +29,10 @@
 // replay them.  In sync mode (the default) each event is replayed at once; in
 // async mode (amiga_render_async) another core replays them through
 // amiga_render_pump(), in small steps, and the frame waits for it to finish
-// (denise_sync).  Chip RAM is read live, so a write the CPU or blitter makes
+// (denise_sync).  Whichever core holds c_lock replays: the emulation, when it
+// would wait (the frame end, a full queue), replays events itself instead, so
+// the other core takes what it has time for (its scanout comes first) and
+// the work is never slower than doing it all on one core.  Chip RAM is read live, so a write the CPU or blitter makes
 // before the consumer reached that line shows a frame early.
 #include <stdatomic.h>
 #include <string.h>
@@ -65,6 +68,10 @@ static amiga_row_t *fbrow;              // row being written, or NULL
 static amiga_row_t *fbdest;             // overlay row: where fbrow (the scratch) goes at line end
 static amiga_row_t  scratch_row;
 static int          ov_y0, ov_y1;       // amiga_set_overlay_rows
+static int          fb_x0 = AMIGA_FB_X0_CENTRE;            // DIW x of column 0, this line
+static volatile int fb_x0_next = AMIGA_FB_X0_CENTRE;       // amiga_set_fb_x0
+
+void amiga_set_fb_x0(int x0) { fb_x0_next = x0; }
 
 void amiga_set_overlay_rows(int y0, int y1) { ov_y0 = y0; ov_y1 = y1; }
 static uint16_t ham_col;
@@ -402,7 +409,7 @@ AMIGA_HOT static void w_fill(int a, int b, uint16_t c) {
 // the framebuffer): the common case, kept free of per-pixel colour lookups.
 AMIGA_HOT static void w_plain(int x0, int x1, bool hires) {
     amiga_row_t *row = fbrow;
-    const int f0 = AMIGA_FB_X0;
+    const int f0 = fb_x0;
     if (w_mode == AMIGA_ROW_DIRECT) {
         uint16_t *d = row->px.rgb - f0;
         if (!hires) {
@@ -458,7 +465,7 @@ AMIGA_HOT static void output_ham(int x0, int x1) {
         case 2: ham_col = (uint16_t)((ham_col & 0x0FF) | (d << 8)); break;
         default: ham_col = (uint16_t)((ham_col & 0xF0F) | (d << 4)); break;
         }
-        int fx = x - AMIGA_FB_X0;
+        int fx = x - fb_x0;
         if (fbrow && fx >= 0 && fx < AMIGA_FB_W) {
             uint16_t c = sprite_mix(x, ham_col, v ? 2 : 0);
             w_put(fx, c, c);
@@ -485,7 +492,7 @@ AMIGA_HOT static void output(int x0, int x1) {
     if (!fbrow) return;
 
     // Clip to the framebuffer and write border + window.
-    const int f0 = AMIGA_FB_X0, f1 = AMIGA_FB_X0 + AMIGA_FB_W;
+    const int f0 = fb_x0, f1 = fb_x0 + AMIGA_FB_W;
     int a = x0 < f0 ? f0 : x0, b = x1 > f1 ? f1 : x1;
     if (a >= b) return;
     const uint16_t bg = color[0];
@@ -627,6 +634,7 @@ AMIGA_HOT static void c_line_start(void) {
     r_h = 0;
     clear_bytes(pf, (int)sizeof pf);
     ham_in = false;
+    fb_x0 = fb_x0_next;
     int row = c_vpos - AMIGA_FB_Y0;
     fbrow = (A.cfg.framebuffer && row >= 0 && row < AMIGA_FB_H) ? A.cfg.framebuffer + row : NULL;
     fbdest = NULL;
@@ -657,7 +665,7 @@ AMIGA_HOT static void c_line_start(void) {
 AMIGA_HOT static void c_line_finish(void) {
     // The framebuffer reaches a few pixels past the end of the line: border.
     if (fbrow) {
-        const int x = 2 * AMIGA_CC_PER_LINE - AMIGA_FB_X0;
+        const int x = 2 * AMIGA_CC_PER_LINE - fb_x0;
         w_fill(x < 0 ? 0 : x, AMIGA_FB_W, color[0]);
         if (fbdest) {
             if (A.cfg.row_done) A.cfg.row_done(A.cfg.ctx, (int)(fbdest - A.cfg.framebuffer), fbrow);
@@ -746,6 +754,7 @@ static dev_t            evq[EVQ];
 static _Atomic uint32_t ev_head, ev_tail;
 static dev_t            c_ev;           // the event being replayed (async: may take steps)
 static bool             c_busy;
+static atomic_flag      c_lock = ATOMIC_FLAG_INIT;   // held by the core replaying
 static uint16_t         p_bplcon0;      // the producer's BPLCON0, for denise_lace()
 
 // One step of the consumer: false when the queue is empty.
@@ -779,10 +788,22 @@ static uint32_t c1_ticks;               // consumer time in async mode (its core
 
 AMIGA_HOT bool amiga_render_pump(void) {
     if (!async_on) return false;
+    if (atomic_flag_test_and_set_explicit(&c_lock, memory_order_acquire)) return false;
     const uint32_t t0 = A.cfg.prof_clock ? A.cfg.prof_clock() : 0;
     const bool did = c_step(STEP_CC);
     if (did && A.cfg.prof_clock) c1_ticks += A.cfg.prof_clock() - t0;
+    atomic_flag_clear_explicit(&c_lock, memory_order_release);
     return did;
+}
+
+// The emulation's core, waiting: replay one event itself if the other core is
+// not at it (time charged to RENDER), else spin.
+AMIGA_HOT static void c_help(void) {
+    if (atomic_flag_test_and_set_explicit(&c_lock, memory_order_acquire)) return;
+    const int prof = prof_switch(AMIGA_PROF_RENDER);
+    c_step(AMIGA_CC_PER_LINE);
+    prof_switch(prof);
+    atomic_flag_clear_explicit(&c_lock, memory_order_release);
 }
 
 uint32_t denise_core1_ticks(void) { return c1_ticks; }
@@ -792,7 +813,7 @@ AMIGA_HOT void denise_sync(void) {
     if (!async_on) return;
     const int prof = prof_switch(AMIGA_PROF_RWAIT);
     while (atomic_load_explicit(&ev_tail, memory_order_acquire) !=
-           atomic_load_explicit(&ev_head, memory_order_relaxed)) { }
+           atomic_load_explicit(&ev_head, memory_order_relaxed)) c_help();
     prof_switch(prof);
 }
 
@@ -800,7 +821,7 @@ AMIGA_HOT static void push(uint16_t kind, uint16_t v, uint16_t h, uint16_t x) {
     const uint32_t hd = atomic_load_explicit(&ev_head, memory_order_relaxed);
     if (hd - atomic_load_explicit(&ev_tail, memory_order_acquire) >= EVQ) {
         const int prof = prof_switch(AMIGA_PROF_RWAIT);       // the consumer is a queue behind
-        while (hd - atomic_load_explicit(&ev_tail, memory_order_acquire) >= EVQ) { }
+        while (hd - atomic_load_explicit(&ev_tail, memory_order_acquire) >= EVQ) c_help();
         prof_switch(prof);
     }
     dev_t *e = &evq[hd & (EVQ - 1)];

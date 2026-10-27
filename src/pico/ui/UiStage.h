@@ -51,7 +51,9 @@ enum SettingFlags : uint16_t {
     X(SET_FLASH_FREQ,  AC_REBOOT, 0,                           get_flashfreq, put_flashfreq, nullptr) \
     X(SET_PSRAM_FREQ,  AC_REBOOT, 0,                           get_psramfreq, put_psramfreq, nullptr) \
     X(SET_DBG_UART,    AC_REBOOT, 0,                           get_dbguart,   put_dbguart,   nullptr) \
-    X(SET_DRIVES,      AC_LIVE, 0,                             get_drives,    put_drives,    hook_drives)
+    X(SET_DRIVES,      AC_LIVE, 0,                             get_drives,    put_drives,    hook_drives) \
+    X(SET_HPOS,        AC_LIVE, 0,                             get_hpos,      put_hpos,      hook_hpos) \
+    X(SET_RENDER_C1,   AC_LIVE, 0,                             get_renderc1,  put_renderc1,  hook_hpos)
 
 #define NM_X_ENUM(id, cls, flags, g, p, h) id,
 enum SettingId : uint16_t {
