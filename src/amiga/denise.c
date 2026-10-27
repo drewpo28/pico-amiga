@@ -21,6 +21,17 @@
 // The per-line path is AMIGA_HOT (SRAM on the board): run from flash it took
 // 8-11 ms a frame on Cannon Fodder, its code competing with the PSRAM chip RAM
 // for the same 16 KB XIP cache.
+//
+// Nothing the emulation does reads Denise back (pixels, plane pointers; there
+// are no collisions), so it runs as the consumer of an event queue: the
+// denise_* calls of the scheduler and the register writes are queued with the
+// state they need (beam line, DMACON, LOF), and the c_* functions below
+// replay them.  In sync mode (the default) each event is replayed at once; in
+// async mode (amiga_render_async) another core replays them through
+// amiga_render_pump(), in small steps, and the frame waits for it to finish
+// (denise_sync).  Chip RAM is read live, so a write the CPU or blitter makes
+// before the consumer reached that line shows a frame early.
+#include <stdatomic.h>
 #include <string.h>
 #include "amiga_int.h"
 #ifdef DENISE_DEBUG
@@ -58,6 +69,16 @@ static int          ov_y0, ov_y1;       // amiga_set_overlay_rows
 void amiga_set_overlay_rows(int y0, int y1) { ov_y0 = y0; ov_y1 = y1; }
 static uint16_t ham_col;
 static bool     ham_in;
+
+// The line being replayed: the producer's state when it started.
+static int      c_vpos, c_lines;
+static uint16_t c_dmacon;
+static bool     c_lof;
+
+// Profile buckets only in sync mode: in async mode the consumer is another
+// core, and the profile is core 0's (its time shows as AMIGA_PROF_CORE1).
+static volatile bool async_on;
+static inline int dprof(int cat) { return async_on ? cat : prof_switch(cat); }
 
 // ---- helpers -----------------------------------------------------------------
 AMIGA_HOT static int planes(void) {
@@ -129,7 +150,7 @@ AMIGA_HOT static void fetch_unit(int k) {
     // The chip RAM reads first, as a bucket of their own (PSRAM latency).  A
     // hires plane's two words are one 32-bit read when they share a word.
     uint16_t wd[6][2];
-    const int prof = prof_switch(AMIGA_PROF_BPLRD);
+    const int prof = dprof(AMIGA_PROF_BPLRD);
     const uint8_t *cr = A.cfg.chip_ram;
     const uint32_t cm = A.chip_mask & ~1u;
     for (int p = 0; p < np; p++) {
@@ -146,7 +167,7 @@ AMIGA_HOT static void fetch_unit(int k) {
         }
         bplpt[p] += hires ? 4 : 2;
     }
-    prof_switch(prof);
+    dprof(prof);
     // Same scroll for odd and even planes (the usual case): every plane lands on
     // the same pixels, so a group of pixels is built in a register and ORed in
     // once (OR, not store: a scroll or DDF change mid-line may overlap units).
@@ -501,18 +522,18 @@ AMIGA_HOT static void output(int x0, int x1) {
 AMIGA_HOT static void render_to(int h) {
     if (h > AMIGA_CC_PER_LINE) h = AMIGA_CC_PER_LINE;
     if (h <= r_h) return;
-    const int prof = prof_switch(AMIGA_PROF_RENDER);
+    const int prof = dprof(AMIGA_PROF_RENDER);
     if (bpl_dma && fetch_k < nunits && ds + fetch_k * unit_cc < h) {
-        prof_switch(AMIGA_PROF_BPL);
+        dprof(AMIGA_PROF_BPL);
         while (fetch_k < nunits && ds + fetch_k * unit_cc < h) {
             fetch_unit(fetch_k);
             fetch_k++;
         }
-        prof_switch(AMIGA_PROF_RENDER);
+        dprof(AMIGA_PROF_RENDER);
     }
     output(2 * r_h, 2 * h);
     r_h = h;
-    prof_switch(prof);
+    dprof(prof);
 }
 
 // ---- sprites -----------------------------------------------------------------
@@ -526,12 +547,12 @@ AMIGA_HOT static int spr_x(int s) {   // DIW x of the sprite's first pixel
 }
 
 AMIGA_HOT static void sprite_dma(void) {
-    bool on = (A.dmacon & (DMAF_MASTER | DMAF_SPRITE)) == (DMAF_MASTER | DMAF_SPRITE);
-    if (!on || A.vpos < 25 || A.vpos >= A.lines - 1) return;
+    bool on = (c_dmacon & (DMAF_MASTER | DMAF_SPRITE)) == (DMAF_MASTER | DMAF_SPRITE);
+    if (!on || c_vpos < 25 || c_vpos >= c_lines - 1) return;
     for (int s = 0; s < 8; s++) {
         if (spr_dma[s] == SPR_IDLE) continue;
-        if (spr_dma[s] == SPR_WAIT && A.vpos == spr_vstart[s]) spr_dma[s] = SPR_DATA;
-        if (spr_dma[s] == SPR_DATA && A.vpos == spr_vstop[s]) spr_dma[s] = SPR_FETCH_CTL;
+        if (spr_dma[s] == SPR_WAIT && c_vpos == spr_vstart[s]) spr_dma[s] = SPR_DATA;
+        if (spr_dma[s] == SPR_DATA && c_vpos == spr_vstop[s]) spr_dma[s] = SPR_FETCH_CTL;
         if (spr_dma[s] == SPR_FETCH_CTL) {
             sprpos[s] = chip_rw(sprpt[s]);
             sprctl[s] = chip_rw(sprpt[s] + 2);
@@ -539,7 +560,7 @@ AMIGA_HOT static void sprite_dma(void) {
             spr_decode(s);
             spr_armed[s] = false;
             spr_dma[s] = (sprpos[s] | sprctl[s]) ? SPR_WAIT : SPR_IDLE;
-            if (spr_dma[s] == SPR_WAIT && A.vpos == spr_vstart[s]) spr_dma[s] = SPR_DATA;
+            if (spr_dma[s] == SPR_WAIT && c_vpos == spr_vstart[s]) spr_dma[s] = SPR_DATA;
             if (spr_dma[s] != SPR_DATA) continue;
         }
         if (spr_dma[s] == SPR_DATA) {
@@ -592,21 +613,21 @@ AMIGA_HOT static void sprite_compose(void) {
 }
 
 // ---- line / frame hooks ------------------------------------------------------
-AMIGA_HOT void denise_frame_start(void) {
+AMIGA_HOT static void c_frame_start(void) {
     for (int s = 0; s < 8; s++) { spr_dma[s] = SPR_FETCH_CTL; spr_armed[s] = false; }
 }
 
-AMIGA_HOT void denise_line_start(void) {
+AMIGA_HOT static void c_line_start(void) {
     int vstart = diwstrt >> 8;
     int vstop = (diwstop >> 8) | ((diwstop & 0x8000) ? 0 : 0x100);
-    vwin = A.vpos >= vstart && A.vpos < vstop;
-    bpl_dma = vwin && (A.dmacon & (DMAF_MASTER | DMAF_RASTER)) == (DMAF_MASTER | DMAF_RASTER);
+    vwin = c_vpos >= vstart && c_vpos < vstop;
+    bpl_dma = vwin && (c_dmacon & (DMAF_MASTER | DMAF_RASTER)) == (DMAF_MASTER | DMAF_RASTER);
     compute_ddf();
     fetch_k = 0;
     r_h = 0;
     clear_bytes(pf, (int)sizeof pf);
     ham_in = false;
-    int row = (int)A.vpos - AMIGA_FB_Y0;
+    int row = c_vpos - AMIGA_FB_Y0;
     fbrow = (A.cfg.framebuffer && row >= 0 && row < AMIGA_FB_H) ? A.cfg.framebuffer + row : NULL;
     fbdest = NULL;
     if (fbrow && row >= ov_y0 && row < ov_y1) {
@@ -618,22 +639,22 @@ AMIGA_HOT void denise_line_start(void) {
     }
     if (fbrow) {
         if (lut_dirty) build_lut();
-        if (bplcon0 & 0x0004)      w_begin(fbrow, AMIGA_ROW_LACE4, A.lof ? 0 : 1);
+        if (bplcon0 & 0x0004)      w_begin(fbrow, AMIGA_ROW_LACE4, c_lof ? 0 : 1);
         else if (bplcon0 & 0x8000) w_begin(fbrow, AMIGA_ROW_IDX8, 0);
         else                       w_begin(fbrow, AMIGA_ROW_DIRECT, 0);
     }
     sprite_dma();
     sprite_compose();
 #ifdef DENISE_DEBUG
-    if (A.vpos == 120 && A.frame % 100 == 99) {
+    if (c_vpos == 120 && A.frame % 100 == 99) {
         printf("[denise] f%u con0=%04X con1=%04X con2=%04X diw=%04X/%04X ddf=%02X/%02X mod=%d/%d units=%d pt0=%06X dma=%d\n",
                A.frame, bplcon0, bplcon1, bplcon2, diwstrt, diwstop, ddfstrt, ddfstop, bplmod[0], bplmod[1], nunits, bplpt[0], bpl_dma);
     }
 #endif
 }
 
-AMIGA_HOT void denise_line_end(void) {
-    render_to(AMIGA_CC_PER_LINE);
+// The line's end, once it is rendered up to AMIGA_CC_PER_LINE.
+AMIGA_HOT static void c_line_finish(void) {
     // The framebuffer reaches a few pixels past the end of the line: border.
     if (fbrow) {
         const int x = 2 * AMIGA_CC_PER_LINE - AMIGA_FB_X0;
@@ -647,11 +668,9 @@ AMIGA_HOT void denise_line_end(void) {
     }
 }
 
-AMIGA_HOT bool denise_lace(void) { return (bplcon0 & 0x0004) != 0; }
-
 // ---- registers ---------------------------------------------------------------
-AMIGA_HOT void denise_write(uint32_t reg, uint16_t v, int hpos) {
-    render_to(hpos);
+// A register write, once the line is rendered up to its hpos.
+AMIGA_HOT static void c_apply(uint32_t reg, uint16_t v) {
     if (reg >= R_COLOR00 && reg < R_COLOR00 + 64) {
         color[(reg - R_COLOR00) >> 1] = v & 0xFFF;
         lut_dirty = true;
@@ -694,7 +713,7 @@ AMIGA_HOT void denise_write(uint32_t reg, uint16_t v, int hpos) {
     }
 }
 
-void denise_reset(void) {
+static void c_reset(void) {
     tables_init();
     bplcon0 = bplcon1 = bplcon2 = 0;
     diwstrt = 0x2C81; diwstop = 0xF4C1; ddfstrt = 0x38; ddfstop = 0xD0;
@@ -707,5 +726,114 @@ void denise_reset(void) {
     memset(spr_armed, 0, sizeof spr_armed);
     memset(spl, 0, sizeof spl);
     spl_lo = SPL_SIZE; spl_hi = 0;
-    denise_frame_start();
+    c_frame_start();
+}
+
+// ---- the event queue -----------------------------------------------------------
+// Single producer (the emulation) and single consumer (sync: the same core,
+// right away; async: amiga_render_pump on another core).
+enum { EV_LINE = 0x8000, EV_END = 0x8001, EV_FRAME = 0x8002 };   // below: a register write
+typedef struct {
+    uint16_t kind;          // EV_*, or the register written (< $200)
+    uint16_t v;             // the value; EV_LINE: DMACON
+    uint16_t h;             // a write: hpos; EV_LINE: vpos
+    uint16_t x;             // EV_LINE: LOF | lines << 1
+} dev_t;
+
+#define EVQ 1024                        // power of two
+#define STEP_CC 32                      // async: colour clocks rendered per pump step
+static dev_t            evq[EVQ];
+static _Atomic uint32_t ev_head, ev_tail;
+static dev_t            c_ev;           // the event being replayed (async: may take steps)
+static bool             c_busy;
+static uint16_t         p_bplcon0;      // the producer's BPLCON0, for denise_lace()
+
+// One step of the consumer: false when the queue is empty.
+AMIGA_HOT static bool c_step(int step) {
+    if (!c_busy) {
+        const uint32_t t = atomic_load_explicit(&ev_tail, memory_order_relaxed);
+        if (t == atomic_load_explicit(&ev_head, memory_order_acquire)) return false;
+        c_ev = evq[t & (EVQ - 1)];
+        c_busy = true;
+    }
+    const dev_t *e = &c_ev;
+    if (e->kind < EV_LINE || e->kind == EV_END) {
+        int h = e->kind == EV_END ? AMIGA_CC_PER_LINE : e->h;
+        if (h > AMIGA_CC_PER_LINE) h = AMIGA_CC_PER_LINE;
+        if (h > r_h + step) { render_to(r_h + step); return true; }
+        render_to(h);
+        if (e->kind == EV_END) c_line_finish(); else c_apply(e->kind, e->v);
+    } else if (e->kind == EV_LINE) {
+        c_vpos = e->h; c_dmacon = e->v; c_lof = e->x & 1; c_lines = e->x >> 1;
+        c_line_start();
+    } else {
+        c_frame_start();
+    }
+    c_busy = false;
+    atomic_store_explicit(&ev_tail, atomic_load_explicit(&ev_tail, memory_order_relaxed) + 1,
+                          memory_order_release);
+    return true;
+}
+
+static uint32_t c1_ticks;               // consumer time in async mode (its core's clock)
+
+AMIGA_HOT bool amiga_render_pump(void) {
+    if (!async_on) return false;
+    const uint32_t t0 = A.cfg.prof_clock ? A.cfg.prof_clock() : 0;
+    const bool did = c_step(STEP_CC);
+    if (did && A.cfg.prof_clock) c1_ticks += A.cfg.prof_clock() - t0;
+    return did;
+}
+
+uint32_t denise_core1_ticks(void) { return c1_ticks; }
+
+// Wait until the consumer has replayed everything queued.
+AMIGA_HOT void denise_sync(void) {
+    if (!async_on) return;
+    const int prof = prof_switch(AMIGA_PROF_RWAIT);
+    while (atomic_load_explicit(&ev_tail, memory_order_acquire) !=
+           atomic_load_explicit(&ev_head, memory_order_relaxed)) { }
+    prof_switch(prof);
+}
+
+AMIGA_HOT static void push(uint16_t kind, uint16_t v, uint16_t h, uint16_t x) {
+    const uint32_t hd = atomic_load_explicit(&ev_head, memory_order_relaxed);
+    if (hd - atomic_load_explicit(&ev_tail, memory_order_acquire) >= EVQ) {
+        const int prof = prof_switch(AMIGA_PROF_RWAIT);       // the consumer is a queue behind
+        while (hd - atomic_load_explicit(&ev_tail, memory_order_acquire) >= EVQ) { }
+        prof_switch(prof);
+    }
+    dev_t *e = &evq[hd & (EVQ - 1)];
+    e->kind = kind; e->v = v; e->h = h; e->x = x;
+    atomic_store_explicit(&ev_head, hd + 1, memory_order_release);
+    if (!async_on) while (c_step(AMIGA_CC_PER_LINE)) { }
+}
+
+void amiga_render_async(bool on) {
+    denise_sync();
+    async_on = on;
+}
+
+// ---- the scheduler's side --------------------------------------------------------
+AMIGA_HOT void denise_frame_start(void) { push(EV_FRAME, 0, 0, 0); }
+
+AMIGA_HOT void denise_line_start(void) {
+    push(EV_LINE, A.dmacon, (uint16_t)A.vpos, (uint16_t)((A.lof ? 1 : 0) | (A.lines << 1)));
+}
+
+AMIGA_HOT void denise_line_end(void) { push(EV_END, 0, 0, 0); }
+
+AMIGA_HOT void denise_write(uint32_t reg, uint16_t v, int hpos) {
+    if (reg == R_BPLCON0) p_bplcon0 = v;
+    push((uint16_t)reg, v, (uint16_t)(hpos < 0 ? 0 : hpos), 0);
+}
+
+AMIGA_HOT bool denise_lace(void) { return (p_bplcon0 & 0x0004) != 0; }
+
+void denise_reset(void) {
+    denise_sync();
+    c_busy = false;
+    atomic_store(&ev_tail, atomic_load(&ev_head));
+    p_bplcon0 = 0;
+    c_reset();
 }

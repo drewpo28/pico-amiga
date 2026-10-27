@@ -64,9 +64,18 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
 - **Musashi's trace emulation must stay on** (`M68K_EMULATE_TRACE`): trace-vector
   decoders decrypt code one instruction at a time from the Trace exception. With it
   off, Cannon Fodder's disk 2 code spun forever with SR.T set (black screen).
-- **Display writes render first, then apply**: `denise_write()` calls
-  `render_to(hpos)` before storing. Anything that changes what is on screen
-  must go through it (CPU and copper writes carry their own hpos).
+- **Display writes render first, then apply**: `denise_write()` queues the
+  write with its hpos and the consumer renders up to it before storing.
+  Anything that changes what is on screen must go through it (CPU and copper
+  writes carry their own hpos).
+- **Denise runs as an event consumer** (denise.c, the queue at the end): the
+  scheduler's line start/end, frame start and display writes are queued with
+  the state they read (vpos, DMACON, LOF). Sync mode replays at once (host
+  bench, smoke); the firmware turns on `amiga_render_async` and core 1 replays
+  through `amiga_render_pump()` (between TMDS line encodes on PICO_DV, in
+  32-cc steps); `amiga_run_frame()` waits for it at frame end. Chip RAM is read
+  live. `pico-amiga-host --render-thread` runs the async path on a thread; its
+  screens must match the sync ones.
 - Single playfield sprite priority uses **PF2P**, not PF1P (vAmiga agrees).
 - Byte writes to custom registers put the byte on both halves of the word.
 - Area blits with B DMA off use BLTBDAT (shifted on the CPU write), not 0:

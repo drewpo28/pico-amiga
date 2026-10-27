@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 #include <stdint.h>
 #include "amiga.h"
 
@@ -143,6 +144,13 @@ static int disk_write(void *ctx, uint32_t off, const void *src, uint32_t len) {
     return 0;
 }
 
+// --render-thread: Denise on a second thread, as the firmware runs it on core 1.
+static void *render_thread(void *arg) {
+    (void)arg;
+    for (;;) amiga_render_pump();
+    return NULL;
+}
+
 static void serial_out(void *ctx, uint8_t c) {
     (void)ctx;
     if (c == '\r') return;
@@ -157,7 +165,7 @@ typedef struct { int frame, a, b, c; } inev_t;     // --joy: dirs fire; --mouse:
 int main(int argc, char **argv) {
     const char *rom_path = NULL, *ext_path = NULL, *adf_path = NULL, *wav_path = NULL;
     int frames = 250, status_every = 0, scale = 1;
-    bool slow = false;
+    bool slow = false, render_thread_on = false;
     shot_t shots[64]; int nshots = 0;
     keyev_t keys[256]; int nkeys = 0;
     inev_t joys[256]; int njoys = 0;
@@ -174,6 +182,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--status") && v) { status_every = atoi(v); i++; }
         else if (!strcmp(a, "--scale") && v) { scale = atoi(v); i++; }
         else if (!strcmp(a, "--slow")) slow = true;
+        else if (!strcmp(a, "--render-thread")) render_thread_on = true;
         else if (!strcmp(a, "--shot") && v && nshots < 64) {
             const char *c = strchr(v, ':');
             if (!c) { fprintf(stderr, "--shot N:file.png\n"); return 2; }
@@ -208,6 +217,11 @@ int main(int argc, char **argv) {
     cfg.audio_ring = audio; cfg.audio_frames = AUDIO_FRAMES;
     cfg.serial_out = serial_out;
     amiga_init(&cfg);
+    if (render_thread_on) {
+        pthread_t th;
+        pthread_create(&th, NULL, render_thread, NULL);
+        amiga_render_async(true);
+    }
 
     mem_disk_t md;
     if (adf_path) {

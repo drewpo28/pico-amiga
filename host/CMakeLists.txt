@@ -11,7 +11,7 @@ set(ROOT ${CMAKE_CURRENT_LIST_DIR}/..)
 include(${ROOT}/cmake/amiga_core.cmake)
 
 add_executable(pico-amiga-host main.c)
-target_link_libraries(pico-amiga-host PRIVATE amiga_core m)
+target_link_libraries(pico-amiga-host PRIVATE amiga_core pthread m)
 target_compile_options(pico-amiga-host PRIVATE -Wall -Wextra)
 
 # PIO TMDS word tables (src/pico/tmds_pio.h is plain C), decoded like a receiver would.

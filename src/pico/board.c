@@ -83,11 +83,12 @@ int board_test_pins(uint32_t pin0, uint32_t pin1) {
 #define DWT_CYCCNT (*(volatile uint32_t *)0xE0001004u)
 
 uint32_t __not_in_flash_func(board_cycles)(void) {   // the audio tick IRQ calls it too
-    static bool on;
-    if (!on) {                       // trace enable, then the counter (per core)
+    static bool on[2];
+    const uint core = get_core_num();
+    if (!on[core]) {                 // trace enable, then the counter: each core has its own
         DEMCR |= 1u << 24;
         DWT_CTRL |= 1u;
-        on = true;
+        on[core] = true;
     }
     return DWT_CYCCNT;
 }

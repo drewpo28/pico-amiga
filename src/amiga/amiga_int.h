@@ -151,6 +151,8 @@ void     denise_line_start(void);
 void     denise_line_end(void);
 void     denise_frame_start(void);
 bool     denise_lace(void);                         // BPLCON0 LACE
+void     denise_sync(void);                         // wait for the render core (async)
+uint32_t denise_core1_ticks(void);
 
 // ---- paula: audio (paula.c) ------------------------------------------------
 void     paula_reset(void);

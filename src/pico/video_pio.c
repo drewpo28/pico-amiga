@@ -219,7 +219,7 @@ static void __not_in_flash_func(encode_line)(int out) {
 }
 
 // Core 1, forever: keep up to two output lines ahead of the beam (lines 0 and 1
-// during the vertical blank).  Buffer n & 3 is free again once line n - 2 has
+// during the vertical blank), and render the emulator's lines in between.  Buffer n & 3 is free again once line n - 2 has
 // been sent, i.e. while line n - 1 is on the wire.
 static void __no_inline_not_in_flash_func(encode_loop)(void) {
     int done = 0;                                  // hdmi_start encoded line 0
@@ -229,7 +229,7 @@ static void __no_inline_not_in_flash_func(encode_loop)(void) {
         int target = shown + 2;
         if (target >= 2 * AMIGA_FB_H) target = 2 * AMIGA_FB_H - 1;
         if (done < target) encode_line(++done);
-        else               __wfi();
+        else               amiga_render_pump();   // Denise's lines, in small steps (amiga.h)
     }
 }
 

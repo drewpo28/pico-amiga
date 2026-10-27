@@ -12,7 +12,8 @@
 //                       (100% = exactly the 20 ms of a PAL frame)
 //   FPS 50.0  378MHz    emulated frames per wall-clock second, the CPU clock
 // Breakdown (amiga_get_profile, ms per Amiga frame):
-//   CPU  9.1 REN 22.3   the 68000 (blits excluded), the Denise render
+//   CPU  9.1 REN 22.3   the 68000 (blits excluded), the Denise render (on core 1
+//                       when it renders there)
 //   COP  1.2 BLT  3.0   the copper (renders excluded), the blitter
 //   OTH  4.5            Paula, floppy, CIAs, the scheduler
 #include <stdio.h>
@@ -112,7 +113,7 @@ extern "C" void ui_stats_frame(uint32_t emu_us) {
             s_prof = now_p;
             char a[12], b[12];
             ms(a, sizeof a, "CPU", p.ticks[AMIGA_PROF_CPU], p.frames);
-            ms(b, sizeof b, " REN", (uint64_t)p.ticks[AMIGA_PROF_RENDER] + p.ticks[AMIGA_PROF_BPL] + p.ticks[AMIGA_PROF_BPLRD], p.frames);
+            ms(b, sizeof b, " REN", (uint64_t)p.ticks[AMIGA_PROF_RENDER] + p.ticks[AMIGA_PROF_BPL] + p.ticks[AMIGA_PROF_BPLRD] + p.ticks[AMIGA_PROF_CORE1], p.frames);
             snprintf(s_l[0], sizeof s_l[0], "%s%s", a, b);
             ms(a, sizeof a, "COP", p.ticks[AMIGA_PROF_COPPER], p.frames);
             ms(b, sizeof b, " BLT", p.ticks[AMIGA_PROF_BLIT], p.frames);

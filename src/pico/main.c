@@ -60,9 +60,12 @@ static FATFS fs;
 
 static bool chip_is_rp2350a(void) { return sysinfo_hw->package_sel & 1u; }
 
+// Core 1: the scanout, and Denise's rendering (amiga_render_async).  The PIO
+// HDMI back-end never returns from video_start(): its encode loop pumps the
+// renderer between lines itself.
 static void core1_main(void) {
     video_start(fb);
-    for (;;) __wfi();
+    for (;;) amiga_render_pump();
 }
 
 // PICO_DEFAULT_LED_PIN 255 = no LED (ZERO2, the stock W module's is on the radio).
@@ -145,6 +148,7 @@ int main(void) {
     cfg.row_done = ui_stats_row;     // the Alt+F12 band, drawn on its rows before they are shown
     cfg.prof_clock = board_cycles;   // where the frame time goes (Alt+F12, second page)
     amiga_init(&cfg);
+    amiga_render_async(true);        // Denise on core 1
     if (card) machine_restore_disks();
 
     audio_out_start(audio_ring, AUDIO_FRAMES, settings_audio_out());

@@ -173,6 +173,7 @@ void amiga_run_frame(void) {
     // the buckets up to date at the end (the wait for the next frame is nobody's).
     if (A.cfg.prof_clock) { prof_t = A.cfg.prof_clock(); prof_cur = AMIGA_PROF_OTHER; }
     for (A.vpos = 0; A.vpos < A.lines; A.vpos++) run_line();
+    denise_sync();                   // the frame is complete before anyone looks at it
     prof_switch(AMIGA_PROF_OTHER);
     A.vpos = 0;
     A.frame++;
@@ -187,6 +188,7 @@ void amiga_run_frame(void) {
 
 void amiga_get_profile(amiga_profile_t *p, bool reset) {
     for (int i = 0; i < AMIGA_PROF_COUNT; i++) p->ticks[i] = prof_acc[i];
+    p->ticks[AMIGA_PROF_CORE1] = denise_core1_ticks();
     p->frames = prof_frames;
     if (reset) {
         for (int i = 0; i < AMIGA_PROF_COUNT; i++) prof_acc[i] = 0;

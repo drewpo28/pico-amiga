@@ -57,6 +57,12 @@ void amiga_fb_line(const amiga_row_t *row, int sub, uint16_t out[AMIGA_OUT_W]);
 void amiga_fb_fill(amiga_row_t *fb, uint16_t colour);
 // Framebuffer rows [y0, y1) carry a platform overlay (row_done); y1 <= y0: none.
 void amiga_set_overlay_rows(int y0, int y1);
+// Denise on another core: with async on, the emulation queues the display
+// work and that core runs it by calling amiga_render_pump() (one small step
+// per call; false when there is nothing queued) until amiga_run_frame() has
+// waited for it.  Off (the default): the emulation renders as it goes.
+void amiga_render_async(bool on);
+bool amiga_render_pump(void);
 
 // ---- Audio -----------------------------------------------------------------
 // Paula is sampled twice per line: 313 * 2 * 50 = 31300 Hz, interleaved stereo
@@ -148,6 +154,8 @@ enum { AMIGA_PROF_OTHER, AMIGA_PROF_CPU, AMIGA_PROF_COPPER, AMIGA_PROF_RENDER,
        AMIGA_PROF_DISK,     // floppy DMA, track encoding (the ADF reads included)
        AMIGA_PROF_BPL,      // of the render: the bitplane fetch (spreading the words)
        AMIGA_PROF_BPLRD,    // of the fetch: reading the plane words from chip RAM
+       AMIGA_PROF_RWAIT,    // waiting for the render core (async rendering)
+       AMIGA_PROF_CORE1,    // the render core's time (async rendering; its own clock)
        AMIGA_PROF_COUNT };
 typedef struct { uint32_t ticks[AMIGA_PROF_COUNT]; uint32_t frames; } amiga_profile_t;
 void amiga_get_profile(amiga_profile_t *p, bool reset);
