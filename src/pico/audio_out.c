@@ -90,6 +90,10 @@ static inline void __not_in_flash_func(output)(int32_t sL, int32_t sR) {
 
 static uint32_t isr_cycles;
 uint32_t audio_out_isr_cycles(void) { return isr_cycles; }
+// Ticks that found no new frame (the emulation behind real time: the last one
+// is held) and frames skipped to catch up (audio_out.h).
+static volatile uint32_t held, skipped;
+void audio_out_counts(uint32_t *hold, uint32_t *skip) { *hold = held; *skip = skipped; }
 
 static void __not_in_flash_func(au_alarm_isr)(void) {
     const uint32_t c0 = board_cycles();
@@ -104,8 +108,9 @@ static void __not_in_flash_func(au_alarm_isr)(void) {
 
     const uint32_t wp = amiga_audio_write_pos();
     uint32_t lag = wp - rd;
-    if (lag > ring_frames / 2) { rd = wp - ring_frames / 4; lag = ring_frames / 4; }   // lost track
-    else if (lag > 3 * (AMIGA_AUDIO_RATE / 50)) { rd++; lag--; }                        // drifting ahead
+    if (lag > ring_frames / 2) { skipped += lag - ring_frames / 4; rd = wp - ring_frames / 4; lag = ring_frames / 4; }   // lost track
+    else if (lag > 3 * (AMIGA_AUDIO_RATE / 50)) { rd++; lag--; skipped++; }             // drifting ahead
+    if (!lag) held++;
     if (lag) {
         const uint32_t i = (rd & (ring_frames - 1)) * 2;
         last_l = ring[i];

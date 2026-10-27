@@ -8,6 +8,7 @@
 #include "ui/ui.h"
 #include "audio_out.h"
 #include "video.h"
+#include "hdmi_audio.h"
 
 // The QMI SCK a limit gives: clk_sys over the smallest whole divider that keeps
 // under it, never below 2 (clock.c / psram.c).
@@ -20,7 +21,7 @@ static unsigned sck(unsigned mhz, unsigned limit) {
 void perf_log_frame(uint32_t emu_us) {
     static uint32_t frames, emu_sum, t0, slow;
     static amiga_profile_t last;
-    static uint32_t isr_last, late_last, c1irq_last, c1enc_last;
+    static uint32_t isr_last, late_last, c1irq_last, c1enc_last, hold_last, skip_last, full_last, starve_last;
     if (!dbg_uart_active()) return;
     if (!t0) { t0 = time_us_32(); amiga_get_profile(&last, false); isr_last = audio_out_isr_cycles(); return; }
     frames++;
@@ -45,12 +46,17 @@ void perf_log_frame(uint32_t emu_us) {
     video_core1_cycles(&c1irq, &c1enc);
     const uint32_t irq1 = (c1irq - c1irq_last) / nf / cpu_us / 100, enc1 = (c1enc - c1enc_last) / nf / cpu_us / 100;
     c1irq_last = c1irq; c1enc_last = c1enc;
+    uint32_t hold, skip, full, starve, qmin;                // audio, this second
+    audio_out_counts(&hold, &skip);
+    hdmi_audio_counts(&full, &starve, &qmin);
+    const uint32_t dh = hold - hold_last, ds = skip - skip_last, df = full - full_last, dst = starve - starve_last;
+    hold_last = hold; skip_last = skip; full_last = full; starve_last = starve;
     const uint32_t emu_avg = emu_sum / frames, emu10 = emu_avg / 100;
     const uint32_t fps10 = (uint32_t)((uint64_t)frames * 10000000u / (now - t0));
 #define MS(i) (unsigned)(ms10[i] / 10), (unsigned)(ms10[i] % 10)
     printf("PERF fps %u.%u emu %u.%u ms (%u%%, %u slow) | cpu %u.%u ren %u.%u+bpl %u.%u+rd %u.%u cop %u.%u blt %u.%u"
            " aud %u.%u line %u.%u dsk %u.%u oth %u.%u wait %u.%u (irq %u.%u) | core1 render %u.%u irq %u.%u enc %u.%u"
-           " | cpu %u flash %u psram %u MHz | late %u\n",
+           " | cpu %u flash %u psram %u MHz | late %u | au hold %u drop %u hdmi starve %u full %u min %u\n",
            (unsigned)(fps10 / 10), (unsigned)(fps10 % 10),
            (unsigned)(emu10 / 10), (unsigned)(emu10 % 10),
            (unsigned)(emu_avg ? 2000000u / emu_avg : 0), (unsigned)slow,     // 20 ms = 100%
@@ -60,7 +66,7 @@ void perf_log_frame(uint32_t emu_us) {
            (unsigned)(irq1 / 10), (unsigned)(irq1 % 10), (unsigned)(enc1 / 10), (unsigned)(enc1 % 10),
            (unsigned)settings_cpu_mhz(), sck((unsigned)settings_cpu_mhz(), (unsigned)settings_flash_mhz()),
            sck((unsigned)settings_cpu_mhz(), settings_psram_mhz() < 135 ? (unsigned)settings_psram_mhz() : 135u),
-           (unsigned)late);
+           (unsigned)late, (unsigned)dh, (unsigned)ds, (unsigned)dst, (unsigned)df, (unsigned)qmin);
     last = p;
     frames = emu_sum = slow = 0;
     t0 = now;

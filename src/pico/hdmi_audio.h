@@ -51,6 +51,9 @@ extern const uint32_t hdmi_video_lead[HDMI_VLEAD_PX];
 enum { HDMI_PK_NULL, HDMI_PK_ACR, HDMI_PK_AVI, HDMI_PK_VENDOR, HDMI_PK_AIF, HDMI_PK_FIXED };
 int  hdmi_audio_packet(uint8_t nib[32][3], uint32_t blank, bool vsync);
 void hdmi_audio_fixed_nibbles(int id, bool vsync, uint8_t nib[32][3]);   // after hdmi_audio_init
+// Running totals of packets dropped on a full queue and of lines that were owed
+// a packet the queue did not have; the lowest queue depth since the last call.
+void hdmi_audio_counts(uint32_t *full, uint32_t *starve, uint32_t *min_depth);
 void hdmi_island_frame(uint32_t pre[10], uint32_t post[2], bool vsync);
 uint32_t hdmi_terc4(int nibble);
 

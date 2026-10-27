@@ -208,8 +208,16 @@ static uint64_t credit;               // 48 kHz samples owed, Q24 (64-bit: see t
 static uint64_t credit_cap;
 static uint32_t credit_hi, credit_lo; // per line: nominal +1% / -1%
 static int      iec_ct;               // IEC 60958 192-frame block counter
+// Health (hdmi_audio_counts): packets dropped on a full queue, lines whose
+// credit wanted a packet the queue did not have, the lowest depth seen.
+static volatile uint32_t au_full, au_starve, au_min = AQ_LEN;
 
 void hdmi_audio_set_enabled(bool on) { enabled = on; }
+
+void hdmi_audio_counts(uint32_t *full, uint32_t *starve, uint32_t *min_depth) {
+    *full = au_full; *starve = au_starve; *min_depth = au_min;
+    au_min = AQ_LEN;
+}
 
 void __not_in_flash_func(hdmi_audio_push)(int16_t l, int16_t r) {
     if (!active || !enabled) return;
@@ -224,6 +232,8 @@ void __not_in_flash_func(hdmi_audio_push)(int16_t l, int16_t r) {
                 aq[w % AQ_LEN] = up_pkt;
                 __dmb();
                 aq_wr = w + 1;
+            } else {
+                au_full++;
             }
         }
         up_pos += up_step;
@@ -305,7 +315,9 @@ int __not_in_flash_func(hdmi_audio_packet)(uint8_t nib[32][3], uint32_t blank, b
     if (!vsync && blank == 3)                  return HDMI_PK_VENDOR;
     if (!vsync && blank == 4)                  return HDMI_PK_AIF;
     if (!vsync && blank && !(blank & 3))       return HDMI_PK_ACR;
-    if (credit < (4ull << 24) || !depth)       return HDMI_PK_NULL;
+    if (depth < au_min) au_min = depth;
+    if (credit < (4ull << 24))                 return HDMI_PK_NULL;
+    if (!depth) { au_starve++;                 return HDMI_PK_NULL; }
     credit -= 4ull << 24;                      // credit is spent only on a pop
     packet_t a;
     const uint32_t r = aq_rd;

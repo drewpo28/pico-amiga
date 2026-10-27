@@ -21,7 +21,8 @@ extern volatile int16_t audio_volume_q8;
 const char *audio_out_name(void);
 // clk_sys cycles spent in the sample tick's interrupt so far (the profiler's
 // clock, board_cycles; wraps).
-uint32_t audio_out_isr_cycles(void);   // "PWM", "I2S", "PCM5122"
+uint32_t audio_out_isr_cycles(void);
+void     audio_out_counts(uint32_t *hold, uint32_t *skip);   // running totals   // "PWM", "I2S", "PCM5122"
 
 #ifdef __cplusplus
 }
