@@ -11,14 +11,16 @@
 void video_select(void);
 bool video_is_vga(void);
 
-// Start scanout. Call on the core that will own the DMA IRQ (core 1).
-void video_start(const uint16_t *framebuffer);
+// Start scanout. Call on the core that will own the DMA IRQ (core 1).  HDMI also
+// carries the core's audio ring (interleaved stereo int16, `audio_frames` a power
+// of two) in its data islands (hdmi_audio.c).
+void video_start(const uint16_t *framebuffer, const int16_t *audio_ring, uint32_t audio_frames);
 
 // Number of output frames completed.
 uint32_t video_frames(void);
 
 // The back-ends.
-void hdmi_start(const uint16_t *framebuffer);
+void hdmi_start(const uint16_t *framebuffer, const int16_t *audio_ring, uint32_t audio_frames);
 uint32_t hdmi_frames(void);
 void vga_start(const uint16_t *framebuffer);
 uint32_t vga_frames(void);

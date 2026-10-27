@@ -94,7 +94,7 @@ void paula_half_line(void) {
     audio_pos++;
 }
 
-uint32_t paula_audio_pos(void) { return audio_pos; }
+AMIGA_HOT uint32_t paula_audio_pos(void) { return audio_pos; }
 
 void paula_write(uint32_t reg, uint16_t v) {
     int i = (int)((reg - R_AUD0LCH) >> 4);

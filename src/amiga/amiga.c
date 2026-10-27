@@ -91,7 +91,8 @@ void amiga_joystick(int port, uint8_t dirs, bool fire) {
 
 void amiga_insert_disk(int drive, const amiga_disk_t *disk) { floppy_insert(drive, disk); }
 void amiga_eject_disk(int drive) { floppy_eject(drive); }
-uint32_t amiga_audio_write_pos(void) { return paula_audio_pos(); }
+// Read from the output IRQs (audio_out.c, hdmi_audio.c), hence AMIGA_HOT.
+AMIGA_HOT uint32_t amiga_audio_write_pos(void) { return paula_audio_pos(); }
 
 // ---- reset / init -------------------------------------------------------------
 void amiga_reset(bool hard) {

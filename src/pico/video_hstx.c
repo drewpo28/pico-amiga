@@ -26,6 +26,7 @@
 #include "hardware/structs/hstx_ctrl.h"
 #include "hardware/structs/hstx_fifo.h"
 #include "amiga.h"
+#include "hdmi_audio.h"
 
 #ifndef HDMI_BASE_PIN
 #define HDMI_BASE_PIN 12
@@ -55,27 +56,9 @@
 #define HSTX_CMD_TMDS       (0x2u << 12)
 #define HSTX_CMD_NOP        (0xfu << 12)
 
-// Negative sync polarity: the idle level of both syncs is 1.
-static uint32_t vblank_vsync_off[] = {
-    HSTX_CMD_RAW_REPEAT | H_FP, SYNC_V1_H1,
-    HSTX_CMD_RAW_REPEAT | H_SYNC, SYNC_V1_H0,
-    HSTX_CMD_RAW_REPEAT | (H_BP + H_ACTIVE), SYNC_V1_H1,
-    HSTX_CMD_NOP
-};
-static uint32_t vblank_vsync_on[] = {
-    HSTX_CMD_RAW_REPEAT | H_FP, SYNC_V0_H1,
-    HSTX_CMD_RAW_REPEAT | H_SYNC, SYNC_V0_H0,
-    HSTX_CMD_RAW_REPEAT | (H_BP + H_ACTIVE), SYNC_V0_H1,
-    HSTX_CMD_NOP
-};
-static uint32_t vactive_cmd[] = {
-    HSTX_CMD_RAW_REPEAT | H_FP, SYNC_V1_H1,
-    HSTX_CMD_NOP,
-    HSTX_CMD_RAW_REPEAT | H_SYNC, SYNC_V1_H0,
-    HSTX_CMD_NOP,
-    HSTX_CMD_RAW_REPEAT | H_BP, SYNC_V1_H1,
-    HSTX_CMD_TMDS | H_ACTIVE
-};
+#define HSTX_CMD_RAW        (0x0u << 12)
+
+static const uint32_t sync_word[4] = { SYNC_V0_H0, SYNC_V0_H1, SYNC_V1_H0, SYNC_V1_H1 };   // [vs << 1 | hs]
 
 // ---- state ------------------------------------------------------------------------
 #define DMACH_PING 0
@@ -83,6 +66,11 @@ static uint32_t vactive_cmd[] = {
 
 static const uint16_t *fb;
 static uint32_t linebuf[2][AMIGA_FB_W];
+// Command lists, by line parity: the one for line L is written while line L-1
+// plays from the other.  Longest (active line): 12 FP, the island in the sync
+// pulse, the rest of it, BP up to the video lead, the lead, the TMDS command.
+#define CMD_WORDS (2 + 1 + HDMI_ISLAND_PX + 2 + 2 + 1 + HDMI_VLEAD_PX + 1)
+static uint32_t cmdbuf[2][CMD_WORDS];
 static volatile uint32_t frames;
 static bool     dma_pong;
 static uint32_t v_line;              // next output line to post
@@ -98,21 +86,43 @@ static void __not_in_flash_func(expand_row)(uint32_t *dst, const uint16_t *src) 
     }
 }
 
+// The command list of line `l`: sync, its data island and, on an active line,
+// the video preamble/guard band and the TMDS command for its pixels.
+static uint32_t __not_in_flash_func(build_cmd)(uint32_t *d, uint32_t l) {
+    const bool active = l >= V_TOTAL - V_ACTIVE;
+    const bool vsync = l >= V_FP && l < V_FP + V_SYNC;
+    const uint32_t vs = vsync ? 0u : 1u;
+    uint32_t *p = d;
+    *p++ = HSTX_CMD_RAW_REPEAT | H_FP;               *p++ = sync_word[vs << 1 | 1];
+    *p++ = HSTX_CMD_RAW | HDMI_ISLAND_PX;
+    hdmi_audio_island(p, active ? 0 : l + 1, vsync); p += HDMI_ISLAND_PX;
+    *p++ = HSTX_CMD_RAW_REPEAT | (H_SYNC - HDMI_ISLAND_PX); *p++ = sync_word[vs << 1];
+    if (active) {
+        *p++ = HSTX_CMD_RAW_REPEAT | (H_BP - HDMI_VLEAD_PX); *p++ = SYNC_V1_H1;
+        *p++ = HSTX_CMD_RAW | HDMI_VLEAD_PX;
+        for (int i = 0; i < HDMI_VLEAD_PX; i++) *p++ = hdmi_video_lead[i];
+        *p++ = HSTX_CMD_TMDS | H_ACTIVE;
+    } else {
+        *p++ = HSTX_CMD_RAW_REPEAT | (H_BP + H_ACTIVE); *p++ = sync_word[vs << 1 | 1];
+        *p++ = HSTX_CMD_NOP;
+    }
+    return (uint32_t)(p - d);
+}
+
 static void __not_in_flash_func(dma_irq)(void) {
     uint ch = dma_pong ? DMACH_PONG : DMACH_PING;
     dma_channel_hw_t *c = &dma_hw->ch[ch];
     dma_hw->intr = 1u << ch;
     dma_pong = !dma_pong;
 
-    if (v_line >= V_FP && v_line < V_FP + V_SYNC) {
-        c->read_addr = (uintptr_t)vblank_vsync_on;
-        c->transfer_count = count_of(vblank_vsync_on);
-    } else if (v_line < V_FP + V_SYNC + V_BP) {
-        c->read_addr = (uintptr_t)vblank_vsync_off;
-        c->transfer_count = count_of(vblank_vsync_off);
+    if (v_line < V_TOTAL - V_ACTIVE) {
+        uint32_t *d = cmdbuf[v_line & 1];
+        c->read_addr = (uintptr_t)d;
+        c->transfer_count = build_cmd(d, v_line);
     } else if (!cmd_posted) {
-        c->read_addr = (uintptr_t)vactive_cmd;
-        c->transfer_count = count_of(vactive_cmd);
+        uint32_t *d = cmdbuf[v_line & 1];
+        c->read_addr = (uintptr_t)d;
+        c->transfer_count = build_cmd(d, v_line);
         cmd_posted = true;
         // Prepare the pixels this command list leads into (one FB row, two lines).
         uint32_t out = v_line - (V_TOTAL - V_ACTIVE);
@@ -178,23 +188,26 @@ static void hstx_setup(void) {
     }
 }
 
-void hdmi_start(const uint16_t *framebuffer) {
+void hdmi_start(const uint16_t *framebuffer, const int16_t *audio_ring, uint32_t audio_frames) {
     fb = framebuffer;
+    hdmi_audio_init(audio_ring, audio_frames, 25200000u, H_FP + H_SYNC + H_BP + H_ACTIVE, V_TOTAL);
     v_line = 2;                      // the two channels below are pre-loaded with lines 0 and 1
     cmd_posted = false;
     dma_pong = false;
     hstx_setup();
 
+    // Lines 0 and 1 (vertical front porch) go out from the static list until the
+    // IRQ takes over at line 2.
+    static uint32_t first[2][CMD_WORDS];
+    const uint32_t n0 = build_cmd(first[0], 0), n1 = build_cmd(first[1], 1);
     dma_channel_config c = dma_channel_get_default_config(DMACH_PING);
     channel_config_set_chain_to(&c, DMACH_PONG);
     channel_config_set_dreq(&c, DREQ_HSTX);
-    dma_channel_configure(DMACH_PING, &c, &hstx_fifo_hw->fifo, vblank_vsync_off,
-                          count_of(vblank_vsync_off), false);
+    dma_channel_configure(DMACH_PING, &c, &hstx_fifo_hw->fifo, first[0], n0, false);
     c = dma_channel_get_default_config(DMACH_PONG);
     channel_config_set_chain_to(&c, DMACH_PING);
     channel_config_set_dreq(&c, DREQ_HSTX);
-    dma_channel_configure(DMACH_PONG, &c, &hstx_fifo_hw->fifo, vblank_vsync_off,
-                          count_of(vblank_vsync_off), false);
+    dma_channel_configure(DMACH_PONG, &c, &hstx_fifo_hw->fifo, first[1], n1, false);
 
     dma_hw->ints0 = (1u << DMACH_PING) | (1u << DMACH_PONG);
     dma_hw->inte0 = (1u << DMACH_PING) | (1u << DMACH_PONG);

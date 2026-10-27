@@ -24,6 +24,7 @@
 #include "amiga.h"
 #include "tmds_pio.h"
 #include "tmds.pio.h"
+#include "hdmi_audio.h"
 
 #ifndef HDMI_BASE_PIN
 #define HDMI_BASE_PIN 6
@@ -53,6 +54,12 @@ static uint32_t tab_gb[256][4];
 static uint32_t blank_line[2][H_BLANK * 2];        // [vsync active?]
 static uint32_t blank_active[2][H_ACTIVE * 2];     // the active part of a vblank line
 static uint32_t rowbuf[2][AMIGA_FB_W * 4];
+// The blanking part of each line, by line parity: blank_line plus the line's data
+// island in the sync pulse and, before an active line, the video preamble/guard band.
+static uint32_t blankbuf[2][H_BLANK * 2];
+static uint32_t terc_w[3][16][2];                  // TERC4 nibble -> pin words, per lane
+static uint32_t isl_pre_w[2][10][2], isl_post_w[2][2][2];   // [vsync]
+static uint32_t lead_w[HDMI_VLEAD_PX][2];
 
 static volatile uint32_t frames;
 static volatile int      shown_row = -1;           // row whose pixels were last posted
@@ -65,8 +72,28 @@ static void fill_ctrl(uint32_t *dst, int px, int vs, int hs) {
     for (int i = 0; i < px; i++) { dst[2 * i] = w[0]; dst[2 * i + 1] = w[1]; }
 }
 
+// One character (three symbols packed as hdmi_audio.h does) as two pin words.
+static void char_words(uint32_t c, uint32_t w[2]) {
+    w[0] = w[1] = 0;
+    for (int lane = 0; lane < 3; lane++) {
+        uint32_t lw[2];
+        tmds_lane_words(lane, (uint16_t)((c >> (10 * lane)) & 0x3FF), lw);
+        w[0] |= lw[0];
+        w[1] |= lw[1];
+    }
+}
+
 static void build_static(void) {
     tmds_build_tables(tab_r, tab_gb);
+    for (int lane = 0; lane < 3; lane++)
+        for (int n = 0; n < 16; n++) tmds_lane_words(lane, (uint16_t)hdmi_terc4(n), terc_w[lane][n]);
+    for (int vs = 0; vs < 2; vs++) {
+        uint32_t pre[10], post[2];
+        hdmi_island_frame(pre, post, vs);
+        for (int i = 0; i < 10; i++) char_words(pre[i], isl_pre_w[vs][i]);
+        for (int i = 0; i < 2; i++) char_words(post[i], isl_post_w[vs][i]);
+    }
+    for (int i = 0; i < HDMI_VLEAD_PX; i++) char_words(hdmi_video_lead[i], lead_w[i]);
     for (int vs = 0; vs < 2; vs++) {
         int vlev = vs ? 0 : 1;                         // negative polarity: active = 0
         fill_ctrl(blank_line[vs], H_FP, vlev, 1);
@@ -85,7 +112,27 @@ static void __not_in_flash_func(dma_irq)(void) {
     const bool vsync = v_line >= V_FP && v_line < V_FP + V_SYNC;
     const bool active = v_line >= V_TOTAL - V_ACTIVE;
     if (!part_b) {
-        c->read_addr = (uintptr_t)blank_line[vsync];
+        // Line v_line's blanking: posted while the other channel streams the
+        // previous line's 720 active pixels, which is the time it has to be built.
+        uint32_t *d = blankbuf[v_line & 1];
+        // A volatile copy: GCC would turn a plain loop into memcpy, which is in flash.
+        const uint32_t *t = blank_line[vsync];
+        for (volatile uint32_t *v = d; v < d + H_BLANK * 2; ) *v++ = *t++;
+        uint32_t *isl = d + 2 * H_FP;
+        for (int i = 0; i < 10; i++) { isl[0] = isl_pre_w[vsync][i][0]; isl[1] = isl_pre_w[vsync][i][1]; isl += 2; }
+        uint8_t nib[32][3];
+        hdmi_audio_packet(nib, active ? 0 : v_line + 1, vsync);
+        for (int t = 0; t < 32; t++) {
+            isl[0] = terc_w[0][nib[t][0]][0] | terc_w[1][nib[t][1]][0] | terc_w[2][nib[t][2]][0];
+            isl[1] = terc_w[0][nib[t][0]][1] | terc_w[1][nib[t][1]][1] | terc_w[2][nib[t][2]][1];
+            isl += 2;
+        }
+        for (int i = 0; i < 2; i++) { isl[0] = isl_post_w[vsync][i][0]; isl[1] = isl_post_w[vsync][i][1]; isl += 2; }
+        if (active) {
+            uint32_t *lead = d + 2 * (H_BLANK - HDMI_VLEAD_PX);
+            for (int i = 0; i < HDMI_VLEAD_PX; i++) { lead[2 * i] = lead_w[i][0]; lead[2 * i + 1] = lead_w[i][1]; }
+        }
+        c->read_addr = (uintptr_t)d;
         c->transfer_count = H_BLANK * 2;
         part_b = true;
     } else {
@@ -117,8 +164,9 @@ static void __no_inline_not_in_flash_func(encode_loop)(void) {
     }
 }
 
-void hdmi_start(const uint16_t *framebuffer) {
+void hdmi_start(const uint16_t *framebuffer, const int16_t *audio_ring, uint32_t audio_frames) {
     fb = framebuffer;
+    hdmi_audio_init(audio_ring, audio_frames, 25200000u, H_BLANK + H_ACTIVE, V_TOTAL);
     build_static();
     tmds_encode_row(rowbuf[0], fb, AMIGA_FB_W, tab_r, tab_gb);
 

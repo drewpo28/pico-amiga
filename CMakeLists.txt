@@ -45,6 +45,7 @@ add_executable(pico-amiga
     src/pico/board.c
     src/pico/video.c
     src/pico/video_vga.c
+    src/pico/hdmi_audio.c
     src/pico/clock.c
     src/pico/psram.c
     src/pico/usb_disk_stub.c
