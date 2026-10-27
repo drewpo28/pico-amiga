@@ -103,20 +103,25 @@ static inline void tmds_build_mixed(uint32_t tab[3][16][16][4]) {
 // Encode one output line of two-colours-per-column pixels: left[x], right[x]
 // are the 0x0RGB colours of output pixels 2x and 2x+1.  Equal pairs take the
 // doubled-pixel tables, the rest the mixed ones.
+// The four words of one pair of output pixels (colours a, b).
+static inline void tmds_pair(uint32_t w[4], uint16_t a, uint16_t b,
+                             const uint32_t tab_r[16][4], const uint32_t tab_gb[256][4],
+                             const uint32_t mix[3][16][16][4]) {
+    if (a == b) {
+        const uint32_t *p0 = tab_r[(a >> 8) & 15], *p1 = tab_gb[a & 0xFF];
+        for (int k = 0; k < 4; k++) w[k] = p0[k] | p1[k];
+    } else {
+        const uint32_t *p0 = mix[2][(a >> 8) & 15][(b >> 8) & 15];
+        const uint32_t *p1 = mix[1][(a >> 4) & 15][(b >> 4) & 15];
+        const uint32_t *p2 = mix[0][a & 15][b & 15];
+        for (int k = 0; k < 4; k++) w[k] = p0[k] | p1[k] | p2[k];
+    }
+}
+
 static inline void tmds_encode_pairs(uint32_t *dst, const uint16_t *left, const uint16_t *right, int n,
                                      const uint32_t tab_r[16][4], const uint32_t tab_gb[256][4],
                                      const uint32_t mix[3][16][16][4]) {
-    for (int x = 0; x < n; x++, dst += 4) {
-        uint16_t a = left[x], b = right[x];
-        const uint32_t *p0, *p1, *p2 = 0;
-        if (a == b) { p0 = tab_r[(a >> 8) & 15]; p1 = tab_gb[a & 0xFF]; }
-        else {
-            p0 = mix[2][(a >> 8) & 15][(b >> 8) & 15];
-            p1 = mix[1][(a >> 4) & 15][(b >> 4) & 15];
-            p2 = mix[0][a & 15][b & 15];
-        }
-        for (int k = 0; k < 4; k++) dst[k] = p0[k] | p1[k] | (p2 ? p2[k] : 0);
-    }
+    for (int x = 0; x < n; x++, dst += 4) tmds_pair(dst, left[x], right[x], tab_r, tab_gb, mix);
 }
 
 // Two words of a control period pixel: lane 0 carries {vsync, hsync}.

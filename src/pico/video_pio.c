@@ -161,8 +161,11 @@ static void __not_in_flash_func(dma_irq)(void) {
 }
 
 // Encode output line `out` (0..575) into linebuf[out & 3].
+// Hires and interlaced rows go pair by pair, straight from the row's indices; a
+// pair equal to the one before it (backgrounds, text) only stores the same four
+// words again.  A full pair encode is ~50 cycles, and 360 of them plus the DMA
+// IRQs did not fit the 66 us of a row at 504 MHz.
 static void __not_in_flash_func(encode_line)(int out) {
-    static uint16_t left[AMIGA_FB_W], right[AMIGA_FB_W];
     static bool prev_lace;                         // the row of line out - 1 was LACE4
     const amiga_row_t *row = &fb[out >> 1];
     const int sub = out & 1;
@@ -176,18 +179,35 @@ static void __not_in_flash_func(encode_line)(int out) {
     }
     prev_lace = row->mode == AMIGA_ROW_LACE4;
     switch (row->mode) {
-    case AMIGA_ROW_IDX8:
-        for (int x = 0; x < AMIGA_FB_W; x++) {
-            left[x] = row->pal[row->px.idx[2 * x] & 63];
-            right[x] = row->pal[row->px.idx[2 * x + 1] & 63];
+    case AMIGA_ROW_IDX8: {
+        const uint16_t *pal = row->pal;
+        typedef uint16_t __attribute__((may_alias)) u16a;
+        const u16a *ix = (const u16a *)(const void *)row->px.idx;   // index pairs, left in the low byte
+        uint32_t key = 0xFFFFFFFFu, w[4] = { 0, 0, 0, 0 };
+        for (int x = 0; x < AMIGA_FB_W; x++, dst += 4) {
+            const uint32_t k = ix[x];
+            if (k != key) {
+                key = k;
+                tmds_pair(w, pal[k & 63], pal[(k >> 8) & 63], tab_r, tab_gb, tab_mix);
+            }
+            dst[0] = w[0]; dst[1] = w[1]; dst[2] = w[2]; dst[3] = w[3];
         }
-        tmds_encode_pairs(dst, left, right, AMIGA_FB_W, tab_r, tab_gb, tab_mix);
+        dst -= 4 * AMIGA_FB_W;
         break;
+    }
     case AMIGA_ROW_LACE4: {
         const uint16_t *pal = row->pal + 16 * sub;
         const uint8_t *n = row->px.nib[sub];
-        for (int x = 0; x < AMIGA_FB_W; x++) { left[x] = pal[n[x] >> 4]; right[x] = pal[n[x] & 15]; }
-        tmds_encode_pairs(dst, left, right, AMIGA_FB_W, tab_r, tab_gb, tab_mix);
+        uint32_t key = 0xFFFFFFFFu, w[4] = { 0, 0, 0, 0 };
+        for (int x = 0; x < AMIGA_FB_W; x++, dst += 4) {
+            const uint32_t k = n[x];
+            if (k != key) {
+                key = k;
+                tmds_pair(w, pal[k >> 4], pal[k & 15], tab_r, tab_gb, tab_mix);
+            }
+            dst[0] = w[0]; dst[1] = w[1]; dst[2] = w[2]; dst[3] = w[3];
+        }
+        dst -= 4 * AMIGA_FB_W;
         break;
     }
     default:
