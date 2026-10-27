@@ -43,6 +43,12 @@ int  machine_set_index(void);           // the disk now in DF0
 const char *machine_set_disk(int i);    // its card path
 bool machine_set_select(int i);         // swap disk i into DF0
 
+// Connect the drives Config::drives asks for (0 = Auto: one per disk of a set,
+// up to 4; one otherwise) and put the set's disks 2.. into DF1.. . True when
+// the count changed: Kickstart only looks for drives at reset.
+bool machine_apply_drives(void);
+int  machine_drives(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -14,7 +14,8 @@
 // the window to capture it (relative mode), middle button releases it.
 // Headless checks: PICO_AMIGA_SHOT=file.bmp:N[,file2.bmp:M...] saves the picture at
 // output frame N; PICO_AMIGA_KEYS=N:Key[,M:Key...] presses a key (an SDL scancode
-// name: F1, Down, Return, Escape...) at output frame N for 4 frames.
+// name: F1, Down, Return, Escape..., or MouseL / MouseR) at output frame N for 4
+// frames.
 #include <SDL.h>
 #include <cstdio>
 #include <cstdlib>
@@ -100,7 +101,10 @@ int main(int argc, char **argv) {
     split(getenv("PICO_AMIGA_KEYS"), [&](const std::string &a, const std::string &b) {
         const size_t c = a.find(':');
         (void)c;
-        const SDL_Scancode sc = SDL_GetScancodeFromName(b.c_str());
+        // MouseL / MouseR: the mouse buttons (games that wait for a click).
+        const SDL_Scancode sc = b == "MouseL" ? (SDL_Scancode)(SDL_NUM_SCANCODES + 1)
+                              : b == "MouseR" ? (SDL_Scancode)(SDL_NUM_SCANCODES + 2)
+                              : SDL_GetScancodeFromName(b.c_str());
         if (sc == SDL_SCANCODE_UNKNOWN) fprintf(stderr, "host: unknown key '%s'\n", b.c_str());
         else keys.push_back({atol(a.c_str()), sc, 0});
     });
@@ -149,8 +153,13 @@ int main(int argc, char **argv) {
 
         const long vf = (long)video_frames();
         for (Key &k : keys) {
-            if (k.state == 0 && vf >= k.frame) { host_key(k.sc, true); k.state = 1; }
-            else if (k.state == 1 && vf >= k.frame + 4) { host_key(k.sc, false); k.state = 2; }
+            const bool down = k.state == 0 && vf >= k.frame, up = k.state == 1 && vf >= k.frame + 4;
+            if (!down && !up) continue;
+            if (k.sc > SDL_NUM_SCANCODES)
+                host_mouse(0, 0, down && k.sc == SDL_NUM_SCANCODES + 1, down && k.sc == SDL_NUM_SCANCODES + 2);
+            else
+                host_key(k.sc, down);
+            k.state = down ? 1 : 2;
         }
 
         const uint16_t *fb = host_fb;

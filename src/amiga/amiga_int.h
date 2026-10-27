@@ -167,6 +167,7 @@ uint8_t  floppy_cia_pra(void);                      // CIA-A port A bits 5..2 (a
 void     floppy_line(void);                         // per-line: DMA completion, index pulse
 void     floppy_insert(int drive, const amiga_disk_t *d);
 void     floppy_eject(int drive);
+void     floppy_set_drives(int n);
 
 // ---- CIAs (cia.c) ----------------------------------------------------------
 void     cia_reset(void);

@@ -13,6 +13,7 @@
 #include "roms.h"
 #include "machine.h"
 #include "ui.h"
+#include "UiPlatform.h"
 
 namespace nm {
 
@@ -61,6 +62,12 @@ NM_INT_ACCESS (cpumhz,    cpu_mhz,    uint16_t)
 NM_INT_ACCESS (flashfreq, max_flash_freq, uint16_t)
 NM_INT_ACCESS (psramfreq, max_psram_freq, uint16_t)
 NM_BOOL_ACCESS(dbguart,   dbg_uart)
+NM_INT_ACCESS (drives,    drives,     uint8_t)
+// Kickstart looks for drives at reset: a new count resets the Amiga.
+static bool hook_drives(int32_t, int32_t) {
+    if (machine_apply_drives()) uiAmigaReset();
+    return true;
+}
 // Volume and HDMI audio reach the outputs at once (heard while editing).
 static bool hook_sound(int32_t, int32_t) { settings_apply_sound(); return true; }
 

@@ -35,7 +35,9 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   git-ignored: the Kickstarts are Commodore's and must never be committed).
   `cmake/roms.cmake` lists them; an id there is what storage.nvs keeps, never
   reuse one. The firmware targets 16 MB flash; the core reads the ROM in place
-  (XIP). `machine.cpp` owns ROM selection and the drives (DF0 from the card).
+  (XIP). `machine.cpp` owns ROM selection and the drives: DF0..DF3 (Machine > Floppy
+  drives, Auto = one per disk of an `.m3u` set; Kickstart finds DF1+ by drive ID
+  at reset).
 - `src/pico/drivers/` are pico-speccy's drivers (USB HID/XInput, fabgl VK keyboard
   queue, PS/2, NES pad, SD); local changes are marked `PICO-AMIGA:`, and
   `drivers/input_glue.h` stands in for pico-speccy's Config/Debug/ESPectrum.
@@ -57,6 +59,9 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
 - **Musashi samples interrupts only on entry to m68k_execute()** (and on SR
   writes): `amiga_update_ipl()` calls m68k_end_timeslice() when the level rises
   inside the CPU, otherwise an interrupt would wait for the end of the slice.
+- **Musashi's trace emulation must stay on** (`M68K_EMULATE_TRACE`): trace-vector
+  decoders decrypt code one instruction at a time from the Trace exception. With it
+  off, Cannon Fodder's disk 2 code spun forever with SR.T set (black screen).
 - **Display writes render first, then apply**: `denise_write()` calls
   `render_to(hpos)` before storing. Anything that changes what is on screen
   must go through it (CPU and copper writes carry their own hpos).

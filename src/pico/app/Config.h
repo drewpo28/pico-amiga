@@ -35,6 +35,7 @@ public:
     static std::string kick;        // built-in ROM id (roms.h), or "sd" = /amiga/kick.rom
     static std::string df0;         // ADF in DF0 ("" = empty drive)
     static bool     df0_wp;         // DF0 write-protected
+    static uint8_t  drives;         // floppy drives: 0 Auto (one per disk of a set), 1..4
     static uint8_t  df0_disk;       // df0 is an .m3u disk set: the disk in the drive (0-based)
 
     static void load();

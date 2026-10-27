@@ -73,8 +73,11 @@ void amiga_reset(bool hard);             // hard: clears chip RAM as on power-on
 void amiga_set_roms(const uint8_t *rom, uint32_t rom_size, const uint8_t *ext, uint32_t ext_size);
 void amiga_run_frame(void);              // one PAL frame (312 or 313 lines)
 
-void amiga_insert_disk(int drive, const amiga_disk_t *disk);  // drive 0..3 (only DF0 wired so far)
+void amiga_insert_disk(int drive, const amiga_disk_t *disk);  // drive 0..3
 void amiga_eject_disk(int drive);
+// How many drives are connected (1..4, DF0 first; default 1). Kickstart looks for
+// them at reset, so a change wants one.
+void amiga_set_drives(int n);
 
 // Input. Keycodes are Amiga raw keycodes ($00-$67); see src/amiga/keymap.h.
 void amiga_key(uint8_t amiga_code, bool down);

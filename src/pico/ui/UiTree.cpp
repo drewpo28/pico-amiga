@@ -50,6 +50,10 @@ static const Option opt_psram_freq[] = {
     { "66 MHz", 66 }, { "84 MHz", 84 }, { "100 MHz", 100 },
     { "133 MHz", 133 }, { "166 MHz", 166 },
 };
+static const Option opt_drives[] = {
+    { "Auto (one per disk of an .m3u set)", 0, "Auto" },
+    { "1 (DF0)", 1, "1" }, { "2 (DF0, DF1)", 2, "2" }, { "3", 3 }, { "4", 4 },
+};
 static const Option opt_theme[] = {
     { "Slate", 0 }, { "ZX Spectrum", 1 },
 };
@@ -86,6 +90,16 @@ static const char* df0Label() {
     const char* p = machine_disk(0);
     return *p ? baseName(p) : "empty";
 }
+
+// Disks > DF1..DF3: what the other connected drives hold (a set's disks 2..).
+static const char* dfLabel(int d) { const char* p = machine_disk(d); return *p ? baseName(p) : "empty"; }
+static const char* df1Label() { return dfLabel(1); }
+static const char* df2Label() { return dfLabel(2); }
+static const char* df3Label() { return dfLabel(3); }
+static bool p_df1() { return machine_drives() > 1; }
+static bool p_df2() { return machine_drives() > 2; }
+static bool p_df3() { return machine_drives() > 3; }
+static void act_none() {}
 
 // Disks > Swap disk: "2 of 3" while an .m3u disk set is loaded.
 static bool p_diskSet() { return machine_set_count() > 1; }
@@ -152,6 +166,8 @@ static bool df0PickAndInsert() {
     }
     Config::df0 = path;
     Config::df0_disk = 0;
+    // A set in Auto spreads over DF0..DF3; more drives need a reset to be seen.
+    if (machine_apply_drives()) uiAmigaReset();
     Config::save();
     return true;
 }
@@ -176,6 +192,7 @@ void runDiskInsert(int drive) {
 
 static void act_df0_eject() {
     machine_eject(0);
+    machine_apply_drives();
     Config::df0.clear();
     Config::save();
 }
@@ -226,12 +243,16 @@ static void page_about() {
 
 static const Node kMachine[] = {
     NM_RADIO_D("Kickstart", SET_KICK, kickOpts, nullptr),
+    NM_RADIO  ("Floppy drives", SET_DRIVES, opt_drives, nullptr),
     NM_ACTION ("Reset the Amiga", act_amiga_reset, nullptr),
 };
 
 static const Node kDisks[] = {
     NM_ACTIONV("DF0", act_df0_insert, df0Label, nullptr),
     NM_ACTIONV("Swap disk", act_df0_swap, setLabel, p_diskSet),
+    NM_ACTIONV("DF1", act_none, df1Label, p_df1),
+    NM_ACTIONV("DF2", act_none, df2Label, p_df2),
+    NM_ACTIONV("DF3", act_none, df3Label, p_df3),
     NM_ACTION ("Eject DF0", act_df0_eject, nullptr),
     NM_BOOL   ("DF0 write protect", SET_DF0_WP, nullptr),
 };

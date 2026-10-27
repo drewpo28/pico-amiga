@@ -110,7 +110,7 @@ bool machine_insert(int drive, const char *path, bool write_protect) {
 
 
 static bool insert_adf(int drive, const char *path, bool write_protect) {
-    if (drive != 0 || !path || !*path) return false;      // the core wires DF0 only
+    if (drive < 0 || drive > 3 || !path || !*path) return false;
     eject_adf(drive);
     Drive &d = s_drv[drive];
     bool rw = !write_protect && f_open(&d.f, path, FA_READ | FA_WRITE) == FR_OK;
@@ -179,9 +179,37 @@ const char *machine_set_disk(int i) { return (i >= 0 && i < s_set_count) ? s_set
 
 bool machine_set_select(int i) {
     if (i < 0 || i >= s_set_count) return false;
+    // A disk that sits in another drive changes places with DF0's.
+    const std::string old = s_drv[0].path;
+    int other = 0;
+    for (int d = 1; d < 4; d++)
+        if (s_drv[d].open && s_drv[d].path == s_set[i]) other = d;
+    if (other) eject_adf(other);
     if (!insert_adf(0, s_set[i].c_str(), Config::df0_wp)) return false;
+    if (other && !old.empty()) insert_adf(other, old.c_str(), Config::df0_wp);
     s_set_index = i;
     return true;
+}
+
+// ---- drives ------------------------------------------------------------------------
+static int s_drives = 1;
+
+int machine_drives(void) { return s_drives; }
+
+bool machine_apply_drives(void) {
+    int n = Config::drives;
+    if (!n) n = s_set_count > 1 ? (s_set_count < 4 ? s_set_count : 4) : 1;   // Auto
+    const bool changed = n != s_drives;
+    s_drives = n;
+    amiga_set_drives(n);
+    // DF1.. hold the set's disks 2.. (PUAE's multi-drive), DF0 the chosen one.
+    for (int d = 1; d < 4; d++) {
+        const bool want = d < n && d < s_set_count && s_set[d] != s_drv[0].path;
+        if (want && s_drv[d].open && s_drv[d].path == s_set[d]) continue;
+        eject_adf(d);
+        if (want) insert_adf(d, s_set[d].c_str(), Config::df0_wp);
+    }
+    return changed;
 }
 
 void machine_restore_disks(void) {
@@ -190,6 +218,7 @@ void machine_restore_disks(void) {
             ? machine_load_set(Config::df0.c_str(), Config::df0_disk)
             : machine_insert(0, Config::df0.c_str(), Config::df0_wp);
         if (!ok) Config::df0.clear();
+        machine_apply_drives();
         return;
     }
     // The card layout before the menu existed: /amiga/df0.adf goes in by itself.

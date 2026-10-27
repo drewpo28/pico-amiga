@@ -11,6 +11,10 @@
 //
 // The data moves at DMA start; DSKBLK is raised after the transfer time scaled
 // by FLOPPY_TURBO (1 = real speed, 32 us per word).
+//
+// DF0..DF(n-1) are connected (floppy_set_drives). Kickstart finds the external
+// ones by their ID, shifted out on /RDY while the motor is off: a 3.5" DD drive
+// answers all ones (/RDY low), an empty port all zeros (every line high).
 #include <string.h>
 #include "amiga_int.h"
 
@@ -33,6 +37,7 @@ typedef struct {
 } drive_t;
 
 static drive_t  drv[NDRIVES];
+static int      ndrives = 1;             // connected drives, DF0 first
 static uint8_t  prb_last = 0xFF;
 static int      side;                    // 0 = lower head
 static int      sel = -1;                // lowest selected drive or -1
@@ -236,11 +241,15 @@ void floppy_cia_prb(uint8_t prb) {
     prb_last = prb;
 }
 
+void floppy_set_drives(int n) {
+    ndrives = n < 1 ? 1 : n > NDRIVES ? NDRIVES : n;
+}
+
 uint8_t floppy_cia_pra(void) {
     uint8_t v = 0x3C;                          // /RDY /TK0 /WPRO /CHNG all high
-    if (sel != 0) return v;                    // only DF0 is wired for now
-    const drive_t *dv = &drv[0];
-    if (dv->motor && dv->inserted) v &= ~0x20;
+    if (sel < 0 || sel >= ndrives) return v;   // nothing on that select line
+    const drive_t *dv = &drv[sel];
+    if (!dv->motor || dv->inserted) v &= ~0x20;   // motor off: the ID bit (1); on: ready
     if (dv->cyl == 0)              v &= ~0x10;
     if (dv->inserted && !dv->disk.write) v &= ~0x08;
     if (dv->changed)               v &= ~0x04;
