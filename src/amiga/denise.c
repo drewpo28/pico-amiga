@@ -264,11 +264,13 @@ AMIGA_HOT static void render_to(int h) {
     if (h > AMIGA_CC_PER_LINE) h = AMIGA_CC_PER_LINE;
     if (h <= r_h) return;
     const int prof = prof_switch(AMIGA_PROF_RENDER);
-    if (bpl_dma) {
+    if (bpl_dma && fetch_k < nunits && ds + fetch_k * unit_cc < h) {
+        prof_switch(AMIGA_PROF_BPL);
         while (fetch_k < nunits && ds + fetch_k * unit_cc < h) {
             fetch_unit(fetch_k);
             fetch_k++;
         }
+        prof_switch(AMIGA_PROF_RENDER);
     }
     output(2 * r_h, 2 * h);
     r_h = h;

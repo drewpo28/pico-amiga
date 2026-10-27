@@ -41,12 +41,12 @@ void perf_log_frame(uint32_t emu_us) {
     const uint32_t emu_avg = emu_sum / frames, emu10 = emu_avg / 100;
     const uint32_t fps10 = (uint32_t)((uint64_t)frames * 10000000u / (now - t0));
 #define MS(i) (unsigned)(ms10[i] / 10), (unsigned)(ms10[i] % 10)
-    printf("PERF fps %u.%u emu %u.%u ms (%u%%, %u slow) | cpu %u.%u ren %u.%u cop %u.%u blt %u.%u"
+    printf("PERF fps %u.%u emu %u.%u ms (%u%%, %u slow) | cpu %u.%u ren %u.%u+bpl %u.%u cop %u.%u blt %u.%u"
            " aud %u.%u line %u.%u dsk %u.%u oth %u.%u (irq %u.%u) | cpu %u flash %u psram %u MHz\n",
            (unsigned)(fps10 / 10), (unsigned)(fps10 % 10),
            (unsigned)(emu10 / 10), (unsigned)(emu10 % 10),
            (unsigned)(emu_avg ? 2000000u / emu_avg : 0), (unsigned)slow,     // 20 ms = 100%
-           MS(AMIGA_PROF_CPU), MS(AMIGA_PROF_RENDER), MS(AMIGA_PROF_COPPER), MS(AMIGA_PROF_BLIT),
+           MS(AMIGA_PROF_CPU), MS(AMIGA_PROF_RENDER), MS(AMIGA_PROF_BPL), MS(AMIGA_PROF_COPPER), MS(AMIGA_PROF_BLIT),
            MS(AMIGA_PROF_PAULA), MS(AMIGA_PROF_LINE), MS(AMIGA_PROF_DISK), MS(AMIGA_PROF_OTHER),
            (unsigned)(irq10 / 10), (unsigned)(irq10 % 10),
            (unsigned)settings_cpu_mhz(), sck((unsigned)settings_cpu_mhz(), (unsigned)settings_flash_mhz()),
