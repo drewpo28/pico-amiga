@@ -49,7 +49,8 @@ enum SettingFlags : uint16_t {
     X(SET_AUDIO_OUT,   AC_REBOOT, 0,                           get_audioout,  put_audioout,  nullptr) \
     X(SET_CPU_MHZ,     AC_REBOOT, 0,                           get_cpumhz,    put_cpumhz,    nullptr) \
     X(SET_FLASH_FREQ,  AC_REBOOT, 0,                           get_flashfreq, put_flashfreq, nullptr) \
-    X(SET_PSRAM_FREQ,  AC_REBOOT, 0,                           get_psramfreq, put_psramfreq, nullptr)
+    X(SET_PSRAM_FREQ,  AC_REBOOT, 0,                           get_psramfreq, put_psramfreq, nullptr) \
+    X(SET_DBG_UART,    AC_REBOOT, 0,                           get_dbguart,   put_dbguart,   nullptr)
 
 #define NM_X_ENUM(id, cls, flags, g, p, h) id,
 enum SettingId : uint16_t {

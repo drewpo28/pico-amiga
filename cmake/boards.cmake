@@ -88,6 +88,7 @@ if(CARRIER STREQUAL "MURM2")
     set(BOARD_DEFS
         MURM2=1
         KBD_CLOCK_PIN=2 KBD_DATA_PIN=3
+        DBG_UART_TX_PIN=0                     # Debug > UART log: UART0, a free pin
         I2S_DATA_PIO=9 I2S_BCK_PIO=10 I2S_LCK_PIO=11
         PWM_PIN0=10 PWM_PIN1=11
         SDCARD_PIN_SPI0_CS=5 SDCARD_PIN_SPI0_SCK=6 SDCARD_PIN_SPI0_MOSI=7 SDCARD_PIN_SPI0_MISO=4
@@ -98,6 +99,9 @@ elseif(CARRIER STREQUAL "PICO_PC")
     set(BOARD_DEFS
         PICO_PC=1
         KBD_CLOCK_PIN=0 KBD_DATA_PIN=1
+        # UART log on the DBG1 header (UART0); GP0 is the PS/2 clock, so the
+        # keyboard moves to the free pair GP10/11 while the log is on.
+        DBG_UART_TX_PIN=0 DBG_UART_KBD_CLOCK_PIN=10
         # No I2S on this board (all three pins equal = "unsupported").
         I2S_DATA_PIO=${W_HDR26} I2S_BCK_PIO=${W_HDR26} I2S_LCK_PIO=${W_HDR26}
         PWM_PIN0=${W_HDR27} PWM_PIN1=${W_HDR28}
@@ -111,6 +115,7 @@ elseif(CARRIER STREQUAL "PICO_DV")
     set(BOARD_DEFS
         PICO_DV=1
         KBD_CLOCK_PIN=14 KBD_DATA_PIN=15
+        DBG_UART_TX_PIN=20                    # UART log: UART1 (UXT1-3)
         I2S_DATA_PIO=${W_HDR26} I2S_BCK_PIO=${W_HDR27} I2S_LCK_PIO=${W_HDR28}
         PWM_PIN0=${W_HDR26} PWM_PIN1=${W_HDR27}
         SDCARD_SPI_BUS=spi1 SDCARD_PIO=pio1 SDCARD_PIO_SM=0
@@ -122,6 +127,7 @@ elseif(CARRIER STREQUAL "ZERO2")
     set(VIDEO PIO)
     set(BOARD_DEFS
         ZERO2=1
+        DBG_UART_TX_PIN=20                    # UART log: UART1
         # PS/2 moves to the ALT pair when the PCM5122 board (I2C on 2/3) is fitted.
         KBD_CLOCK_PIN=2 KBD_DATA_PIN=3 KBD_ALT_CLOCK_PIN=14 KBD_ALT_DATA_PIN=15
         PCM5122_I2S_DATA=21 PCM5122_I2S_BCK=18 PCM5122_I2S_LCK=19
@@ -138,6 +144,9 @@ else()  # MURM
     set(BOARD_DEFS
         MURM=1
         KBD_CLOCK_PIN=0 KBD_DATA_PIN=1
+        # UART log on the J6 header (UART0); GP0 is the PS/2 clock, so the
+        # keyboard moves to GP16/17, which is the NES pad's data: the pad is off.
+        DBG_UART_TX_PIN=0 DBG_UART_KBD_CLOCK_PIN=16 DBG_UART_NES_OFF
         I2S_DATA_PIO=${W_HDR26} I2S_BCK_PIO=${W_HDR27} I2S_LCK_PIO=${W_HDR28}
         PWM_PIN0=${W_HDR26} PWM_PIN1=${W_HDR27}
         SDCARD_PIN_SPI0_CS=5 SDCARD_PIN_SPI0_SCK=2 SDCARD_PIN_SPI0_MOSI=3 SDCARD_PIN_SPI0_MISO=4

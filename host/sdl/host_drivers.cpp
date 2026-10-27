@@ -18,6 +18,12 @@ extern "C" {
 }
 #include "input_devices.h"
 
+// dbg_uart.h: the "UART" is stdout.
+static bool dbg_on;
+extern "C" bool dbg_uart_start(bool want) { dbg_on = want; return want; }
+extern "C" bool dbg_uart_active(void) { return dbg_on; }
+extern "C" void dbg_uart_pump(void) { fflush(stdout); }
+
 // board.h: the profiler's clock (nanoseconds on a PC).
 extern "C" uint32_t board_cycles(void) {
     return (uint32_t)std::chrono::duration_cast<std::chrono::nanoseconds>(

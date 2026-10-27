@@ -6,6 +6,7 @@
 #include "hardware/clocks.h"
 #include "tusb.h"
 #include "audio_out.h"
+#include "dbg_uart.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-compare"      // pico-speccy's headers
 #include "drivers/ps2kbd/ps2kbd_mrmltr.h"
@@ -97,7 +98,12 @@ void repeat_me_for_input() {
 void input_devices_init(void) {
     const tusb_rhport_init_t host = { TUSB_ROLE_HOST, TUSB_SPEED_AUTO };
     tusb_rhport_init(BOARD_TUH_RHPORT, &host);
-#ifdef KBD_ALT_CLOCK_PIN
+#if defined(DBG_UART_KBD_CLOCK_PIN)
+    // The UART log's TX is the PS/2 clock pin: the keyboard moves to the free
+    // pair (pico-speccy's), and the NES pad yields if that pair is its own.
+    const bool kbd_moved = dbg_uart_active();
+    ps2kbd.init_gpio(kbd_moved ? DBG_UART_KBD_CLOCK_PIN : KBD_CLOCK_PIN);
+#elif defined(KBD_ALT_CLOCK_PIN)
     // ZERO2: the PCM5122 board's control I2C sits on the PS/2 pins; with the
     // board fitted the keyboard is wired to the alternate pair.
     ps2kbd.init_gpio(audio_out_pcm5122_present() ? KBD_ALT_CLOCK_PIN : KBD_CLOCK_PIN);
@@ -105,6 +111,9 @@ void input_devices_init(void) {
     ps2kbd.init_gpio();
 #endif
 #ifdef USE_NESPAD
+#if defined(DBG_UART_KBD_CLOCK_PIN) && defined(DBG_UART_NES_OFF)
+    if (!kbd_moved)
+#endif
     nespad_active = nespad_begin(clock_get_hz(clk_sys) / 1000, NES_GPIO_CLK, NES_GPIO_DATA, NES_GPIO_LAT);
 #endif
 }

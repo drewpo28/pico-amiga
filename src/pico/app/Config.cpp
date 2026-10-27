@@ -23,6 +23,10 @@ bool     Config::ui_vga_solid = true;
 #endif
 uint16_t Config::cpu_mhz      = CPU_MHZ;
 uint16_t Config::max_flash_freq = 66;
+#ifndef DBG_UART_DEFAULT
+#define DBG_UART_DEFAULT 0
+#endif
+bool     Config::dbg_uart     = DBG_UART_DEFAULT;
 uint16_t Config::max_psram_freq = 166;
 uint8_t  Config::audio_out    = 0;
 uint8_t  Config::volume       = 16;
@@ -104,6 +108,7 @@ void Config::load() {
     nvs_get_u16("max_flash_freq", max_flash_freq, sts);
     nvs_get_u16("max_psram_freq", max_psram_freq, sts);
     nvs_get_u8 ("audio_out",     audio_out,    sts);
+    nvs_get_b  ("dbg_uart",      dbg_uart,     sts);
     nvs_get_u8 ("volume",        volume,       sts);
     nvs_get_b  ("hdmi_audio",    hdmi_audio,   sts);
     if (cpu_mhz != 252 && cpu_mhz != 378 && cpu_mhz != 504) cpu_mhz = CPU_MHZ;
@@ -179,6 +184,7 @@ bool Config::save() {
     nvs_set_i(buf, "max_flash_freq", max_flash_freq);
     nvs_set_i(buf, "max_psram_freq", max_psram_freq);
     nvs_set_i(buf, "audio_out",     audio_out);
+    nvs_set_b(buf, "dbg_uart",      dbg_uart);
     nvs_set_i(buf, "volume",        volume);
     nvs_set_b(buf, "hdmi_audio",    hdmi_audio);
     nvs_set_str(buf, "kick",        kick.c_str());

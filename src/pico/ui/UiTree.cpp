@@ -211,6 +211,21 @@ static const Node kInput[] = {
 };
 
 
+// The row exists only where the board has a log pin (cmake/boards.cmake).
+static bool p_dbgUartPin() {
+#ifdef DBG_UART_TX_PIN
+    return true;
+#else
+    return false;
+#endif
+}
+
+static const Node kDebug[] = {
+    // TX-only 115200 log on the board's DBG_UART_TX_PIN: boot messages and a
+    // PERF line a second. Reboot-class (the keyboard may move off the pin).
+    NM_BOOL("UART log", SET_DBG_UART, p_dbgUartPin),
+};
+
 static const Node kHelp[] = {
     NM_PAGE("Hotkeys", page_hotkeys, nullptr),
     NM_PAGE("About",   page_about,   nullptr),
@@ -228,6 +243,7 @@ static const Node kRoot[] = {
     NM_SUB("Audio",     kAudio,     nullptr),
     NM_SUB("Video",     kVideo,     nullptr),
     NM_SUB("Options",   kOptions,   nullptr),
+    NM_SUB("Debug",     kDebug,     nullptr),
     NM_SUB("Help",      kHelp,      nullptr),
     NM_SUB("Reset",     kReset,     nullptr),
 };

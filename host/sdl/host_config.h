@@ -7,3 +7,4 @@
 #define CPU_MHZ 252
 #define BUTTER_PSRAM_GPIO 47
 #define PICO_DEFAULT_LED_PIN 25
+#define DBG_UART_TX_PIN 0          // Debug > UART log: the log is stdout (host_drivers.cpp)

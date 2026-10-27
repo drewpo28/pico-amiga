@@ -45,6 +45,8 @@ add_executable(pico-amiga
     src/pico/main.c
     src/pico/audio_out.c
     src/pico/board.c
+    src/pico/dbg_uart.c
+    src/pico/perf_log.c
     src/pico/video.c
     src/pico/video_vga.c
     src/pico/hdmi_audio.c
@@ -98,6 +100,11 @@ target_include_directories(pico-amiga PRIVATE src/pico src/pico/ui src/pico/driv
     src/pico/drivers/usbhost src/pico/drivers/input external)
 target_compile_definitions(pico-amiga PRIVATE ${BOARD_DEFS}
     CPU_MHZ=${CPU_MHZ} PORT_VERSION="${PORT_VERSION}" CONFIG_BOARD_TAG="${BOARD_TAG}")
+# A test build that logs from the first boot (Debug > UART log defaults to on).
+option(DBG_UART_DEFAULT_ON "Debug > UART log on by default" OFF)
+if(DBG_UART_DEFAULT_ON)
+    target_compile_definitions(pico-amiga PRIVATE DBG_UART_DEFAULT=1)
+endif()
 target_compile_definitions(sdcard INTERFACE ${BOARD_DEFS})
 target_compile_options(pico-amiga PRIVATE -Wall -Wextra -Wno-unused-parameter)
 # Third-party code (pico-speccy's drivers): keep its warnings out of ours.

@@ -28,6 +28,7 @@ static uint8_t  s_page;             // 0 off, 1 summary, 2 breakdown
 static char     s_l[3][24];
 static int      s_lines;
 static uint32_t s_frames, s_emu_sum, s_t0;
+static amiga_profile_t s_prof;       // the profile at the last refresh (perf_log.c keeps its own)
 
 static void drawBand() {
     gfxComputeSurface();
@@ -47,8 +48,7 @@ extern "C" void ui_stats_toggle(void) {
     s_page = (uint8_t)((s_page + 1) % 3);
     s_frames = s_emu_sum = 0;
     s_t0 = time_us_32();
-    amiga_profile_t p;
-    amiga_get_profile(&p, true);
+    amiga_get_profile(&s_prof, false);
     s_lines = s_page == 2 ? 3 : 2;
     for (int i = 0; i < 3; i++) snprintf(s_l[i], sizeof s_l[i], "  --");
 }
@@ -75,8 +75,11 @@ extern "C" void ui_stats_frame(uint32_t emu_us) {
             snprintf(s_l[1], sizeof s_l[1], "FPS %2u.%01u  %3uMHz", (unsigned)(fps10 / 10),
                      (unsigned)(fps10 % 10), (unsigned)Config::cpu_mhz);
         } else {
-            amiga_profile_t p;
-            amiga_get_profile(&p, true);
+            amiga_profile_t p, now_p;
+            amiga_get_profile(&now_p, false);
+            for (int i = 0; i < AMIGA_PROF_COUNT; i++) p.ticks[i] = now_p.ticks[i] - s_prof.ticks[i];
+            p.frames = now_p.frames - s_prof.frames;
+            s_prof = now_p;
             char a[12], b[12];
             ms(a, sizeof a, "CPU", p.ticks[AMIGA_PROF_CPU], p.frames);
             ms(b, sizeof b, " REN", p.ticks[AMIGA_PROF_RENDER], p.frames);

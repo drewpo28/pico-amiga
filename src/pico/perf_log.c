@@ -1,0 +1,53 @@
+// The "PERF" line of the debug log (dbg_uart.h), shared by the board and the PC
+// host (where printf is the terminal).
+#include <stdio.h>
+#include "dbg_uart.h"
+#include "amiga.h"
+#include "board.h"
+#include "pico/time.h"
+#include "ui/ui.h"
+
+// The QMI SCK a limit gives: clk_sys over the smallest whole divider that keeps
+// under it, never below 2 (clock.c / psram.c).
+static unsigned sck(unsigned mhz, unsigned limit) {
+    unsigned d = (mhz + limit - 1) / limit;
+    if (d < 2) d = 2;
+    return mhz / d;
+}
+
+void perf_log_frame(uint32_t emu_us) {
+    static uint32_t frames, emu_sum, t0, slow;
+    static amiga_profile_t last;
+    if (!dbg_uart_active()) return;
+    if (!t0) { t0 = time_us_32(); amiga_get_profile(&last, false); return; }
+    frames++;
+    emu_sum += emu_us;
+    if (emu_us > 20000) slow++;
+    const uint32_t now = time_us_32();
+    if (now - t0 < 1000000u) return;
+
+    amiga_profile_t p;
+    amiga_get_profile(&p, false);
+    const uint32_t nf = p.frames - last.frames ? p.frames - last.frames : 1;
+    const uint32_t cpu_us = board_cycles_per_us();
+    uint32_t ms10[AMIGA_PROF_COUNT];                 // tenths of a ms per frame
+    for (int i = 0; i < AMIGA_PROF_COUNT; i++)
+        ms10[i] = (uint32_t)((uint64_t)(p.ticks[i] - last.ticks[i]) / nf / cpu_us / 100);
+    const uint32_t emu_avg = emu_sum / frames, emu10 = emu_avg / 100;
+    const uint32_t fps10 = (uint32_t)((uint64_t)frames * 10000000u / (now - t0));
+    printf("PERF fps %u.%u emu %u.%u ms (%u%%, %u slow) | cpu %u.%u ren %u.%u cop %u.%u blt %u.%u oth %u.%u"
+           " | cpu %u flash %u psram %u MHz\n",
+           (unsigned)(fps10 / 10), (unsigned)(fps10 % 10),
+           (unsigned)(emu10 / 10), (unsigned)(emu10 % 10),
+           (unsigned)(emu_avg ? 2000000u / emu_avg : 0), (unsigned)slow,     // 20 ms = 100%
+           (unsigned)(ms10[AMIGA_PROF_CPU] / 10),    (unsigned)(ms10[AMIGA_PROF_CPU] % 10),
+           (unsigned)(ms10[AMIGA_PROF_RENDER] / 10), (unsigned)(ms10[AMIGA_PROF_RENDER] % 10),
+           (unsigned)(ms10[AMIGA_PROF_COPPER] / 10), (unsigned)(ms10[AMIGA_PROF_COPPER] % 10),
+           (unsigned)(ms10[AMIGA_PROF_BLIT] / 10),   (unsigned)(ms10[AMIGA_PROF_BLIT] % 10),
+           (unsigned)(ms10[AMIGA_PROF_OTHER] / 10),  (unsigned)(ms10[AMIGA_PROF_OTHER] % 10),
+           (unsigned)settings_cpu_mhz(), sck((unsigned)settings_cpu_mhz(), (unsigned)settings_flash_mhz()),
+           sck((unsigned)settings_cpu_mhz(), settings_psram_mhz() < 135 ? (unsigned)settings_psram_mhz() : 135u));
+    last = p;
+    frames = emu_sum = slow = 0;
+    t0 = now;
+}

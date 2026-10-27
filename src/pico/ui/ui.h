@@ -16,7 +16,8 @@ void ui_init(uint16_t *framebuffer);
 int  settings_cpu_mhz(void);
 int  settings_flash_mhz(void);          // flash / PSRAM SCK limits (Options)
 int  settings_psram_mhz(void);
-int  settings_audio_out(void);          // 0 auto, 1 PWM, 2 I2S
+int  settings_audio_out(void);
+bool settings_dbg_uart(void);          // 0 auto, 1 PWM, 2 I2S
 // Push the live sound settings (volume, HDMI audio) to the outputs.
 void settings_apply_sound(void);
 

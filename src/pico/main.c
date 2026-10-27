@@ -34,6 +34,7 @@
 #include "ui/ui.h"
 #include "machine.h"
 #include "board.h"
+#include "dbg_uart.h"
 
 #ifndef CPU_MHZ
 #define CPU_MHZ 378
@@ -100,8 +101,11 @@ int main(void) {
     // The card first, at the boot clock: storage.nvs says which clock to run at.
     const bool card = f_mount(&fs, "", 1) == FR_OK;
     if (card) ui_load_settings();
-    clock_overclock(settings_cpu_mhz(), settings_flash_mhz());
+    const int mhz = clock_overclock(settings_cpu_mhz(), settings_flash_mhz());
     if (card) sdcard_reclock();
+    if (dbg_uart_start(settings_dbg_uart()))
+        printf("\npico-amiga " PORT_VERSION ": %d MHz, flash <= %d MHz, card %s\n",
+               mhz, settings_flash_mhz(), card ? "ok" : "none");
     // PSRAM first: its bring-up runs QMI direct mode, during which nothing on
     // either core may fetch from flash (core 1 is not started yet, USB is off).
     // RP2350A carriers wire CS1 to BUTTER_PSRAM_GPIO, RP2350B modules to 47.
@@ -113,6 +117,9 @@ int main(void) {
     multicore_launch_core1(core1_main);
     audio_out_pcm5122_present();     // probe before the PS/2 keyboard takes GP2/3 (ZERO2)
     input_init();
+    printf("psram %u KB (SCK <= %d MHz), video %s\n", (unsigned)(psram / KB), settings_psram_mhz(),
+           video_is_vga() ? "VGA" : "HDMI");
+    dbg_uart_pump();
     if (psram < 2 * MB) fail(0xF00);
     uint8_t *ps = (uint8_t *)PSRAM_BASE;
 
@@ -136,6 +143,7 @@ int main(void) {
 
     audio_out_start(audio_ring, AUDIO_FRAMES, settings_audio_out());
     settings_apply_sound();
+    printf("kickstart %s, audio %s\n", machine_rom_name(), audio_out_name());
 
     uint32_t vf = video_frames();
     for (uint32_t frame = 0;; frame++) {
@@ -144,11 +152,14 @@ int main(void) {
         if (input_reset_requested()) amiga_reset(false);
         const uint32_t t_emu = time_us_32();
         amiga_run_frame();
-        ui_stats_frame(time_us_32() - t_emu);
+        const uint32_t emu_us = time_us_32() - t_emu;
+        ui_stats_frame(emu_us);
+        perf_log_frame(emu_us);
         // LED: slow blink = no keyboard, fast blink = keyboard mounted, steady = key held.
         led(input_key_held() || (frame & (input_keyboard_mounted() ? 8 : 32)) != 0);
         // Pace to the HDMI frame (50.06 Hz); a slow frame simply runs late.
-        while (video_frames() == vf) { input_poll(); }
+        while (video_frames() == vf) { input_poll(); dbg_uart_pump(); }
+        dbg_uart_pump();
         vf = video_frames();
     }
 }

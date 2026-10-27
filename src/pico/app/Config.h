@@ -26,6 +26,7 @@ public:
     static uint16_t max_flash_freq; // flash SCK limit, MHz (default 66)
     static uint16_t max_psram_freq; // PSRAM SCK limit, MHz (default 166; 135 is the cap)
     static uint8_t  audio_out;      // 0 auto, 1 PWM, 2 I2S (audio_out.c)
+    static bool     dbg_uart;       // Debug > UART log (dbg_uart.c)
     // Sound
     static uint8_t  volume;         // 0..16 (16 = full scale)
     static bool     hdmi_audio;     // send audio in the HDMI data islands

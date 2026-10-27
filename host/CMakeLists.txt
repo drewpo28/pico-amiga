@@ -40,6 +40,7 @@ if(SDL2_FOUND)
         ${ROOT}/src/pico/input.cpp
         ${ROOT}/src/pico/machine.cpp
         ${ROOT}/src/pico/roms.c
+        ${ROOT}/src/pico/perf_log.c
         ${ROOT}/src/pico/drivers/input/keyboard.cpp
         ${ROOT}/src/pico/drivers/input/codepages.cpp
         ${ROOT}/src/pico/app/Config.cpp
