@@ -5,3 +5,4 @@ build-*/
 *.png
 *.wav
 roms/
+debug/

@@ -1,0 +1,148 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Compile Project",
+            "type": "process",
+            "isBuildCommand": true,
+            "command": "${userHome}/.pico-sdk/ninja/v1.13.2/ninja",
+            "args": ["-C", "${workspaceFolder}/build"],
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "problemMatcher": "$gcc",
+            "windows": {
+                "command": "${env:USERPROFILE}/.pico-sdk/ninja/v1.13.2/ninja.exe"
+            }
+        },
+        {
+            "label": "Configure and Build",
+            "type": "shell",
+            "command": "BOARD=\"${input:boardConfig}\"; if [ \"$BOARD\" = \"HOST\" ]; then ${userHome}/.pico-sdk/cmake/v4.3.4/bin/cmake -S ${workspaceFolder}/host -B ${workspaceFolder}/build-host -G Ninja -DCMAKE_MAKE_PROGRAM=${userHome}/.pico-sdk/ninja/v1.13.2/ninja && ${userHome}/.pico-sdk/ninja/v1.13.2/ninja -C ${workspaceFolder}/build-host; else rm -f ${workspaceFolder}/build/CMakeCache.txt && ${userHome}/.pico-sdk/cmake/v4.3.4/bin/cmake -G Ninja -B ${workspaceFolder}/build -S ${workspaceFolder} -DCMAKE_BUILD_TYPE=Release -DBOARD=$BOARD && ${userHome}/.pico-sdk/ninja/v1.13.2/ninja -C ${workspaceFolder}/build; fi",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "Build Host",
+            "type": "shell",
+            "command": "${userHome}/.pico-sdk/cmake/v4.3.4/bin/cmake -S ${workspaceFolder}/host -B ${workspaceFolder}/build-host -G Ninja -DCMAKE_MAKE_PROGRAM=${userHome}/.pico-sdk/ninja/v1.13.2/ninja && ${userHome}/.pico-sdk/ninja/v1.13.2/ninja -C ${workspaceFolder}/build-host",
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "problemMatcher": "$gcc"
+        },
+        {
+            "label": "Host: Smoke Tests",
+            "type": "shell",
+            "command": "host/tests/smoke.sh roms",
+            "options": { "cwd": "${workspaceFolder}" },
+            "dependsOn": "Build Host",
+            "group": "test",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Project",
+            "type": "shell",
+            "command": "ELF=$(ls -t ${workspaceFolder}/build/*.elf 2>/dev/null | head -1) && [ -n \"$ELF\" ] && ${userHome}/.pico-sdk/picotool/2.3.1/picotool/picotool load \"$ELF\" -fx || echo 'No .elf in build/'",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Flash",
+            "type": "shell",
+            "command": "ELF=$(ls -t ${workspaceFolder}/build/*.elf 2>/dev/null | head -1) && [ -n \"$ELF\" ] && ${userHome}/.pico-sdk/openocd/0.12.0+dev/openocd -s ${userHome}/.pico-sdk/openocd/0.12.0+dev/scripts -f interface/cmsis-dap.cfg -f target/rp2350.cfg -c \"adapter speed 5000; program \\\"$ELF\\\" verify reset exit\" || echo 'No .elf in build/'",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Copy to RP2350",
+            "type": "shell",
+            "command": "UF2=$(ls -t ${workspaceFolder}/build/*.uf2 2>/dev/null | head -1) && [ -n \"$UF2\" ] && cp \"$UF2\" /media/drew/RP2350/ && echo \"Copied $(basename $UF2) to RP2350\" || echo 'No .uf2 files found'",
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Rescue Reset",
+            "type": "process",
+            "command": "${userHome}/.pico-sdk/openocd/0.12.0+dev/openocd",
+            "args": [
+                "-s",
+                "${userHome}/.pico-sdk/openocd/0.12.0+dev/scripts",
+                "-f",
+                "interface/cmsis-dap.cfg",
+                "-f",
+                "target/rp2350-rescue.cfg",
+                "-c",
+                "adapter speed 5000; reset halt; exit"
+            ],
+            "problemMatcher": [],
+            "windows": {
+                "command": "${env:USERPROFILE}/.pico-sdk/openocd/0.12.0+dev/openocd.exe"
+            }
+        },
+        {
+            "label": "RISC-V Reset (RP2350)",
+            "type": "process",
+            "command": "${userHome}/.pico-sdk/openocd/0.12.0+dev/openocd",
+            "args": [
+                "-s",
+                "${userHome}/.pico-sdk/openocd/0.12.0+dev/scripts",
+                "-c",
+                "set USE_CORE { rv0 rv1 cm0 cm1 }",
+                "-f",
+                "interface/cmsis-dap.cfg",
+                "-f",
+                "target/rp2350.cfg",
+                "-c",
+                "adapter speed 5000; init;",
+                "-c",
+                "write_memory 0x40120158 8 { 0x3 }; echo [format \"Info : ARCHSEL 0x%02x\" [read_memory 0x40120158 8 1]];",
+                "-c",
+                "reset halt; targets rp2350.rv0; echo [format \"Info : ARCHSEL_STATUS 0x%02x\" [read_memory 0x4012015C 8 1]]; exit"
+            ],
+            "problemMatcher": [],
+            "windows": {
+                "command": "${env:USERPROFILE}/.pico-sdk/openocd/0.12.0+dev/openocd.exe"
+            }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "boardConfig",
+            "description": "Select target board configuration",
+            "type": "pickString",
+            "options": [
+                "PICO_DV",
+                "MURM2",
+                "PICO_PC",
+                "HOST"
+            ],
+            "default": "PICO_DV"
+        }
+    ]
+}
