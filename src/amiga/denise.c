@@ -56,15 +56,6 @@ static amiga_row_t  scratch_row;
 static int          ov_y0, ov_y1;       // amiga_set_overlay_rows
 
 void amiga_set_overlay_rows(int y0, int y1) { ov_y0 = y0; ov_y1 = y1; }
-
-// Bitplane prefetch (amiga_config_t.bpl_prefetch): this line's plane words,
-// copied from chip RAM in the background at line start.
-#define PREF_BYTES 112                  // >= 25 hires units * 4 + 2 (alignment)
-static uint8_t  pref_buf[6 * PREF_BYTES + 4] __attribute__((aligned(4)));
-static uint32_t pref_base[6];           // chip offset of pref_buf's plane p
-static int      pref_np;                // planes prefetched (0 = none)
-static bool     pref_ready;
-static bool     pref_off;               // a prefetch never arrived: not asked again
 static uint16_t ham_col;
 static bool     ham_in;
 
@@ -137,33 +128,21 @@ AMIGA_HOT static void fetch_unit(int k) {
     int d1 = 2 * (bplcon1 & 15), d2 = 2 * ((bplcon1 >> 4) & 15);
     // The chip RAM reads first, as a bucket of their own (PSRAM latency).  A
     // hires plane's two words are one 32-bit read when they share a word.
-    // Words the line-start prefetch brought in come from its buffer.
     uint16_t wd[6][2];
     const int prof = prof_switch(AMIGA_PROF_BPLRD);
+    const uint8_t *cr = A.cfg.chip_ram;
     const uint32_t cm = A.chip_mask & ~1u;
-    if (pref_np && !pref_ready) {
-        volatile uint32_t *done = (volatile uint32_t *)(void *)(pref_buf + pref_np * PREF_BYTES);
-        for (uint32_t spin = 0; !*done; spin++)
-            if (spin > 1000000u) { pref_np = 0; pref_off = true; break; }   // never came
-        pref_ready = true;
-    }
     for (int p = 0; p < np; p++) {
         const uint32_t a = bplpt[p] & cm;
-        const uint8_t *cr = A.cfg.chip_ram;
-        uint32_t off = a;
-        if (p < pref_np && a - pref_base[p] + (hires ? 4u : 2u) <= PREF_BYTES) {
-            cr = pref_buf + p * PREF_BYTES;
-            off = a - pref_base[p];
-        }
-        if (hires && !(off & 2)) {
+        if (hires && !(a & 2)) {
             uint32_t v;
-            memcpy(&v, cr + off, 4);
+            memcpy(&v, cr + a, 4);
             v = __builtin_bswap32(v);
             wd[p][0] = (uint16_t)(v >> 16);
             wd[p][1] = (uint16_t)v;
         } else {
-            wd[p][0] = U16BE(cr + off);
-            if (hires) wd[p][1] = cr == A.cfg.chip_ram ? U16BE(cr + ((bplpt[p] + 2) & cm)) : U16BE(cr + off + 2);
+            wd[p][0] = U16BE(cr + a);
+            if (hires) wd[p][1] = U16BE(cr + ((bplpt[p] + 2) & cm));
         }
         bplpt[p] += hires ? 4 : 2;
     }
@@ -590,24 +569,6 @@ AMIGA_HOT void denise_line_start(void) {
     r_h = 0;
     clear_bytes(pf, (int)sizeof pf);
     ham_in = false;
-    // Ask for this line's plane words; the CPU runs the line meanwhile.
-    pref_np = 0;
-    if (bpl_dma && nunits > 0 && A.cfg.bpl_prefetch && !pref_off) {
-        const int np = planes();
-        const uint32_t cm = A.chip_mask & ~1u;
-        bool ok = np > 0;
-        for (int p = 0; p < np; p++) {
-            pref_base[p] = bplpt[p] & cm & ~3u;
-            if (pref_base[p] + PREF_BYTES > A.cfg.chip_size) ok = false;   // would run past chip RAM
-        }
-        if (ok) {
-            *(volatile uint32_t *)(void *)(pref_buf + np * PREF_BYTES) = 0;
-            if (A.cfg.bpl_prefetch(A.cfg.ctx, pref_base, np, PREF_BYTES, pref_buf)) {
-                pref_np = np;
-                pref_ready = false;
-            }
-        }
-    }
     int row = (int)A.vpos - AMIGA_FB_Y0;
     fbrow = (A.cfg.framebuffer && row >= 0 && row < AMIGA_FB_H) ? A.cfg.framebuffer + row : NULL;
     fbdest = NULL;

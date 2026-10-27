@@ -87,6 +87,11 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   word format was checked bit-for-bit against pico-speccy's hdmi_pack3_pio /
   hdmi_pins_pio for the PICO_DV pin map; build-host/tmds_test decodes all 4096
   colours like a receiver. Re-run it after touching either header.
+- **No DMA reads from PSRAM while the PIO TMDS scanout runs** (PICO_DV): the DMA
+  has one read master, a PSRAM read stalls it for hundreds of ns, the video
+  channel starves and HDMI drops (tried: a per-line bitplane prefetch, hires
+  screens lost the picture). XIP streaming would not stall it but bypasses the
+  write-back XIP cache, so it reads stale chip RAM.
 - Firmware: PSRAM init runs QMI direct mode — nothing may fetch from flash on
   either core meanwhile, so it runs before core 1 starts and before USB.
 

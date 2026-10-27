@@ -62,17 +62,6 @@ extern "C" void video_start(const amiga_row_t *framebuffer) {
 extern "C" uint32_t video_frames(void) { return s_frames; }
 extern "C" uint32_t video_late_lines(void) { return 0; }
 
-// bpl_dma.h: the copy is done on the spot.
-static const uint8_t *s_chip;
-extern "C" void bpl_dma_init(const uint8_t *chip_ram) { s_chip = chip_ram; }
-extern "C" bool bpl_dma_prefetch(void *, const uint32_t *src, int n, uint32_t bytes, void *dst) {
-    uint8_t *d = (uint8_t *)dst;
-    for (int i = 0; i < n; i++) memcpy(d + i * bytes, s_chip + src[i], bytes);
-    const uint32_t one = 1;
-    memcpy(d + n * bytes, &one, 4);
-    return true;
-}
-
 // ---- audio_out.h: an SDL device pulling the Paula ring ------------------------------
 // The same reader as audio_out.c: hold on underrun, drop single frames while more
 // than three frames' worth behind, re-centre when lost.
