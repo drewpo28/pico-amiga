@@ -20,10 +20,14 @@ void video_start(const amiga_row_t *framebuffer);
 uint32_t video_frames(void);
 // Output lines sent before core 1 had encoded them (PIO HDMI; 0 elsewhere).
 uint32_t video_late_lines(void);
+// Core 1's cycles so far in the scanout's line IRQ and TMDS encoding (PIO HDMI;
+// 0 elsewhere): its share of core 1 next to the render (amiga_render_pump).
+void video_core1_cycles(uint32_t *irq, uint32_t *enc);
 
 // The back-ends.
 void hdmi_start(const amiga_row_t *framebuffer);
 uint32_t hdmi_frames(void);
 uint32_t hdmi_late_lines(void);
+void hdmi_core1_cycles(uint32_t *irq, uint32_t *enc);
 void vga_start(const amiga_row_t *framebuffer);
 uint32_t vga_frames(void);

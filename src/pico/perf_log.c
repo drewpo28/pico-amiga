@@ -20,7 +20,7 @@ static unsigned sck(unsigned mhz, unsigned limit) {
 void perf_log_frame(uint32_t emu_us) {
     static uint32_t frames, emu_sum, t0, slow;
     static amiga_profile_t last;
-    static uint32_t isr_last, late_last;
+    static uint32_t isr_last, late_last, c1irq_last, c1enc_last;
     if (!dbg_uart_active()) return;
     if (!t0) { t0 = time_us_32(); amiga_get_profile(&last, false); isr_last = audio_out_isr_cycles(); return; }
     frames++;
@@ -41,11 +41,15 @@ void perf_log_frame(uint32_t emu_us) {
     isr_last = isr;
     const uint32_t late = video_late_lines() - late_last;   // video lines, this second
     late_last += late;
+    uint32_t c1irq, c1enc;                                  // core 1's video work, per frame
+    video_core1_cycles(&c1irq, &c1enc);
+    const uint32_t irq1 = (c1irq - c1irq_last) / nf / cpu_us / 100, enc1 = (c1enc - c1enc_last) / nf / cpu_us / 100;
+    c1irq_last = c1irq; c1enc_last = c1enc;
     const uint32_t emu_avg = emu_sum / frames, emu10 = emu_avg / 100;
     const uint32_t fps10 = (uint32_t)((uint64_t)frames * 10000000u / (now - t0));
 #define MS(i) (unsigned)(ms10[i] / 10), (unsigned)(ms10[i] % 10)
     printf("PERF fps %u.%u emu %u.%u ms (%u%%, %u slow) | cpu %u.%u ren %u.%u+bpl %u.%u+rd %u.%u cop %u.%u blt %u.%u"
-           " aud %u.%u line %u.%u dsk %u.%u oth %u.%u wait %u.%u (irq %u.%u) | core1 render %u.%u"
+           " aud %u.%u line %u.%u dsk %u.%u oth %u.%u wait %u.%u (irq %u.%u) | core1 render %u.%u irq %u.%u enc %u.%u"
            " | cpu %u flash %u psram %u MHz | late %u\n",
            (unsigned)(fps10 / 10), (unsigned)(fps10 % 10),
            (unsigned)(emu10 / 10), (unsigned)(emu10 % 10),
@@ -53,6 +57,7 @@ void perf_log_frame(uint32_t emu_us) {
            MS(AMIGA_PROF_CPU), MS(AMIGA_PROF_RENDER), MS(AMIGA_PROF_BPL), MS(AMIGA_PROF_BPLRD), MS(AMIGA_PROF_COPPER), MS(AMIGA_PROF_BLIT),
            MS(AMIGA_PROF_PAULA), MS(AMIGA_PROF_LINE), MS(AMIGA_PROF_DISK), MS(AMIGA_PROF_OTHER),
            MS(AMIGA_PROF_RWAIT), (unsigned)(irq10 / 10), (unsigned)(irq10 % 10), MS(AMIGA_PROF_CORE1),
+           (unsigned)(irq1 / 10), (unsigned)(irq1 % 10), (unsigned)(enc1 / 10), (unsigned)(enc1 % 10),
            (unsigned)settings_cpu_mhz(), sck((unsigned)settings_cpu_mhz(), (unsigned)settings_flash_mhz()),
            sck((unsigned)settings_cpu_mhz(), settings_psram_mhz() < 135 ? (unsigned)settings_psram_mhz() : 135u),
            (unsigned)late);

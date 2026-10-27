@@ -45,7 +45,12 @@ extern const uint32_t hdmi_video_lead[HDMI_VLEAD_PX];
 // packet characters as TERC4 nibbles per lane ([t][lane], lane 0 carrying the
 // syncs; same order and side effects as hdmi_audio_island), the 10 characters
 // before them (preamble, guard band) and the 2 after (guard band), and TERC4.
-void hdmi_audio_packet(uint8_t nib[32][3], uint32_t blank, bool vsync);
+// Returns HDMI_PK_* for a packet that does not change (nib untouched: the
+// back-end keeps those encoded, hdmi_audio_fixed_nibbles), or -1 for an audio
+// packet, then in nib.
+enum { HDMI_PK_NULL, HDMI_PK_ACR, HDMI_PK_AVI, HDMI_PK_VENDOR, HDMI_PK_AIF, HDMI_PK_FIXED };
+int  hdmi_audio_packet(uint8_t nib[32][3], uint32_t blank, bool vsync);
+void hdmi_audio_fixed_nibbles(int id, bool vsync, uint8_t nib[32][3]);   // after hdmi_audio_init
 void hdmi_island_frame(uint32_t pre[10], uint32_t post[2], bool vsync);
 uint32_t hdmi_terc4(int nibble);
 

@@ -29,6 +29,7 @@
 #include "tmds_pio.h"
 #include "tmds.pio.h"
 #include "hdmi_audio.h"
+#include "board.h"
 
 #ifndef HDMI_BASE_PIN
 #define HDMI_BASE_PIN 6
@@ -68,6 +69,13 @@ static uint32_t blankbuf[2][H_BLANK * 2];
 static uint32_t terc_w[3][16][2];                  // TERC4 nibble -> pin words, per lane
 static uint32_t isl_pre_w[2][10][2], isl_post_w[2][2][2];   // [vsync]
 static uint32_t lead_w[HDMI_VLEAD_PX][2];
+// The packets that never change, encoded once: [HDMI_PK_*][vsync][character].
+static uint32_t isl_fixed_w[HDMI_PK_FIXED][2][32][2];
+// What blankbuf[parity] holds besides the packet: vsync | active << 1 (0xFF: nothing
+// yet).  Only the 32 packet characters change from line to line of one kind.
+static uint8_t  blank_kind[2] = { 0xFF, 0xFF };
+// Core 1's time (DWT cycles): the line IRQ and the TMDS encoding (video.h).
+static volatile uint32_t irq_cyc, enc_cyc;
 
 static volatile uint32_t frames;
 static volatile int      shown_line = -1;          // output line whose pixels were last posted
@@ -102,6 +110,14 @@ static void build_static(void) {
         for (int i = 0; i < 2; i++) char_words(post[i], isl_post_w[vs][i]);
     }
     for (int i = 0; i < HDMI_VLEAD_PX; i++) char_words(hdmi_video_lead[i], lead_w[i]);
+    for (int id = 0; id < HDMI_PK_FIXED; id++)
+        for (int vs = 0; vs < 2; vs++) {
+            uint8_t nib[32][3];
+            hdmi_audio_fixed_nibbles(id, vs, nib);
+            for (int t = 0; t < 32; t++)
+                for (int k = 0; k < 2; k++)
+                    isl_fixed_w[id][vs][t][k] = terc_w[0][nib[t][0]][k] | terc_w[1][nib[t][1]][k] | terc_w[2][nib[t][2]][k];
+        }
     tmds_build_mixed(tab_mix);
     for (int vs = 0; vs < 2; vs++) {
         int vlev = vs ? 0 : 1;                         // negative polarity: active = 0
@@ -113,6 +129,7 @@ static void build_static(void) {
 }
 
 static void __not_in_flash_func(dma_irq)(void) {
+    const uint32_t t0 = board_cycles();
     uint ch = dma_pong ? DMACH_PONG : DMACH_PING;
     dma_channel_hw_t *c = &dma_hw->ch[ch];
     dma_hw->intr = 1u << ch;
@@ -124,22 +141,35 @@ static void __not_in_flash_func(dma_irq)(void) {
         // Line v_line's blanking: posted while the other channel streams the
         // previous line's 720 active pixels, which is the time it has to be built.
         uint32_t *d = blankbuf[v_line & 1];
-        // A volatile copy: GCC would turn a plain loop into memcpy, which is in flash.
-        const uint32_t *t = blank_line[vsync];
-        for (volatile uint32_t *v = d; v < d + H_BLANK * 2; ) *v++ = *t++;
+        const uint8_t kind = (uint8_t)(vsync | active << 1);
         uint32_t *isl = d + 2 * H_FP;
-        for (int i = 0; i < 10; i++) { isl[0] = isl_pre_w[vsync][i][0]; isl[1] = isl_pre_w[vsync][i][1]; isl += 2; }
-        uint8_t nib[32][3];
-        hdmi_audio_packet(nib, active ? 0 : v_line + 1, vsync);
-        for (int t = 0; t < 32; t++) {
-            isl[0] = terc_w[0][nib[t][0]][0] | terc_w[1][nib[t][1]][0] | terc_w[2][nib[t][2]][0];
-            isl[1] = terc_w[0][nib[t][0]][1] | terc_w[1][nib[t][1]][1] | terc_w[2][nib[t][2]][1];
-            isl += 2;
+        if (blank_kind[v_line & 1] != kind) {
+            // A new kind of line for this buffer: the sync levels, the island's
+            // frame and the video lead.  A volatile copy: GCC would turn a plain
+            // loop into memcpy, which is in flash.
+            blank_kind[v_line & 1] = kind;
+            const uint32_t *t = blank_line[vsync];
+            for (volatile uint32_t *v = d; v < d + H_BLANK * 2; ) *v++ = *t++;
+            for (int i = 0; i < 10; i++) { isl[2 * i] = isl_pre_w[vsync][i][0]; isl[2 * i + 1] = isl_pre_w[vsync][i][1]; }
+            uint32_t *post = isl + 2 * 42;
+            for (int i = 0; i < 2; i++) { post[2 * i] = isl_post_w[vsync][i][0]; post[2 * i + 1] = isl_post_w[vsync][i][1]; }
+            if (active) {
+                uint32_t *lead = d + 2 * (H_BLANK - HDMI_VLEAD_PX);
+                for (int i = 0; i < HDMI_VLEAD_PX; i++) { lead[2 * i] = lead_w[i][0]; lead[2 * i + 1] = lead_w[i][1]; }
+            }
         }
-        for (int i = 0; i < 2; i++) { isl[0] = isl_post_w[vsync][i][0]; isl[1] = isl_post_w[vsync][i][1]; isl += 2; }
-        if (active) {
-            uint32_t *lead = d + 2 * (H_BLANK - HDMI_VLEAD_PX);
-            for (int i = 0; i < HDMI_VLEAD_PX; i++) { lead[2 * i] = lead_w[i][0]; lead[2 * i + 1] = lead_w[i][1]; }
+        // The 32 packet characters.
+        uint32_t *pk = isl + 2 * 10;
+        uint8_t nib[32][3];
+        const int id = hdmi_audio_packet(nib, active ? 0 : v_line + 1, vsync);
+        if (id >= 0) {
+            const uint32_t *s = &isl_fixed_w[id][vsync][0][0];
+            for (int i = 0; i < 64; i++) pk[i] = s[i];
+        } else {
+            for (int t = 0; t < 32; t++) {
+                pk[2 * t]     = terc_w[0][nib[t][0]][0] | terc_w[1][nib[t][1]][0] | terc_w[2][nib[t][2]][0];
+                pk[2 * t + 1] = terc_w[0][nib[t][0]][1] | terc_w[1][nib[t][1]][1] | terc_w[2][nib[t][2]][1];
+            }
         }
         c->read_addr = (uintptr_t)d;
         c->transfer_count = H_BLANK * 2;
@@ -158,6 +188,7 @@ static void __not_in_flash_func(dma_irq)(void) {
         part_b = false;
         if (++v_line == V_TOTAL) { v_line = 0; frames++; shown_line = -1; }
     }
+    irq_cyc += board_cycles() - t0;
 }
 
 // Encode output line `out` (0..575) into linebuf[out & 3].
@@ -166,6 +197,7 @@ static void __not_in_flash_func(dma_irq)(void) {
 // words again.  A full pair encode is ~50 cycles, and 360 of them plus the DMA
 // IRQs did not fit the 66 us of a row at 504 MHz.
 static void __not_in_flash_func(encode_line)(int out) {
+    const uint32_t t0 = board_cycles();
     static bool prev_lace;                         // the row of line out - 1 was LACE4
     const amiga_row_t *row = &fb[out >> 1];
     const int sub = out & 1;
@@ -175,6 +207,7 @@ static void __not_in_flash_func(encode_line)(int out) {
     if (sub && !prev_lace) {
         line_src[out & 3] = linebuf[(out - 1) & 3];
         line_ready[out & 3] = out;
+        enc_cyc += board_cycles() - t0;
         return;
     }
     prev_lace = row->mode == AMIGA_ROW_LACE4;
@@ -210,12 +243,26 @@ static void __not_in_flash_func(encode_line)(int out) {
         dst -= 4 * AMIGA_FB_W;
         break;
     }
-    default:
-        tmds_encode_row(dst, row->px.rgb, AMIGA_FB_W, tab_r, tab_gb);
+    default: {
+        // A colour equal to the one before it (backgrounds) stores the same words.
+        const uint16_t *src = row->px.rgb;
+        uint32_t key = 0xFFFFFFFFu, w0 = 0, w1 = 0, w2 = 0, w3 = 0;
+        uint32_t *q = dst;
+        for (int x = 0; x < AMIGA_FB_W; x++, q += 4) {
+            const uint32_t c = src[x];
+            if (c != key) {
+                key = c;
+                const uint32_t *r = tab_r[(c >> 8) & 15], *gb = tab_gb[c & 0xFF];
+                w0 = r[0] | gb[0]; w1 = r[1] | gb[1]; w2 = r[2] | gb[2]; w3 = r[3] | gb[3];
+            }
+            q[0] = w0; q[1] = w1; q[2] = w2; q[3] = w3;
+        }
         break;
+    }
     }
     line_src[out & 3] = dst;
     line_ready[out & 3] = out;
+    enc_cyc += board_cycles() - t0;
 }
 
 // Core 1, forever: keep up to two output lines ahead of the beam (lines 0 and 1
@@ -283,3 +330,4 @@ void hdmi_start(const amiga_row_t *framebuffer) {
 
 uint32_t hdmi_frames(void) { return frames; }
 uint32_t hdmi_late_lines(void) { return late; }
+void hdmi_core1_cycles(uint32_t *irq, uint32_t *enc) { *irq = irq_cyc; *enc = enc_cyc; }

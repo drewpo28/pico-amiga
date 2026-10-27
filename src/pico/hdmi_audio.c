@@ -101,23 +101,39 @@ static packet_t pk_null, pk_acr, pk_avi, pk_vendor, pk_aif;
 //   lane 0: D0 = HSYNC, D1 = VSYNC, D2 = header bit t, D3 = 0 on the first character
 //   lane 1: D0..D3 = bit 2t of subpackets 0..3
 //   lane 2: D0..D3 = bit 2t+1 of subpackets 0..3
+//
+// Character t takes bits 2t and 2t+1 of each subpacket, i.e. bits 2k and 2k+1
+// of byte t / 4 (k = t % 4): a byte's even bits spread one per nibble give lane
+// 1's bit j for four characters at once, its odd bits lane 2's (by table: the
+// line IRQ runs this for every audio packet).
+static uint16_t spread_even[256], spread_odd[256];   // .bss: SRAM
+
+static void build_spread(void) {
+    for (int x = 0; x < 256; x++) {
+        uint16_t e = 0, o = 0;
+        for (int k = 0; k < 4; k++) {
+            e |= (uint16_t)(((x >> (2 * k)) & 1) << (4 * k));
+            o |= (uint16_t)(((x >> (2 * k + 1)) & 1) << (4 * k));
+        }
+        spread_even[x] = e;
+        spread_odd[x] = o;
+    }
+}
+
 static void __not_in_flash_func(packet_nibbles)(uint8_t nib[32][3], const packet_t *p, uint32_t sync) {
     const uint32_t hdr = p->hdr[0] | p->hdr[1] << 8 | (uint32_t)p->hdr[2] << 16 | (uint32_t)p->hdr[3] << 24;
-    uint64_t sp[4];
-    for (int j = 0; j < 4; j++) {
-        uint64_t v = 0;
-        for (int b = 7; b >= 0; b--) v = v << 8 | p->sp[j][b];
-        sp[j] = v;
-    }
-    for (int t = 0; t < 32; t++) {
-        uint32_t d1 = 0, d2 = 0;
+    for (int b = 0; b < 8; b++) {
+        uint32_t e = 0, o = 0;
         for (int j = 0; j < 4; j++) {
-            d1 |= (uint32_t)((sp[j] >> (2 * t)) & 1) << j;
-            d2 |= (uint32_t)((sp[j] >> (2 * t + 1)) & 1) << j;
+            e |= (uint32_t)spread_even[p->sp[j][b]] << j;
+            o |= (uint32_t)spread_odd[p->sp[j][b]] << j;
         }
-        nib[t][0] = (uint8_t)(sync | ((hdr >> t) & 1) << 2 | (t ? 8u : 0u));
-        nib[t][1] = (uint8_t)d1;
-        nib[t][2] = (uint8_t)d2;
+        for (int k = 0; k < 4; k++) {
+            const int t = 4 * b + k;
+            nib[t][0] = (uint8_t)(sync | ((hdr >> t) & 1) << 2 | (t ? 8u : 0u));
+            nib[t][1] = (uint8_t)((e >> (4 * k)) & 15);
+            nib[t][2] = (uint8_t)((o >> (4 * k)) & 15);
+        }
     }
 }
 
@@ -248,6 +264,7 @@ static void __not_in_flash_func(audio_packet)(packet_t *p, const aq_pkt_t *q) {
 
 // ---- API -------------------------------------------------------------------------
 void hdmi_audio_init(uint32_t pixel_hz, uint32_t h_total, uint32_t v_total) {
+    build_spread();
     build_static_packets(pixel_hz);
     up_step = (uint32_t)(((uint64_t)AMIGA_AUDIO_RATE << 16) / FS);
     // The two rates must straddle the producer's with margin: the tick runs on
@@ -273,33 +290,37 @@ void hdmi_island_frame(uint32_t pre[10], uint32_t post[2], bool vsync) {
     pre[8] = pre[9] = post[0] = post[1] = SYM(terc4_table[0xC | sync], GB_DATA, GB_DATA);
 }
 
-void __not_in_flash_func(hdmi_audio_packet)(uint8_t nib[32][3], uint32_t blank, bool vsync) {
-    const uint32_t sync = (vsync ? 0u : 1u) << 1;
+static const packet_t *const fixed_pk[HDMI_PK_FIXED] = { &pk_null, &pk_acr, &pk_avi, &pk_vendor, &pk_aif };
+
+void hdmi_audio_fixed_nibbles(int id, bool vsync, uint8_t nib[32][3]) {
+    packet_nibbles(nib, fixed_pk[id], (vsync ? 0u : 1u) << 1);
+}
+
+int __not_in_flash_func(hdmi_audio_packet)(uint8_t nib[32][3], uint32_t blank, bool vsync) {
     const uint32_t depth = aq_wr - aq_rd;
     credit += depth > HDMI_AU_TARGET ? credit_hi : credit_lo;
     if (credit > credit_cap) credit = credit_cap;
-    const packet_t *p = &pk_null;
+    if (!vsync && blank == 1)                  return HDMI_PK_ACR;
+    if (!vsync && blank == 2)                  return HDMI_PK_AVI;
+    if (!vsync && blank == 3)                  return HDMI_PK_VENDOR;
+    if (!vsync && blank == 4)                  return HDMI_PK_AIF;
+    if (!vsync && blank && !(blank & 3))       return HDMI_PK_ACR;
+    if (credit < (4ull << 24) || !depth)       return HDMI_PK_NULL;
+    credit -= 4ull << 24;                      // credit is spent only on a pop
     packet_t a;
-    if (!vsync && blank == 1)                  p = &pk_acr;
-    else if (!vsync && blank == 2)             p = &pk_avi;
-    else if (!vsync && blank == 3)             p = &pk_vendor;
-    else if (!vsync && blank == 4)             p = &pk_aif;
-    else if (!vsync && blank && !(blank & 3))  p = &pk_acr;
-    else if (credit >= (4ull << 24) && depth) {   // credit is spent only on a pop
-        credit -= 4ull << 24;
-        const uint32_t r = aq_rd;
-        audio_packet(&a, &aq[r % AQ_LEN]);
-        __dmb();
-        aq_rd = r + 1;
-        p = &a;
-    }
-    packet_nibbles(nib, p, sync);
+    const uint32_t r = aq_rd;
+    audio_packet(&a, &aq[r % AQ_LEN]);
+    __dmb();
+    aq_rd = r + 1;
+    packet_nibbles(nib, &a, (vsync ? 0u : 1u) << 1);
+    return -1;
 }
 
 void __not_in_flash_func(hdmi_audio_island)(uint32_t *chars, uint32_t blank, bool vsync) {
     hdmi_island_frame(chars, chars + 42, vsync);
     uint8_t nib[32][3];
-    hdmi_audio_packet(nib, blank, vsync);
+    const int id = hdmi_audio_packet(nib, blank, vsync);
+    if (id >= 0) packet_nibbles(nib, fixed_pk[id], (vsync ? 0u : 1u) << 1);
     for (int t = 0; t < 32; t++)
         chars[10 + t] = SYM(terc4_table[nib[t][0]], terc4_table[nib[t][1]], terc4_table[nib[t][2]]);
 }
