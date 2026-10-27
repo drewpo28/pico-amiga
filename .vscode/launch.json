@@ -62,6 +62,22 @@
             ]
         },
         {
+            "name": "Host: pico-amiga (SDL, gdb)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build-host/pico-amiga",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "preLaunchTask": "Build Host",
+            "externalConsole": false,
+            "setupCommands": [
+                { "text": "-enable-pretty-printing", "ignoreFailures": true },
+                { "text": "handle SIGPIPE nostop noprint", "ignoreFailures": true }
+            ]
+        },
+        {
             "name": "Host: pico-amiga-host (gdb)",
             "type": "cppdbg",
             "request": "launch",

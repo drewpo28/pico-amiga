@@ -18,3 +18,47 @@ target_compile_options(pico-amiga-host PRIVATE -Wall -Wextra)
 add_executable(tmds_test tests/tmds_test.c)
 target_include_directories(tmds_test PRIVATE ${ROOT}/src/pico)
 target_compile_options(tmds_test PRIVATE -Wall -Wextra)
+
+# ---- pico-amiga: the firmware on a PC (SDL2), like the UF2 ------------------------
+# src/pico/main.c and the input funnel built against host stand-ins for the Pico SDK
+# (host/sdl/include) and the board drivers (host/sdl/*.cpp); see host/sdl/host_main.cpp.
+find_package(PkgConfig)
+if(PkgConfig_FOUND)
+    pkg_check_modules(SDL2 sdl2)
+endif()
+if(SDL2_FOUND)
+    enable_language(CXX)
+    set(CMAKE_CXX_STANDARD 17)
+    set(SDL_DIR ${CMAKE_CURRENT_LIST_DIR}/sdl)
+    # HID_KEY_* usage ids from TinyUSB's hid.h, so the PC and the board share them.
+    file(STRINGS ${ROOT}/external/tinyusb/src/class/hid/hid.h HID_KEY_LINES REGEX "^#define HID_KEY_")
+    string(REPLACE ";" "\n" HID_KEY_TEXT "${HID_KEY_LINES}")
+    file(WRITE ${CMAKE_BINARY_DIR}/gen/host_hid_keys.h "#pragma once\n${HID_KEY_TEXT}\n")
+
+    set(FIRMWARE_SRC
+        ${ROOT}/src/pico/main.c
+        ${ROOT}/src/pico/input.cpp
+        ${ROOT}/src/pico/drivers/input/keyboard.cpp
+        ${ROOT}/src/pico/drivers/input/codepages.cpp)
+    set_source_files_properties(${ROOT}/src/pico/main.c PROPERTIES COMPILE_DEFINITIONS main=firmware_main)
+    add_executable(pico-amiga ${FIRMWARE_SRC}
+        ${SDL_DIR}/host_main.cpp
+        ${SDL_DIR}/host_drivers.cpp
+        ${SDL_DIR}/host_platform.cpp
+        ${SDL_DIR}/host_fatfs.cpp
+        ${SDL_DIR}/host_fsdir.cpp)
+    target_include_directories(pico-amiga PRIVATE
+        ${SDL_DIR}/include ${SDL_DIR} ${CMAKE_BINARY_DIR}/gen
+        ${ROOT}/src/pico ${ROOT}/src/pico/drivers ${ROOT}/src/pico/drivers/input
+        ${ROOT}/external ${ROOT}/external/fatfs
+        ${SDL2_INCLUDE_DIRS})
+    # -ffunction-sections / --gc-sections as in the firmware link: pico-speccy's
+    # fabgl Keyboard declares methods nothing calls and nothing defines.
+    target_compile_options(pico-amiga PRIVATE
+        -include ${SDL_DIR}/host_config.h -w -fno-strict-aliasing -ffunction-sections -fdata-sections)
+    target_link_options(pico-amiga PRIVATE -Wl,--gc-sections)
+    target_link_directories(pico-amiga PRIVATE ${SDL2_LIBRARY_DIRS})
+    target_link_libraries(pico-amiga PRIVATE amiga_core ${SDL2_LIBRARIES} pthread m)
+else()
+    message(STATUS "host: no SDL2 (libsdl2-dev) - only the test bench is built")
+endif()

@@ -12,6 +12,14 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
 - Every behaviour change in the core is checked on the host first:
   `cmake --build build-host && host/tests/smoke.sh roms` (ROMs via
   `host/tests/fetch_test_roms.sh`; they are not in the repo).
+- `build-host/pico-amiga` is the firmware itself on a PC (SDL2, like pico-speccy's
+  host branch): `src/pico/main.c` + `input.cpp` built against `host/sdl/include`
+  (Pico SDK stand-ins) and `host/sdl/*.cpp` (video/audio/input/psram over SDL,
+  `host_fatfs.cpp` = the FatFs API over a folder, `--root`, default ~/pico-amiga,
+  holding `amiga/kick.rom` etc. as on the card). Board-only code stays out of the
+  files it compiles (`input_devices.cpp` is the board's, host_drivers.cpp the PC's).
+  `PICO_AMIGA_SHOT=f.bmp:N` saves output frame N; `SDL_VIDEODRIVER=offscreen` runs it
+  headless. `build-host/pico-amiga-host` remains the headless test bench.
 - `src/pico/drivers/` are pico-speccy's drivers (USB HID/XInput, fabgl VK keyboard
   queue, PS/2, NES pad, SD); local changes are marked `PICO-AMIGA:`, and
   `drivers/input_glue.h` stands in for pico-speccy's Config/Debug/ESPectrum.
