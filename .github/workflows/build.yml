@@ -1,0 +1,48 @@
+name: build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  host:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build
+      - name: Build host bench
+        run: cmake -S host -B build-host -G Ninja && cmake --build build-host
+      - name: Fetch test ROMs (AROS, DiagROM)
+        run: host/tests/fetch_test_roms.sh roms
+      - name: Smoke tests
+        run: host/tests/smoke.sh roms build-host/smoke
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-output
+          path: build-host/smoke/*.png
+
+  firmware:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        board: [MURM2, PICO_PC]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build gcc-arm-none-eabi libnewlib-arm-none-eabi libstdc++-arm-none-eabi-newlib
+      - name: Pico SDK
+        run: |
+          git clone --depth 1 -b 2.3.1 https://github.com/raspberrypi/pico-sdk ../pico-sdk
+          git -C ../pico-sdk submodule update --init --depth 1 lib/tinyusb
+      - name: Build
+        run: |
+          cmake -S . -B build -G Ninja -DPICO_SDK_PATH=$PWD/../pico-sdk -DBOARD=${{ matrix.board }}
+          cmake --build build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.board }}
+          path: build/*.uf2
