@@ -188,9 +188,9 @@ static void hstx_setup(void) {
     }
 }
 
-void hdmi_start(const uint16_t *framebuffer, const int16_t *audio_ring, uint32_t audio_frames) {
+void hdmi_start(const uint16_t *framebuffer) {
     fb = framebuffer;
-    hdmi_audio_init(audio_ring, audio_frames, 25200000u, H_FP + H_SYNC + H_BP + H_ACTIVE, V_TOTAL);
+    hdmi_audio_init(25200000u, H_FP + H_SYNC + H_BP + H_ACTIVE, V_TOTAL);
     v_line = 2;                      // the two channels below are pre-loaded with lines 0 and 1
     cmd_posted = false;
     dma_pong = false;

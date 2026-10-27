@@ -21,9 +21,9 @@ void video_select(void) {
 
 bool video_is_vga(void) { return vga; }
 
-void video_start(const uint16_t *framebuffer, const int16_t *audio_ring, uint32_t audio_frames) {
+void video_start(const uint16_t *framebuffer) {
     if (vga) vga_start(framebuffer);
-    else     hdmi_start(framebuffer, audio_ring, audio_frames);
+    else     hdmi_start(framebuffer);
 }
 
 uint32_t video_frames(void) { return vga ? vga_frames() : hdmi_frames(); }

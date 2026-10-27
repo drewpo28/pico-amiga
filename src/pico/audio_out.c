@@ -25,6 +25,7 @@
 #include "hardware/timer.h"
 #include "amiga.h"
 #include "board.h"
+#include "hdmi_audio.h"
 #include "drivers/audio/audio.h"
 #ifdef PCM5122_I2S_DATA
 #include "drivers/audio/pcm5122_init.h"
@@ -67,6 +68,7 @@ static inline void __not_in_flash_func(output)(int32_t sL, int32_t sR) {
     const int32_t vol = audio_volume_q8;
     sL = (sL * vol) >> 8;
     sR = (sR * vol) >> 8;
+    hdmi_audio_push((int16_t)sL, (int16_t)sR);    // the HDMI islands take the same stream
     if (is_i2s_enabled) {
         if (!pio_sm_is_tx_fifo_full(i2s_config.pio, i2s_config.sm))
             pio_sm_put(i2s_config.pio, i2s_config.sm, ((uint32_t)(uint16_t)sR << 16) | (uint16_t)sL);

@@ -40,7 +40,7 @@ static std::atomic<uint32_t> s_frames{0};
 
 extern "C" void video_select(void) {}
 extern "C" bool video_is_vga(void) { return false; }
-extern "C" void video_start(const uint16_t *framebuffer, const int16_t *, uint32_t) {
+extern "C" void video_start(const uint16_t *framebuffer) {
     host_fb = framebuffer;
     std::thread([] {
         using clk = std::chrono::steady_clock;

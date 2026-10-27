@@ -10,17 +10,22 @@
 //     need a dense ACR stream to lock their audio PLL)
 //   - AVI, Vendor-Specific (keeps the sink in HDMI mode) and Audio InfoFrames
 //     once a frame on blanking lines 2..4
-//   - audio paced by a per-line credit of 48 kHz samples, packets of 4
-// What differs is the sample source: the core's 31.3 kHz Paula ring, resampled
-// here to 48 kHz (linear interpolation) with a slow rate trim that keeps the
-// reader a steady distance behind the emulator.
+//   - the sample path: the steady 31.3 kHz output tick (audio_out.c, core 0)
+//     upsamples into a queue of 4-sample packets (hdmi_audio_push), and the
+//     line IRQ pops them on a per-line credit, bang-bang paced at +-1% around
+//     a target depth (HDMI_AU_TARGET)
+// The first version read the emulator's ring here, on the video clock. The
+// emulator fills that ring a frame at a time, and below 50 fps it ran dry
+// every frame: zeros, then a burst, i.e. sound "in waves". The tick holds the
+// last sample through an underrun, as PWM/I2S always did.
 //
-// Everything here runs in the core 1 line IRQ, so tables live in RAM.
+// The packet side runs in the core 1 line IRQ and the push in a core 0 IRQ, so
+// tables live in RAM.
 #include "hdmi_audio.h"
 #include <string.h>
 #include "pico.h"
 #include "amiga.h"
-#include "audio_out.h"
+#include "hardware/sync.h"
 
 #define FS 48000u
 
@@ -165,56 +170,64 @@ static void build_static_packets(uint32_t pixel_hz) {
 }
 
 // ---- samples ---------------------------------------------------------------------
-static const int16_t *ring;
-static uint32_t ring_mask;
-static uint32_t rd_frame, rd_frac;    // read position: frame index + 16-bit fraction
-static uint32_t step_nom;             // source frames per output sample, Q16
-static int32_t  lag_avg;              // Q8, smoothed write - read distance
-static uint32_t lag_target;
-static uint32_t credit;               // 48 kHz samples owed, Q24
-static uint32_t credit_line;          // ...accrued per line
-static int      iec_ct;               // IEC 60958 192-frame block counter
+// SPSC queue of 4-sample packets, core 0 tick -> core 1 line IRQ. 128 packets =
+// 10.7 ms; the pacing holds it near HDMI_AU_TARGET (5.3 ms), which is the cushion
+// for core 0 stalls (pico-speccy: drivers/hdmi/hdmi.c, the same numbers).
+#define AQ_LEN         128
+#define HDMI_AU_TARGET 64
+typedef struct { int16_t l[4], r[4]; } aq_pkt_t;
+static aq_pkt_t aq[AQ_LEN];
+static volatile uint32_t aq_wr, aq_rd;
+
+static volatile bool active;          // an HDMI back-end is running (hdmi_audio_init)
 static volatile bool enabled = true;
+// Producer (core 0): linear-interpolating 31.3 -> 48 kHz upsampler.
+static uint32_t up_step;              // input samples per output sample, Q16
+static uint32_t up_pos;               // output position between prev (0) and the new input (1), Q16
+static int16_t  up_l, up_r;           // the previous input
+static aq_pkt_t up_pkt;
+static int      up_n;
+// Consumer (core 1).
+static uint64_t credit;               // 48 kHz samples owed, Q24 (64-bit: see the cap)
+static uint64_t credit_cap;
+static uint32_t credit_hi, credit_lo; // per line: nominal +1% / -1%
+static int      iec_ct;               // IEC 60958 192-frame block counter
 
 void hdmi_audio_set_enabled(bool on) { enabled = on; }
 
-static void __not_in_flash_func(next_sample)(int16_t *l, int16_t *r) {
-    const uint32_t wp = amiga_audio_write_pos();
-    uint32_t lag = wp - rd_frame;
-    if (lag > ring_mask / 2 || lag < 2) {        // lost track, or ran dry: re-centre
-        if (lag > ring_mask / 2) rd_frame = wp - lag_target;
-        else if (lag < 2) { *l = *r = 0; return; }
-        lag = wp - rd_frame;
-        lag_avg = (int32_t)lag << 8;
+void __not_in_flash_func(hdmi_audio_push)(int16_t l, int16_t r) {
+    if (!active || !enabled) return;
+    while (up_pos <= 0x10000u) {
+        const int32_t f = (int32_t)up_pos;
+        up_pkt.l[up_n] = (int16_t)(up_l + (((l - up_l) * f) >> 16));
+        up_pkt.r[up_n] = (int16_t)(up_r + (((r - up_r) * f) >> 16));
+        if (++up_n == 4) {
+            up_n = 0;
+            const uint32_t w = aq_wr;
+            if (w - aq_rd < AQ_LEN) {                // full: the packet is dropped
+                aq[w % AQ_LEN] = up_pkt;
+                __dmb();
+                aq_wr = w + 1;
+            }
+        }
+        up_pos += up_step;
     }
-    lag_avg += (((int32_t)lag << 8) - lag_avg) >> 10;
-    // Trim the rate by up to +-0.4% to hold the smoothed distance at the target.
-    int32_t err = (lag_avg >> 8) - (int32_t)lag_target;
-    if (err > 256) err = 256; else if (err < -256) err = -256;
-    const uint32_t step = step_nom + (uint32_t)((int32_t)step_nom * err / 65536);
-
-    const uint32_t i0 = (rd_frame & ring_mask) * 2, i1 = ((rd_frame + 1) & ring_mask) * 2;
-    const int32_t f = (int32_t)rd_frac;
-    const int32_t vol = audio_volume_q8;  // audio_out.c: the one volume for every output
-    *l = (int16_t)(((ring[i0]     + (((ring[i1]     - ring[i0])     * f) >> 16)) * vol) >> 8);
-    *r = (int16_t)(((ring[i0 + 1] + (((ring[i1 + 1] - ring[i0 + 1]) * f) >> 16)) * vol) >> 8);
-    rd_frac += step;
-    rd_frame += rd_frac >> 16;
-    rd_frac &= 0xFFFF;
+    up_pos -= 0x10000u;
+    up_l = l;
+    up_r = r;
 }
 
 // Audio Sample packet: 4 samples, 16-bit in the top of 24, IEC 60958 channel
 // status 0x04 (consumer LPCM, copy permitted), rate code 0x02 (48 kHz), 0x02
 // (16-bit word) in bytes 0, 3, 4.
-static void __not_in_flash_func(audio_packet)(packet_t *p) {
+static void __not_in_flash_func(audio_packet)(packet_t *p, const aq_pkt_t *q) {
     int ct = iec_ct;
     p->hdr[0] = 0x02;
     p->hdr[1] = 0x0F;                             // layout 0, samples 0-3 present
     p->hdr[2] = (uint8_t)((ct < 4 ? (1 << ct) : 0) << 4);   // B.x: block start flags
     p->hdr[3] = bch3(p->hdr);
     for (int s = 0; s < 4; s++) {
-        int16_t l, r;
-        next_sample(&l, &r);
+        const int16_t l = q->l[s], r = q->r[s];
         const int f = ct ? 192 - ct : 0;
         const int cs = (f == 2) || (f >= 24 && f < 32 && ((0x02 >> (f - 24)) & 1)) || (f == 33);
         uint8_t *d = p->sp[s];
@@ -234,21 +247,21 @@ static void __not_in_flash_func(audio_packet)(packet_t *p) {
 }
 
 // ---- API -------------------------------------------------------------------------
-void hdmi_audio_init(const int16_t *audio_ring, uint32_t frames, uint32_t pixel_hz, uint32_t h_total,
-                     uint32_t v_total) {
-    ring = audio_ring;
-    ring_mask = frames - 1;
+void hdmi_audio_init(uint32_t pixel_hz, uint32_t h_total, uint32_t v_total) {
     build_static_packets(pixel_hz);
-    // The emulator runs one Amiga frame (2 samples a line) per output frame.
-    const uint64_t src_milli_hz = (uint64_t)2 * AMIGA_LINES_LONG * pixel_hz * 1000u / ((uint64_t)h_total * v_total);
-    step_nom = (uint32_t)((src_milli_hz << 16) / (FS * 1000u));
-    credit_line = (uint32_t)(((uint64_t)FS * h_total << 24) / pixel_hz);
-    lag_target = 2 * AMIGA_LINES_LONG + AMIGA_LINES_LONG;   // ~1.5 Amiga frames of samples
-    rd_frame = amiga_audio_write_pos() - lag_target;
-    rd_frac = 0;
-    lag_avg = (int32_t)lag_target << 8;
+    up_step = (uint32_t)(((uint64_t)AMIGA_AUDIO_RATE << 16) / FS);
+    // The two rates must straddle the producer's with margin: the tick runs on
+    // the 1 MHz timer, the lines on the pixel clock, and they need not agree.
+    const uint64_t nom = ((uint64_t)FS * h_total << 24) / pixel_hz;
+    credit_hi = (uint32_t)(nom * 101 / 100);
+    credit_lo = (uint32_t)(nom * 99 / 100);
+    // Must outlast the longest run of lines with no audio packet (blanking lines
+    // 1..4 carry ACR and InfoFrames) or the consumer under-delivers for good.
+    credit_cap = (uint64_t)credit_hi * v_total / 8 + (8ull << 24);
     credit = 0;
     iec_ct = 0;
+    aq_rd = aq_wr;
+    active = true;
 }
 
 uint32_t hdmi_terc4(int nibble) { return terc4_table[nibble & 15]; }
@@ -262,8 +275,9 @@ void hdmi_island_frame(uint32_t pre[10], uint32_t post[2], bool vsync) {
 
 void __not_in_flash_func(hdmi_audio_packet)(uint8_t nib[32][3], uint32_t blank, bool vsync) {
     const uint32_t sync = (vsync ? 0u : 1u) << 1;
-    credit += credit_line;
-    if (credit > (8u << 24)) credit = 8u << 24;
+    const uint32_t depth = aq_wr - aq_rd;
+    credit += depth > HDMI_AU_TARGET ? credit_hi : credit_lo;
+    if (credit > credit_cap) credit = credit_cap;
     const packet_t *p = &pk_null;
     packet_t a;
     if (!vsync && blank == 1)                  p = &pk_acr;
@@ -271,9 +285,12 @@ void __not_in_flash_func(hdmi_audio_packet)(uint8_t nib[32][3], uint32_t blank, 
     else if (!vsync && blank == 3)             p = &pk_vendor;
     else if (!vsync && blank == 4)             p = &pk_aif;
     else if (!vsync && blank && !(blank & 3))  p = &pk_acr;
-    else if (credit >= (4u << 24) && ring && enabled) {
-        credit -= 4u << 24;
-        audio_packet(&a);
+    else if (credit >= (4ull << 24) && depth) {   // credit is spent only on a pop
+        credit -= 4ull << 24;
+        const uint32_t r = aq_rd;
+        audio_packet(&a, &aq[r % AQ_LEN]);
+        __dmb();
+        aq_rd = r + 1;
         p = &a;
     }
     packet_nibbles(nib, p, sync);

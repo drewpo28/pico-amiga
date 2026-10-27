@@ -164,9 +164,9 @@ static void __no_inline_not_in_flash_func(encode_loop)(void) {
     }
 }
 
-void hdmi_start(const uint16_t *framebuffer, const int16_t *audio_ring, uint32_t audio_frames) {
+void hdmi_start(const uint16_t *framebuffer) {
     fb = framebuffer;
-    hdmi_audio_init(audio_ring, audio_frames, 25200000u, H_BLANK + H_ACTIVE, V_TOTAL);
+    hdmi_audio_init(25200000u, H_BLANK + H_ACTIVE, V_TOTAL);
     build_static();
     tmds_encode_row(rowbuf[0], fb, AMIGA_FB_W, tab_r, tab_gb);
 

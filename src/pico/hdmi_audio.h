@@ -18,12 +18,13 @@ extern "C" {
 #define HDMI_ISLAND_PX 44
 #define HDMI_VLEAD_PX  10
 
-// `ring`/`frames`: the core's audio ring (interleaved stereo int16, a power of
-// two).  `pixel_hz`, `h_total`, `v_total`: the mode, for the ACR packet, the
-// sample credit per line and the emulator's sample rate (one Amiga frame per
-// output frame).
-void hdmi_audio_init(const int16_t *ring, uint32_t frames, uint32_t pixel_hz, uint32_t h_total,
-                     uint32_t v_total);
+// `pixel_hz`, `h_total`, `v_total`: the mode, for the ACR packet and the sample
+// credit per line.
+void hdmi_audio_init(uint32_t pixel_hz, uint32_t h_total, uint32_t v_total);
+
+// One output sample at AMIGA_AUDIO_RATE, volume applied: audio_out.c's tick
+// (core 0) calls it for every sample it plays. A no-op until hdmi_audio_init.
+void hdmi_audio_push(int16_t l, int16_t r);
 
 // The island of the next output line.  `blank` is the line's 1-based index in
 // the vertical blanking (0 on an active line): the ACR and the InfoFrames go out

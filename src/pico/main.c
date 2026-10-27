@@ -60,7 +60,7 @@ static FATFS fs;
 static bool chip_is_rp2350a(void) { return sysinfo_hw->package_sel & 1u; }
 
 static void core1_main(void) {
-    video_start(fb, audio_ring, AUDIO_FRAMES);
+    video_start(fb);
     for (;;) __wfi();
 }
 
