@@ -62,6 +62,19 @@ static void advance(chan_t *c, int i, int cc) {
     uint16_t per = c->per < 124 && c->dma ? 124 : c->per;
     if (!per) return;
     c->per_cnt -= cc;
+    if (c->per_cnt > 0) return;
+    if (!c->dma) {
+        // Without DMA the channel only alternates AUDxDAT's two bytes, so n
+        // periods come down to their parity. Not a loop: replay routines park
+        // the channels at AUDxPER = 1 with DMA off (Cannon Fodder's loader
+        // music), which would be ~110 turns per channel per half line.
+        const uint32_t n = (uint32_t)(-c->per_cnt) / per + 1;
+        c->per_cnt += (int32_t)(n * per);
+        const bool last_hi = (n & 1) ? c->hi : !c->hi;     // the state of the n-th period
+        c->sample = (int8_t)(last_hi ? c->dat >> 8 : c->dat);
+        if (n & 1) c->hi = !c->hi;
+        return;
+    }
     while (c->per_cnt <= 0) {
         c->per_cnt += per;
         if (c->hi) {
