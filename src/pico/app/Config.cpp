@@ -18,6 +18,9 @@ bool     Config::CursorAsJoy  = true;
 uint8_t  Config::ui_theme     = 0;
 bool     Config::ui_rounded   = true;
 bool     Config::ui_vga_solid = true;
+std::string Config::kick      = "ks13";
+std::string Config::df0       = "";
+bool     Config::df0_wp       = false;
 bool     Config::loaded       = false;
 
 // ---- reading -------------------------------------------------------------------------
@@ -88,6 +91,9 @@ void Config::load() {
     nvs_get_u8 ("ui_theme",      ui_theme,     sts);
     nvs_get_b  ("ui_rounded",    ui_rounded,   sts);
     nvs_get_b  ("ui_vga_solid",  ui_vga_solid, sts);
+    nvs_get_str("kick",          kick,         sts);
+    if (!nvs_get_str("df0",      df0,          sts)) df0.clear();
+    nvs_get_b  ("df0_wp",        df0_wp,       sts);
 }
 
 // ---- writing -------------------------------------------------------------------------
@@ -150,6 +156,9 @@ bool Config::save() {
     nvs_set_i(buf, "ui_theme",      ui_theme);
     nvs_set_b(buf, "ui_rounded",    ui_rounded);
     nvs_set_b(buf, "ui_vga_solid",  ui_vga_solid);
+    nvs_set_str(buf, "kick",        kick.c_str());
+    nvs_set_str(buf, "df0",         df0.c_str());
+    nvs_set_b(buf, "df0_wp",        df0_wp);
     // f_sync before the rename, so a stalled card cannot leave a half-written file
     // under the real name.
     const FRESULT sy = buf.ok ? f_sync(&f) : FR_DISK_ERR;

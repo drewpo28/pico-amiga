@@ -21,6 +21,11 @@ public:
     static bool     ui_rounded;     // rounded window corners
     static bool     ui_vga_solid;   // VGA: the on-grid theme twin (no dither shimmer)
 
+    // Machine (machine.cpp)
+    static std::string kick;        // built-in ROM id (roms.h), or "sd" = /amiga/kick.rom
+    static std::string df0;         // ADF in DF0 ("" = empty drive)
+    static bool     df0_wp;         // DF0 write-protected
+
     static void load();
     static bool save();
     static bool loaded;             // storage.nvs was read (or written) this session

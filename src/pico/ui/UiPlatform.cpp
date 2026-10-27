@@ -2,7 +2,9 @@
 #include "UiPlatform.h"
 #include "pico/stdlib.h"
 #include "hardware/watchdog.h"
+#include <stdio.h>
 #include "input.h"
+#include "machine.h"
 #include "ui.h"
 #include "UiGfx.h"
 #include "app/Config.h"
@@ -24,7 +26,11 @@ namespace nm {
 
 void uiSleepMs(int ms) { sleep_ms((uint32_t)ms); }
 
-const char* uiMachineName() { return "A500 (OCS, PAL)"; }
+const char* uiMachineName() {
+    static char buf[48];
+    snprintf(buf, sizeof buf, "A500, %s", machine_rom_name());
+    return buf;
+}
 
 void uiAmigaReset() { input_request_reset(); }
 

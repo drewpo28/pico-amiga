@@ -4,11 +4,14 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <string>
 
 #include "UiStage.h"
 #include "UiModel.h"
 #include "UiGfx.h"
 #include "app/Config.h"
+#include "roms.h"
+#include "machine.h"
 
 namespace nm {
 
@@ -27,6 +30,28 @@ NM_INT_ACCESS (msens,     mouse_sens, uint16_t)
 NM_INT_ACCESS (theme,     ui_theme,   uint8_t)
 NM_BOOL_ACCESS(rounded,   ui_rounded)
 NM_BOOL_ACCESS(vgasolid,  ui_vga_solid)
+
+// Machine > Kickstart: the value is the built-in ROM's index, KICK_SD the card's.
+#define KICK_SD 100
+static int32_t get_kick() {
+    if (Config::kick == "sd") return KICK_SD;
+    for (unsigned i = 0; i < builtin_rom_count; i++)
+        if (Config::kick == builtin_roms[i].id) return (int32_t)i;
+    return -1;
+}
+static void put_kick(int32_t v) {
+    if (v == KICK_SD) Config::kick = "sd";
+    else if (v >= 0 && (unsigned)v < builtin_rom_count) Config::kick = builtin_roms[v].id;
+}
+// A new ROM means a cold start of the Amiga (the disk stays in).
+static bool hook_kick(int32_t, int32_t) { return machine_apply_kickstart(); }
+
+NM_BOOL_ACCESS(df0wp, df0_wp)
+// Re-insert the disk so the write protection takes hold.
+static bool hook_df0wp(int32_t, int32_t) {
+    const std::string path = machine_disk(0);
+    return path.empty() || machine_insert(0, path.c_str(), Config::df0_wp);
+}
 
 // The menu's look: Config is already written (F_PREVIEW puts first); F_PALETTE
 // re-installs the colours and F_MODAL has the nav repaint everything.

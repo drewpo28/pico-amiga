@@ -41,7 +41,9 @@ enum SettingFlags : uint16_t {
     X(SET_MOUSE_SENS,  AC_PURE, 0,                             get_msens,     put_msens,     nullptr) \
     X(SET_UI_THEME,    AC_PURE, F_PREVIEW | F_PALETTE | F_MODAL, get_theme,   put_theme,     hook_ui) \
     X(SET_UI_ROUNDED,  AC_PURE, F_PREVIEW | F_MODAL,           get_rounded,   put_rounded,   hook_ui) \
-    X(SET_UI_VGA_SOLID,AC_PURE, F_PREVIEW | F_PALETTE | F_MODAL, get_vgasolid, put_vgasolid, hook_ui)
+    X(SET_UI_VGA_SOLID,AC_PURE, F_PREVIEW | F_PALETTE | F_MODAL, get_vgasolid, put_vgasolid, hook_ui) \
+    X(SET_KICK,        AC_LIVE, 0,                             get_kick,      put_kick,      hook_kick) \
+    X(SET_DF0_WP,      AC_LIVE, 0,                             get_df0wp,     put_df0wp,     hook_df0wp)
 
 #define NM_X_ENUM(id, cls, flags, g, p, h) id,
 enum SettingId : uint16_t {

@@ -64,6 +64,9 @@ typedef struct {
 
 void amiga_init(const amiga_config_t *cfg);
 void amiga_reset(bool hard);             // hard: clears chip RAM as on power-on
+// Swap the Kickstart (and extended) ROM; takes effect at the next amiga_reset(),
+// which a ROM change wants hard.  Same rules as amiga_config_t's fields.
+void amiga_set_roms(const uint8_t *rom, uint32_t rom_size, const uint8_t *ext, uint32_t ext_size);
 void amiga_run_frame(void);              // one PAL frame (312 or 313 lines)
 
 void amiga_insert_disk(int drive, const amiga_disk_t *disk);  // drive 0..3 (only DF0 wired so far)

@@ -47,6 +47,9 @@ static bool menu_open;
 static fabgl::VirtualKey last_key_pressed = fabgl::VirtualKey::VK_NONE;
 static uint32_t tickKbdRep;
 
+// The key last pressed (pico-speccy's helper): SortedFiles.h aborts a long sort on F1.
+fabgl::VirtualKey get_last_key_pressed(void) { return last_key_pressed; }
+
 void repeat_handler(void) {
     const fabgl::VirtualKey v = last_key_pressed;
     if (!menu_open || v == fabgl::VirtualKey::VK_NONE) return;

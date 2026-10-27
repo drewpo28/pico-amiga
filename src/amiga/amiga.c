@@ -95,6 +95,11 @@ void amiga_eject_disk(int drive) { floppy_eject(drive); }
 AMIGA_HOT uint32_t amiga_audio_write_pos(void) { return paula_audio_pos(); }
 
 // ---- reset / init -------------------------------------------------------------
+void amiga_set_roms(const uint8_t *rom, uint32_t rom_size, const uint8_t *ext, uint32_t ext_size) {
+    A.cfg.rom = rom;     A.cfg.rom_size = rom_size;
+    A.cfg.ext_rom = ext; A.cfg.ext_size = ext_size;
+}
+
 void amiga_reset(bool hard) {
     if (hard) {
         memset(A.cfg.chip_ram, 0, A.cfg.chip_size);

@@ -8,12 +8,19 @@
 #include "OSDNewMenu.h"
 
 #include <stdio.h>
+#include <string.h>
+#include "ff.h"
 
 #include "UiModel.h"
 #include "UiStage.h"
 #include "UiDialog.h"
 #include "UiPlatform.h"
 #include "UiNav.h"
+#include "UiBrowser.h"
+#include "app/Config.h"
+#include "roms.h"
+#include "machine.h"
+#include <string>
 
 namespace nm {
 
@@ -35,7 +42,57 @@ static const Option opt_vga_solid[] = {
     { "Dithered (full colour)", 0, "Dithered" }, { "Solid (VGA grid)", 1, "Solid" },
 };
 
+// Machine > Kickstart: the built-in ROMs, then the card's kick.rom. Built once per
+// boot (the table is fixed in the image). Values are what UiStage's get_kick reads.
+static const Option* kickOpts(uint8_t& cnt) {
+    static Option opts[16];
+    static uint8_t n;
+    if (!n) {
+        for (unsigned i = 0; i < builtin_rom_count && n < 15; i++)
+            opts[n++] = { builtin_roms[i].label, (int32_t)i, nullptr };
+        opts[n++] = { "SD card: amiga/kick.rom", 100, "SD card" };
+    }
+    cnt = n;
+    return opts;
+}
+
 // ── actions and pages ──────────────────────────────────────────────────────────
+
+// Disks > DF0: the file name of what is in the drive.
+static const char* df0Label() {
+    const char* p = machine_disk(0);
+    if (!*p) return "empty";
+    const char* s = strrchr(p, '/');
+    return s ? s + 1 : p;
+}
+
+static void act_df0_insert() {
+    // Start where the last disk came from, else in /amiga/.
+    static std::string dir;
+    if (dir.empty()) {
+        const std::string cur = machine_disk(0);
+        dir = cur.empty() ? std::string("/amiga/") : cur.substr(0, cur.find_last_of('/') + 1);
+        FILINFO fi;
+        if (dir != "/" && f_stat(dir.substr(0, dir.size() - 1).c_str(), &fi) != FR_OK) dir = "/";
+    }
+    const std::string r = browseFile(dir, "Insert into DF0", BROWSE_ADF);
+    if (r.size() < 2 || r[0] != 'R') return;
+    const std::string path = dir + r.substr(1);
+    if (!machine_insert(0, path.c_str(), Config::df0_wp)) {
+        uiToast("Not an 880 KB ADF, or it cannot be opened", true, 2000);
+        return;
+    }
+    Config::df0 = path;
+    Config::save();
+    requestClose();                  // back to the Amiga with the disk in
+}
+
+static void act_df0_eject() {
+    machine_eject(0);
+    Config::df0.clear();
+    Config::save();
+}
+
 
 static void act_amiga_reset() {
     if (uiConfirm("Reset the Amiga?", "Reset", true)) {
@@ -77,6 +134,17 @@ static void page_about() {
 
 // ── the tree ───────────────────────────────────────────────────────────────────
 
+static const Node kMachine[] = {
+    NM_RADIO_D("Kickstart", SET_KICK, kickOpts, nullptr),
+    NM_ACTION ("Reset the Amiga", act_amiga_reset, nullptr),
+};
+
+static const Node kDisks[] = {
+    NM_ACTIONV("DF0", act_df0_insert, df0Label, nullptr),
+    NM_ACTION ("Eject DF0", act_df0_eject, nullptr),
+    NM_BOOL   ("DF0 write protect", SET_DF0_WP, nullptr),
+};
+
 static const Node kInput[] = {
     NM_BOOL ("Cursor keys as joystick", SET_CURSOR_JOY, nullptr),
     NM_RADIO("Mouse speed",             SET_MOUSE_SENS, opt_mouse_sens, nullptr),
@@ -100,6 +168,8 @@ static const Node kReset[] = {
 };
 
 static const Node kRoot[] = {
+    NM_SUB("Disks",     kDisks,     nullptr),
+    NM_SUB("Machine",   kMachine,   nullptr),
     NM_SUB("Input",     kInput,     nullptr),
     NM_SUB("Interface", kInterface, nullptr),
     NM_SUB("Help",      kHelp,      nullptr),

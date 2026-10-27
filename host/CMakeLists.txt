@@ -27,7 +27,7 @@ if(PkgConfig_FOUND)
     pkg_check_modules(SDL2 sdl2)
 endif()
 if(SDL2_FOUND)
-    enable_language(CXX)
+    enable_language(CXX ASM)
     set(CMAKE_CXX_STANDARD 17)
     set(SDL_DIR ${CMAKE_CURRENT_LIST_DIR}/sdl)
     # HID_KEY_* usage ids from TinyUSB's hid.h, so the PC and the board share them.
@@ -38,6 +38,8 @@ if(SDL2_FOUND)
     set(FIRMWARE_SRC
         ${ROOT}/src/pico/main.c
         ${ROOT}/src/pico/input.cpp
+        ${ROOT}/src/pico/machine.cpp
+        ${ROOT}/src/pico/roms.c
         ${ROOT}/src/pico/drivers/input/keyboard.cpp
         ${ROOT}/src/pico/drivers/input/codepages.cpp
         ${ROOT}/src/pico/app/Config.cpp
@@ -47,6 +49,7 @@ if(SDL2_FOUND)
         ${ROOT}/src/pico/ui/UiFont.cpp
         ${ROOT}/src/pico/ui/UiFontCyr.cpp
         ${ROOT}/src/pico/ui/UiDialog.cpp
+        ${ROOT}/src/pico/ui/UiBrowser.cpp
         ${ROOT}/src/pico/ui/UiStage.cpp
         ${ROOT}/src/pico/ui/UiTree.cpp
         ${ROOT}/src/pico/ui/UiDesc.cpp
@@ -58,6 +61,8 @@ if(SDL2_FOUND)
         ${SDL_DIR}/host_platform.cpp
         ${SDL_DIR}/host_fatfs.cpp
         ${SDL_DIR}/host_fsdir.cpp)
+    include(${ROOT}/cmake/roms.cmake)
+    amiga_builtin_roms(pico-amiga)
     target_include_directories(pico-amiga PRIVATE
         ${SDL_DIR}/include ${SDL_DIR} ${CMAKE_BINARY_DIR}/gen
         ${ROOT}/src/pico ${ROOT}/src/pico/ui ${ROOT}/src/pico/drivers ${ROOT}/src/pico/drivers/input

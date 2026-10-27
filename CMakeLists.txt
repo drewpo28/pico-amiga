@@ -20,6 +20,8 @@ endif()
 cmake_minimum_required(VERSION 3.13)
 
 include(cmake/boards.cmake)          # before the SDK: it picks PICO_BOARD
+# 16 MB of flash on every board: the built-in ROMs (cmake/roms.cmake) live there.
+set(PICO_FLASH_SIZE_BYTES "16 * 1024 * 1024")
 # TinyUSB 0.21 (pico-speccy's copy): its host stack and xinput_host.c are what the
 # input drivers were tuned against. Must be set before pico_sdk_init().
 set(PICO_TINYUSB_PATH ${CMAKE_CURRENT_LIST_DIR}/external/tinyusb)
@@ -50,6 +52,8 @@ add_executable(pico-amiga
     src/pico/psram.c
     src/pico/usb_disk_stub.c
     src/pico/input.cpp
+    src/pico/machine.cpp
+    src/pico/roms.c
     src/pico/input_devices.cpp
     # The menu (pico-speccy's nm:: UI) and the settings.
     src/pico/app/Config.cpp
@@ -59,6 +63,7 @@ add_executable(pico-amiga
     src/pico/ui/UiFont.cpp
     src/pico/ui/UiFontCyr.cpp
     src/pico/ui/UiDialog.cpp
+    src/pico/ui/UiBrowser.cpp
     src/pico/ui/UiStage.cpp
     src/pico/ui/UiTree.cpp
     src/pico/ui/UiDesc.cpp
@@ -77,6 +82,8 @@ add_executable(pico-amiga
     src/pico/drivers/audio/audio.c
     src/pico/drivers/audio/pcm5122_init.c
 )
+include(cmake/roms.cmake)
+amiga_builtin_roms(pico-amiga)
 pico_generate_pio_header(pico-amiga ${CMAKE_CURRENT_LIST_DIR}/src/pico/drivers/ps2kbd/ps2kbd_mrmltr.pio)
 pico_generate_pio_header(pico-amiga ${CMAKE_CURRENT_LIST_DIR}/src/pico/drivers/audio/audio_i2s.pio)
 if(VIDEO STREQUAL "PIO")

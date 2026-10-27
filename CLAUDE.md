@@ -29,6 +29,12 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   reboot), `app/Config.*` (settings in pico-speccy's storage.nvs format, at
   /.config/pico-amiga/<board tag>/storage.nvs). Check menu changes on the PC host:
   `PICO_AMIGA_KEYS=150:F1,200:Down,...` presses keys at output frames.
+- Built-in ROMs (Machine > Kickstart: DiagROM, KS 1.2/1.3/2.04/3.1) are linked
+  into the firmware and the host with `.incbin` from `ROMS_DIR` (default `debug/`,
+  git-ignored: the Kickstarts are Commodore's and must never be committed).
+  `cmake/roms.cmake` lists them; an id there is what storage.nvs keeps, never
+  reuse one. The firmware targets 16 MB flash; the core reads the ROM in place
+  (XIP). `machine.cpp` owns ROM selection and the drives (DF0 from the card).
 - `src/pico/drivers/` are pico-speccy's drivers (USB HID/XInput, fabgl VK keyboard
   queue, PS/2, NES pad, SD); local changes are marked `PICO-AMIGA:`, and
   `drivers/input_glue.h` stands in for pico-speccy's Config/Debug/ESPectrum.

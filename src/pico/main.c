@@ -9,13 +9,15 @@
 //   +0.0 MB  chip RAM 512 KB      +0.5 MB  slow RAM 512 KB ($C00000)
 //   +1.0 MB  Kickstart ROM        +1.5 MB  extended ROM (AROS) if present
 //
-// SD card files:
-//   /amiga/kick.rom   256 or 512 KB Kickstart (required; AROS works)
+// ROMs: the built-in ones (roms.h, picked in Machine > Kickstart), or from the card:
+//   /amiga/kick.rom   256 or 512 KB Kickstart (Kickstart = "SD card"; AROS works)
 //   /amiga/ext.rom    512 KB extended ROM at $E00000 (optional, AROS needs it)
-//   /amiga/df0.adf    disk in DF0 (optional, streamed from the card)
+// Disks: Disks > DF0 picks an ADF on the card (streamed from it); without a pick,
+//   /amiga/df0.adf goes into DF0 by itself.
+// Settings: /.config/pico-amiga/<board>/storage.nvs (app/Config.h).
 //
 // Boot failures paint the screen one colour and blink the LED:
-//   red = no or too little PSRAM, magenta = no SD card, blue = no kick.rom.
+//   red = no or too little PSRAM, magenta = no ROM and no card, blue = no ROM.
 #include <string.h>
 #include <stdio.h>
 #include "pico/stdlib.h"
@@ -30,6 +32,7 @@
 #include "input.h"
 #include "video.h"
 #include "ui/ui.h"
+#include "machine.h"
 
 #ifndef CPU_MHZ
 #define CPU_MHZ 378
@@ -52,8 +55,6 @@ static uint16_t fb[AMIGA_FB_W * AMIGA_FB_H];
 static int16_t audio_ring[AUDIO_FRAMES * 2];
 
 static FATFS fs;
-static FIL   adf;
-static bool  adf_open;
 
 static bool chip_is_rp2350a(void) { return sysinfo_hw->package_sel & 1u; }
 
@@ -90,29 +91,6 @@ static void __attribute__((noreturn)) fail(uint16_t colour) {
     }
 }
 
-static uint32_t load_file(const char *path, uint8_t *dst, uint32_t max) {
-    FIL f;
-    if (f_open(&f, path, FA_READ) != FR_OK) return 0;
-    UINT n = 0;
-    FSIZE_t size = f_size(&f);
-    if (size > max) size = max;
-    if (f_read(&f, dst, (UINT)size, &n) != FR_OK) n = 0;
-    f_close(&f);
-    return n;
-}
-
-static int adf_read(void *ctx, uint32_t off, void *dst, uint32_t len) {
-    FIL *f = ctx; UINT n;
-    if (f_lseek(f, off) != FR_OK || f_read(f, dst, len, &n) != FR_OK || n != len) return -1;
-    return 0;
-}
-static int adf_write(void *ctx, uint32_t off, const void *src, uint32_t len) {
-    FIL *f = ctx; UINT n;
-    if (f_lseek(f, off) != FR_OK || f_write(f, src, len, &n) != FR_OK || n != len) return -1;
-    f_sync(f);
-    return 0;
-}
-
 int main(void) {
     clock_overclock(CPU_MHZ);
     led_init();
@@ -133,28 +111,19 @@ int main(void) {
     memset(&cfg, 0, sizeof cfg);
     cfg.chip_ram = ps;              cfg.chip_size = 512 * KB;
     cfg.slow_ram = ps + 512 * KB;   cfg.slow_size = 512 * KB;
-    uint8_t *rom = ps + 1 * MB, *ext = ps + 1 * MB + 512 * KB;
+    machine_init(ps + 1 * MB, ps + 1 * MB + 512 * KB);
 
-    if (f_mount(&fs, "", 1) != FR_OK) fail(0xF0F);
-    ui_init(fb);                     // settings from the card; the menu draws into fb
-    uint32_t rs = load_file("/amiga/kick.rom", rom, 512 * KB);
-    if (rs != 256 * KB && rs != 512 * KB) fail(0x00F);
-    cfg.rom = rom; cfg.rom_size = rs;
-    uint32_t es = load_file("/amiga/ext.rom", ext, 512 * KB);
-    if (es == 512 * KB) { cfg.ext_rom = ext; cfg.ext_size = es; }
+    // The card holds the settings, the disks and an optional kick.rom; with a
+    // built-in ROM the machine also boots without one.
+    const bool card = f_mount(&fs, "", 1) == FR_OK;
+    ui_init(fb);                     // settings (defaults without a card); the menu draws into fb
+    if (!machine_select_rom(&cfg)) fail(card ? 0x00F : 0xF0F);
 
     cfg.framebuffer = fb;
     cfg.audio_ring = audio_ring;
     cfg.audio_frames = AUDIO_FRAMES;
     amiga_init(&cfg);
-
-    if (f_open(&adf, "/amiga/df0.adf", FA_READ | FA_WRITE) == FR_OK ||
-        f_open(&adf, "/amiga/df0.adf", FA_READ) == FR_OK) {
-        adf_open = true;
-        amiga_disk_t d = { adf_read, NULL, &adf, (uint32_t)f_size(&adf) };
-        if (adf.flag & FA_WRITE) d.write = adf_write;
-        amiga_insert_disk(0, &d);
-    }
+    if (card) machine_restore_disks();
 
     audio_out_start(audio_ring, AUDIO_FRAMES);
 
