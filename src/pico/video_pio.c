@@ -76,6 +76,9 @@ static uint32_t isl_fixed_w[HDMI_PK_FIXED][2][32][2];
 static uint8_t  blank_kind[2] = { 0xFF, 0xFF };
 // Core 1's time (DWT cycles): the line IRQ and the TMDS encoding (video.h).
 static volatile uint32_t irq_cyc, enc_cyc;
+// Line IRQs that finished after the other channel had already run out: the
+// chain then restarted this one with its spent settings (a torn line or island).
+static volatile uint32_t irq_missed;
 
 static volatile uint32_t frames;
 static volatile int      shown_line = -1;          // output line whose pixels were last posted
@@ -188,6 +191,8 @@ static void __not_in_flash_func(dma_irq)(void) {
         part_b = false;
         if (++v_line == V_TOTAL) { v_line = 0; frames++; shown_line = -1; }
     }
+    if (!(dma_hw->ch[ch == DMACH_PING ? DMACH_PONG : DMACH_PING].ctrl_trig & DMA_CH0_CTRL_TRIG_BUSY_BITS))
+        irq_missed++;
     irq_cyc += board_cycles() - t0;
 }
 
@@ -330,4 +335,5 @@ void hdmi_start(const amiga_row_t *framebuffer) {
 
 uint32_t hdmi_frames(void) { return frames; }
 uint32_t hdmi_late_lines(void) { return late; }
+uint32_t hdmi_irq_missed(void) { return irq_missed; }
 void hdmi_core1_cycles(uint32_t *irq, uint32_t *enc) { *irq = irq_cyc; *enc = enc_cyc; }

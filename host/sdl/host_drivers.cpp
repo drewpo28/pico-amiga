@@ -61,6 +61,7 @@ extern "C" void video_start(const amiga_row_t *framebuffer) {
 }
 extern "C" uint32_t video_frames(void) { return s_frames; }
 extern "C" uint32_t video_late_lines(void) { return 0; }
+extern "C" uint32_t video_irq_missed(void) { return 0; }
 extern "C" void video_core1_cycles(uint32_t *irq, uint32_t *enc) { *irq = *enc = 0; }
 
 // ---- audio_out.h: an SDL device pulling the Paula ring ------------------------------
