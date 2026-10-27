@@ -65,6 +65,7 @@ AMIGA_HOT static int planes(void) {
 // Bit-spread tables: one plane word -> per-pixel bytes holding 0/1.
 static uint32_t spread4[16];     // nibble -> 4 bytes (hires: 1 byte per pixel)
 static uint64_t spread4x2[16];   // nibble -> 8 bytes (lowres: each pixel twice)
+static uint32_t spread8[256][2]; // byte -> 8 bytes, pixels 0-3 and 4-7
 
 static void tables_init(void) {
     for (int n = 0; n < 16; n++) {
@@ -77,6 +78,10 @@ static void tables_init(void) {
         }
         spread4[n] = v;
         spread4x2[n] = w;
+    }
+    for (int b = 0; b < 256; b++) {
+        spread8[b][0] = spread4[b >> 4];
+        spread8[b][1] = spread4[b & 15];
     }
 }
 
@@ -141,26 +146,39 @@ AMIGA_HOT static void fetch_unit(int k) {
     // the same pixels, so a group of pixels is built in a register and ORed in
     // once (OR, not store: a scroll or DDF change mid-line may overlap units).
     if (d1 == d2 && np > 0) {
+        // Eight pixels at a time: one byte of every plane through spread8.
         if (hires) {
             for (int j = 0, pos = x + d1; j < 2; j++, pos += 16) {
                 if (pos < 0 || pos + 16 > PF_SIZE) continue;
-                for (int n = 0, s = 12; n < 4; n++, s -= 4) {
-                    uint32_t v = 0;
-                    for (int p = 0; p < np; p++) v |= spread4[(wd[p][j] >> s) & 15] << p;
-                    or32(pf + pos + 4 * n, v);
+                for (int s = 8, o = 0; s >= 0; s -= 8, o += 8) {
+                    uint32_t lo = 0, hi = 0;
+                    for (int p = 0; p < np; p++) {
+                        const uint32_t *t = spread8[(wd[p][j] >> s) & 0xFF];
+                        lo |= t[0] << p;
+                        hi |= t[1] << p;
+                    }
+                    or32(pf + pos + o, lo);
+                    or32(pf + pos + o + 4, hi);
                 }
             }
         } else {
             const int pos = x + d1;
             if (pos >= 0 && pos + 32 <= PF_SIZE) {
-                for (int n = 0, s = 12; n < 4; n++, s -= 4) {
-                    uint32_t v = 0;
-                    for (int p = 0; p < np; p++) v |= spread4[(wd[p][0] >> s) & 15] << p;
+                for (int s = 8, o = 0; s >= 0; s -= 8, o += 16) {
+                    uint32_t q[2] = { 0, 0 };
+                    for (int p = 0; p < np; p++) {
+                        const uint32_t *t = spread8[(wd[p][0] >> s) & 0xFF];
+                        q[0] |= t[0] << p;
+                        q[1] |= t[1] << p;
+                    }
                     // Each lowres pixel twice: bytes abcd -> aabb ccdd.
-                    const uint32_t lo = (v & 0xFF) | (v & 0xFF) << 8 | (v & 0xFF00) << 8 | (v & 0xFF00) << 16;
-                    const uint32_t hi = (v >> 16 & 0xFF) | (v >> 16 & 0xFF) << 8 | (v >> 8 & 0xFF0000) | (v & 0xFF000000);
-                    or32(pf + pos + 8 * n, lo);
-                    or32(pf + pos + 8 * n + 4, hi);
+                    for (int h = 0; h < 2; h++) {
+                        const uint32_t v = q[h];
+                        or32(pf + pos + o + 8 * h,
+                             (v & 0xFF) | (v & 0xFF) << 8 | (v & 0xFF00) << 8 | (v & 0xFF00) << 16);
+                        or32(pf + pos + o + 8 * h + 4,
+                             (v >> 16 & 0xFF) | (v >> 16 & 0xFF) << 8 | (v >> 8 & 0xFF0000) | (v & 0xFF000000));
+                    }
                 }
             }
         }
