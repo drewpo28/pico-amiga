@@ -51,6 +51,18 @@ add_executable(pico-amiga
     src/pico/usb_disk_stub.c
     src/pico/input.cpp
     src/pico/input_devices.cpp
+    # The menu (pico-speccy's nm:: UI) and the settings.
+    src/pico/app/Config.cpp
+    src/pico/ui/UiNav.cpp
+    src/pico/ui/UiRender.cpp
+    src/pico/ui/UiGfx.cpp
+    src/pico/ui/UiFont.cpp
+    src/pico/ui/UiFontCyr.cpp
+    src/pico/ui/UiDialog.cpp
+    src/pico/ui/UiStage.cpp
+    src/pico/ui/UiTree.cpp
+    src/pico/ui/UiDesc.cpp
+    src/pico/ui/UiPlatform.cpp
     # Input drivers from pico-speccy (PICO-AMIGA: marks local changes).
     src/pico/drivers/usbhost/hid_app.cpp
     src/pico/drivers/usbhost/joy_hid.cpp
@@ -74,10 +86,10 @@ if(VIDEO STREQUAL "PIO")
 else()
     target_sources(pico-amiga PRIVATE src/pico/video_hstx.c)
 endif()
-target_include_directories(pico-amiga PRIVATE src/pico src/pico/drivers
+target_include_directories(pico-amiga PRIVATE src/pico src/pico/ui src/pico/drivers
     src/pico/drivers/usbhost src/pico/drivers/input external)
 target_compile_definitions(pico-amiga PRIVATE ${BOARD_DEFS}
-    CPU_MHZ=${CPU_MHZ} PORT_VERSION="${PORT_VERSION}")
+    CPU_MHZ=${CPU_MHZ} PORT_VERSION="${PORT_VERSION}" CONFIG_BOARD_TAG="${BOARD_TAG}")
 target_compile_definitions(sdcard INTERFACE ${BOARD_DEFS})
 target_compile_options(pico-amiga PRIVATE -Wall -Wextra -Wno-unused-parameter)
 # Third-party code (pico-speccy's drivers): keep its warnings out of ours.
@@ -89,6 +101,12 @@ set_source_files_properties(
     src/pico/drivers/nespad/nespad.cpp
     src/pico/drivers/audio/audio.c src/pico/drivers/audio/pcm5122_init.c
     PROPERTIES COMPILE_OPTIONS "-w")
+# The menu's node/option tables leave trailing fields to their zero default (the
+# pico-speccy style), its labels are cut to fit on purpose (snprintf), and
+# pico-speccy's codepages.h compares int with unsigned.
+file(GLOB UI_SRC ${CMAKE_CURRENT_LIST_DIR}/src/pico/ui/*.cpp)
+set_source_files_properties(${UI_SRC} src/pico/app/Config.cpp src/pico/input.cpp
+    PROPERTIES COMPILE_OPTIONS "-Wno-missing-field-initializers;-Wno-sign-compare;-Wno-format-truncation")
 target_link_libraries(pico-amiga PRIVATE
     amiga_core
     sdcard fatfs

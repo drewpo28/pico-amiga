@@ -29,6 +29,7 @@
 #include "psram.h"
 #include "input.h"
 #include "video.h"
+#include "ui/ui.h"
 
 #ifndef CPU_MHZ
 #define CPU_MHZ 378
@@ -135,6 +136,7 @@ int main(void) {
     uint8_t *rom = ps + 1 * MB, *ext = ps + 1 * MB + 512 * KB;
 
     if (f_mount(&fs, "", 1) != FR_OK) fail(0xF0F);
+    ui_init(fb);                     // settings from the card; the menu draws into fb
     uint32_t rs = load_file("/amiga/kick.rom", rom, 512 * KB);
     if (rs != 256 * KB && rs != 512 * KB) fail(0x00F);
     cfg.rom = rom; cfg.rom_size = rs;

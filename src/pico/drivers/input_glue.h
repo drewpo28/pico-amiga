@@ -1,18 +1,12 @@
 // PICO-AMIGA: what the input drivers taken from pico-speccy (usbhost/, input/)
 // expect from that program's app/Config.h, app/ESPectrum.h and app/Debug.h.
-// The names are kept so those files stay close to their originals; the state
-// itself lives in src/pico/input.cpp.
+// The names are kept so those files stay close to their originals; Config is
+// pico-amiga's (src/pico/app/Config.h), the mouse state lives in input.cpp.
 #pragma once
 #include <stdint.h>
 #include <stdbool.h>
 #include "drivers/input/fabutils.h"
-
-namespace Config {
-    extern uint8_t  secondJoy;      // 1: USB/NES pad 1 does not drive joystick 1
-    extern uint16_t mouse_sens;     // Q8 multiplier on HID counts (256 = 1:1)
-    extern uint8_t  mouse_swap;     // 0 off, 1 on, 2 auto (first single press decides)
-    extern bool     CursorAsJoy;    // cursor keys + Ctrl drive joystick 1
-}
+#include "app/Config.h"           // secondJoy, mouse_sens, mouse_swap, CursorAsJoy
 
 namespace Debug {
     inline void log(const char *, ...) {}

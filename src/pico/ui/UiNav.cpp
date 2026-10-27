@@ -1,0 +1,766 @@
+// pico-amiga (from pico-speccy) — fullscreen menu navigation and main loop.
+// PICO-AMIGA: keys come through UiPlatform.h; pico-speccy's session hooks (network,
+// profiles, joystick profiles, snapshots), fast menu, disk/persist hot-key entries,
+// SRAM budget toast and heap probes are gone.
+//
+// Key handling is deliberately NOT the classic macros: is_back folds in VK_F1 *and*
+// VK_MENU_LEFT and is_enter folds in VK_MENU_RIGHT (OSDMain.h), whereas here Right
+// means "enter the right pane" and Left means "go back to the left pane".
+//
+// Only the synthetic VK_MENU_* keys are consumed. kbdExtraMapping (main.cpp) injects
+// a VK_MENU_* twin alongside every raw arrow, and the repeat handler re-injects the
+// synthetic ones, so handling both would move the cursor twice per press.
+
+#include "OSDNewMenu.h"
+
+
+#include <ctype.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "UiNav.h"
+#include "UiRender.h"
+#include "UiStage.h"
+#include "UiStrings.h"
+#include "UiDialog.h"
+#include "UiPlatform.h"
+#include <stdlib.h>
+
+namespace nm {
+
+State S;
+
+const Option opt_onoff[2] = { { "Off", 0 }, { "On", 1 } };
+
+void DynRows::add(const char* lbl, const char* val, int32_t t, bool dimmed) {
+    if (n >= NM_DYN_MAX_ROWS) return;
+    snprintf(label[n], NM_DYN_LABEL_LEN, "%s", lbl ? lbl : "");
+    snprintf(value[n], NM_DYN_VALUE_LEN, "%s", val ? val : "");
+    tag[n] = t;
+    dim[n] = dimmed ? 1 : 0;
+    badge[n][0] = '\0';
+    badge_st[n] = 0;
+    n++;
+}
+
+void DynRows::badgeLast(const char* txt, bool active) {
+    if (!n || !txt) return;
+    snprintf(badge[n - 1], sizeof(badge[0]), "%s", txt);
+    badge_st[n - 1] = active ? 1 : 2;
+}
+
+void requestClose() { S.quit = true; }
+
+// ── level helpers ──────────────────────────────────────────────────────────────
+
+void buildVisible(Level& L) {
+    L.nvis = 0;
+    if (L.dyn) {
+        // The pool is already exactly what should be shown; dimmed rows stay in the list
+        // (they carry information) and are refused at activation instead.
+        for (uint8_t i = 0; i < S.dyn->n && L.nvis < NM_MAX_ROWS; i++) L.vis[L.nvis++] = i;
+    } else {
+        for (uint8_t i = 0; i < L.count && L.nvis < NM_MAX_ROWS; i++)
+            if (!L.nodes[i].visible || L.nodes[i].visible())
+                L.vis[L.nvis++] = i;
+    }
+    if (L.sel >= L.nvis) L.sel = L.nvis ? L.nvis - 1 : 0;
+    if (L.top > L.sel)   L.top = L.sel;
+    if (L.sel >= L.top + LY.body_rows)
+        L.top = L.sel - LY.body_rows + 1;
+}
+
+// Hidden children must not appear in the right-pane preview either, so the count and
+// the row lookup both walk the visible subset.
+const Node* subVisibleChild(const Node* n, int i) {
+    if (!n || n->kind != K_SUB) return nullptr;
+    int seen = 0;
+    for (uint8_t k = 0; k < n->count; k++) {
+        const Node& c = n->kids[k];
+        if (c.visible && !c.visible()) continue;
+        if (seen == i) return &c;
+        seen++;
+    }
+    return nullptr;
+}
+
+int rightRowCount(const Node* n) {
+    if (!n) return 0;
+    switch (n->kind) {
+        case K_RADIO:
+        case K_BOOL:
+        case K_PICK: { uint8_t c; nodeOptions(*n, c); return c; }
+        case K_SUB: {
+            int v = 0;
+            for (uint8_t k = 0; k < n->count; k++)
+                if (!n->kids[k].visible || n->kids[k].visible()) v++;
+            return v;
+        }
+        default:     return 1;
+    }
+}
+
+const char* rightTitle(const Node* n) {
+    return n ? n->label : "";
+}
+
+void breadcrumb(char* out, size_t cap) {
+    // "Settings > Storage > Betadisk" — walks the parent chain of the open levels.
+    size_t used = snprintf(out, cap, "Settings");
+    for (uint8_t d = 1; d <= S.depth && used < cap; d++) {
+        const Node* p = S.lv[d].parent;
+        if (!p) break;
+        used += snprintf(out + used, cap - used, " > %s", p->label);
+    }
+}
+
+static bool hasValuePane(const Node* n) {
+    // "the right pane is a list you move through". K_PICK is one even though the
+    // rows are not values — the cursor, the scrolling and the landing row are the
+    // same machinery either way.
+    return n && (n->kind == K_RADIO || n->kind == K_BOOL || n->kind == K_PICK);
+}
+static bool isPickNode(const Node* n) { return n && n->kind == K_PICK; }
+static bool isIntNode(const Node* n) {
+    return n && n->kind == K_INT;
+}
+
+// ── key decode ─────────────────────────────────────────────────────────────────
+
+enum NmKey : uint8_t {
+    NK_NONE, NK_UP, NK_DOWN, NK_LEFT, NK_RIGHT, NK_ENTER,
+    NK_ESC, NK_CLOSE, NK_HOME, NK_END, NK_PGUP, NK_PGDN,
+    NK_F2, NK_F3, NK_F4, NK_F5, NK_F6, NK_F8   // per-row verbs, only meaningful on dynamic levels
+};
+
+static NmKey decode(const fabgl::VirtualKeyItem& k) {
+    switch (k.vk) {
+        case fabgl::VK_MENU_UP:    return NK_UP;
+        case fabgl::VK_MENU_DOWN:  return NK_DOWN;
+        case fabgl::VK_MENU_LEFT:  return NK_LEFT;
+        case fabgl::VK_MENU_RIGHT: return NK_RIGHT;
+        case fabgl::VK_MENU_ENTER: return NK_ENTER;
+        case fabgl::VK_MENU_HOME:
+        case fabgl::VK_HOME:       return NK_HOME;
+        case fabgl::VK_END:        return NK_END;
+        case fabgl::VK_PAGEUP:     return NK_PGUP;
+        case fabgl::VK_PAGEDOWN:   return NK_PGDN;
+        case fabgl::VK_F2:         return NK_F2;
+        case fabgl::VK_F3:         return NK_F3;
+        case fabgl::VK_F4:         return NK_F4;
+        case fabgl::VK_F5:         return NK_F5;
+        case fabgl::VK_F6:         return NK_F6;
+        case fabgl::VK_F8:         return NK_F8;
+        case fabgl::VK_ESCAPE:     return NK_ESC;
+        case fabgl::VK_F1:         return NK_CLOSE;   // closes from any depth
+        default:                   return NK_NONE;
+    }
+}
+
+// ── movement ───────────────────────────────────────────────────────────────────
+
+// What the right pane shows for a dynamic row: the verbs available on it.
+static const char* const kDynHints[] = {
+    SYM_ENTER " Mount a file",
+    "F2  Write protect",
+    "F8  Eject",
+};
+
+const char* dynHint(int i) {
+    // A dynamic level may carry its own verb list (NM_DYNH puts it in opts).
+    const Node* o = dynOwner();
+    if (o && o->opts && o->count) {
+        return (i >= 0 && i < (int)o->count) ? o->opts[i].label : nullptr;
+    }
+    const int n = (int)(sizeof(kDynHints) / sizeof(kDynHints[0]));
+    return (i >= 0 && i < n) ? kDynHints[i] : nullptr;
+}
+
+static void refreshRightPane() {
+    if (curLevel().dyn) {
+        const Node* o = dynOwner();
+        S.rcount = (o && o->opts && o->count)
+                       ? o->count
+                       : (uint8_t)(sizeof(kDynHints) / sizeof(kDynHints[0]));
+        S.rtop = S.rsel = 0;
+        return;
+    }
+    const Node* n = curNode();
+    if (n && !nodeEnabled(*n)) {           // greyed row: nothing to interact with
+        S.rcount = 0;
+        S.rtop = S.rsel = 0;
+        return;
+    }
+    S.rcount = (uint8_t)rightRowCount(n);
+    S.rtop = 0;
+    S.rsel = 0;
+    if (hasValuePane(n)) {                 // land on the currently selected option
+        int32_t v = nodeValue(*n);
+        uint8_t cnt; const Option* o = nodeOptions(*n, cnt);
+        for (uint8_t i = 0; i < cnt; i++)
+            if (o[i].value == v) { S.rsel = i; break; }
+        if (S.rsel >= LY.body_rows) S.rtop = S.rsel - LY.body_rows + 1;
+    }
+}
+
+// wrap: single-step moves roll over top<->bottom; paging/Home/End keep clamping.
+static void moveLeft(int delta, bool wrap = false) {
+    Level& L = curLevel();
+    if (!L.nvis) return;
+    int old = L.sel, oldTop = L.top;
+    int s = L.sel + delta;
+    if (wrap)      s = (s < 0) ? L.nvis - 1 : (s > L.nvis - 1) ? 0 : s;
+    if (s < 0) s = 0;
+    if (s > L.nvis - 1) s = L.nvis - 1;
+    L.sel = (uint8_t)s;
+    if (L.sel < L.top) L.top = L.sel;
+    if (L.sel >= L.top + LY.body_rows) L.top = L.sel - LY.body_rows + 1;
+
+    if (L.sel == old && L.top == oldTop) return;
+    if (L.top != oldTop) markDirty(D_LEFT);
+    else { markLeftRow(old - L.top); markLeftRow(L.sel - L.top); }
+    refreshRightPane();
+    markDirty(D_PTITLE | D_RIGHT | D_FOOT);
+}
+
+static void moveRight(int delta, bool wrap = false) {
+    const Node* n = curNode();
+    if (!hasValuePane(n) || !S.rcount) return;
+    int old = S.rsel, oldTop = S.rtop;
+    int s = S.rsel + delta;
+    if (wrap)      s = (s < 0) ? S.rcount - 1 : (s > S.rcount - 1) ? 0 : s;
+    if (s < 0) s = 0;
+    if (s > S.rcount - 1) s = S.rcount - 1;
+    S.rsel = (uint8_t)s;
+    if (S.rsel < S.rtop) S.rtop = S.rsel;
+    if (S.rsel >= S.rtop + LY.body_rows) S.rtop = S.rsel - LY.body_rows + 1;
+
+    if (S.rsel == old && S.rtop == oldTop) return;
+    if (S.rtop != oldTop) markDirty(D_RIGHT);
+    else { markRightRow(old - S.rtop); markRightRow(S.rsel - S.rtop); }
+    markDirty(D_FOOT);
+}
+
+// Re-evaluate visible() for the open level without losing the cursor: rows can appear or
+// disappear underneath it, so the NODE index is what gets restored, not the row number.
+static void rebuildKeepingSelection() {
+    Level& L = curLevel();
+    const uint8_t wanted = L.nvis ? L.vis[L.sel] : 0;
+    buildVisible(L);
+    for (uint8_t i = 0; i < L.nvis; i++)
+        if (L.vis[i] == wanted) { L.sel = i; break; }
+    if (L.sel < L.top) L.top = L.sel;
+    if (L.sel >= L.top + LY.body_rows) L.top = L.sel - LY.body_rows + 1;
+}
+
+static void enterLevel(const Node* n) {
+    if (S.depth + 1 >= NM_MAX_DEPTH) return;
+    S.depth++;
+    Level& L = curLevel();
+    L.parent = n;
+    L.sel = L.top = 0;
+    L.dyn = false;
+    if (n->kind == K_SUB) {
+        L.nodes = n->kids;
+        L.count = n->count;
+    } else if (n->kind == K_DYNAMIC && n->build) {
+        // Built ONCE, on entry — never per keypress, or holding Down would hammer the SD
+        // card. Rows are re-built explicitly after an action that changes them.
+        S.dyn->clear();
+        n->build(*S.dyn);
+        L.nodes = nullptr;
+        L.count = S.dyn->n;
+        L.dyn   = true;
+    } else {
+        S.depth--;
+        return;
+    }
+    buildVisible(L);
+    if (L.dyn && S.dyn->focus_set) {
+        // The builder asked to land on a specific row (persist picker: the last
+        // used slot).
+        for (uint8_t i = 0; i < L.nvis; i++)
+            if (S.dyn->tag[L.vis[i]] == S.dyn->focus_tag) { L.sel = i; break; }
+        if (L.sel >= L.top + LY.body_rows) L.top = L.sel - LY.body_rows + 1;
+    }
+    S.focus = FOCUS_LEFT;
+    refreshRightPane();
+    markDirty(D_SUB | D_PTITLE | D_LEFT | D_RIGHT | D_FOOT);
+}
+
+// closeAtRoot: what to do when there is no level left to back out of. Esc/F1 close the
+// menu; Left only ever navigates, so it stops dead at the home level — a stray Left on
+// the root list must not throw the user out of the menu.
+static void leaveLevel(bool closeAtRoot) {
+    if (S.depth <= S.home_depth) { if (closeAtRoot) S.quit = true; return; }
+    S.depth--;
+    S.focus = FOCUS_LEFT;
+    buildVisible(curLevel());
+    refreshRightPane();
+    markDirty(D_SUB | D_PTITLE | D_LEFT | D_RIGHT | D_FOOT);
+}
+
+// A reused modal dialog owns the whole screen while it runs, so the fullscreen has
+// to be repainted afterwards. The trap: in DS80 our 16 UI colours have REPLACED the
+// 16 Profi palette entries, and those dialogs draw with zxColor() indices 0..15 —
+// they would come out in our colours. Hand the palette back for the duration of the
+// dialog and re-install after.
+static void runModal(void (*fn)()) {
+    if (!fn) return;
+    gfxSuspendPalette();
+    fn();
+    gfxResumePalette();
+    // A modal may have painted anywhere, including over the separator and the
+    // window border, which flushDirty never repaints — restore the chrome first.
+    drawFrameOnce();
+    markDirty(D_ALL);
+}
+
+static void runModalArg(void (*fn)(int32_t), int32_t arg) {
+    if (!fn) return;
+    gfxSuspendPalette();
+    fn(arg);
+    gfxResumePalette();
+    drawFrameOnce();
+    markDirty(D_ALL);
+}
+
+// Run a dynamic row's verb, then rebuild the pool: mounting or ejecting changes exactly
+// the rows we are looking at.
+static void dynInvoke(uint8_t key) {
+    Level& L = curLevel();
+    const Node* owner = L.parent;
+    if (!L.dyn || !owner || !owner->rowkey || !L.nvis) return;
+    const uint8_t r = L.vis[L.sel];
+    if (S.dyn->dim[r]) return;                    // informational row
+    const int32_t tag = S.dyn->tag[r];
+
+    gfxSuspendPalette();
+    owner->rowkey(tag, key);
+    gfxResumePalette();
+
+    if (owner->build) { S.dyn->clear(); owner->build(*S.dyn); }
+    L.count = S.dyn->n;
+    buildVisible(L);
+    drawFrameOnce();
+    markDirty(D_ALL);
+}
+
+// Run a verb on the highlighted row of a K_PICK list, then rebuild it: saving,
+// renaming and removing all change the very rows being looked at. The handler may
+// have drawn modal boxes over the menu (name prompts, confirmations), so the chrome
+// is restored exactly as runModal does.
+static void pickInvoke(uint8_t key) {
+    const Node* n = curNode();
+    if (!isPickNode(n) || !n->rowkey || !nodeEnabled(*n)) return;
+    uint8_t cnt; const Option* o = nodeOptions(*n, cnt);
+    if (!cnt || S.rsel >= cnt) return;
+    const int32_t tag = o[S.rsel].value;
+
+    gfxSuspendPalette();
+    n->rowkey(tag, key);
+    gfxResumePalette();
+
+    // The value behind the marker (which profile is current) moves inside the
+    // handler, not through Stage — so nothing else would notice it had changed.
+    Stage::invalidate(n->setting);
+    S.rcount = (uint8_t)rightRowCount(n);
+    if (S.rcount && S.rsel >= S.rcount) S.rsel = S.rcount - 1;
+    drawFrameOnce();
+    markDirty(D_ALL);
+}
+
+static void activate() {
+    if (curLevel().dyn) { dynInvoke(0); return; }
+    const Node* n = curNode();
+    if (!n || !nodeEnabled(*n)) return;    // greyed rows are inert
+    switch (n->kind) {
+        case K_SUB:
+        case K_DYNAMIC:
+            enterLevel(n);
+            break;
+        case K_RADIO:
+        case K_BOOL:
+            if (S.focus == FOCUS_LEFT) {           // Right/Enter: step into the pane
+                S.focus = FOCUS_RIGHT;
+                markLeftRow(curLevel().sel - curLevel().top);
+                markDirty(D_RIGHT | D_FOOT);
+            } else {                               // commit the highlighted option
+                uint8_t cnt; const Option* o = nodeOptions(*n, cnt);
+                if (S.rsel >= cnt) break;
+                nodeSetValue(*n, o[S.rsel].value);
+                // A conflicting setting was switched off by this pick: say so now,
+                // then repaint everything the box covered.
+                if (const char* note = Stage::takeNote()) {
+                    uiToast(note, true, 2000);
+                    drawFrameOnce();
+                    markDirty(D_ALL);
+                }
+                // A value can gate other rows: picking Profi reveals XT keyboard and OSD
+                // palette, picking a Byte ROM reveals COBMECT mode. Rebuild the visible
+                // set so that happens now rather than on the next entry into the level.
+                rebuildKeepingSelection();
+                // ...and it can gate rows of THIS pane, when the options are built at
+                // runtime: the 90/75 Hz video modes are listed only at CPU 378 MHz plus
+                // whichever one is staged, so picking a standard mode drops the row the
+                // staged one had. S.rcount is what the renderer bounds the pane by, and
+                // a stale one leaves a highlightable row with nothing in it.
+                S.rcount = (uint8_t)rightRowCount(n);
+                if (S.rsel >= S.rcount) S.rsel = S.rcount ? (uint8_t)(S.rcount - 1) : 0;
+                if (S.rtop > S.rsel) S.rtop = S.rsel;
+                // An instant-apply hook may have drawn modal boxes over the menu (the
+                // transport's busy/reboot dialogs) — restore the chrome like runModal.
+                if (Stage::editDrawsModal(n->setting)) drawFrameOnce();
+                markDirty(Stage::editDrawsModal(n->setting)
+                              ? D_ALL : (D_LEFT | D_RIGHT | D_FOOT));
+            }
+            break;
+        case K_PICK:
+            if (S.focus == FOCUS_LEFT) {           // Right/Enter: step into the list
+                S.focus = FOCUS_RIGHT;
+                markLeftRow(curLevel().sel - curLevel().top);
+                markDirty(D_RIGHT | D_FOOT);
+            } else {
+                pickInvoke(0);                     // Enter on a row = its default verb
+            }
+            break;
+        case K_INT:
+            if (S.focus == FOCUS_LEFT) {
+                S.focus = FOCUS_RIGHT;
+                markLeftRow(curLevel().sel - curLevel().top);
+                markDirty(D_RIGHT | D_FOOT);
+            } else {                               // Enter leaves the slider
+                S.focus = FOCUS_LEFT;
+                markLeftRow(curLevel().sel - curLevel().top);
+                markDirty(D_RIGHT | D_FOOT);
+            }
+            break;
+        case K_ACTION:
+        case K_PAGE:
+            runModal(n->fn);
+            break;
+        case K_ACTION_ARG:
+            runModalArg(n->pick, n->lo);
+            break;
+        default:
+            break;
+    }
+}
+
+// Adjust the focused K_INT by mult steps, clamped to [lo, hi]. Redraws the slider,
+// the left row's value label and the pending counter.
+static void stepInt(int mult) {
+    const Node* n = curNode();
+    if (!isIntNode(n) || n->step == 0) return;
+    const int32_t old = nodeValue(*n);
+    int32_t v = old + (int32_t)n->step * mult;
+    if (v < n->lo) v = n->lo;
+    if (v > n->hi) v = n->hi;
+    if (v == old) return;
+    nodeSetValue(*n, v);
+    markRightRow(0);
+    markLeftRow(curLevel().sel - curLevel().top);
+    markDirty(D_FOOT);
+}
+
+// ── first-letter jump ──────────────────────────────────────────────────────────
+//
+// The same gesture the F5 browser has: an ordinary letter or digit moves the cursor
+// to the next row whose name starts with it, wrapping, so a long list (the root
+// menu, the ROM sets, 40 profile slots) is one keypress away instead of a dozen
+// Downs. Only the list the user is LOOKING at is searched — the left pane, or a
+// focused right pane that is itself a list; a K_INT slider and a dynamic level's
+// hint column have no rows to land on.
+//
+// The search starts one past the cursor and wraps, so repeating the key cycles
+// through every row sharing that initial.
+static char firstAlnum(const char* s) {
+    // Match on the first letter or digit, so a leading marker never swallows the
+    // key ("#07 Elite" answers to '0', the way the list reads).
+    if (!s) return 0;
+    for (; *s; s++) if (isalnum((uint8_t)*s)) return (char)toupper((uint8_t)*s);
+    return 0;
+}
+
+static const char* leftRowLabel(const Level& L, int i) {
+    if (i < 0 || i >= L.nvis) return nullptr;
+    const uint8_t r = L.vis[i];
+    return L.dyn ? S.dyn->label[r] : L.nodes[r].label;
+}
+
+static bool jumpToLetter(char c) {
+    const char want = (char)toupper((uint8_t)c);
+    if (S.focus == FOCUS_RIGHT) {
+        const Node* n = curLevel().dyn ? nullptr : curNode();
+        if (!hasValuePane(n) || !S.rcount) return false;
+        uint8_t cnt; const Option* o = nodeOptions(*n, cnt);
+        if (cnt > S.rcount) cnt = S.rcount;
+        if (!cnt) return false;
+        for (int i = 1; i <= cnt; i++) {
+            const int v = (S.rsel + i) % cnt;
+            if (firstAlnum(o[v].label) == want) { moveRight(v - S.rsel); return true; }
+        }
+        return false;
+    }
+    Level& L = curLevel();
+    if (!L.nvis) return false;
+    for (int i = 1; i <= L.nvis; i++) {
+        const int v = (L.sel + i) % L.nvis;
+        if (firstAlnum(leftRowLabel(L, v)) == want) { moveLeft(v - L.sel); return true; }
+    }
+    return false;
+}
+
+// A verb key goes to whichever list is in front of the user.
+static void pickOrDyn(uint8_t key) {
+    if (curLevel().dyn) { dynInvoke(key); return; }
+    if (S.focus == FOCUS_RIGHT) pickInvoke(key);
+}
+
+static bool handleKey(NmKey k) {
+    // In the right pane of a K_INT row, the vertical keys adjust the value.
+    const bool intPane = (S.focus == FOCUS_RIGHT) && !curLevel().dyn && isIntNode(curNode());
+    if (intPane) {
+        switch (k) {
+            case NK_UP:    stepInt(+1); return S.quit;
+            case NK_DOWN:  stepInt(-1); return S.quit;
+            case NK_PGUP:  stepInt(+4); return S.quit;
+            case NK_PGDN:  stepInt(-4); return S.quit;
+            case NK_HOME:  stepInt(+32767); return S.quit;
+            case NK_END:   stepInt(-32767); return S.quit;
+            default: break;                       // Enter/Left/Esc fall through below
+        }
+    }
+    switch (k) {
+        case NK_UP:    (S.focus == FOCUS_LEFT) ? moveLeft(-1, true) : moveRight(-1, true); break;
+        case NK_DOWN:  (S.focus == FOCUS_LEFT) ? moveLeft(+1, true) : moveRight(+1, true); break;
+        case NK_PGUP:  (S.focus == FOCUS_LEFT) ? moveLeft(-LY.body_rows)
+                                               : moveRight(-LY.body_rows); break;
+        case NK_PGDN:  (S.focus == FOCUS_LEFT) ? moveLeft(+LY.body_rows)
+                                               : moveRight(+LY.body_rows); break;
+        case NK_HOME:  (S.focus == FOCUS_LEFT) ? moveLeft(-NM_MAX_ROWS)
+                                               : moveRight(-NM_MAX_ROWS); break;
+        case NK_END:   (S.focus == FOCUS_LEFT) ? moveLeft(+NM_MAX_ROWS)
+                                               : moveRight(+NM_MAX_ROWS); break;
+        case NK_RIGHT:
+        case NK_ENTER: activate(); break;
+        case NK_LEFT:
+            if (S.focus == FOCUS_RIGHT) {
+                S.focus = FOCUS_LEFT;
+                markLeftRow(curLevel().sel - curLevel().top);
+                markDirty(D_RIGHT | D_FOOT);
+            } else {
+                leaveLevel(false);
+            }
+            break;
+        case NK_ESC:
+            if (S.focus == FOCUS_RIGHT) {
+                S.focus = FOCUS_LEFT;
+                markLeftRow(curLevel().sel - curLevel().top);
+                markDirty(D_RIGHT | D_FOOT);
+            } else {
+                leaveLevel(true);
+            }
+            break;
+        // Per-row verbs: a dynamic level dispatches on its own rows, a focused
+        // K_PICK on the right-pane row under the cursor. F3/F4 also mirror the
+        // classic persist dialogs, where the opening key repeated acts as Enter.
+        // Handlers that don't know a key ignore it.
+        case NK_F2: pickOrDyn(2); break;
+        case NK_F3: pickOrDyn(3); break;
+        case NK_F4: pickOrDyn(4); break;
+        case NK_F5: pickOrDyn(5); break;
+        case NK_F6: pickOrDyn(6); break;
+        case NK_F8: pickOrDyn(8); break;
+        case NK_CLOSE: S.quit = true; break;
+        default: break;
+    }
+    return S.quit;
+}
+
+// ── public entry points ────────────────────────────────────────────────────────
+
+bool available() {
+    gfxComputeSurface();          // no palette side effects
+    computeLayout();
+    return layoutFits();
+}
+
+// Depth-first search for `target`, recording the K_SUB chain that reaches it. Used to
+// open the menu already positioned on a level (the disk hot key).
+static bool findPath(const Node* nodes, uint8_t count, const Node* target,
+                     const Node** chain, int depth, int cap, int* outLen) {
+    for (uint8_t i = 0; i < count; i++) {
+        const Node& n = nodes[i];
+        if (&n == target) {
+            if (depth >= cap) return false;
+            chain[depth] = &n;
+            *outLen = depth + 1;
+            return true;
+        }
+        if (n.kind == K_SUB && depth < cap) {
+            chain[depth] = &n;
+            if (findPath(n.kids, n.count, target, chain, depth + 1, cap, outLen)) return true;
+        }
+    }
+    return false;
+}
+
+static void openPath(const Node* target) {
+    const Node* chain[NM_MAX_DEPTH];
+    int len = 0;
+    if (!findPath(rootNodes(), rootNodeCount(), target, chain, 0, NM_MAX_DEPTH, &len)) return;
+    for (int d = 0; d < len; d++) {
+        // Land the cursor on the node first so the level we push has the right parent and
+        // the breadcrumb reads correctly.
+        Level& L = curLevel();
+        for (uint8_t i = 0; i < L.nvis; i++)
+            if (&L.nodes[L.vis[i]] == chain[d]) { L.sel = i; break; }
+        if (L.sel >= L.top + LY.body_rows) L.top = L.sel - LY.body_rows + 1;
+        if (chain[d]->kind == K_SUB || chain[d]->kind == K_DYNAMIC) enterLevel(chain[d]);
+    }
+}
+
+// enterSaves: what Enter means in a focused K_PICK for this session. Only the F4
+// hot key sets it — every other way in is a "load" (or a list where it means
+// nothing), so it must be re-stated on every open rather than left standing.
+static void runInternal(const Node* openAt, bool enterSaves = false) {
+    gfxBegin();               // installs the UI palette (own 16 colours)
+    // The dynamic-row pool lives for this session only (UiNav.h). A nested run
+    // (a hot key opening a level while another session is up) reuses the outer one.
+    const bool ownDyn = (S.dyn == nullptr);
+    if (ownDyn) {
+        S.dyn = (DynRows*)calloc(1, sizeof(DynRows));
+        if (!S.dyn) { gfxEnd(); return; }        // no 3 KB for the menu: not our day
+    }
+    computeLayout();
+    if (!layoutFits()) { if (ownDyn) { free(S.dyn); S.dyn = nullptr; } gfxEnd(); return; }
+
+    // Fresh navigation state — but S.dyn is a heap pointer now (UiNav.h), so a
+    // whole-struct memset would drop the block: 3 256 B leaked per menu open (hw
+    // 2026-09-14, F3/Esc x3 read heap 26152 -> 22896 -> 19640). Keep it across.
+    { DynRows* keep = S.dyn; memset(&S, 0, sizeof(S)); S.dyn = keep; }
+    Stage::begin();
+    S.depth = 0;
+    S.focus = FOCUS_LEFT;
+    Level& L = curLevel();
+    L.nodes = rootNodes();
+    L.count = rootNodeCount();
+    L.parent = nullptr;
+    buildVisible(L);
+    refreshRightPane();
+
+    if (openAt) {
+        openPath(openAt);
+        S.home_depth = S.depth;
+        // openPath only calls refreshRightPane while it DESCENDS; its last hop just
+        // lands the cursor, so a target that is a row and not a level leaves the
+        // right pane holding the previous row's list.
+        refreshRightPane();
+        // A pick list opened by its hot key should be ready to act on: the row is
+        // no use focused, the LIST is. (openPath stops at the row because a K_PICK
+        // is not a level to descend into.)
+        if (openAt->kind == K_PICK && S.rcount) S.focus = FOCUS_RIGHT;
+    }
+
+    drawFrameOnce();
+    markDirty(D_ALL);
+    flushDirty();
+
+resume:
+    while (!S.quit) {
+        bool acted = false;
+        while (uiKeyAvailable()) {
+            fabgl::VirtualKeyItem k;
+            if (!uiReadKey(&k)) continue;
+            if (!k.down) continue;
+            NmKey nk = decode(k);
+            if (nk == NK_NONE) {
+                // Nothing in this UI types, so a plain letter or digit is the
+                // first-letter jump. A key that matches no row is silent.
+                if (k.ASCII >= 32 && k.ASCII < 127 && isalnum((uint8_t)k.ASCII) &&
+                    jumpToLetter((char)k.ASCII))
+                    acted = true;
+                continue;
+            }
+            acted = true;
+            if (handleKey(nk)) break;
+        }
+        if (acted) {
+            if (menuMarqueeActive())
+                markLeftRow(curLevel().sel - curLevel().top);
+            menuMarqueeReset();
+            OSD::clickNoPause();
+            flushDirty();
+        }
+        if (!S.quit) {
+            uiIdle();
+            if (menuMarqueeTick()) {
+                markLeftRow(curLevel().sel - curLevel().top);
+                flushDirty();
+            }
+            if (uiClockDirty()) {
+                markDirty(D_HEADER);
+                flushDirty();
+            }
+        }
+    }
+
+    // ── the single exit point ──────────────────────────────────────────────────
+    // Everything staged is applied here, in one place. This is what do_OSD cannot do:
+    // it leaves through 47 different returns.
+    //
+    // With anything staged the exit always asks: Apply (labelled with the reboot
+    // when one is coming), No (drop every edit, undoing live previews), or
+    // Cancel (back into the menu with the edits intact).
+    bool doCommit = true;
+    while (Stage::anyDirty()) {
+        const bool reboot = Stage::rebootPending();
+        const char* btns[3] = { reboot ? "Apply+Reboot" : "Apply", "No", "Cancel" };
+        char q[48];
+        snprintf(q, sizeof(q), "Apply %u changed setting%s?",
+                 (unsigned)Stage::dirtyCount(), Stage::dirtyCount() == 1 ? "" : "s");
+        const int c = uiChoice(q, btns, 3, 0, /*esc=*/2);
+        if (c == 2) {                          // Cancel: back into the menu
+            S.quit = false;
+            drawFrameOnce();
+            markDirty(D_ALL);
+            flushDirty();
+            goto resume;
+        }
+        if (c == 1) {                          // No: drop the staged edits
+            Stage::discard();
+            doCommit = false;
+        }
+        break;                                 // Apply (or No) → leave the menu
+    }
+
+    Stage::CommitReport rep = {};
+    if (doCommit) Stage::commit(rep);
+
+    // At most ONE message, and at most ONE question, for the whole session.
+    // Not after a machine switch though: the surface computed at open may be gone
+    // (DS80 -> standard), so drawing with it would garble — and the switch spoke
+    // for itself (MachineSwitch shows its own messages).
+    if (!rep.machineSwitched) {
+        if (rep.note) {
+            uiToast(rep.note, true, 2000);
+        } else if (rep.failed) {
+            uiToast("Some settings could not be applied", true, 1500);
+        }
+    }
+
+    // A declined machine switch needs no message of ours: featureBudgetGate already
+    // explained itself, and MachineSwitch left the machine untouched.
+    // The "Apply+Reboot" button already carried the consent — reboot right away.
+    if (rep.needsReboot)
+        OSD::esp_hard_reset();              // never returns
+
+    if (ownDyn) { free(S.dyn); S.dyn = nullptr; }
+    gfxEnd();
+}
+
+void run() { runInternal(nullptr); }
+
+} // namespace nm
+

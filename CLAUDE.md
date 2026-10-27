@@ -20,6 +20,15 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   files it compiles (`input_devices.cpp` is the board's, host_drivers.cpp the PC's).
   `PICO_AMIGA_SHOT=f.bmp:N` saves output frame N; `SDL_VIDEODRIVER=offscreen` runs it
   headless. `build-host/pico-amiga-host` remains the headless test bench.
+- `src/pico/ui/` is pico-speccy's nm:: menu (F1). The engine (UiNav, UiRender,
+  UiDialog, UiFont, UiModel, the Stage mechanism) is kept close to pico-speccy, with
+  `PICO-AMIGA:` notes; `UiGfx.cpp` draws 0x0RGB straight into the Amiga framebuffer
+  (the scanout keeps showing it; the emulator is stopped while the menu runs, and its
+  next frame repaints everything). The content is ours: `UiTree.cpp` (the tree),
+  `UiStage.h` (the SettingId X-table, append only), `UiPlatform.*` (keys, reset,
+  reboot), `app/Config.*` (settings in pico-speccy's storage.nvs format, at
+  /.config/pico-amiga/<board tag>/storage.nvs). Check menu changes on the PC host:
+  `PICO_AMIGA_KEYS=150:F1,200:Down,...` presses keys at output frames.
 - `src/pico/drivers/` are pico-speccy's drivers (USB HID/XInput, fabgl VK keyboard
   queue, PS/2, NES pad, SD); local changes are marked `PICO-AMIGA:`, and
   `drivers/input_glue.h` stands in for pico-speccy's Config/Debug/ESPectrum.

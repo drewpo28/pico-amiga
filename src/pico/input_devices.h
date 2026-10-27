@@ -25,3 +25,4 @@ void process_kbd_report(hid_keyboard_report_t const *report, hid_keyboard_report
 void input_devices_init(void);
 bool input_devices_keyboard_mounted(void);
 void repeat_me_for_input();             // called often; also by fabgl::Keyboard
+void repeat_handler(void);              // input.cpp: menu key repeat, every 150 ms

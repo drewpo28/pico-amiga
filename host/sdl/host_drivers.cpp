@@ -151,6 +151,9 @@ void repeat_me_for_input() {
         process_kbd_report(&r, &s_prev);
         s_prev = r;
     }
+    static uint64_t t_rep = 0;
+    const uint64_t now = time_us_64();
+    if (now - t_rep > 150000) { repeat_handler(); t_rep = now; }
     // hid_app.cpp's mouse_apply at 1:1: HID y is down-positive, Mouse::y up-positive.
     const int32_t dx = s_mdx.exchange(0), dy = s_mdy.exchange(0);
     if (dx || dy || s_ml != Mouse::buttonL || s_mr != Mouse::buttonR) {

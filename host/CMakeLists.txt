@@ -39,7 +39,18 @@ if(SDL2_FOUND)
         ${ROOT}/src/pico/main.c
         ${ROOT}/src/pico/input.cpp
         ${ROOT}/src/pico/drivers/input/keyboard.cpp
-        ${ROOT}/src/pico/drivers/input/codepages.cpp)
+        ${ROOT}/src/pico/drivers/input/codepages.cpp
+        ${ROOT}/src/pico/app/Config.cpp
+        ${ROOT}/src/pico/ui/UiNav.cpp
+        ${ROOT}/src/pico/ui/UiRender.cpp
+        ${ROOT}/src/pico/ui/UiGfx.cpp
+        ${ROOT}/src/pico/ui/UiFont.cpp
+        ${ROOT}/src/pico/ui/UiFontCyr.cpp
+        ${ROOT}/src/pico/ui/UiDialog.cpp
+        ${ROOT}/src/pico/ui/UiStage.cpp
+        ${ROOT}/src/pico/ui/UiTree.cpp
+        ${ROOT}/src/pico/ui/UiDesc.cpp
+        ${ROOT}/src/pico/ui/UiPlatform.cpp)
     set_source_files_properties(${ROOT}/src/pico/main.c PROPERTIES COMPILE_DEFINITIONS main=firmware_main)
     add_executable(pico-amiga ${FIRMWARE_SRC}
         ${SDL_DIR}/host_main.cpp
@@ -49,7 +60,7 @@ if(SDL2_FOUND)
         ${SDL_DIR}/host_fsdir.cpp)
     target_include_directories(pico-amiga PRIVATE
         ${SDL_DIR}/include ${SDL_DIR} ${CMAKE_BINARY_DIR}/gen
-        ${ROOT}/src/pico ${ROOT}/src/pico/drivers ${ROOT}/src/pico/drivers/input
+        ${ROOT}/src/pico ${ROOT}/src/pico/ui ${ROOT}/src/pico/drivers ${ROOT}/src/pico/drivers/input
         ${ROOT}/external ${ROOT}/external/fatfs
         ${SDL2_INCLUDE_DIRS})
     # -ffunction-sections / --gc-sections as in the firmware link: pico-speccy's

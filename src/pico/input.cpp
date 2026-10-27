@@ -11,24 +11,20 @@
 //   - VK_DPAD_* (pads; cursor keys + Left Ctrl while CursorAsJoy) -> joystick in
 //     game port 2; cursor keys are not passed on as keys while CursorAsJoy is on
 //   - the HID mouse -> port 1 mouse
-// Hotkeys: F12 resets the Amiga, Ctrl+J toggles CursorAsJoy (as on pico-speccy).
+// Hotkeys: F1 opens the menu (ui/, from pico-speccy), F12 resets the Amiga,
+// Ctrl+J toggles CursorAsJoy (as on pico-speccy).
 #include "input.h"
 #include <string.h>
 #include "pico/stdlib.h"
 #include "hardware/clocks.h"
 #include "amiga.h"
+#include "ui/OSDNewMenu.h"
+#include "ui/UiPlatform.h"
 #include "input_devices.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-compare"      // pico-speccy's headers
 #include "drivers/input/keyboard.h"
 #pragma GCC diagnostic pop
-
-namespace Config {
-    uint8_t  secondJoy   = 0;
-    uint16_t mouse_sens  = 256;
-    uint8_t  mouse_swap  = 0;
-    bool     CursorAsJoy = true;
-}
 
 namespace Mouse {
     bool    seen;
@@ -42,6 +38,27 @@ input_bits_t gamepad2_bits = { false, false, false, false, false, false, false, 
 
 static fabgl::Keyboard kbd;
 static volatile bool reset_req;
+volatile bool g_ui_text_entry;          // ui/UiDialog.cpp: a line editor owns the keyboard
+static bool menu_open;
+
+// Key repeat for the menu (pico-speccy's repeat_handler and the last_key_pressed
+// bookkeeping in its kbdPushData): only while the menu is open — the Amiga repeats
+// keys itself. F-keys never repeat (one lost key-up would re-open the menu forever).
+static fabgl::VirtualKey last_key_pressed = fabgl::VirtualKey::VK_NONE;
+static uint32_t tickKbdRep;
+
+void repeat_handler(void) {
+    const fabgl::VirtualKey v = last_key_pressed;
+    if (!menu_open || v == fabgl::VirtualKey::VK_NONE) return;
+    if (v >= fabgl::VirtualKey::VK_F1 && v <= fabgl::VirtualKey::VK_F12) return;
+    if (tickKbdRep == 0) {
+        if (v == fabgl::VirtualKey::VK_UP) kbd.injectVirtualKey(fabgl::VirtualKey::VK_MENU_UP, true);
+        else if (v == fabgl::VirtualKey::VK_DOWN) kbd.injectVirtualKey(fabgl::VirtualKey::VK_MENU_DOWN, true);
+        kbd.injectVirtualKey(v, true);
+    } else if (time_us_32() - tickKbdRep > 500000) {
+        tickKbdRep = 0;
+    }
+}
 
 void joyPushData(fabgl::VirtualKey virtualKey, bool down) {
     kbd.injectVirtualKey(virtualKey, down);
@@ -50,7 +67,18 @@ void joyPushData(fabgl::VirtualKey virtualKey, bool down) {
 void kbdPushData(fabgl::VirtualKey virtualKey, bool down) {
     static bool ctrl;
     if (virtualKey == fabgl::VirtualKey::VK_LCTRL || virtualKey == fabgl::VirtualKey::VK_RCTRL) ctrl = down;
-    if (down && ctrl && virtualKey == fabgl::VirtualKey::VK_J) Config::CursorAsJoy = !Config::CursorAsJoy;
+    if (down) {
+        if (ctrl && virtualKey == fabgl::VirtualKey::VK_J) Config::CursorAsJoy = !Config::CursorAsJoy;
+        if (last_key_pressed != virtualKey &&
+            last_key_pressed != fabgl::VirtualKey::VK_MENU_UP &&
+            last_key_pressed != fabgl::VirtualKey::VK_MENU_DOWN) {
+            last_key_pressed = virtualKey;
+            tickKbdRep = time_us_32();
+        }
+    } else {
+        last_key_pressed = fabgl::VirtualKey::VK_NONE;
+        tickKbdRep = 0;
+    }
     kbd.injectVirtualKey(virtualKey, down);
 }
 
@@ -218,7 +246,8 @@ static void kbdExtraMapping(fabgl::VirtualKey virtualKey, bool pressed) {
             break;
         }
         case fabgl::VirtualKey::VK_BACKSPACE: joyPushData(fabgl::VirtualKey::VK_MENU_BS, pressed); break;
-        case fabgl::VirtualKey::VK_SPACE:     joyPushData(fabgl::VirtualKey::VK_MENU_ENTER, pressed); break;
+        // Space doubles as Enter in menus, but inside a line editor it is a character.
+        case fabgl::VirtualKey::VK_SPACE:     if (!g_ui_text_entry) joyPushData(fabgl::VirtualKey::VK_MENU_ENTER, pressed); break;
         // Cursor-as-joystick fire on Left Ctrl (Right Ctrl = alt fire, above).
         case fabgl::VirtualKey::VK_LCTRL:
             if (Config::CursorAsJoy) joyPushData(fabgl::VirtualKey::VK_DPAD_FIRE, pressed);
@@ -365,6 +394,20 @@ static uint8_t vk_to_amiga(fabgl::VirtualKey vk) {
     }
 }
 
+// Amiga keys currently down, so the menu can release them on the way in.
+static uint8_t amiga_down[(0x68 + 7) / 8];
+
+static void send_amiga_key(uint8_t code, bool down) {
+    const uint8_t bit = (uint8_t)(1u << (code & 7));
+    if (down) amiga_down[code >> 3] |= bit; else amiga_down[code >> 3] &= (uint8_t)~bit;
+    amiga_key(code, down);
+}
+
+static void release_amiga_keys(void) {
+    for (uint8_t c = 0; c < 0x68; c++)
+        if (amiga_down[c >> 3] & (1u << (c & 7))) send_amiga_key(c, false);
+}
+
 static bool cursor_key(fabgl::VirtualKey vk) {
     return vk == fabgl::VirtualKey::VK_UP || vk == fabgl::VirtualKey::VK_DOWN ||
            vk == fabgl::VirtualKey::VK_LEFT || vk == fabgl::VirtualKey::VK_RIGHT;
@@ -374,9 +417,21 @@ void input_frame(void) {
     fabgl::VirtualKeyItem item;
     while (kbd.virtualKeyAvailable() && kbd.getNextVirtualKey(&item, 0)) {
         if (item.vk == fabgl::VirtualKey::VK_F12) { if (item.down) reset_req = true; continue; }
+        if (item.vk == fabgl::VirtualKey::VK_F1) {
+            if (item.down) {
+                // The Amiga must not see keys held across the menu: release what
+                // it thinks is down, then hand the screen over.
+                release_amiga_keys();
+                menu_open = true;
+                nm::run();
+                menu_open = false;
+                kbd.emptyVirtualKeyQueue();
+            }
+            continue;
+        }
         if (Config::CursorAsJoy && cursor_key(item.vk)) continue;
         uint8_t code = vk_to_amiga(item.vk);
-        if (code != AK_NONE) amiga_key(code, item.down);
+        if (code != AK_NONE) send_amiga_key(code, item.down);
     }
 
     // Game port 2: whatever drives VK_DPAD_* (USB/XInput/NES pad 1, cursor keys).
@@ -401,6 +456,15 @@ void input_init(void) {
 }
 
 void input_poll(void) { repeat_me_for_input(); }
+
+void input_request_reset(void) { reset_req = true; }
+
+// ---- the menu's keyboard (ui/UiPlatform.h) ---------------------------------------
+namespace nm {
+bool uiKeyAvailable() { return kbd.virtualKeyAvailable() != 0; }
+bool uiReadKey(fabgl::VirtualKeyItem* k) { return kbd.getNextVirtualKey(k, 0); }
+fabgl::Keyboard* uiKeyboard() { return &kbd; }
+}
 
 bool input_reset_requested(void) {
     bool r = reset_req;

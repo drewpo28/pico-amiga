@@ -12,12 +12,15 @@
 // Keyboard: SDL scancodes are USB HID usages, so keys become HID boot reports for
 // the firmware's own process_kbd_report() (input.cpp) on core0.  Mouse: click into
 // the window to capture it (relative mode), middle button releases it.
-// PICO_AMIGA_SHOT=file.bmp:N saves the picture at output frame N (headless checks).
+// Headless checks: PICO_AMIGA_SHOT=file.bmp:N[,file2.bmp:M...] saves the picture at
+// output frame N; PICO_AMIGA_KEYS=N:Key[,M:Key...] presses a key (an SDL scancode
+// name: F1, Down, Return, Escape...) at output frame N for 4 frames.
 #include <SDL.h>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <vector>
 #include <thread>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -73,13 +76,34 @@ int main(int argc, char **argv) {
 
     std::thread([] { firmware_main(); }).detach();
 
-    const char *shot = getenv("PICO_AMIGA_SHOT");
-    std::string shot_file;
-    long shot_frame = -1;
-    if (shot && strchr(shot, ':')) {
-        shot_file.assign(shot, strrchr(shot, ':'));
-        shot_frame = atol(strrchr(shot, ':') + 1);
-    }
+    struct Shot { std::string file; long frame; };
+    struct Key { long frame; SDL_Scancode sc; int state; };   // 0 to press, 1 down, 2 done
+    std::vector<Shot> shots;
+    std::vector<Key> keys;
+    auto split = [](const char *list, auto fn) {
+        if (!list) return;
+        std::string l(list);
+        size_t p = 0;
+        while (p <= l.size()) {
+            size_t e = l.find(',', p);
+            if (e == std::string::npos) e = l.size();
+            const std::string item = l.substr(p, e - p);
+            const size_t c = item.rfind(':');
+            if (c != std::string::npos) fn(item.substr(0, c), item.substr(c + 1));
+            p = e + 1;
+        }
+    };
+    split(getenv("PICO_AMIGA_SHOT"), [&](const std::string &a, const std::string &b) {
+        shots.push_back({a, atol(b.c_str())});
+    });
+    // The key list is "frame:Key": the frame comes first.
+    split(getenv("PICO_AMIGA_KEYS"), [&](const std::string &a, const std::string &b) {
+        const size_t c = a.find(':');
+        (void)c;
+        const SDL_Scancode sc = SDL_GetScancodeFromName(b.c_str());
+        if (sc == SDL_SCANCODE_UNKNOWN) fprintf(stderr, "host: unknown key '%s'\n", b.c_str());
+        else keys.push_back({atol(a.c_str()), sc, 0});
+    });
 
     bool captured = false;
     for (;;) {
@@ -123,6 +147,12 @@ int main(int argc, char **argv) {
             }
         }
 
+        const long vf = (long)video_frames();
+        for (Key &k : keys) {
+            if (k.state == 0 && vf >= k.frame) { host_key(k.sc, true); k.state = 1; }
+            else if (k.state == 1 && vf >= k.frame + 4) { host_key(k.sc, false); k.state = 2; }
+        }
+
         const uint16_t *fb = host_fb;
         if (fb) {
             void *pixels;
@@ -139,17 +169,18 @@ int main(int argc, char **argv) {
                 }
                 SDL_UnlockTexture(tex);
             }
-            if (shot_frame >= 0 && (long)video_frames() >= shot_frame) {
+            for (Shot &sh : shots) {
+                if (sh.frame < 0 || vf < sh.frame) continue;
                 SDL_Surface *sf = SDL_CreateRGBSurfaceWithFormat(0, AMIGA_FB_W, AMIGA_FB_H, 32, SDL_PIXELFORMAT_ARGB8888);
                 for (int i = 0; i < AMIGA_FB_W * AMIGA_FB_H; i++) {
                     const uint32_t c = fb[i];
                     ((uint32_t *)sf->pixels)[(i / AMIGA_FB_W) * (sf->pitch / 4) + i % AMIGA_FB_W] =
                         0xFF000000u | ((c >> 8) & 15) * 0x110000u | ((c >> 4) & 15) * 0x1100u | (c & 15) * 0x11u;
                 }
-                SDL_SaveBMP(sf, shot_file.c_str());
+                SDL_SaveBMP(sf, sh.file.c_str());
                 SDL_FreeSurface(sf);
-                fprintf(stderr, "host: frame %ld saved to %s\n", shot_frame, shot_file.c_str());
-                shot_frame = -1;
+                fprintf(stderr, "host: frame %ld saved to %s\n", sh.frame, sh.file.c_str());
+                sh.frame = -1;
             }
         }
         SDL_RenderClear(ren);

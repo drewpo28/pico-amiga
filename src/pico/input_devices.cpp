@@ -88,6 +88,7 @@ void repeat_me_for_input() {
     if (now - last_rearm_tick > 150000) {
         // Recover HID interfaces whose IN endpoint lost its arm (see hid_app.cpp).
         hid_app_rearm_tick();
+        repeat_handler();
         last_rearm_tick = now;
     }
     tuh_task();
