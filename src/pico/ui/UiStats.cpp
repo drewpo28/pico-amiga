@@ -17,6 +17,7 @@
 //   COP  1.2 BLT  3.0   the copper (renders excluded), the blitter
 //   OTH  4.5            Paula, floppy, CIAs, the scheduler
 #include <stdio.h>
+#include <string.h>
 #include "ui.h"
 #include "UiGfx.h"
 #include "app/Config.h"
@@ -44,7 +45,14 @@ static void drawBand() {
     gfxComputeSurface();
     gfxInstallPalette();
     const int g = glyphW();
-    const int w = (BAND_COLS + 2) * g + 4, h = s_lines * UI_FONT_H + 6;
+    // As wide as the longest line plus one blank column each side.
+    int cols = 0;
+    for (int i = 0; i < s_lines; i++) {
+        const int n = (int)strlen(s_l[i]);
+        if (n > cols) cols = n;
+    }
+    if (cols > BAND_COLS) cols = BAND_COLS;
+    const int w = (cols + 2) * g + 4, h = s_lines * UI_FONT_H + 6;
     const int x = Sf.w - w - 4, y = Sf.h - h - 4;
     fill(x, y, w, h, C_PANEL);
     frame(x, y, w, h, C_SEP);
