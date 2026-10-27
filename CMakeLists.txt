@@ -42,6 +42,9 @@ include(src/pico/drivers/sdcard/sdcard.cmake)
 add_executable(pico-amiga
     src/pico/main.c
     src/pico/audio_out.c
+    src/pico/board.c
+    src/pico/video.c
+    src/pico/video_vga.c
     src/pico/clock.c
     src/pico/psram.c
     src/pico/usb_disk_stub.c

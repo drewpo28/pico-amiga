@@ -2,7 +2,8 @@
 //
 //   core 0: clocks, PSRAM, SD, input (USB host, PS/2, NES pads), the emulator
 //           (src/amiga), audio (PWM, I2S or PCM5122)
-//   core 1: HDMI scanout (video_hstx.c, or video_pio.c on boards without HSTX pins)
+//   core 1: HDMI scanout (video_hstx.c, or video_pio.c on boards without HSTX
+//           pins), or VGA (video_vga.c) when a VGA ladder is on the display pins
 //
 // PSRAM layout (2 MB minimum):
 //   +0.0 MB  chip RAM 512 KB      +0.5 MB  slow RAM 512 KB ($C00000)
@@ -120,6 +121,7 @@ int main(void) {
     uint32_t psram = psram_init(chip_is_rp2350a() ? BUTTER_PSRAM_GPIO : 47);
     dma_channel_claim(0);            // video_hstx.c / video_pio.c scanout ping-pong
     dma_channel_claim(1);
+    video_select();                  // VGA or HDMI on the display pins
     multicore_launch_core1(core1_main);
     audio_out_pcm5122_present();     // probe before the PS/2 keyboard takes GP2/3 (ZERO2)
     input_init();

@@ -178,7 +178,7 @@ static void hstx_setup(void) {
     }
 }
 
-void video_start(const uint16_t *framebuffer) {
+void hdmi_start(const uint16_t *framebuffer) {
     fb = framebuffer;
     v_line = 2;                      // the two channels below are pre-loaded with lines 0 and 1
     cmd_posted = false;
@@ -204,4 +204,4 @@ void video_start(const uint16_t *framebuffer) {
     dma_channel_start(DMACH_PING);
 }
 
-uint32_t video_frames(void) { return frames; }
+uint32_t hdmi_frames(void) { return frames; }

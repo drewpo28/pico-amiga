@@ -117,7 +117,7 @@ static void __no_inline_not_in_flash_func(encode_loop)(void) {
     }
 }
 
-void video_start(const uint16_t *framebuffer) {
+void hdmi_start(const uint16_t *framebuffer) {
     fb = framebuffer;
     build_static();
     tmds_encode_row(rowbuf[0], fb, AMIGA_FB_W, tab_r, tab_gb);
@@ -164,4 +164,4 @@ void video_start(const uint16_t *framebuffer) {
     encode_loop();         // never returns: core 1 encodes rows from here on
 }
 
-uint32_t video_frames(void) { return frames; }
+uint32_t hdmi_frames(void) { return frames; }

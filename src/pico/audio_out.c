@@ -5,7 +5,7 @@
 // over I2C):
 //   - ZERO2 with the PCM5122 board fitted (probed once at boot over I2C, before
 //     the PS/2 keyboard takes the same pins): I2S on the board's pins
-//   - an I2S DAC on I2S_DATA/BCK/LCK, detected with testPins(): I2S
+//   - an I2S DAC on I2S_DATA/BCK/LCK, detected with board_test_pins(): I2S
 //   - otherwise 8-bit PWM with first-order error feedback on PWM_PIN0 (right)
 //     and PWM_PIN1 (left), an RC filter on the pins as on every Murmulator
 //
@@ -24,6 +24,7 @@
 #include "hardware/pwm.h"
 #include "hardware/timer.h"
 #include "amiga.h"
+#include "board.h"
 #include "drivers/audio/audio.h"
 #ifdef PCM5122_I2S_DATA
 #include "drivers/audio/pcm5122_init.h"
@@ -47,76 +48,6 @@ static i2s_config_t i2s_config = {
 };
 
 static const char *out_name = "none";
-
-// ---- I2S DAC detection (pico-speccy pwm_audio.cpp) ------------------------------
-// connection is possible 00->00 (external pull down)
-static int test_0000_case(uint32_t pin0, uint32_t pin1, int res) {
-    gpio_init(pin0);
-    gpio_set_dir(pin0, GPIO_OUT);
-    sleep_ms(33);
-    gpio_put(pin0, 1);
-
-    gpio_init(pin1);
-    gpio_set_dir(pin1, GPIO_IN);
-    gpio_pull_down(pin1);
-    sleep_ms(33);
-    if (gpio_get(pin1)) res |= (1 << 5) | 1;   // 1 -> 1, looks really connected
-    gpio_deinit(pin0);
-    gpio_deinit(pin1);
-    return res;
-}
-
-// connection is possible 01->01 (no external pull up/down)
-static int test_0101_case(uint32_t pin0, uint32_t pin1, int res) {
-    return test_0000_case(pin0, pin1, res);
-}
-
-// connection is possible 11->11 (externally pulled up)
-static int test_1111_case(uint32_t pin0, uint32_t pin1, int res) {
-    gpio_init(pin0);
-    gpio_set_dir(pin0, GPIO_OUT);
-    sleep_ms(33);
-    gpio_put(pin0, 0);
-
-    gpio_init(pin1);
-    gpio_set_dir(pin1, GPIO_IN);
-    gpio_pull_up(pin1);
-    sleep_ms(33);
-    if (!gpio_get(pin1)) res |= 1;            // 0 -> 0, looks really connected
-    gpio_deinit(pin0);
-    gpio_deinit(pin1);
-    return res;
-}
-
-// Is pin0 wired to pin1 (an I2S DAC's DATA and BCK inputs are not; an RC-filtered
-// PWM output pair reads back like this)?  Bit 0 of the result = connected.
-static int testPins(uint32_t pin0, uint32_t pin1) {
-    int res = 0;
-    if (pin0 == BUTTER_PSRAM_GPIO || pin1 == BUTTER_PSRAM_GPIO) return res;
-#if defined(PICO_DEFAULT_LED_PIN) && PICO_DEFAULT_LED_PIN != 255
-    if (pin0 == PICO_DEFAULT_LED_PIN || pin1 == PICO_DEFAULT_LED_PIN) return res;
-#endif
-    if (pin0 == 23 || pin1 == 23) return res;  // SMPS power
-    if (pin0 == 24 || pin1 == 24) return res;  // VBUS sense
-    // passive pull-down, then pull-up
-    gpio_init(pin0); gpio_set_dir(pin0, GPIO_IN); gpio_pull_down(pin0);
-    gpio_init(pin1); gpio_set_dir(pin1, GPIO_IN); gpio_pull_down(pin1);
-    sleep_ms(33);
-    int pin0vPD = gpio_get(pin0), pin1vPD = gpio_get(pin1);
-    gpio_deinit(pin0); gpio_deinit(pin1);
-    gpio_init(pin0); gpio_set_dir(pin0, GPIO_IN); gpio_pull_up(pin0);
-    gpio_init(pin1); gpio_set_dir(pin1, GPIO_IN); gpio_pull_up(pin1);
-    sleep_ms(33);
-    int pin0vPU = gpio_get(pin0), pin1vPU = gpio_get(pin1);
-    gpio_deinit(pin0); gpio_deinit(pin1);
-
-    res = (pin0vPD << 4) | (pin0vPU << 3) | (pin1vPD << 2) | (pin1vPU << 1);
-    if (pin0vPD && pin0vPU && pin1vPD && pin1vPU) return test_1111_case(pin0, pin1, res);
-    if (pin0vPD && !pin0vPU && pin1vPD && !pin1vPU) return res | (1 << 5) | 1;
-    if (!pin0vPD && pin0vPU && !pin1vPD && pin1vPU) return test_0101_case(pin0, pin1, res);
-    if (!pin0vPD && !pin0vPU && !pin1vPD && !pin1vPU) return test_0000_case(pin0, pin1, res);
-    return res;                                // connection impossible
-}
 
 // ---- sample clock and output ---------------------------------------------------------
 static const int16_t *ring;
@@ -216,7 +147,7 @@ void audio_out_start(const int16_t *audio_ring, uint32_t frames) {
         sleep_ms(50);
         gpio_deinit(I2S_DATA_PIO);
         gpio_deinit(I2S_BCK_PIO);
-        int code = testPins(I2S_DATA_PIO, I2S_BCK_PIO);
+        int code = board_test_pins(I2S_DATA_PIO, I2S_BCK_PIO);
         // A pin reading HIGH under pull-down is back-fed by external circuitry,
         // not a floating I2S input: never I2S.
         if (code & 0b10100) code = 0;
