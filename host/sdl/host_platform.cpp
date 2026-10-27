@@ -59,6 +59,9 @@ void panic_unsupported(void) { panic("unsupported"); }
 void multicore_launch_core1(void (*entry)(void)) {
     std::thread([entry] { host_cpuid = 1; entry(); }).detach();
 }
+void multicore_launch_core1_with_stack(void (*entry)(void), uint32_t*, size_t) {
+    multicore_launch_core1(entry);
+}
 void multicore_reset_core1(void) {}
 
 // ---- spin locks: real mutual exclusion (both "cores" are threads) ----------------------

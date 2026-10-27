@@ -138,16 +138,17 @@ static bool is_m3u(const std::string &p) {
 }
 
 bool machine_load_set(const char *m3u_path, int index) {
-    FIL f;
+    // Static: this runs from the menu, deep in core 0's 4 KB stack.
+    static FIL f;
     if (f_open(&f, m3u_path, FA_READ) != FR_OK) return false;
     const std::string list = m3u_path;
     const std::string dir = list.substr(0, list.find_last_of('/') + 1);
-    char buf[2048];
+    static char buf[2048];
     UINT got = 0;
     f_read(&f, buf, sizeof buf - 1, &got);
     f_close(&f);
     buf[got] = 0;
-    std::string set[16];
+    static std::string set[16];
     int n = 0;
     for (char *line = buf, *next; line && *line && n < 16; line = next) {
         next = strchr(line, '\n');

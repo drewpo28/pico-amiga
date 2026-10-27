@@ -359,6 +359,7 @@ static inline uint16_t adc_read(void) { return 876; }   // ~27 C by the datashee
 
 // ---- pico/multicore.h --------------------------------------------------------------------
 void multicore_launch_core1(void (*entry)(void));
+void multicore_launch_core1_with_stack(void (*entry)(void), uint32_t* stack_bottom, size_t stack_size_bytes);
 void multicore_reset_core1(void);
 static inline void multicore_lockout_victim_init(void) {}
 static inline bool multicore_lockout_victim_is_initialized(uint core) { (void)core; return false; }

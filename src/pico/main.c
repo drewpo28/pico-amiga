@@ -114,7 +114,12 @@ int main(void) {
     dma_channel_claim(0);            // video_hstx.c / video_pio.c scanout ping-pong
     dma_channel_claim(1);
     video_select();                  // VGA or HDMI on the display pins
-    multicore_launch_core1(core1_main);
+    // Core 1's stack in main RAM: the SDK's default puts it in SCRATCH_X, right
+    // under core 0's 4 KB stack (SCRATCH_Y), where a deep menu call on core 0
+    // overwrote it (an .m3u pick crashed core 1).  Now core 0 can spill into
+    // SCRATCH_X.
+    static uint32_t core1_stack[1024];
+    multicore_launch_core1_with_stack(core1_main, core1_stack, sizeof core1_stack);
     audio_out_pcm5122_present();     // probe before the PS/2 keyboard takes GP2/3 (ZERO2)
     input_init();
     printf("psram %u KB (SCK <= %d MHz), video %s\n", (unsigned)(psram / KB), settings_psram_mhz(),
