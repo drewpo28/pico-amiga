@@ -157,15 +157,15 @@ static void start(void) {
     done_cyc = amiga_now() + 2ull * cc;
 }
 
-void blitter_poll(void) {
+AMIGA_HOT void blitter_poll(void) {
     if (busy && amiga_now() >= done_cyc) {
         busy = false;
         amiga_set_intreq(INTF_BLIT);
     }
 }
 
-bool     blitter_busy(void)     { blitter_poll(); return busy || pending; }
-bool     blitter_zero(void)     { return zero; }
+AMIGA_HOT bool     blitter_busy(void)     { blitter_poll(); return busy || pending; }
+AMIGA_HOT bool     blitter_zero(void)     { return zero; }
 uint64_t blitter_done_cyc(void) { return busy ? done_cyc : 0; }
 uint32_t blitter_count(void)    { return nblits; }
 

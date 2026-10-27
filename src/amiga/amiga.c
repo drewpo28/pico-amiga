@@ -22,18 +22,18 @@ uint32_t prof_t, prof_acc[AMIGA_PROF_COUNT];
 static uint32_t prof_frames;
 
 // ---- time ----------------------------------------------------------------------
-uint64_t amiga_now(void) {
+AMIGA_HOT uint64_t amiga_now(void) {
     return A.in_cpu ? A.cpu_cyc + (uint64_t)m68k_cycles_run() : A.cpu_cyc;
 }
 
-uint16_t amiga_hpos(void) {
+AMIGA_HOT uint16_t amiga_hpos(void) {
     uint64_t now = amiga_now();
     if (now <= A.line_cyc) return 0;
     uint64_t h = (now - A.line_cyc) >> 1;
     return (uint16_t)(h >= AMIGA_CC_PER_LINE ? AMIGA_CC_PER_LINE - 1 : h);
 }
 
-static void cpu_until(uint64_t target) {
+AMIGA_HOT static void cpu_until(uint64_t target) {
     while (A.cpu_cyc < target) {
         A.in_cpu = true;
         int used = m68k_execute((int)(target - A.cpu_cyc));
@@ -135,7 +135,7 @@ void amiga_init(const amiga_config_t *cfg) {
 }
 
 // ---- scheduler ------------------------------------------------------------------
-static void run_line(void) {
+AMIGA_HOT static void run_line(void) {
     if (A.vpos == 0) {
         amiga_set_intreq(INTF_VERTB);
         cia_vsync();

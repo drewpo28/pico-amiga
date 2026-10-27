@@ -284,6 +284,14 @@ void amiga_cpu_reset_instr(void);
 #define M68K_CONST_TABLES           M68K_OPT_ON
 #endif
 
+/* PICO-AMIGA: placement of the hot handlers (tools/musashi_hot.txt) and of
+ * m68k_execute(): the firmware's AMIGA_HOT puts them in SRAM. */
+#ifdef AMIGA_HOT
+#define M68KI_HOT AMIGA_HOT
+#else
+#define M68KI_HOT
+#endif
+
 #endif /* M68K_COMPILE_FOR_MAME */
 
 /* ======================================================================== */

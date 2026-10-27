@@ -269,7 +269,7 @@ static void m68k_op_add_8_er_pd7(void)
 }
 
 
-static void m68k_op_add_8_er_di(void)
+M68KI_HOT static void m68k_op_add_8_er_di(void)
 {
 	uint* r_dst = &DX;
 	uint src = OPER_AY_DI_8();
@@ -381,7 +381,7 @@ static void m68k_op_add_8_er_i(void)
 }
 
 
-static void m68k_op_add_16_er_d(void)
+M68KI_HOT static void m68k_op_add_16_er_d(void)
 {
 	uint* r_dst = &DX;
 	uint src = MASK_OUT_ABOVE_16(DY);
@@ -429,7 +429,7 @@ static void m68k_op_add_16_er_ai(void)
 }
 
 
-static void m68k_op_add_16_er_pi(void)
+M68KI_HOT static void m68k_op_add_16_er_pi(void)
 {
 	uint* r_dst = &DX;
 	uint src = OPER_AY_PI_16();
@@ -461,7 +461,7 @@ static void m68k_op_add_16_er_pd(void)
 }
 
 
-static void m68k_op_add_16_er_di(void)
+M68KI_HOT static void m68k_op_add_16_er_di(void)
 {
 	uint* r_dst = &DX;
 	uint src = OPER_AY_DI_16();
@@ -573,7 +573,7 @@ static void m68k_op_add_16_er_i(void)
 }
 
 
-static void m68k_op_add_32_er_d(void)
+M68KI_HOT static void m68k_op_add_32_er_d(void)
 {
 	uint* r_dst = &DX;
 	uint src = DY;
@@ -589,7 +589,7 @@ static void m68k_op_add_32_er_d(void)
 }
 
 
-static void m68k_op_add_32_er_a(void)
+M68KI_HOT static void m68k_op_add_32_er_a(void)
 {
 	uint* r_dst = &DX;
 	uint src = AY;
@@ -621,7 +621,7 @@ static void m68k_op_add_32_er_ai(void)
 }
 
 
-static void m68k_op_add_32_er_pi(void)
+M68KI_HOT static void m68k_op_add_32_er_pi(void)
 {
 	uint* r_dst = &DX;
 	uint src = OPER_AY_PI_32();
@@ -653,7 +653,7 @@ static void m68k_op_add_32_er_pd(void)
 }
 
 
-static void m68k_op_add_32_er_di(void)
+M68KI_HOT static void m68k_op_add_32_er_di(void)
 {
 	uint* r_dst = &DX;
 	uint src = OPER_AY_DI_32();
@@ -749,7 +749,7 @@ static void m68k_op_add_32_er_pcix(void)
 }
 
 
-static void m68k_op_add_32_er_i(void)
+M68KI_HOT static void m68k_op_add_32_er_i(void)
 {
 	uint* r_dst = &DX;
 	uint src = OPER_I_32();
@@ -957,7 +957,7 @@ static void m68k_op_add_16_re_pd(void)
 }
 
 
-static void m68k_op_add_16_re_di(void)
+M68KI_HOT static void m68k_op_add_16_re_di(void)
 {
 	uint ea = EA_AY_DI_16();
 	uint src = MASK_OUT_ABOVE_16(DX);
@@ -1069,7 +1069,7 @@ static void m68k_op_add_32_re_pd(void)
 }
 
 
-static void m68k_op_add_32_re_di(void)
+M68KI_HOT static void m68k_op_add_32_re_di(void)
 {
 	uint ea = EA_AY_DI_32();
 	uint src = DX;
@@ -1133,7 +1133,7 @@ static void m68k_op_add_32_re_al(void)
 }
 
 
-static void m68k_op_adda_16_d(void)
+M68KI_HOT static void m68k_op_adda_16_d(void)
 {
 	uint* r_dst = &AX;
 
@@ -1239,7 +1239,7 @@ static void m68k_op_adda_16_i(void)
 }
 
 
-static void m68k_op_adda_32_d(void)
+M68KI_HOT static void m68k_op_adda_32_d(void)
 {
 	uint* r_dst = &AX;
 
@@ -1247,7 +1247,7 @@ static void m68k_op_adda_32_d(void)
 }
 
 
-static void m68k_op_adda_32_a(void)
+M68KI_HOT static void m68k_op_adda_32_a(void)
 {
 	uint* r_dst = &AX;
 
@@ -1282,7 +1282,7 @@ static void m68k_op_adda_32_pd(void)
 }
 
 
-static void m68k_op_adda_32_di(void)
+M68KI_HOT static void m68k_op_adda_32_di(void)
 {
 	uint src = OPER_AY_DI_32();
 	uint* r_dst = &AX;
@@ -1336,7 +1336,7 @@ static void m68k_op_adda_32_pcix(void)
 }
 
 
-static void m68k_op_adda_32_i(void)
+M68KI_HOT static void m68k_op_adda_32_i(void)
 {
 	uint src = OPER_I_32();
 	uint* r_dst = &AX;
@@ -1345,7 +1345,7 @@ static void m68k_op_adda_32_i(void)
 }
 
 
-static void m68k_op_addi_8_d(void)
+M68KI_HOT static void m68k_op_addi_8_d(void)
 {
 	uint* r_dst = &DY;
 	uint src = OPER_I_8();
@@ -1505,7 +1505,7 @@ static void m68k_op_addi_8_al(void)
 }
 
 
-static void m68k_op_addi_16_d(void)
+M68KI_HOT static void m68k_op_addi_16_d(void)
 {
 	uint* r_dst = &DY;
 	uint src = OPER_I_16();
@@ -1633,7 +1633,7 @@ static void m68k_op_addi_16_al(void)
 }
 
 
-static void m68k_op_addi_32_d(void)
+M68KI_HOT static void m68k_op_addi_32_d(void)
 {
 	uint* r_dst = &DY;
 	uint src = OPER_I_32();
@@ -1761,7 +1761,7 @@ static void m68k_op_addi_32_al(void)
 }
 
 
-static void m68k_op_addq_8_d(void)
+M68KI_HOT static void m68k_op_addq_8_d(void)
 {
 	uint* r_dst = &DY;
 	uint src = (((REG_IR >> 9) - 1) & 7) + 1;
@@ -1857,7 +1857,7 @@ static void m68k_op_addq_8_pd7(void)
 }
 
 
-static void m68k_op_addq_8_di(void)
+M68KI_HOT static void m68k_op_addq_8_di(void)
 {
 	uint src = (((REG_IR >> 9) - 1) & 7) + 1;
 	uint ea = EA_AY_DI_8();
@@ -1921,7 +1921,7 @@ static void m68k_op_addq_8_al(void)
 }
 
 
-static void m68k_op_addq_16_d(void)
+M68KI_HOT static void m68k_op_addq_16_d(void)
 {
 	uint* r_dst = &DY;
 	uint src = (((REG_IR >> 9) - 1) & 7) + 1;
@@ -1993,7 +1993,7 @@ static void m68k_op_addq_16_pd(void)
 }
 
 
-static void m68k_op_addq_16_di(void)
+M68KI_HOT static void m68k_op_addq_16_di(void)
 {
 	uint src = (((REG_IR >> 9) - 1) & 7) + 1;
 	uint ea = EA_AY_DI_16();
@@ -2057,7 +2057,7 @@ static void m68k_op_addq_16_al(void)
 }
 
 
-static void m68k_op_addq_32_d(void)
+M68KI_HOT static void m68k_op_addq_32_d(void)
 {
 	uint* r_dst = &DY;
 	uint src = (((REG_IR >> 9) - 1) & 7) + 1;
@@ -2073,7 +2073,7 @@ static void m68k_op_addq_32_d(void)
 }
 
 
-static void m68k_op_addq_32_a(void)
+M68KI_HOT static void m68k_op_addq_32_a(void)
 {
 	uint* r_dst = &AY;
 
@@ -2081,7 +2081,7 @@ static void m68k_op_addq_32_a(void)
 }
 
 
-static void m68k_op_addq_32_ai(void)
+M68KI_HOT static void m68k_op_addq_32_ai(void)
 {
 	uint src = (((REG_IR >> 9) - 1) & 7) + 1;
 	uint ea = EA_AY_AI_32();
@@ -2132,7 +2132,7 @@ static void m68k_op_addq_32_pd(void)
 }
 
 
-static void m68k_op_addq_32_di(void)
+M68KI_HOT static void m68k_op_addq_32_di(void)
 {
 	uint src = (((REG_IR >> 9) - 1) & 7) + 1;
 	uint ea = EA_AY_DI_32();
@@ -2422,7 +2422,7 @@ static void m68k_op_and_8_er_pd7(void)
 }
 
 
-static void m68k_op_and_8_er_di(void)
+M68KI_HOT static void m68k_op_and_8_er_di(void)
 {
 	FLAG_Z = MASK_OUT_ABOVE_8(DX &= (OPER_AY_DI_8() | 0xffffff00));
 
@@ -2492,7 +2492,7 @@ static void m68k_op_and_8_er_i(void)
 }
 
 
-static void m68k_op_and_16_er_d(void)
+M68KI_HOT static void m68k_op_and_16_er_d(void)
 {
 	FLAG_Z = MASK_OUT_ABOVE_16(DX &= (DY | 0xffff0000));
 
@@ -2602,7 +2602,7 @@ static void m68k_op_and_16_er_i(void)
 }
 
 
-static void m68k_op_and_32_er_d(void)
+M68KI_HOT static void m68k_op_and_32_er_d(void)
 {
 	FLAG_Z = DX &= DY;
 
@@ -2642,7 +2642,7 @@ static void m68k_op_and_32_er_pd(void)
 }
 
 
-static void m68k_op_and_32_er_di(void)
+M68KI_HOT static void m68k_op_and_32_er_di(void)
 {
 	FLAG_Z = DX &= OPER_AY_DI_32();
 
@@ -3034,7 +3034,7 @@ static void m68k_op_and_32_re_al(void)
 }
 
 
-static void m68k_op_andi_8_d(void)
+M68KI_HOT static void m68k_op_andi_8_d(void)
 {
 	FLAG_Z = MASK_OUT_ABOVE_8(DY &= (OPER_I_8() | 0xffffff00));
 
@@ -3179,7 +3179,7 @@ static void m68k_op_andi_8_al(void)
 }
 
 
-static void m68k_op_andi_16_d(void)
+M68KI_HOT static void m68k_op_andi_16_d(void)
 {
 	FLAG_Z = MASK_OUT_ABOVE_16(DY &= (OPER_I_16() | 0xffff0000));
 
@@ -3234,7 +3234,7 @@ static void m68k_op_andi_16_pd(void)
 }
 
 
-static void m68k_op_andi_16_di(void)
+M68KI_HOT static void m68k_op_andi_16_di(void)
 {
 	uint src = OPER_I_16();
 	uint ea = EA_AY_DI_16();
@@ -3294,7 +3294,7 @@ static void m68k_op_andi_16_al(void)
 }
 
 
-static void m68k_op_andi_32_d(void)
+M68KI_HOT static void m68k_op_andi_32_d(void)
 {
 	FLAG_Z = DY &= (OPER_I_32());
 
@@ -3450,7 +3450,7 @@ static void m68k_op_asr_8_s(void)
 }
 
 
-static void m68k_op_asr_16_s(void)
+M68KI_HOT static void m68k_op_asr_16_s(void)
 {
 	uint* r_dst = &DY;
 	uint shift = (((REG_IR >> 9) - 1) & 7) + 1;
@@ -3472,7 +3472,7 @@ static void m68k_op_asr_16_s(void)
 }
 
 
-static void m68k_op_asr_32_s(void)
+M68KI_HOT static void m68k_op_asr_32_s(void)
 {
 	uint* r_dst = &DY;
 	uint shift = (((REG_IR >> 9) - 1) & 7) + 1;
@@ -3600,7 +3600,7 @@ static void m68k_op_asr_16_r(void)
 }
 
 
-static void m68k_op_asr_32_r(void)
+M68KI_HOT static void m68k_op_asr_32_r(void)
 {
 	uint* r_dst = &DY;
 	uint shift = DX & 0x3f;
@@ -3819,7 +3819,7 @@ static void m68k_op_asl_16_s(void)
 }
 
 
-static void m68k_op_asl_32_s(void)
+M68KI_HOT static void m68k_op_asl_32_s(void)
 {
 	uint* r_dst = &DY;
 	uint shift = (((REG_IR >> 9) - 1) & 7) + 1;
@@ -4065,7 +4065,7 @@ static void m68k_op_asl_16_al(void)
 }
 
 
-static void m68k_op_bhi_8(void)
+M68KI_HOT static void m68k_op_bhi_8(void)
 {
 	if(COND_HI())
 	{
@@ -4077,7 +4077,7 @@ static void m68k_op_bhi_8(void)
 }
 
 
-static void m68k_op_bls_8(void)
+M68KI_HOT static void m68k_op_bls_8(void)
 {
 	if(COND_LS())
 	{
@@ -4089,7 +4089,7 @@ static void m68k_op_bls_8(void)
 }
 
 
-static void m68k_op_bcc_8(void)
+M68KI_HOT static void m68k_op_bcc_8(void)
 {
 	if(COND_CC())
 	{
@@ -4101,7 +4101,7 @@ static void m68k_op_bcc_8(void)
 }
 
 
-static void m68k_op_bcs_8(void)
+M68KI_HOT static void m68k_op_bcs_8(void)
 {
 	if(COND_CS())
 	{
@@ -4113,7 +4113,7 @@ static void m68k_op_bcs_8(void)
 }
 
 
-static void m68k_op_bne_8(void)
+M68KI_HOT static void m68k_op_bne_8(void)
 {
 	if(COND_NE())
 	{
@@ -4125,7 +4125,7 @@ static void m68k_op_bne_8(void)
 }
 
 
-static void m68k_op_beq_8(void)
+M68KI_HOT static void m68k_op_beq_8(void)
 {
 	if(COND_EQ())
 	{
@@ -4161,7 +4161,7 @@ static void m68k_op_bvs_8(void)
 }
 
 
-static void m68k_op_bpl_8(void)
+M68KI_HOT static void m68k_op_bpl_8(void)
 {
 	if(COND_PL())
 	{
@@ -4173,7 +4173,7 @@ static void m68k_op_bpl_8(void)
 }
 
 
-static void m68k_op_bmi_8(void)
+M68KI_HOT static void m68k_op_bmi_8(void)
 {
 	if(COND_MI())
 	{
@@ -4185,7 +4185,7 @@ static void m68k_op_bmi_8(void)
 }
 
 
-static void m68k_op_bge_8(void)
+M68KI_HOT static void m68k_op_bge_8(void)
 {
 	if(COND_GE())
 	{
@@ -4197,7 +4197,7 @@ static void m68k_op_bge_8(void)
 }
 
 
-static void m68k_op_blt_8(void)
+M68KI_HOT static void m68k_op_blt_8(void)
 {
 	if(COND_LT())
 	{
@@ -4209,7 +4209,7 @@ static void m68k_op_blt_8(void)
 }
 
 
-static void m68k_op_bgt_8(void)
+M68KI_HOT static void m68k_op_bgt_8(void)
 {
 	if(COND_GT())
 	{
@@ -4221,7 +4221,7 @@ static void m68k_op_bgt_8(void)
 }
 
 
-static void m68k_op_ble_8(void)
+M68KI_HOT static void m68k_op_ble_8(void)
 {
 	if(COND_LE())
 	{
@@ -4233,7 +4233,7 @@ static void m68k_op_ble_8(void)
 }
 
 
-static void m68k_op_bhi_16(void)
+M68KI_HOT static void m68k_op_bhi_16(void)
 {
 	if(COND_HI())
 	{
@@ -4278,7 +4278,7 @@ static void m68k_op_bcc_16(void)
 }
 
 
-static void m68k_op_bcs_16(void)
+M68KI_HOT static void m68k_op_bcs_16(void)
 {
 	if(COND_CS())
 	{
@@ -4293,7 +4293,7 @@ static void m68k_op_bcs_16(void)
 }
 
 
-static void m68k_op_bne_16(void)
+M68KI_HOT static void m68k_op_bne_16(void)
 {
 	if(COND_NE())
 	{
@@ -4308,7 +4308,7 @@ static void m68k_op_bne_16(void)
 }
 
 
-static void m68k_op_beq_16(void)
+M68KI_HOT static void m68k_op_beq_16(void)
 {
 	if(COND_EQ())
 	{
@@ -4383,7 +4383,7 @@ static void m68k_op_bmi_16(void)
 }
 
 
-static void m68k_op_bge_16(void)
+M68KI_HOT static void m68k_op_bge_16(void)
 {
 	if(COND_GE())
 	{
@@ -4398,7 +4398,7 @@ static void m68k_op_bge_16(void)
 }
 
 
-static void m68k_op_blt_16(void)
+M68KI_HOT static void m68k_op_blt_16(void)
 {
 	if(COND_LT())
 	{
@@ -5227,7 +5227,7 @@ static void m68k_op_bclr_8_s_pd7(void)
 }
 
 
-static void m68k_op_bclr_8_s_di(void)
+M68KI_HOT static void m68k_op_bclr_8_s_di(void)
 {
 	uint mask = 1 << (OPER_I_8() & 7);
 	uint ea = EA_AY_DI_8();
@@ -7744,7 +7744,7 @@ static void m68k_op_bkpt(void)
 }
 
 
-static void m68k_op_bra_8(void)
+M68KI_HOT static void m68k_op_bra_8(void)
 {
 	m68ki_trace_t0();				   /* auto-disable (see m68kcpu.h) */
 	m68ki_branch_8(MASK_OUT_ABOVE_8(REG_IR));
@@ -7753,7 +7753,7 @@ static void m68k_op_bra_8(void)
 }
 
 
-static void m68k_op_bra_16(void)
+M68KI_HOT static void m68k_op_bra_16(void)
 {
 	uint offset = OPER_I_16();
 	REG_PC -= 2;
@@ -7862,7 +7862,7 @@ static void m68k_op_bset_8_r_di(void)
 }
 
 
-static void m68k_op_bset_8_r_ix(void)
+M68KI_HOT static void m68k_op_bset_8_r_ix(void)
 {
 	uint ea = EA_AY_IX_8();
 	uint src = m68ki_read_8(ea);
@@ -7960,7 +7960,7 @@ static void m68k_op_bset_8_s_pd7(void)
 }
 
 
-static void m68k_op_bset_8_s_di(void)
+M68KI_HOT static void m68k_op_bset_8_s_di(void)
 {
 	uint mask = 1 << (OPER_I_8() & 7);
 	uint ea = EA_AY_DI_8();
@@ -8004,7 +8004,7 @@ static void m68k_op_bset_8_s_al(void)
 }
 
 
-static void m68k_op_bsr_8(void)
+M68KI_HOT static void m68k_op_bsr_8(void)
 {
 	m68ki_trace_t0();				   /* auto-disable (see m68kcpu.h) */
 	m68ki_push_32(REG_PC);
@@ -8012,7 +8012,7 @@ static void m68k_op_bsr_8(void)
 }
 
 
-static void m68k_op_bsr_16(void)
+M68KI_HOT static void m68k_op_bsr_16(void)
 {
 	uint offset = OPER_I_16();
 	m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
@@ -8042,7 +8042,7 @@ static void m68k_op_bsr_32(void)
 }
 
 
-static void m68k_op_btst_32_r_d(void)
+M68KI_HOT static void m68k_op_btst_32_r_d(void)
 {
 	FLAG_Z = DY & (1 << (DX & 0x1f));
 }
@@ -8120,7 +8120,7 @@ static void m68k_op_btst_8_r_i(void)
 }
 
 
-static void m68k_op_btst_32_s_d(void)
+M68KI_HOT static void m68k_op_btst_32_s_d(void)
 {
 	FLAG_Z = DY & (1 << (OPER_I_8() & 0x1f));
 }
@@ -8166,7 +8166,7 @@ static void m68k_op_btst_8_s_pd7(void)
 }
 
 
-static void m68k_op_btst_8_s_di(void)
+M68KI_HOT static void m68k_op_btst_8_s_di(void)
 {
 	uint bit = OPER_I_8() & 7;
 
@@ -8190,7 +8190,7 @@ static void m68k_op_btst_8_s_aw(void)
 }
 
 
-static void m68k_op_btst_8_s_al(void)
+M68KI_HOT static void m68k_op_btst_8_s_al(void)
 {
 	uint bit = OPER_I_8() & 7;
 
@@ -10059,7 +10059,7 @@ static void m68k_op_chk2cmp2_32_al(void)
 }
 
 
-static void m68k_op_clr_8_d(void)
+M68KI_HOT static void m68k_op_clr_8_d(void)
 {
 	DY &= 0xffffff00;
 
@@ -10125,7 +10125,7 @@ static void m68k_op_clr_8_pd7(void)
 }
 
 
-static void m68k_op_clr_8_di(void)
+M68KI_HOT static void m68k_op_clr_8_di(void)
 {
 	m68ki_write_8(EA_AY_DI_8(), 0);
 
@@ -10169,7 +10169,7 @@ static void m68k_op_clr_8_al(void)
 }
 
 
-static void m68k_op_clr_16_d(void)
+M68KI_HOT static void m68k_op_clr_16_d(void)
 {
 	DY &= 0xffff0000;
 
@@ -10213,7 +10213,7 @@ static void m68k_op_clr_16_pd(void)
 }
 
 
-static void m68k_op_clr_16_di(void)
+M68KI_HOT static void m68k_op_clr_16_di(void)
 {
 	m68ki_write_16(EA_AY_DI_16(), 0);
 
@@ -10257,7 +10257,7 @@ static void m68k_op_clr_16_al(void)
 }
 
 
-static void m68k_op_clr_32_d(void)
+M68KI_HOT static void m68k_op_clr_32_d(void)
 {
 	DY = 0;
 
@@ -10268,7 +10268,7 @@ static void m68k_op_clr_32_d(void)
 }
 
 
-static void m68k_op_clr_32_ai(void)
+M68KI_HOT static void m68k_op_clr_32_ai(void)
 {
 	m68ki_write_32(EA_AY_AI_32(), 0);
 
@@ -10279,7 +10279,7 @@ static void m68k_op_clr_32_ai(void)
 }
 
 
-static void m68k_op_clr_32_pi(void)
+M68KI_HOT static void m68k_op_clr_32_pi(void)
 {
 	m68ki_write_32(EA_AY_PI_32(), 0);
 
@@ -10290,7 +10290,7 @@ static void m68k_op_clr_32_pi(void)
 }
 
 
-static void m68k_op_clr_32_pd(void)
+M68KI_HOT static void m68k_op_clr_32_pd(void)
 {
 	m68ki_write_32(EA_AY_PD_32(), 0);
 
@@ -10301,7 +10301,7 @@ static void m68k_op_clr_32_pd(void)
 }
 
 
-static void m68k_op_clr_32_di(void)
+M68KI_HOT static void m68k_op_clr_32_di(void)
 {
 	m68ki_write_32(EA_AY_DI_32(), 0);
 
@@ -10345,7 +10345,7 @@ static void m68k_op_clr_32_al(void)
 }
 
 
-static void m68k_op_cmp_8_d(void)
+M68KI_HOT static void m68k_op_cmp_8_d(void)
 {
 	uint src = MASK_OUT_ABOVE_8(DY);
 	uint dst = MASK_OUT_ABOVE_8(DX);
@@ -10371,7 +10371,7 @@ static void m68k_op_cmp_8_ai(void)
 }
 
 
-static void m68k_op_cmp_8_pi(void)
+M68KI_HOT static void m68k_op_cmp_8_pi(void)
 {
 	uint src = OPER_AY_PI_8();
 	uint dst = MASK_OUT_ABOVE_8(DX);
@@ -10423,7 +10423,7 @@ static void m68k_op_cmp_8_pd7(void)
 }
 
 
-static void m68k_op_cmp_8_di(void)
+M68KI_HOT static void m68k_op_cmp_8_di(void)
 {
 	uint src = OPER_AY_DI_8();
 	uint dst = MASK_OUT_ABOVE_8(DX);
@@ -10514,7 +10514,7 @@ static void m68k_op_cmp_8_i(void)
 }
 
 
-static void m68k_op_cmp_16_d(void)
+M68KI_HOT static void m68k_op_cmp_16_d(void)
 {
 	uint src = MASK_OUT_ABOVE_16(DY);
 	uint dst = MASK_OUT_ABOVE_16(DX);
@@ -10553,7 +10553,7 @@ static void m68k_op_cmp_16_ai(void)
 }
 
 
-static void m68k_op_cmp_16_pi(void)
+M68KI_HOT static void m68k_op_cmp_16_pi(void)
 {
 	uint src = OPER_AY_PI_16();
 	uint dst = MASK_OUT_ABOVE_16(DX);
@@ -10579,7 +10579,7 @@ static void m68k_op_cmp_16_pd(void)
 }
 
 
-static void m68k_op_cmp_16_di(void)
+M68KI_HOT static void m68k_op_cmp_16_di(void)
 {
 	uint src = OPER_AY_DI_16();
 	uint dst = MASK_OUT_ABOVE_16(DX);
@@ -10670,7 +10670,7 @@ static void m68k_op_cmp_16_i(void)
 }
 
 
-static void m68k_op_cmp_32_d(void)
+M68KI_HOT static void m68k_op_cmp_32_d(void)
 {
 	uint src = DY;
 	uint dst = DX;
@@ -10683,7 +10683,7 @@ static void m68k_op_cmp_32_d(void)
 }
 
 
-static void m68k_op_cmp_32_a(void)
+M68KI_HOT static void m68k_op_cmp_32_a(void)
 {
 	uint src = AY;
 	uint dst = DX;
@@ -10696,7 +10696,7 @@ static void m68k_op_cmp_32_a(void)
 }
 
 
-static void m68k_op_cmp_32_ai(void)
+M68KI_HOT static void m68k_op_cmp_32_ai(void)
 {
 	uint src = OPER_AY_AI_32();
 	uint dst = DX;
@@ -10709,7 +10709,7 @@ static void m68k_op_cmp_32_ai(void)
 }
 
 
-static void m68k_op_cmp_32_pi(void)
+M68KI_HOT static void m68k_op_cmp_32_pi(void)
 {
 	uint src = OPER_AY_PI_32();
 	uint dst = DX;
@@ -10735,7 +10735,7 @@ static void m68k_op_cmp_32_pd(void)
 }
 
 
-static void m68k_op_cmp_32_di(void)
+M68KI_HOT static void m68k_op_cmp_32_di(void)
 {
 	uint src = OPER_AY_DI_32();
 	uint dst = DX;
@@ -10813,7 +10813,7 @@ static void m68k_op_cmp_32_pcix(void)
 }
 
 
-static void m68k_op_cmp_32_i(void)
+M68KI_HOT static void m68k_op_cmp_32_i(void)
 {
 	uint src = OPER_I_32();
 	uint dst = DX;
@@ -10969,7 +10969,7 @@ static void m68k_op_cmpa_16_pcix(void)
 }
 
 
-static void m68k_op_cmpa_16_i(void)
+M68KI_HOT static void m68k_op_cmpa_16_i(void)
 {
 	uint src = MAKE_INT_16(OPER_I_16());
 	uint dst = AX;
@@ -10982,7 +10982,7 @@ static void m68k_op_cmpa_16_i(void)
 }
 
 
-static void m68k_op_cmpa_32_d(void)
+M68KI_HOT static void m68k_op_cmpa_32_d(void)
 {
 	uint src = DY;
 	uint dst = AX;
@@ -10995,7 +10995,7 @@ static void m68k_op_cmpa_32_d(void)
 }
 
 
-static void m68k_op_cmpa_32_a(void)
+M68KI_HOT static void m68k_op_cmpa_32_a(void)
 {
 	uint src = AY;
 	uint dst = AX;
@@ -11008,7 +11008,7 @@ static void m68k_op_cmpa_32_a(void)
 }
 
 
-static void m68k_op_cmpa_32_ai(void)
+M68KI_HOT static void m68k_op_cmpa_32_ai(void)
 {
 	uint src = OPER_AY_AI_32();
 	uint dst = AX;
@@ -11047,7 +11047,7 @@ static void m68k_op_cmpa_32_pd(void)
 }
 
 
-static void m68k_op_cmpa_32_di(void)
+M68KI_HOT static void m68k_op_cmpa_32_di(void)
 {
 	uint src = OPER_AY_DI_32();
 	uint dst = AX;
@@ -11125,7 +11125,7 @@ static void m68k_op_cmpa_32_pcix(void)
 }
 
 
-static void m68k_op_cmpa_32_i(void)
+M68KI_HOT static void m68k_op_cmpa_32_i(void)
 {
 	uint src = OPER_I_32();
 	uint dst = AX;
@@ -11138,7 +11138,7 @@ static void m68k_op_cmpa_32_i(void)
 }
 
 
-static void m68k_op_cmpi_8_d(void)
+M68KI_HOT static void m68k_op_cmpi_8_d(void)
 {
 	uint src = OPER_I_8();
 	uint dst = MASK_OUT_ABOVE_8(DY);
@@ -11216,7 +11216,7 @@ static void m68k_op_cmpi_8_pd7(void)
 }
 
 
-static void m68k_op_cmpi_8_di(void)
+M68KI_HOT static void m68k_op_cmpi_8_di(void)
 {
 	uint src = OPER_I_8();
 	uint dst = OPER_AY_DI_8();
@@ -11304,7 +11304,7 @@ static void m68k_op_cmpi_8_pcix(void)
 }
 
 
-static void m68k_op_cmpi_16_d(void)
+M68KI_HOT static void m68k_op_cmpi_16_d(void)
 {
 	uint src = OPER_I_16();
 	uint dst = MASK_OUT_ABOVE_16(DY);
@@ -11317,7 +11317,7 @@ static void m68k_op_cmpi_16_d(void)
 }
 
 
-static void m68k_op_cmpi_16_ai(void)
+M68KI_HOT static void m68k_op_cmpi_16_ai(void)
 {
 	uint src = OPER_I_16();
 	uint dst = OPER_AY_AI_16();
@@ -11356,7 +11356,7 @@ static void m68k_op_cmpi_16_pd(void)
 }
 
 
-static void m68k_op_cmpi_16_di(void)
+M68KI_HOT static void m68k_op_cmpi_16_di(void)
 {
 	uint src = OPER_I_16();
 	uint dst = OPER_AY_DI_16();
@@ -11444,7 +11444,7 @@ static void m68k_op_cmpi_16_pcix(void)
 }
 
 
-static void m68k_op_cmpi_32_d(void)
+M68KI_HOT static void m68k_op_cmpi_32_d(void)
 {
 	uint src = OPER_I_32();
 	uint dst = DY;
@@ -11458,7 +11458,7 @@ static void m68k_op_cmpi_32_d(void)
 }
 
 
-static void m68k_op_cmpi_32_ai(void)
+M68KI_HOT static void m68k_op_cmpi_32_ai(void)
 {
 	uint src = OPER_I_32();
 	uint dst = OPER_AY_AI_32();
@@ -11497,7 +11497,7 @@ static void m68k_op_cmpi_32_pd(void)
 }
 
 
-static void m68k_op_cmpi_32_di(void)
+M68KI_HOT static void m68k_op_cmpi_32_di(void)
 {
 	uint src = OPER_I_32();
 	uint dst = OPER_AY_DI_32();
@@ -11624,7 +11624,7 @@ static void m68k_op_cmpm_8_axy7(void)
 }
 
 
-static void m68k_op_cmpm_8(void)
+M68KI_HOT static void m68k_op_cmpm_8(void)
 {
 	uint src = OPER_AY_PI_8();
 	uint dst = OPER_AX_PI_8();
@@ -11736,7 +11736,7 @@ static void m68k_op_dbt_16(void)
 }
 
 
-static void m68k_op_dbf_16(void)
+M68KI_HOT static void m68k_op_dbf_16(void)
 {
 	uint* r_dst = &DY;
 	uint res = MASK_OUT_ABOVE_16(*r_dst - 1);
@@ -11881,7 +11881,7 @@ static void m68k_op_dbne_16(void)
 }
 
 
-static void m68k_op_dbeq_16(void)
+M68KI_HOT static void m68k_op_dbeq_16(void)
 {
 	if(COND_NOT_EQ())
 	{
@@ -12524,7 +12524,7 @@ static void m68k_op_divs_16_i(void)
 }
 
 
-static void m68k_op_divu_16_d(void)
+M68KI_HOT static void m68k_op_divu_16_d(void)
 {
 	uint* r_dst = &DX;
 	uint src = MASK_OUT_ABOVE_16(DY);
@@ -15131,7 +15131,7 @@ static void m68k_op_divl_32_i(void)
 }
 
 
-static void m68k_op_eor_8_d(void)
+M68KI_HOT static void m68k_op_eor_8_d(void)
 {
 	uint res = MASK_OUT_ABOVE_8(DY ^= MASK_OUT_ABOVE_8(DX));
 
@@ -15377,7 +15377,7 @@ static void m68k_op_eor_16_al(void)
 }
 
 
-static void m68k_op_eor_32_d(void)
+M68KI_HOT static void m68k_op_eor_32_d(void)
 {
 	uint res = DY ^= DX;
 
@@ -15632,7 +15632,7 @@ static void m68k_op_eori_8_al(void)
 }
 
 
-static void m68k_op_eori_16_d(void)
+M68KI_HOT static void m68k_op_eori_16_d(void)
 {
 	uint res = MASK_OUT_ABOVE_16(DY ^= OPER_I_16());
 
@@ -15748,7 +15748,7 @@ static void m68k_op_eori_16_al(void)
 }
 
 
-static void m68k_op_eori_32_d(void)
+M68KI_HOT static void m68k_op_eori_32_d(void)
 {
 	uint res = DY ^= OPER_I_32();
 
@@ -15913,7 +15913,7 @@ static void m68k_op_exg_32_da(void)
 }
 
 
-static void m68k_op_ext_16(void)
+M68KI_HOT static void m68k_op_ext_16(void)
 {
 	uint* r_dst = &DY;
 
@@ -15926,7 +15926,7 @@ static void m68k_op_ext_16(void)
 }
 
 
-static void m68k_op_ext_32(void)
+M68KI_HOT static void m68k_op_ext_32(void)
 {
 	uint* r_dst = &DY;
 
@@ -15963,7 +15963,7 @@ static void m68k_op_illegal(void)
 }
 
 
-static void m68k_op_jmp_32_ai(void)
+M68KI_HOT static void m68k_op_jmp_32_ai(void)
 {
 	m68ki_jump(EA_AY_AI_32());
 	m68ki_trace_t0();				   /* auto-disable (see m68kcpu.h) */
@@ -15999,7 +15999,7 @@ static void m68k_op_jmp_32_aw(void)
 }
 
 
-static void m68k_op_jmp_32_al(void)
+M68KI_HOT static void m68k_op_jmp_32_al(void)
 {
 	m68ki_jump(EA_AL_32());
 	m68ki_trace_t0();				   /* auto-disable (see m68kcpu.h) */
@@ -16017,7 +16017,7 @@ static void m68k_op_jmp_32_pcdi(void)
 }
 
 
-static void m68k_op_jmp_32_pcix(void)
+M68KI_HOT static void m68k_op_jmp_32_pcix(void)
 {
 	m68ki_jump(EA_PCIX_32());
 	m68ki_trace_t0();				   /* auto-disable (see m68kcpu.h) */
@@ -16026,7 +16026,7 @@ static void m68k_op_jmp_32_pcix(void)
 }
 
 
-static void m68k_op_jsr_32_ai(void)
+M68KI_HOT static void m68k_op_jsr_32_ai(void)
 {
 	uint ea = EA_AY_AI_32();
 	m68ki_trace_t0();				   /* auto-disable (see m68kcpu.h) */
@@ -16035,7 +16035,7 @@ static void m68k_op_jsr_32_ai(void)
 }
 
 
-static void m68k_op_jsr_32_di(void)
+M68KI_HOT static void m68k_op_jsr_32_di(void)
 {
 	uint ea = EA_AY_DI_32();
 	m68ki_trace_t0();				   /* auto-disable (see m68kcpu.h) */
@@ -16062,7 +16062,7 @@ static void m68k_op_jsr_32_aw(void)
 }
 
 
-static void m68k_op_jsr_32_al(void)
+M68KI_HOT static void m68k_op_jsr_32_al(void)
 {
 	uint ea = EA_AL_32();
 	m68ki_trace_t0();				   /* auto-disable (see m68kcpu.h) */
@@ -16071,7 +16071,7 @@ static void m68k_op_jsr_32_al(void)
 }
 
 
-static void m68k_op_jsr_32_pcdi(void)
+M68KI_HOT static void m68k_op_jsr_32_pcdi(void)
 {
 	uint ea = EA_PCDI_32();
 	m68ki_trace_t0();				   /* auto-disable (see m68kcpu.h) */
@@ -16095,13 +16095,13 @@ static void m68k_op_lea_32_ai(void)
 }
 
 
-static void m68k_op_lea_32_di(void)
+M68KI_HOT static void m68k_op_lea_32_di(void)
 {
 	AX = EA_AY_DI_32();
 }
 
 
-static void m68k_op_lea_32_ix(void)
+M68KI_HOT static void m68k_op_lea_32_ix(void)
 {
 	AX = EA_AY_IX_32();
 }
@@ -16113,13 +16113,13 @@ static void m68k_op_lea_32_aw(void)
 }
 
 
-static void m68k_op_lea_32_al(void)
+M68KI_HOT static void m68k_op_lea_32_al(void)
 {
 	AX = EA_AL_32();
 }
 
 
-static void m68k_op_lea_32_pcdi(void)
+M68KI_HOT static void m68k_op_lea_32_pcdi(void)
 {
 	AX = EA_PCDI_32();
 }
@@ -16139,7 +16139,7 @@ static void m68k_op_link_16_a7(void)
 }
 
 
-static void m68k_op_link_16(void)
+M68KI_HOT static void m68k_op_link_16(void)
 {
 	uint* r_dst = &AY;
 
@@ -16196,7 +16196,7 @@ static void m68k_op_lsr_8_s(void)
 }
 
 
-static void m68k_op_lsr_16_s(void)
+M68KI_HOT static void m68k_op_lsr_16_s(void)
 {
 	uint* r_dst = &DY;
 	uint shift = (((REG_IR >> 9) - 1) & 7) + 1;
@@ -16215,7 +16215,7 @@ static void m68k_op_lsr_16_s(void)
 }
 
 
-static void m68k_op_lsr_32_s(void)
+M68KI_HOT static void m68k_op_lsr_32_s(void)
 {
 	uint* r_dst = &DY;
 	uint shift = (((REG_IR >> 9) - 1) & 7) + 1;
@@ -16310,7 +16310,7 @@ static void m68k_op_lsr_16_r(void)
 }
 
 
-static void m68k_op_lsr_32_r(void)
+M68KI_HOT static void m68k_op_lsr_32_r(void)
 {
 	uint* r_dst = &DY;
 	uint shift = DX & 0x3f;
@@ -16471,7 +16471,7 @@ static void m68k_op_lsl_8_s(void)
 }
 
 
-static void m68k_op_lsl_16_s(void)
+M68KI_HOT static void m68k_op_lsl_16_s(void)
 {
 	uint* r_dst = &DY;
 	uint shift = (((REG_IR >> 9) - 1) & 7) + 1;
@@ -16490,7 +16490,7 @@ static void m68k_op_lsl_16_s(void)
 }
 
 
-static void m68k_op_lsl_32_s(void)
+M68KI_HOT static void m68k_op_lsl_32_s(void)
 {
 	uint* r_dst = &DY;
 	uint shift = (((REG_IR >> 9) - 1) & 7) + 1;
@@ -16585,7 +16585,7 @@ static void m68k_op_lsl_16_r(void)
 }
 
 
-static void m68k_op_lsl_32_r(void)
+M68KI_HOT static void m68k_op_lsl_32_r(void)
 {
 	uint* r_dst = &DY;
 	uint shift = DX & 0x3f;
@@ -16727,7 +16727,7 @@ static void m68k_op_lsl_16_al(void)
 }
 
 
-static void m68k_op_move_8_d_d(void)
+M68KI_HOT static void m68k_op_move_8_d_d(void)
 {
 	uint res = MASK_OUT_ABOVE_8(DY);
 	uint* r_dst = &DX;
@@ -16741,7 +16741,7 @@ static void m68k_op_move_8_d_d(void)
 }
 
 
-static void m68k_op_move_8_d_ai(void)
+M68KI_HOT static void m68k_op_move_8_d_ai(void)
 {
 	uint res = OPER_AY_AI_8();
 	uint* r_dst = &DX;
@@ -16755,7 +16755,7 @@ static void m68k_op_move_8_d_ai(void)
 }
 
 
-static void m68k_op_move_8_d_pi(void)
+M68KI_HOT static void m68k_op_move_8_d_pi(void)
 {
 	uint res = OPER_AY_PI_8();
 	uint* r_dst = &DX;
@@ -16811,7 +16811,7 @@ static void m68k_op_move_8_d_pd7(void)
 }
 
 
-static void m68k_op_move_8_d_di(void)
+M68KI_HOT static void m68k_op_move_8_d_di(void)
 {
 	uint res = OPER_AY_DI_8();
 	uint* r_dst = &DX;
@@ -16825,7 +16825,7 @@ static void m68k_op_move_8_d_di(void)
 }
 
 
-static void m68k_op_move_8_d_ix(void)
+M68KI_HOT static void m68k_op_move_8_d_ix(void)
 {
 	uint res = OPER_AY_IX_8();
 	uint* r_dst = &DX;
@@ -16853,7 +16853,7 @@ static void m68k_op_move_8_d_aw(void)
 }
 
 
-static void m68k_op_move_8_d_al(void)
+M68KI_HOT static void m68k_op_move_8_d_al(void)
 {
 	uint res = OPER_AL_8();
 	uint* r_dst = &DX;
@@ -16895,7 +16895,7 @@ static void m68k_op_move_8_d_pcix(void)
 }
 
 
-static void m68k_op_move_8_d_i(void)
+M68KI_HOT static void m68k_op_move_8_d_i(void)
 {
 	uint res = OPER_I_8();
 	uint* r_dst = &DX;
@@ -16909,7 +16909,7 @@ static void m68k_op_move_8_d_i(void)
 }
 
 
-static void m68k_op_move_8_ai_d(void)
+M68KI_HOT static void m68k_op_move_8_ai_d(void)
 {
 	uint res = MASK_OUT_ABOVE_8(DY);
 	uint ea = EA_AX_AI_8();
@@ -17105,7 +17105,7 @@ static void m68k_op_move_8_pi7_d(void)
 }
 
 
-static void m68k_op_move_8_pi_d(void)
+M68KI_HOT static void m68k_op_move_8_pi_d(void)
 {
 	uint res = MASK_OUT_ABOVE_8(DY);
 	uint ea = EA_AX_PI_8();
@@ -17301,7 +17301,7 @@ static void m68k_op_move_8_pi_ai(void)
 }
 
 
-static void m68k_op_move_8_pi_pi(void)
+M68KI_HOT static void m68k_op_move_8_pi_pi(void)
 {
 	uint res = OPER_AY_PI_8();
 	uint ea = EA_AX_PI_8();
@@ -17441,7 +17441,7 @@ static void m68k_op_move_8_pi_pcix(void)
 }
 
 
-static void m68k_op_move_8_pi_i(void)
+M68KI_HOT static void m68k_op_move_8_pi_i(void)
 {
 	uint res = OPER_I_8();
 	uint ea = EA_AX_PI_8();
@@ -17819,7 +17819,7 @@ static void m68k_op_move_8_pd_i(void)
 }
 
 
-static void m68k_op_move_8_di_d(void)
+M68KI_HOT static void m68k_op_move_8_di_d(void)
 {
 	uint res = MASK_OUT_ABOVE_8(DY);
 	uint ea = EA_AX_DI_8();
@@ -17833,7 +17833,7 @@ static void m68k_op_move_8_di_d(void)
 }
 
 
-static void m68k_op_move_8_di_ai(void)
+M68KI_HOT static void m68k_op_move_8_di_ai(void)
 {
 	uint res = OPER_AY_AI_8();
 	uint ea = EA_AX_DI_8();
@@ -17903,7 +17903,7 @@ static void m68k_op_move_8_di_pd7(void)
 }
 
 
-static void m68k_op_move_8_di_di(void)
+M68KI_HOT static void m68k_op_move_8_di_di(void)
 {
 	uint res = OPER_AY_DI_8();
 	uint ea = EA_AX_DI_8();
@@ -17987,7 +17987,7 @@ static void m68k_op_move_8_di_pcix(void)
 }
 
 
-static void m68k_op_move_8_di_i(void)
+M68KI_HOT static void m68k_op_move_8_di_i(void)
 {
 	uint res = OPER_I_8();
 	uint ea = EA_AX_DI_8();
@@ -18547,7 +18547,7 @@ static void m68k_op_move_8_al_i(void)
 }
 
 
-static void m68k_op_move_16_d_d(void)
+M68KI_HOT static void m68k_op_move_16_d_d(void)
 {
 	uint res = MASK_OUT_ABOVE_16(DY);
 	uint* r_dst = &DX;
@@ -18575,7 +18575,7 @@ static void m68k_op_move_16_d_a(void)
 }
 
 
-static void m68k_op_move_16_d_ai(void)
+M68KI_HOT static void m68k_op_move_16_d_ai(void)
 {
 	uint res = OPER_AY_AI_16();
 	uint* r_dst = &DX;
@@ -18589,7 +18589,7 @@ static void m68k_op_move_16_d_ai(void)
 }
 
 
-static void m68k_op_move_16_d_pi(void)
+M68KI_HOT static void m68k_op_move_16_d_pi(void)
 {
 	uint res = OPER_AY_PI_16();
 	uint* r_dst = &DX;
@@ -18617,7 +18617,7 @@ static void m68k_op_move_16_d_pd(void)
 }
 
 
-static void m68k_op_move_16_d_di(void)
+M68KI_HOT static void m68k_op_move_16_d_di(void)
 {
 	uint res = OPER_AY_DI_16();
 	uint* r_dst = &DX;
@@ -18631,7 +18631,7 @@ static void m68k_op_move_16_d_di(void)
 }
 
 
-static void m68k_op_move_16_d_ix(void)
+M68KI_HOT static void m68k_op_move_16_d_ix(void)
 {
 	uint res = OPER_AY_IX_16();
 	uint* r_dst = &DX;
@@ -18659,7 +18659,7 @@ static void m68k_op_move_16_d_aw(void)
 }
 
 
-static void m68k_op_move_16_d_al(void)
+M68KI_HOT static void m68k_op_move_16_d_al(void)
 {
 	uint res = OPER_AL_16();
 	uint* r_dst = &DX;
@@ -18701,7 +18701,7 @@ static void m68k_op_move_16_d_pcix(void)
 }
 
 
-static void m68k_op_move_16_d_i(void)
+M68KI_HOT static void m68k_op_move_16_d_i(void)
 {
 	uint res = OPER_I_16();
 	uint* r_dst = &DX;
@@ -18715,7 +18715,7 @@ static void m68k_op_move_16_d_i(void)
 }
 
 
-static void m68k_op_move_16_ai_d(void)
+M68KI_HOT static void m68k_op_move_16_ai_d(void)
 {
 	uint res = MASK_OUT_ABOVE_16(DY);
 	uint ea = EA_AX_AI_16();
@@ -18883,7 +18883,7 @@ static void m68k_op_move_16_ai_i(void)
 }
 
 
-static void m68k_op_move_16_pi_d(void)
+M68KI_HOT static void m68k_op_move_16_pi_d(void)
 {
 	uint res = MASK_OUT_ABOVE_16(DY);
 	uint ea = EA_AX_PI_16();
@@ -19219,7 +19219,7 @@ static void m68k_op_move_16_pd_i(void)
 }
 
 
-static void m68k_op_move_16_di_d(void)
+M68KI_HOT static void m68k_op_move_16_di_d(void)
 {
 	uint res = MASK_OUT_ABOVE_16(DY);
 	uint ea = EA_AX_DI_16();
@@ -19247,7 +19247,7 @@ static void m68k_op_move_16_di_a(void)
 }
 
 
-static void m68k_op_move_16_di_ai(void)
+M68KI_HOT static void m68k_op_move_16_di_ai(void)
 {
 	uint res = OPER_AY_AI_16();
 	uint ea = EA_AX_DI_16();
@@ -19289,7 +19289,7 @@ static void m68k_op_move_16_di_pd(void)
 }
 
 
-static void m68k_op_move_16_di_di(void)
+M68KI_HOT static void m68k_op_move_16_di_di(void)
 {
 	uint res = OPER_AY_DI_16();
 	uint ea = EA_AX_DI_16();
@@ -19373,7 +19373,7 @@ static void m68k_op_move_16_di_pcix(void)
 }
 
 
-static void m68k_op_move_16_di_i(void)
+M68KI_HOT static void m68k_op_move_16_di_i(void)
 {
 	uint res = OPER_I_16();
 	uint ea = EA_AX_DI_16();
@@ -19723,7 +19723,7 @@ static void m68k_op_move_16_aw_i(void)
 }
 
 
-static void m68k_op_move_16_al_d(void)
+M68KI_HOT static void m68k_op_move_16_al_d(void)
 {
 	uint res = MASK_OUT_ABOVE_16(DY);
 	uint ea = EA_AL_16();
@@ -19877,7 +19877,7 @@ static void m68k_op_move_16_al_pcix(void)
 }
 
 
-static void m68k_op_move_16_al_i(void)
+M68KI_HOT static void m68k_op_move_16_al_i(void)
 {
 	uint res = OPER_I_16();
 	uint ea = EA_AL_16();
@@ -19891,7 +19891,7 @@ static void m68k_op_move_16_al_i(void)
 }
 
 
-static void m68k_op_move_32_d_d(void)
+M68KI_HOT static void m68k_op_move_32_d_d(void)
 {
 	uint res = DY;
 	uint* r_dst = &DX;
@@ -19905,7 +19905,7 @@ static void m68k_op_move_32_d_d(void)
 }
 
 
-static void m68k_op_move_32_d_a(void)
+M68KI_HOT static void m68k_op_move_32_d_a(void)
 {
 	uint res = AY;
 	uint* r_dst = &DX;
@@ -19919,7 +19919,7 @@ static void m68k_op_move_32_d_a(void)
 }
 
 
-static void m68k_op_move_32_d_ai(void)
+M68KI_HOT static void m68k_op_move_32_d_ai(void)
 {
 	uint res = OPER_AY_AI_32();
 	uint* r_dst = &DX;
@@ -19933,7 +19933,7 @@ static void m68k_op_move_32_d_ai(void)
 }
 
 
-static void m68k_op_move_32_d_pi(void)
+M68KI_HOT static void m68k_op_move_32_d_pi(void)
 {
 	uint res = OPER_AY_PI_32();
 	uint* r_dst = &DX;
@@ -19961,7 +19961,7 @@ static void m68k_op_move_32_d_pd(void)
 }
 
 
-static void m68k_op_move_32_d_di(void)
+M68KI_HOT static void m68k_op_move_32_d_di(void)
 {
 	uint res = OPER_AY_DI_32();
 	uint* r_dst = &DX;
@@ -20045,7 +20045,7 @@ static void m68k_op_move_32_d_pcix(void)
 }
 
 
-static void m68k_op_move_32_d_i(void)
+M68KI_HOT static void m68k_op_move_32_d_i(void)
 {
 	uint res = OPER_I_32();
 	uint* r_dst = &DX;
@@ -20059,7 +20059,7 @@ static void m68k_op_move_32_d_i(void)
 }
 
 
-static void m68k_op_move_32_ai_d(void)
+M68KI_HOT static void m68k_op_move_32_ai_d(void)
 {
 	uint res = DY;
 	uint ea = EA_AX_AI_32();
@@ -20073,7 +20073,7 @@ static void m68k_op_move_32_ai_d(void)
 }
 
 
-static void m68k_op_move_32_ai_a(void)
+M68KI_HOT static void m68k_op_move_32_ai_a(void)
 {
 	uint res = AY;
 	uint ea = EA_AX_AI_32();
@@ -20087,7 +20087,7 @@ static void m68k_op_move_32_ai_a(void)
 }
 
 
-static void m68k_op_move_32_ai_ai(void)
+M68KI_HOT static void m68k_op_move_32_ai_ai(void)
 {
 	uint res = OPER_AY_AI_32();
 	uint ea = EA_AX_AI_32();
@@ -20129,7 +20129,7 @@ static void m68k_op_move_32_ai_pd(void)
 }
 
 
-static void m68k_op_move_32_ai_di(void)
+M68KI_HOT static void m68k_op_move_32_ai_di(void)
 {
 	uint res = OPER_AY_DI_32();
 	uint ea = EA_AX_AI_32();
@@ -20227,7 +20227,7 @@ static void m68k_op_move_32_ai_i(void)
 }
 
 
-static void m68k_op_move_32_pi_d(void)
+M68KI_HOT static void m68k_op_move_32_pi_d(void)
 {
 	uint res = DY;
 	uint ea = EA_AX_PI_32();
@@ -20395,7 +20395,7 @@ static void m68k_op_move_32_pi_i(void)
 }
 
 
-static void m68k_op_move_32_pd_d(void)
+M68KI_HOT static void m68k_op_move_32_pd_d(void)
 {
 	uint res = DY;
 	uint ea = EA_AX_PD_32();
@@ -20410,7 +20410,7 @@ static void m68k_op_move_32_pd_d(void)
 }
 
 
-static void m68k_op_move_32_pd_a(void)
+M68KI_HOT static void m68k_op_move_32_pd_a(void)
 {
 	uint res = AY;
 	uint ea = EA_AX_PD_32();
@@ -20470,7 +20470,7 @@ static void m68k_op_move_32_pd_pd(void)
 }
 
 
-static void m68k_op_move_32_pd_di(void)
+M68KI_HOT static void m68k_op_move_32_pd_di(void)
 {
 	uint res = OPER_AY_DI_32();
 	uint ea = EA_AX_PD_32();
@@ -20575,7 +20575,7 @@ static void m68k_op_move_32_pd_i(void)
 }
 
 
-static void m68k_op_move_32_di_d(void)
+M68KI_HOT static void m68k_op_move_32_di_d(void)
 {
 	uint res = DY;
 	uint ea = EA_AX_DI_32();
@@ -20589,7 +20589,7 @@ static void m68k_op_move_32_di_d(void)
 }
 
 
-static void m68k_op_move_32_di_a(void)
+M68KI_HOT static void m68k_op_move_32_di_a(void)
 {
 	uint res = AY;
 	uint ea = EA_AX_DI_32();
@@ -20645,7 +20645,7 @@ static void m68k_op_move_32_di_pd(void)
 }
 
 
-static void m68k_op_move_32_di_di(void)
+M68KI_HOT static void m68k_op_move_32_di_di(void)
 {
 	uint res = OPER_AY_DI_32();
 	uint ea = EA_AX_DI_32();
@@ -20659,7 +20659,7 @@ static void m68k_op_move_32_di_di(void)
 }
 
 
-static void m68k_op_move_32_di_ix(void)
+M68KI_HOT static void m68k_op_move_32_di_ix(void)
 {
 	uint res = OPER_AY_IX_32();
 	uint ea = EA_AX_DI_32();
@@ -20729,7 +20729,7 @@ static void m68k_op_move_32_di_pcix(void)
 }
 
 
-static void m68k_op_move_32_di_i(void)
+M68KI_HOT static void m68k_op_move_32_di_i(void)
 {
 	uint res = OPER_I_32();
 	uint ea = EA_AX_DI_32();
@@ -21247,7 +21247,7 @@ static void m68k_op_move_32_al_i(void)
 }
 
 
-static void m68k_op_movea_16_d(void)
+M68KI_HOT static void m68k_op_movea_16_d(void)
 {
 	AX = MAKE_INT_16(DY);
 }
@@ -21277,7 +21277,7 @@ static void m68k_op_movea_16_pd(void)
 }
 
 
-static void m68k_op_movea_16_di(void)
+M68KI_HOT static void m68k_op_movea_16_di(void)
 {
 	AX = MAKE_INT_16(OPER_AY_DI_16());
 }
@@ -21307,37 +21307,37 @@ static void m68k_op_movea_16_pcdi(void)
 }
 
 
-static void m68k_op_movea_16_pcix(void)
+M68KI_HOT static void m68k_op_movea_16_pcix(void)
 {
 	AX = MAKE_INT_16(OPER_PCIX_16());
 }
 
 
-static void m68k_op_movea_16_i(void)
+M68KI_HOT static void m68k_op_movea_16_i(void)
 {
 	AX = MAKE_INT_16(OPER_I_16());
 }
 
 
-static void m68k_op_movea_32_d(void)
+M68KI_HOT static void m68k_op_movea_32_d(void)
 {
 	AX = DY;
 }
 
 
-static void m68k_op_movea_32_a(void)
+M68KI_HOT static void m68k_op_movea_32_a(void)
 {
 	AX = AY;
 }
 
 
-static void m68k_op_movea_32_ai(void)
+M68KI_HOT static void m68k_op_movea_32_ai(void)
 {
 	AX = OPER_AY_AI_32();
 }
 
 
-static void m68k_op_movea_32_pi(void)
+M68KI_HOT static void m68k_op_movea_32_pi(void)
 {
 	AX = OPER_AY_PI_32();
 }
@@ -21349,31 +21349,31 @@ static void m68k_op_movea_32_pd(void)
 }
 
 
-static void m68k_op_movea_32_di(void)
+M68KI_HOT static void m68k_op_movea_32_di(void)
 {
 	AX = OPER_AY_DI_32();
 }
 
 
-static void m68k_op_movea_32_ix(void)
+M68KI_HOT static void m68k_op_movea_32_ix(void)
 {
 	AX = OPER_AY_IX_32();
 }
 
 
-static void m68k_op_movea_32_aw(void)
+M68KI_HOT static void m68k_op_movea_32_aw(void)
 {
 	AX = OPER_AW_32();
 }
 
 
-static void m68k_op_movea_32_al(void)
+M68KI_HOT static void m68k_op_movea_32_al(void)
 {
 	AX = OPER_AL_32();
 }
 
 
-static void m68k_op_movea_32_pcdi(void)
+M68KI_HOT static void m68k_op_movea_32_pcdi(void)
 {
 	AX = OPER_PCDI_32();
 }
@@ -21385,7 +21385,7 @@ static void m68k_op_movea_32_pcix(void)
 }
 
 
-static void m68k_op_movea_32_i(void)
+M68KI_HOT static void m68k_op_movea_32_i(void)
 {
 	AX = OPER_I_32();
 }
@@ -21545,7 +21545,7 @@ static void m68k_op_move_16_toc_i(void)
 }
 
 
-static void m68k_op_move_16_frs_d(void)
+M68KI_HOT static void m68k_op_move_16_frs_d(void)
 {
 	if(CPU_TYPE_IS_000(CPU_TYPE) || FLAG_S)	/* NS990408 */
 	{
@@ -22204,7 +22204,7 @@ static void m68k_op_movem_16_re_al(void)
 }
 
 
-static void m68k_op_movem_32_re_pd(void)
+M68KI_HOT static void m68k_op_movem_32_re_pd(void)
 {
 	uint i = 0;
 	uint register_list = OPER_I_16();
@@ -22225,7 +22225,7 @@ static void m68k_op_movem_32_re_pd(void)
 }
 
 
-static void m68k_op_movem_32_re_ai(void)
+M68KI_HOT static void m68k_op_movem_32_re_ai(void)
 {
 	uint i = 0;
 	uint register_list = OPER_I_16();
@@ -22473,7 +22473,7 @@ static void m68k_op_movem_16_er_al(void)
 }
 
 
-static void m68k_op_movem_32_er_pi(void)
+M68KI_HOT static void m68k_op_movem_32_er_pi(void)
 {
 	uint i = 0;
 	uint register_list = OPER_I_16();
@@ -22531,7 +22531,7 @@ static void m68k_op_movem_32_er_pcix(void)
 }
 
 
-static void m68k_op_movem_32_er_ai(void)
+M68KI_HOT static void m68k_op_movem_32_er_ai(void)
 {
 	uint i = 0;
 	uint register_list = OPER_I_16();
@@ -22550,7 +22550,7 @@ static void m68k_op_movem_32_er_ai(void)
 }
 
 
-static void m68k_op_movem_32_er_di(void)
+M68KI_HOT static void m68k_op_movem_32_er_di(void)
 {
 	uint i = 0;
 	uint register_list = OPER_I_16();
@@ -23436,7 +23436,7 @@ static void m68k_op_moves_32_al(void)
 }
 
 
-static void m68k_op_moveq_32(void)
+M68KI_HOT static void m68k_op_moveq_32(void)
 {
 	uint res = DX = MAKE_INT_8(MASK_OUT_ABOVE_8(REG_IR));
 
@@ -23838,7 +23838,7 @@ static void m68k_op_mulu_16_pd(void)
 }
 
 
-static void m68k_op_mulu_16_di(void)
+M68KI_HOT static void m68k_op_mulu_16_di(void)
 {
 	uint* r_dst = &DX;
 	uint x = OPER_AY_DI_16();
@@ -23988,7 +23988,7 @@ static void m68k_op_mulu_16_pcix(void)
 }
 
 
-static void m68k_op_mulu_16_i(void)
+M68KI_HOT static void m68k_op_mulu_16_i(void)
 {
 	uint* r_dst = &DX;
 	uint x = OPER_I_16();
@@ -26533,13 +26533,13 @@ static void m68k_op_negx_32_al(void)
 }
 
 
-static void m68k_op_nop(void)
+M68KI_HOT static void m68k_op_nop(void)
 {
 	m68ki_trace_t0();				   /* auto-disable (see m68kcpu.h) */
 }
 
 
-static void m68k_op_not_8_d(void)
+M68KI_HOT static void m68k_op_not_8_d(void)
 {
 	uint* r_dst = &DY;
 	uint res = MASK_OUT_ABOVE_8(~*r_dst);
@@ -26623,7 +26623,7 @@ static void m68k_op_not_8_pd7(void)
 }
 
 
-static void m68k_op_not_8_di(void)
+M68KI_HOT static void m68k_op_not_8_di(void)
 {
 	uint ea = EA_AY_DI_8();
 	uint res = MASK_OUT_ABOVE_8(~m68ki_read_8(ea));
@@ -26791,7 +26791,7 @@ static void m68k_op_not_16_al(void)
 }
 
 
-static void m68k_op_not_32_d(void)
+M68KI_HOT static void m68k_op_not_32_d(void)
 {
 	uint* r_dst = &DY;
 	uint res = *r_dst = MASK_OUT_ABOVE_32(~*r_dst);
@@ -27165,7 +27165,7 @@ static void m68k_op_or_16_er_i(void)
 }
 
 
-static void m68k_op_or_32_er_d(void)
+M68KI_HOT static void m68k_op_or_32_er_d(void)
 {
 	uint res = DX |= DY;
 
@@ -27356,7 +27356,7 @@ static void m68k_op_or_8_re_pd7(void)
 }
 
 
-static void m68k_op_or_8_re_di(void)
+M68KI_HOT static void m68k_op_or_8_re_di(void)
 {
 	uint ea = EA_AY_DI_8();
 	uint res = MASK_OUT_ABOVE_8(DX | m68ki_read_8(ea));
@@ -27754,7 +27754,7 @@ static void m68k_op_ori_8_al(void)
 }
 
 
-static void m68k_op_ori_16_d(void)
+M68KI_HOT static void m68k_op_ori_16_d(void)
 {
 	uint res = MASK_OUT_ABOVE_16(DY |= OPER_I_16());
 
@@ -28095,7 +28095,7 @@ static void m68k_op_pea_32_ai(void)
 }
 
 
-static void m68k_op_pea_32_di(void)
+M68KI_HOT static void m68k_op_pea_32_di(void)
 {
 	uint ea = EA_AY_DI_32();
 
@@ -28111,7 +28111,7 @@ static void m68k_op_pea_32_ix(void)
 }
 
 
-static void m68k_op_pea_32_aw(void)
+M68KI_HOT static void m68k_op_pea_32_aw(void)
 {
 	uint ea = EA_AW_32();
 
@@ -28119,7 +28119,7 @@ static void m68k_op_pea_32_aw(void)
 }
 
 
-static void m68k_op_pea_32_al(void)
+M68KI_HOT static void m68k_op_pea_32_al(void)
 {
 	uint ea = EA_AL_32();
 
@@ -28127,7 +28127,7 @@ static void m68k_op_pea_32_al(void)
 }
 
 
-static void m68k_op_pea_32_pcdi(void)
+M68KI_HOT static void m68k_op_pea_32_pcdi(void)
 {
 	uint ea = EA_PCDI_32();
 
@@ -28199,7 +28199,7 @@ static void m68k_op_ror_8_s(void)
 }
 
 
-static void m68k_op_ror_16_s(void)
+M68KI_HOT static void m68k_op_ror_16_s(void)
 {
 	uint* r_dst = &DY;
 	uint shift = (((REG_IR >> 9) - 1) & 7) + 1;
@@ -28462,7 +28462,7 @@ static void m68k_op_rol_16_s(void)
 }
 
 
-static void m68k_op_rol_32_s(void)
+M68KI_HOT static void m68k_op_rol_32_s(void)
 {
 	uint* r_dst = &DY;
 	uint shift = (((REG_IR >> 9) - 1) & 7) + 1;
@@ -29352,7 +29352,7 @@ static void m68k_op_rtd_32(void)
 }
 
 
-static void m68k_op_rte_32(void)
+M68KI_HOT static void m68k_op_rte_32(void)
 {
 	if(FLAG_S)
 	{
@@ -29486,7 +29486,7 @@ static void m68k_op_rtr_32(void)
 }
 
 
-static void m68k_op_rts_32(void)
+M68KI_HOT static void m68k_op_rts_32(void)
 {
 	m68ki_trace_t0();				   /* auto-disable (see m68kcpu.h) */
 	m68ki_jump(m68ki_pull_32());
@@ -30685,7 +30685,7 @@ static void m68k_op_stop(void)
 }
 
 
-static void m68k_op_sub_8_er_d(void)
+M68KI_HOT static void m68k_op_sub_8_er_d(void)
 {
 	uint* r_dst = &DX;
 	uint src = MASK_OUT_ABOVE_8(DY);
@@ -30781,7 +30781,7 @@ static void m68k_op_sub_8_er_pd7(void)
 }
 
 
-static void m68k_op_sub_8_er_di(void)
+M68KI_HOT static void m68k_op_sub_8_er_di(void)
 {
 	uint* r_dst = &DX;
 	uint src = OPER_AY_DI_8();
@@ -30893,7 +30893,7 @@ static void m68k_op_sub_8_er_i(void)
 }
 
 
-static void m68k_op_sub_16_er_d(void)
+M68KI_HOT static void m68k_op_sub_16_er_d(void)
 {
 	uint* r_dst = &DX;
 	uint src = MASK_OUT_ABOVE_16(DY);
@@ -30941,7 +30941,7 @@ static void m68k_op_sub_16_er_ai(void)
 }
 
 
-static void m68k_op_sub_16_er_pi(void)
+M68KI_HOT static void m68k_op_sub_16_er_pi(void)
 {
 	uint* r_dst = &DX;
 	uint src = OPER_AY_PI_16();
@@ -30973,7 +30973,7 @@ static void m68k_op_sub_16_er_pd(void)
 }
 
 
-static void m68k_op_sub_16_er_di(void)
+M68KI_HOT static void m68k_op_sub_16_er_di(void)
 {
 	uint* r_dst = &DX;
 	uint src = OPER_AY_DI_16();
@@ -31085,7 +31085,7 @@ static void m68k_op_sub_16_er_i(void)
 }
 
 
-static void m68k_op_sub_32_er_d(void)
+M68KI_HOT static void m68k_op_sub_32_er_d(void)
 {
 	uint* r_dst = &DX;
 	uint src = DY;
@@ -31165,7 +31165,7 @@ static void m68k_op_sub_32_er_pd(void)
 }
 
 
-static void m68k_op_sub_32_er_di(void)
+M68KI_HOT static void m68k_op_sub_32_er_di(void)
 {
 	uint* r_dst = &DX;
 	uint src = OPER_AY_DI_32();
@@ -31261,7 +31261,7 @@ static void m68k_op_sub_32_er_pcix(void)
 }
 
 
-static void m68k_op_sub_32_er_i(void)
+M68KI_HOT static void m68k_op_sub_32_er_i(void)
 {
 	uint* r_dst = &DX;
 	uint src = OPER_I_32();
@@ -31469,7 +31469,7 @@ static void m68k_op_sub_16_re_pd(void)
 }
 
 
-static void m68k_op_sub_16_re_di(void)
+M68KI_HOT static void m68k_op_sub_16_re_di(void)
 {
 	uint ea = EA_AY_DI_16();
 	uint src = MASK_OUT_ABOVE_16(DX);
@@ -31759,7 +31759,7 @@ static void m68k_op_suba_32_d(void)
 }
 
 
-static void m68k_op_suba_32_a(void)
+M68KI_HOT static void m68k_op_suba_32_a(void)
 {
 	uint* r_dst = &AX;
 
@@ -31794,7 +31794,7 @@ static void m68k_op_suba_32_pd(void)
 }
 
 
-static void m68k_op_suba_32_di(void)
+M68KI_HOT static void m68k_op_suba_32_di(void)
 {
 	uint src = OPER_AY_DI_32();
 	uint* r_dst = &AX;
@@ -31848,7 +31848,7 @@ static void m68k_op_suba_32_pcix(void)
 }
 
 
-static void m68k_op_suba_32_i(void)
+M68KI_HOT static void m68k_op_suba_32_i(void)
 {
 	uint src = OPER_I_32();
 	uint* r_dst = &AX;
@@ -31857,7 +31857,7 @@ static void m68k_op_suba_32_i(void)
 }
 
 
-static void m68k_op_subi_8_d(void)
+M68KI_HOT static void m68k_op_subi_8_d(void)
 {
 	uint* r_dst = &DY;
 	uint src = OPER_I_8();
@@ -32369,7 +32369,7 @@ static void m68k_op_subq_8_pd7(void)
 }
 
 
-static void m68k_op_subq_8_di(void)
+M68KI_HOT static void m68k_op_subq_8_di(void)
 {
 	uint src = (((REG_IR >> 9) - 1) & 7) + 1;
 	uint ea = EA_AY_DI_8();
@@ -32433,7 +32433,7 @@ static void m68k_op_subq_8_al(void)
 }
 
 
-static void m68k_op_subq_16_d(void)
+M68KI_HOT static void m68k_op_subq_16_d(void)
 {
 	uint* r_dst = &DY;
 	uint src = (((REG_IR >> 9) - 1) & 7) + 1;
@@ -32505,7 +32505,7 @@ static void m68k_op_subq_16_pd(void)
 }
 
 
-static void m68k_op_subq_16_di(void)
+M68KI_HOT static void m68k_op_subq_16_di(void)
 {
 	uint src = (((REG_IR >> 9) - 1) & 7) + 1;
 	uint ea = EA_AY_DI_16();
@@ -32569,7 +32569,7 @@ static void m68k_op_subq_16_al(void)
 }
 
 
-static void m68k_op_subq_32_d(void)
+M68KI_HOT static void m68k_op_subq_32_d(void)
 {
 	uint* r_dst = &DY;
 	uint src = (((REG_IR >> 9) - 1) & 7) + 1;
@@ -32585,7 +32585,7 @@ static void m68k_op_subq_32_d(void)
 }
 
 
-static void m68k_op_subq_32_a(void)
+M68KI_HOT static void m68k_op_subq_32_a(void)
 {
 	uint* r_dst = &AY;
 
@@ -32593,7 +32593,7 @@ static void m68k_op_subq_32_a(void)
 }
 
 
-static void m68k_op_subq_32_ai(void)
+M68KI_HOT static void m68k_op_subq_32_ai(void)
 {
 	uint src = (((REG_IR >> 9) - 1) & 7) + 1;
 	uint ea = EA_AY_AI_32();
@@ -32641,7 +32641,7 @@ static void m68k_op_subq_32_pd(void)
 }
 
 
-static void m68k_op_subq_32_di(void)
+M68KI_HOT static void m68k_op_subq_32_di(void)
 {
 	uint src = (((REG_IR >> 9) - 1) & 7) + 1;
 	uint ea = EA_AY_DI_32();
@@ -32867,7 +32867,7 @@ static void m68k_op_subx_32_mm(void)
 }
 
 
-static void m68k_op_swap_32(void)
+M68KI_HOT static void m68k_op_swap_32(void)
 {
 	uint* r_dst = &DY;
 
@@ -33796,7 +33796,7 @@ static void m68k_op_trapv(void)
 }
 
 
-static void m68k_op_tst_8_d(void)
+M68KI_HOT static void m68k_op_tst_8_d(void)
 {
 	uint res = MASK_OUT_ABOVE_8(DY);
 
@@ -33807,7 +33807,7 @@ static void m68k_op_tst_8_d(void)
 }
 
 
-static void m68k_op_tst_8_ai(void)
+M68KI_HOT static void m68k_op_tst_8_ai(void)
 {
 	uint res = OPER_AY_AI_8();
 
@@ -33818,7 +33818,7 @@ static void m68k_op_tst_8_ai(void)
 }
 
 
-static void m68k_op_tst_8_pi(void)
+M68KI_HOT static void m68k_op_tst_8_pi(void)
 {
 	uint res = OPER_AY_PI_8();
 
@@ -33862,7 +33862,7 @@ static void m68k_op_tst_8_pd7(void)
 }
 
 
-static void m68k_op_tst_8_di(void)
+M68KI_HOT static void m68k_op_tst_8_di(void)
 {
 	uint res = OPER_AY_DI_8();
 
@@ -33954,7 +33954,7 @@ static void m68k_op_tst_8_i(void)
 }
 
 
-static void m68k_op_tst_16_d(void)
+M68KI_HOT static void m68k_op_tst_16_d(void)
 {
 	uint res = MASK_OUT_ABOVE_16(DY);
 
@@ -33981,7 +33981,7 @@ static void m68k_op_tst_16_a(void)
 }
 
 
-static void m68k_op_tst_16_ai(void)
+M68KI_HOT static void m68k_op_tst_16_ai(void)
 {
 	uint res = OPER_AY_AI_16();
 
@@ -34014,7 +34014,7 @@ static void m68k_op_tst_16_pd(void)
 }
 
 
-static void m68k_op_tst_16_di(void)
+M68KI_HOT static void m68k_op_tst_16_di(void)
 {
 	uint res = OPER_AY_DI_16();
 
@@ -34106,7 +34106,7 @@ static void m68k_op_tst_16_i(void)
 }
 
 
-static void m68k_op_tst_32_d(void)
+M68KI_HOT static void m68k_op_tst_32_d(void)
 {
 	uint res = DY;
 
@@ -34133,7 +34133,7 @@ static void m68k_op_tst_32_a(void)
 }
 
 
-static void m68k_op_tst_32_ai(void)
+M68KI_HOT static void m68k_op_tst_32_ai(void)
 {
 	uint res = OPER_AY_AI_32();
 
@@ -34166,7 +34166,7 @@ static void m68k_op_tst_32_pd(void)
 }
 
 
-static void m68k_op_tst_32_di(void)
+M68KI_HOT static void m68k_op_tst_32_di(void)
 {
 	uint res = OPER_AY_DI_32();
 
@@ -34264,7 +34264,7 @@ static void m68k_op_unlk_32_a7(void)
 }
 
 
-static void m68k_op_unlk_32(void)
+M68KI_HOT static void m68k_op_unlk_32(void)
 {
 	uint* r_dst = &AY;
 
@@ -36481,17 +36481,79 @@ void m68ki_build_opcode_table(void)
 
 #if M68K_CONST_TABLES
 /* Generated by tools/gen_musashi.py - do not edit. */
-void (*const m68ki_handlers[1967])(void) = {
-	m68k_op_illegal, m68k_op_ori_8_d, m68k_op_ori_8_ai, m68k_op_ori_8_pi,
-	m68k_op_ori_8_pi7, m68k_op_ori_8_pd, m68k_op_ori_8_pd7, m68k_op_ori_8_di,
-	m68k_op_ori_8_ix, m68k_op_ori_8_aw, m68k_op_ori_8_al, m68k_op_ori_16_toc,
-	m68k_op_ori_16_d, m68k_op_ori_16_ai, m68k_op_ori_16_pi, m68k_op_ori_16_pd,
-	m68k_op_ori_16_di, m68k_op_ori_16_ix, m68k_op_ori_16_aw, m68k_op_ori_16_al,
-	m68k_op_ori_16_tos, m68k_op_ori_32_d, m68k_op_ori_32_ai, m68k_op_ori_32_pi,
-	m68k_op_ori_32_pd, m68k_op_ori_32_di, m68k_op_ori_32_ix, m68k_op_ori_32_aw,
-	m68k_op_ori_32_al, m68k_op_chk2cmp2_8_ai, m68k_op_chk2cmp2_8_di, m68k_op_chk2cmp2_8_ix,
-	m68k_op_chk2cmp2_8_aw, m68k_op_chk2cmp2_8_al, m68k_op_chk2cmp2_8_pcdi, m68k_op_chk2cmp2_8_pcix,
-	m68k_op_btst_32_r_d, m68k_op_movep_16_er, m68k_op_btst_8_r_ai, m68k_op_btst_8_r_pi,
+void (*m68ki_handlers[1967])(void) = {
+	m68k_op_illegal, m68k_op_bne_8, m68k_op_tst_8_di, m68k_op_bmi_8,
+	m68k_op_move_16_d_ai, m68k_op_dbf_16, m68k_op_bne_16, m68k_op_cmp_32_a,
+	m68k_op_movea_32_a, m68k_op_move_8_d_di, m68k_op_addq_32_a, m68k_op_moveq_32,
+	m68k_op_bhi_16, m68k_op_cmpi_16_ai, m68k_op_rts_32, m68k_op_movea_32_di,
+	m68k_op_beq_8, m68k_op_move_32_pd_a, m68k_op_move_16_d_d, m68k_op_move_8_di_i,
+	m68k_op_movea_32_pi, m68k_op_move_8_d_ai, m68k_op_dbeq_16, m68k_op_cmp_16_pi,
+	m68k_op_movea_32_d, m68k_op_subq_32_d, m68k_op_btst_8_s_di, m68k_op_bcc_8,
+	m68k_op_move_32_pi_d, m68k_op_btst_8_s_al, m68k_op_add_32_er_di, m68k_op_tst_8_d,
+	m68k_op_tst_32_d, m68k_op_jmp_32_al, m68k_op_jsr_32_di, m68k_op_cmp_8_di,
+	m68k_op_lea_32_di, m68k_op_move_32_d_ai, m68k_op_add_32_er_pi, m68k_op_move_32_di_di,
+	m68k_op_add_16_er_d, m68k_op_move_32_d_di, m68k_op_lsr_16_s, m68k_op_move_16_di_i,
+	m68k_op_subq_32_a, m68k_op_move_16_d_pi, m68k_op_add_16_er_pi, m68k_op_bset_8_r_ix,
+	m68k_op_eori_16_d, m68k_op_move_16_d_di, m68k_op_move_8_di_d, m68k_op_movem_32_re_pd,
+	m68k_op_movea_32_i, m68k_op_cmp_32_d, m68k_op_move_8_d_d, m68k_op_movem_32_er_pi,
+	m68k_op_tst_16_ai, m68k_op_jsr_32_ai, m68k_op_cmpi_8_d, m68k_op_cmp_32_di,
+	m68k_op_bgt_8, m68k_op_addq_32_d, m68k_op_bsr_16, m68k_op_bra_8,
+	m68k_op_bcs_8, m68k_op_lea_32_pcdi, m68k_op_clr_8_di, m68k_op_ext_16,
+	m68k_op_ext_32, m68k_op_lsl_16_s, m68k_op_nop, m68k_op_move_32_d_i,
+	m68k_op_btst_32_r_d, m68k_op_movea_32_ix, m68k_op_bset_8_s_di, m68k_op_addq_8_d,
+	m68k_op_move_8_di_di, m68k_op_bra_16, m68k_op_move_32_pd_d, m68k_op_beq_16,
+	m68k_op_andi_32_d, m68k_op_add_32_er_i, m68k_op_jsr_32_pcdi, m68k_op_cmpa_32_a,
+	m68k_op_move_32_d_d, m68k_op_move_32_d_a, m68k_op_move_32_di_d, m68k_op_adda_32_i,
+	m68k_op_move_32_d_pi, m68k_op_jsr_32_al, m68k_op_lsl_32_s, m68k_op_cmpa_16_i,
+	m68k_op_cmpi_8_di, m68k_op_add_32_re_di, m68k_op_and_32_er_d, m68k_op_move_32_ai_a,
+	m68k_op_ble_8, m68k_op_addq_32_di, m68k_op_move_8_d_pi, m68k_op_tst_16_d,
+	m68k_op_cmpa_32_d, m68k_op_cmpi_32_di, m68k_op_cmpa_32_i, m68k_op_eor_32_d,
+	m68k_op_blt_16, m68k_op_move_32_di_a, m68k_op_move_8_di_ai, m68k_op_bge_16,
+	m68k_op_suba_32_i, m68k_op_movea_32_ai, m68k_op_move_32_ai_d, m68k_op_lea_32_al,
+	m68k_op_cmp_32_i, m68k_op_add_32_er_d, m68k_op_adda_32_d, m68k_op_bge_8,
+	m68k_op_sub_32_er_i, m68k_op_move_16_di_d, m68k_op_bhi_8, m68k_op_move_32_pd_di,
+	m68k_op_tst_32_ai, m68k_op_cmp_16_di, m68k_op_cmp_8_d, m68k_op_move_8_pi_pi,
+	m68k_op_andi_16_d, m68k_op_move_32_di_i, m68k_op_addq_16_d, m68k_op_move_8_ai_d,
+	m68k_op_clr_32_pd, m68k_op_btst_32_s_d, m68k_op_sub_32_er_d, m68k_op_lea_32_ix,
+	m68k_op_blt_8, m68k_op_cmp_32_ai, m68k_op_move_16_di_di, m68k_op_clr_32_di,
+	m68k_op_bcs_16, m68k_op_adda_32_a, m68k_op_clr_16_di, m68k_op_move_16_d_al,
+	m68k_op_bls_8, m68k_op_link_16, m68k_op_unlk_32, m68k_op_swap_32,
+	m68k_op_subq_8_di, m68k_op_and_8_er_di, m68k_op_not_8_d, m68k_op_movem_32_er_di,
+	m68k_op_clr_16_d, m68k_op_clr_32_pi, m68k_op_subq_32_ai, m68k_op_tst_32_di,
+	m68k_op_adda_16_d, m68k_op_addi_32_d, m68k_op_movea_32_al, m68k_op_pea_32_di,
+	m68k_op_mulu_16_i, m68k_op_move_8_d_al, m68k_op_ori_16_d, m68k_op_clr_32_ai,
+	m68k_op_move_16_al_d, m68k_op_move_32_di_ix, m68k_op_movea_16_d, m68k_op_cmp_16_d,
+	m68k_op_cmpi_16_d, m68k_op_move_16_al_i, m68k_op_move_8_d_ix, m68k_op_mulu_16_di,
+	m68k_op_eori_32_d, m68k_op_rol_32_s, m68k_op_move_8_d_i, m68k_op_bpl_8,
+	m68k_op_addq_8_di, m68k_op_subq_32_di, m68k_op_addq_16_di, m68k_op_move_16_frs_d,
+	m68k_op_move_16_di_ai, m68k_op_and_16_er_d, m68k_op_tst_16_di, m68k_op_move_8_pi_d,
+	m68k_op_subi_8_d, m68k_op_bsr_8, m68k_op_cmpi_16_di, m68k_op_add_16_er_di,
+	m68k_op_add_32_er_a, m68k_op_ror_16_s, m68k_op_tst_8_ai, m68k_op_movea_32_aw,
+	m68k_op_cmpi_32_d, m68k_op_subq_16_d, m68k_op_add_8_er_di, m68k_op_or_32_er_d,
+	m68k_op_lsr_32_s, m68k_op_eor_8_d, m68k_op_pea_32_aw, m68k_op_suba_32_a,
+	m68k_op_andi_8_d, m68k_op_sub_16_re_di, m68k_op_cmpa_32_ai, m68k_op_move_16_d_ix,
+	m68k_op_addi_16_d, m68k_op_lsr_32_r, m68k_op_adda_32_di, m68k_op_move_32_ai_di,
+	m68k_op_move_16_pi_d, m68k_op_jmp_32_pcix, m68k_op_asr_32_s, m68k_op_jmp_32_ai,
+	m68k_op_divu_16_d, m68k_op_cmpa_32_di, m68k_op_sub_16_er_pi, m68k_op_clr_32_d,
+	m68k_op_bclr_8_s_di, m68k_op_andi_16_di, m68k_op_cmp_8_pi, m68k_op_sub_32_er_di,
+	m68k_op_addi_8_d, m68k_op_movea_32_pcdi, m68k_op_sub_16_er_d, m68k_op_lsl_32_r,
+	m68k_op_asr_16_s, m68k_op_move_16_ai_d, m68k_op_addq_32_ai, m68k_op_move_16_d_i,
+	m68k_op_clr_8_d, m68k_op_move_8_pi_i, m68k_op_sub_16_er_di, m68k_op_or_8_re_di,
+	m68k_op_asr_32_r, m68k_op_move_32_ai_ai, m68k_op_tst_8_pi, m68k_op_rte_32,
+	m68k_op_sub_8_er_d, m68k_op_asl_32_s, m68k_op_not_32_d, m68k_op_pea_32_pcdi,
+	m68k_op_movea_16_pcix, m68k_op_suba_32_di, m68k_op_sub_8_er_di, m68k_op_add_16_re_di,
+	m68k_op_pea_32_al, m68k_op_not_8_di, m68k_op_movem_32_re_ai, m68k_op_cmp_32_pi,
+	m68k_op_and_32_er_di, m68k_op_cmpi_32_ai, m68k_op_movea_16_i, m68k_op_movea_16_di,
+	m68k_op_cmpm_8, m68k_op_movem_32_er_ai, m68k_op_subq_16_di, m68k_op_ori_8_d,
+	m68k_op_ori_8_ai, m68k_op_ori_8_pi, m68k_op_ori_8_pi7, m68k_op_ori_8_pd,
+	m68k_op_ori_8_pd7, m68k_op_ori_8_di, m68k_op_ori_8_ix, m68k_op_ori_8_aw,
+	m68k_op_ori_8_al, m68k_op_ori_16_toc, m68k_op_ori_16_ai, m68k_op_ori_16_pi,
+	m68k_op_ori_16_pd, m68k_op_ori_16_di, m68k_op_ori_16_ix, m68k_op_ori_16_aw,
+	m68k_op_ori_16_al, m68k_op_ori_16_tos, m68k_op_ori_32_d, m68k_op_ori_32_ai,
+	m68k_op_ori_32_pi, m68k_op_ori_32_pd, m68k_op_ori_32_di, m68k_op_ori_32_ix,
+	m68k_op_ori_32_aw, m68k_op_ori_32_al, m68k_op_chk2cmp2_8_ai, m68k_op_chk2cmp2_8_di,
+	m68k_op_chk2cmp2_8_ix, m68k_op_chk2cmp2_8_aw, m68k_op_chk2cmp2_8_al, m68k_op_chk2cmp2_8_pcdi,
+	m68k_op_chk2cmp2_8_pcix, m68k_op_movep_16_er, m68k_op_btst_8_r_ai, m68k_op_btst_8_r_pi,
 	m68k_op_btst_8_r_pi7, m68k_op_btst_8_r_pd, m68k_op_btst_8_r_pd7, m68k_op_btst_8_r_di,
 	m68k_op_btst_8_r_ix, m68k_op_btst_8_r_aw, m68k_op_btst_8_r_al, m68k_op_btst_8_r_pcdi,
 	m68k_op_btst_8_r_pcix, m68k_op_btst_8_r_i, m68k_op_bchg_32_r_d, m68k_op_movep_32_er,
@@ -36502,59 +36564,53 @@ void (*const m68ki_handlers[1967])(void) = {
 	m68k_op_bclr_8_r_di, m68k_op_bclr_8_r_ix, m68k_op_bclr_8_r_aw, m68k_op_bclr_8_r_al,
 	m68k_op_bset_32_r_d, m68k_op_movep_32_re, m68k_op_bset_8_r_ai, m68k_op_bset_8_r_pi,
 	m68k_op_bset_8_r_pi7, m68k_op_bset_8_r_pd, m68k_op_bset_8_r_pd7, m68k_op_bset_8_r_di,
-	m68k_op_bset_8_r_ix, m68k_op_bset_8_r_aw, m68k_op_bset_8_r_al, m68k_op_andi_8_d,
-	m68k_op_andi_8_ai, m68k_op_andi_8_pi, m68k_op_andi_8_pi7, m68k_op_andi_8_pd,
-	m68k_op_andi_8_pd7, m68k_op_andi_8_di, m68k_op_andi_8_ix, m68k_op_andi_8_aw,
-	m68k_op_andi_8_al, m68k_op_andi_16_toc, m68k_op_andi_16_d, m68k_op_andi_16_ai,
-	m68k_op_andi_16_pi, m68k_op_andi_16_pd, m68k_op_andi_16_di, m68k_op_andi_16_ix,
-	m68k_op_andi_16_aw, m68k_op_andi_16_al, m68k_op_andi_16_tos, m68k_op_andi_32_d,
-	m68k_op_andi_32_ai, m68k_op_andi_32_pi, m68k_op_andi_32_pd, m68k_op_andi_32_di,
-	m68k_op_andi_32_ix, m68k_op_andi_32_aw, m68k_op_andi_32_al, m68k_op_chk2cmp2_16_ai,
-	m68k_op_chk2cmp2_16_di, m68k_op_chk2cmp2_16_ix, m68k_op_chk2cmp2_16_aw, m68k_op_chk2cmp2_16_al,
-	m68k_op_chk2cmp2_16_pcdi, m68k_op_chk2cmp2_16_pcix, m68k_op_subi_8_d, m68k_op_subi_8_ai,
-	m68k_op_subi_8_pi, m68k_op_subi_8_pi7, m68k_op_subi_8_pd, m68k_op_subi_8_pd7,
-	m68k_op_subi_8_di, m68k_op_subi_8_ix, m68k_op_subi_8_aw, m68k_op_subi_8_al,
-	m68k_op_subi_16_d, m68k_op_subi_16_ai, m68k_op_subi_16_pi, m68k_op_subi_16_pd,
-	m68k_op_subi_16_di, m68k_op_subi_16_ix, m68k_op_subi_16_aw, m68k_op_subi_16_al,
-	m68k_op_subi_32_d, m68k_op_subi_32_ai, m68k_op_subi_32_pi, m68k_op_subi_32_pd,
-	m68k_op_subi_32_di, m68k_op_subi_32_ix, m68k_op_subi_32_aw, m68k_op_subi_32_al,
-	m68k_op_chk2cmp2_32_ai, m68k_op_chk2cmp2_32_di, m68k_op_chk2cmp2_32_ix, m68k_op_chk2cmp2_32_aw,
-	m68k_op_chk2cmp2_32_al, m68k_op_chk2cmp2_32_pcdi, m68k_op_chk2cmp2_32_pcix, m68k_op_addi_8_d,
-	m68k_op_addi_8_ai, m68k_op_addi_8_pi, m68k_op_addi_8_pi7, m68k_op_addi_8_pd,
-	m68k_op_addi_8_pd7, m68k_op_addi_8_di, m68k_op_addi_8_ix, m68k_op_addi_8_aw,
-	m68k_op_addi_8_al, m68k_op_addi_16_d, m68k_op_addi_16_ai, m68k_op_addi_16_pi,
+	m68k_op_bset_8_r_aw, m68k_op_bset_8_r_al, m68k_op_andi_8_ai, m68k_op_andi_8_pi,
+	m68k_op_andi_8_pi7, m68k_op_andi_8_pd, m68k_op_andi_8_pd7, m68k_op_andi_8_di,
+	m68k_op_andi_8_ix, m68k_op_andi_8_aw, m68k_op_andi_8_al, m68k_op_andi_16_toc,
+	m68k_op_andi_16_ai, m68k_op_andi_16_pi, m68k_op_andi_16_pd, m68k_op_andi_16_ix,
+	m68k_op_andi_16_aw, m68k_op_andi_16_al, m68k_op_andi_16_tos, m68k_op_andi_32_ai,
+	m68k_op_andi_32_pi, m68k_op_andi_32_pd, m68k_op_andi_32_di, m68k_op_andi_32_ix,
+	m68k_op_andi_32_aw, m68k_op_andi_32_al, m68k_op_chk2cmp2_16_ai, m68k_op_chk2cmp2_16_di,
+	m68k_op_chk2cmp2_16_ix, m68k_op_chk2cmp2_16_aw, m68k_op_chk2cmp2_16_al, m68k_op_chk2cmp2_16_pcdi,
+	m68k_op_chk2cmp2_16_pcix, m68k_op_subi_8_ai, m68k_op_subi_8_pi, m68k_op_subi_8_pi7,
+	m68k_op_subi_8_pd, m68k_op_subi_8_pd7, m68k_op_subi_8_di, m68k_op_subi_8_ix,
+	m68k_op_subi_8_aw, m68k_op_subi_8_al, m68k_op_subi_16_d, m68k_op_subi_16_ai,
+	m68k_op_subi_16_pi, m68k_op_subi_16_pd, m68k_op_subi_16_di, m68k_op_subi_16_ix,
+	m68k_op_subi_16_aw, m68k_op_subi_16_al, m68k_op_subi_32_d, m68k_op_subi_32_ai,
+	m68k_op_subi_32_pi, m68k_op_subi_32_pd, m68k_op_subi_32_di, m68k_op_subi_32_ix,
+	m68k_op_subi_32_aw, m68k_op_subi_32_al, m68k_op_chk2cmp2_32_ai, m68k_op_chk2cmp2_32_di,
+	m68k_op_chk2cmp2_32_ix, m68k_op_chk2cmp2_32_aw, m68k_op_chk2cmp2_32_al, m68k_op_chk2cmp2_32_pcdi,
+	m68k_op_chk2cmp2_32_pcix, m68k_op_addi_8_ai, m68k_op_addi_8_pi, m68k_op_addi_8_pi7,
+	m68k_op_addi_8_pd, m68k_op_addi_8_pd7, m68k_op_addi_8_di, m68k_op_addi_8_ix,
+	m68k_op_addi_8_aw, m68k_op_addi_8_al, m68k_op_addi_16_ai, m68k_op_addi_16_pi,
 	m68k_op_addi_16_pd, m68k_op_addi_16_di, m68k_op_addi_16_ix, m68k_op_addi_16_aw,
-	m68k_op_addi_16_al, m68k_op_addi_32_d, m68k_op_addi_32_ai, m68k_op_addi_32_pi,
-	m68k_op_addi_32_pd, m68k_op_addi_32_di, m68k_op_addi_32_ix, m68k_op_addi_32_aw,
-	m68k_op_addi_32_al, m68k_op_rtm_32, m68k_op_callm_32_ai, m68k_op_callm_32_di,
-	m68k_op_callm_32_ix, m68k_op_callm_32_aw, m68k_op_callm_32_al, m68k_op_callm_32_pcdi,
-	m68k_op_callm_32_pcix, m68k_op_btst_32_s_d, m68k_op_btst_8_s_ai, m68k_op_btst_8_s_pi,
-	m68k_op_btst_8_s_pi7, m68k_op_btst_8_s_pd, m68k_op_btst_8_s_pd7, m68k_op_btst_8_s_di,
-	m68k_op_btst_8_s_ix, m68k_op_btst_8_s_aw, m68k_op_btst_8_s_al, m68k_op_btst_8_s_pcdi,
+	m68k_op_addi_16_al, m68k_op_addi_32_ai, m68k_op_addi_32_pi, m68k_op_addi_32_pd,
+	m68k_op_addi_32_di, m68k_op_addi_32_ix, m68k_op_addi_32_aw, m68k_op_addi_32_al,
+	m68k_op_rtm_32, m68k_op_callm_32_ai, m68k_op_callm_32_di, m68k_op_callm_32_ix,
+	m68k_op_callm_32_aw, m68k_op_callm_32_al, m68k_op_callm_32_pcdi, m68k_op_callm_32_pcix,
+	m68k_op_btst_8_s_ai, m68k_op_btst_8_s_pi, m68k_op_btst_8_s_pi7, m68k_op_btst_8_s_pd,
+	m68k_op_btst_8_s_pd7, m68k_op_btst_8_s_ix, m68k_op_btst_8_s_aw, m68k_op_btst_8_s_pcdi,
 	m68k_op_btst_8_s_pcix, m68k_op_bchg_32_s_d, m68k_op_bchg_8_s_ai, m68k_op_bchg_8_s_pi,
 	m68k_op_bchg_8_s_pi7, m68k_op_bchg_8_s_pd, m68k_op_bchg_8_s_pd7, m68k_op_bchg_8_s_di,
 	m68k_op_bchg_8_s_ix, m68k_op_bchg_8_s_aw, m68k_op_bchg_8_s_al, m68k_op_bclr_32_s_d,
 	m68k_op_bclr_8_s_ai, m68k_op_bclr_8_s_pi, m68k_op_bclr_8_s_pi7, m68k_op_bclr_8_s_pd,
-	m68k_op_bclr_8_s_pd7, m68k_op_bclr_8_s_di, m68k_op_bclr_8_s_ix, m68k_op_bclr_8_s_aw,
-	m68k_op_bclr_8_s_al, m68k_op_bset_32_s_d, m68k_op_bset_8_s_ai, m68k_op_bset_8_s_pi,
-	m68k_op_bset_8_s_pi7, m68k_op_bset_8_s_pd, m68k_op_bset_8_s_pd7, m68k_op_bset_8_s_di,
-	m68k_op_bset_8_s_ix, m68k_op_bset_8_s_aw, m68k_op_bset_8_s_al, m68k_op_eori_8_d,
-	m68k_op_eori_8_ai, m68k_op_eori_8_pi, m68k_op_eori_8_pi7, m68k_op_eori_8_pd,
-	m68k_op_eori_8_pd7, m68k_op_eori_8_di, m68k_op_eori_8_ix, m68k_op_eori_8_aw,
-	m68k_op_eori_8_al, m68k_op_eori_16_toc, m68k_op_eori_16_d, m68k_op_eori_16_ai,
-	m68k_op_eori_16_pi, m68k_op_eori_16_pd, m68k_op_eori_16_di, m68k_op_eori_16_ix,
-	m68k_op_eori_16_aw, m68k_op_eori_16_al, m68k_op_eori_16_tos, m68k_op_eori_32_d,
+	m68k_op_bclr_8_s_pd7, m68k_op_bclr_8_s_ix, m68k_op_bclr_8_s_aw, m68k_op_bclr_8_s_al,
+	m68k_op_bset_32_s_d, m68k_op_bset_8_s_ai, m68k_op_bset_8_s_pi, m68k_op_bset_8_s_pi7,
+	m68k_op_bset_8_s_pd, m68k_op_bset_8_s_pd7, m68k_op_bset_8_s_ix, m68k_op_bset_8_s_aw,
+	m68k_op_bset_8_s_al, m68k_op_eori_8_d, m68k_op_eori_8_ai, m68k_op_eori_8_pi,
+	m68k_op_eori_8_pi7, m68k_op_eori_8_pd, m68k_op_eori_8_pd7, m68k_op_eori_8_di,
+	m68k_op_eori_8_ix, m68k_op_eori_8_aw, m68k_op_eori_8_al, m68k_op_eori_16_toc,
+	m68k_op_eori_16_ai, m68k_op_eori_16_pi, m68k_op_eori_16_pd, m68k_op_eori_16_di,
+	m68k_op_eori_16_ix, m68k_op_eori_16_aw, m68k_op_eori_16_al, m68k_op_eori_16_tos,
 	m68k_op_eori_32_ai, m68k_op_eori_32_pi, m68k_op_eori_32_pd, m68k_op_eori_32_di,
 	m68k_op_eori_32_ix, m68k_op_eori_32_aw, m68k_op_eori_32_al, m68k_op_cas_8_ai,
 	m68k_op_cas_8_pi, m68k_op_cas_8_pi7, m68k_op_cas_8_pd, m68k_op_cas_8_pd7,
 	m68k_op_cas_8_di, m68k_op_cas_8_ix, m68k_op_cas_8_aw, m68k_op_cas_8_al,
-	m68k_op_cmpi_8_d, m68k_op_cmpi_8_ai, m68k_op_cmpi_8_pi, m68k_op_cmpi_8_pi7,
-	m68k_op_cmpi_8_pd, m68k_op_cmpi_8_pd7, m68k_op_cmpi_8_di, m68k_op_cmpi_8_ix,
-	m68k_op_cmpi_8_aw, m68k_op_cmpi_8_al, m68k_op_cmpi_8_pcdi, m68k_op_cmpi_8_pcix,
-	m68k_op_cmpi_16_d, m68k_op_cmpi_16_ai, m68k_op_cmpi_16_pi, m68k_op_cmpi_16_pd,
-	m68k_op_cmpi_16_di, m68k_op_cmpi_16_ix, m68k_op_cmpi_16_aw, m68k_op_cmpi_16_al,
-	m68k_op_cmpi_16_pcdi, m68k_op_cmpi_16_pcix, m68k_op_cmpi_32_d, m68k_op_cmpi_32_ai,
-	m68k_op_cmpi_32_pi, m68k_op_cmpi_32_pd, m68k_op_cmpi_32_di, m68k_op_cmpi_32_ix,
+	m68k_op_cmpi_8_ai, m68k_op_cmpi_8_pi, m68k_op_cmpi_8_pi7, m68k_op_cmpi_8_pd,
+	m68k_op_cmpi_8_pd7, m68k_op_cmpi_8_ix, m68k_op_cmpi_8_aw, m68k_op_cmpi_8_al,
+	m68k_op_cmpi_8_pcdi, m68k_op_cmpi_8_pcix, m68k_op_cmpi_16_pi, m68k_op_cmpi_16_pd,
+	m68k_op_cmpi_16_ix, m68k_op_cmpi_16_aw, m68k_op_cmpi_16_al, m68k_op_cmpi_16_pcdi,
+	m68k_op_cmpi_16_pcix, m68k_op_cmpi_32_pi, m68k_op_cmpi_32_pd, m68k_op_cmpi_32_ix,
 	m68k_op_cmpi_32_aw, m68k_op_cmpi_32_al, m68k_op_cmpi_32_pcdi, m68k_op_cmpi_32_pcix,
 	m68k_op_cas_16_ai, m68k_op_cas_16_pi, m68k_op_cas_16_pd, m68k_op_cas_16_di,
 	m68k_op_cas_16_ix, m68k_op_cas_16_aw, m68k_op_cas_16_al, m68k_op_cas2_16,
@@ -36565,58 +36621,47 @@ void (*const m68ki_handlers[1967])(void) = {
 	m68k_op_moves_32_ai, m68k_op_moves_32_pi, m68k_op_moves_32_pd, m68k_op_moves_32_di,
 	m68k_op_moves_32_ix, m68k_op_moves_32_aw, m68k_op_moves_32_al, m68k_op_cas_32_ai,
 	m68k_op_cas_32_pi, m68k_op_cas_32_pd, m68k_op_cas_32_di, m68k_op_cas_32_ix,
-	m68k_op_cas_32_aw, m68k_op_cas_32_al, m68k_op_cas2_32, m68k_op_move_8_d_d,
-	m68k_op_move_8_d_ai, m68k_op_move_8_d_pi, m68k_op_move_8_d_pi7, m68k_op_move_8_d_pd,
-	m68k_op_move_8_d_pd7, m68k_op_move_8_d_di, m68k_op_move_8_d_ix, m68k_op_move_8_d_aw,
-	m68k_op_move_8_d_al, m68k_op_move_8_d_pcdi, m68k_op_move_8_d_pcix, m68k_op_move_8_d_i,
-	m68k_op_move_8_ai_d, m68k_op_move_8_ai_ai, m68k_op_move_8_ai_pi, m68k_op_move_8_ai_pi7,
+	m68k_op_cas_32_aw, m68k_op_cas_32_al, m68k_op_cas2_32, m68k_op_move_8_d_pi7,
+	m68k_op_move_8_d_pd, m68k_op_move_8_d_pd7, m68k_op_move_8_d_aw, m68k_op_move_8_d_pcdi,
+	m68k_op_move_8_d_pcix, m68k_op_move_8_ai_ai, m68k_op_move_8_ai_pi, m68k_op_move_8_ai_pi7,
 	m68k_op_move_8_ai_pd, m68k_op_move_8_ai_pd7, m68k_op_move_8_ai_di, m68k_op_move_8_ai_ix,
 	m68k_op_move_8_ai_aw, m68k_op_move_8_ai_al, m68k_op_move_8_ai_pcdi, m68k_op_move_8_ai_pcix,
-	m68k_op_move_8_ai_i, m68k_op_move_8_pi_d, m68k_op_move_8_pi_ai, m68k_op_move_8_pi_pi,
-	m68k_op_move_8_pi_pi7, m68k_op_move_8_pi_pd, m68k_op_move_8_pi_pd7, m68k_op_move_8_pi_di,
-	m68k_op_move_8_pi_ix, m68k_op_move_8_pi_aw, m68k_op_move_8_pi_al, m68k_op_move_8_pi_pcdi,
-	m68k_op_move_8_pi_pcix, m68k_op_move_8_pi_i, m68k_op_move_8_pd_d, m68k_op_move_8_pd_ai,
-	m68k_op_move_8_pd_pi, m68k_op_move_8_pd_pi7, m68k_op_move_8_pd_pd, m68k_op_move_8_pd_pd7,
-	m68k_op_move_8_pd_di, m68k_op_move_8_pd_ix, m68k_op_move_8_pd_aw, m68k_op_move_8_pd_al,
-	m68k_op_move_8_pd_pcdi, m68k_op_move_8_pd_pcix, m68k_op_move_8_pd_i, m68k_op_move_8_di_d,
-	m68k_op_move_8_di_ai, m68k_op_move_8_di_pi, m68k_op_move_8_di_pi7, m68k_op_move_8_di_pd,
-	m68k_op_move_8_di_pd7, m68k_op_move_8_di_di, m68k_op_move_8_di_ix, m68k_op_move_8_di_aw,
-	m68k_op_move_8_di_al, m68k_op_move_8_di_pcdi, m68k_op_move_8_di_pcix, m68k_op_move_8_di_i,
-	m68k_op_move_8_ix_d, m68k_op_move_8_ix_ai, m68k_op_move_8_ix_pi, m68k_op_move_8_ix_pi7,
-	m68k_op_move_8_ix_pd, m68k_op_move_8_ix_pd7, m68k_op_move_8_ix_di, m68k_op_move_8_ix_ix,
-	m68k_op_move_8_ix_aw, m68k_op_move_8_ix_al, m68k_op_move_8_ix_pcdi, m68k_op_move_8_ix_pcix,
-	m68k_op_move_8_ix_i, m68k_op_move_8_aw_d, m68k_op_move_8_aw_ai, m68k_op_move_8_aw_pi,
-	m68k_op_move_8_aw_pi7, m68k_op_move_8_aw_pd, m68k_op_move_8_aw_pd7, m68k_op_move_8_aw_di,
-	m68k_op_move_8_aw_ix, m68k_op_move_8_aw_aw, m68k_op_move_8_aw_al, m68k_op_move_8_aw_pcdi,
-	m68k_op_move_8_aw_pcix, m68k_op_move_8_aw_i, m68k_op_move_8_al_d, m68k_op_move_8_al_ai,
-	m68k_op_move_8_al_pi, m68k_op_move_8_al_pi7, m68k_op_move_8_al_pd, m68k_op_move_8_al_pd7,
-	m68k_op_move_8_al_di, m68k_op_move_8_al_ix, m68k_op_move_8_al_aw, m68k_op_move_8_al_al,
-	m68k_op_move_8_al_pcdi, m68k_op_move_8_al_pcix, m68k_op_move_8_al_i, m68k_op_move_8_pi7_d,
-	m68k_op_move_8_pi7_ai, m68k_op_move_8_pi7_pi, m68k_op_move_8_pi7_pi7, m68k_op_move_8_pi7_pd,
-	m68k_op_move_8_pi7_pd7, m68k_op_move_8_pi7_di, m68k_op_move_8_pi7_ix, m68k_op_move_8_pi7_aw,
-	m68k_op_move_8_pi7_al, m68k_op_move_8_pi7_pcdi, m68k_op_move_8_pi7_pcix, m68k_op_move_8_pi7_i,
-	m68k_op_move_8_pd7_d, m68k_op_move_8_pd7_ai, m68k_op_move_8_pd7_pi, m68k_op_move_8_pd7_pi7,
-	m68k_op_move_8_pd7_pd, m68k_op_move_8_pd7_pd7, m68k_op_move_8_pd7_di, m68k_op_move_8_pd7_ix,
-	m68k_op_move_8_pd7_aw, m68k_op_move_8_pd7_al, m68k_op_move_8_pd7_pcdi, m68k_op_move_8_pd7_pcix,
-	m68k_op_move_8_pd7_i, m68k_op_move_32_d_d, m68k_op_move_32_d_a, m68k_op_move_32_d_ai,
-	m68k_op_move_32_d_pi, m68k_op_move_32_d_pd, m68k_op_move_32_d_di, m68k_op_move_32_d_ix,
+	m68k_op_move_8_ai_i, m68k_op_move_8_pi_ai, m68k_op_move_8_pi_pi7, m68k_op_move_8_pi_pd,
+	m68k_op_move_8_pi_pd7, m68k_op_move_8_pi_di, m68k_op_move_8_pi_ix, m68k_op_move_8_pi_aw,
+	m68k_op_move_8_pi_al, m68k_op_move_8_pi_pcdi, m68k_op_move_8_pi_pcix, m68k_op_move_8_pd_d,
+	m68k_op_move_8_pd_ai, m68k_op_move_8_pd_pi, m68k_op_move_8_pd_pi7, m68k_op_move_8_pd_pd,
+	m68k_op_move_8_pd_pd7, m68k_op_move_8_pd_di, m68k_op_move_8_pd_ix, m68k_op_move_8_pd_aw,
+	m68k_op_move_8_pd_al, m68k_op_move_8_pd_pcdi, m68k_op_move_8_pd_pcix, m68k_op_move_8_pd_i,
+	m68k_op_move_8_di_pi, m68k_op_move_8_di_pi7, m68k_op_move_8_di_pd, m68k_op_move_8_di_pd7,
+	m68k_op_move_8_di_ix, m68k_op_move_8_di_aw, m68k_op_move_8_di_al, m68k_op_move_8_di_pcdi,
+	m68k_op_move_8_di_pcix, m68k_op_move_8_ix_d, m68k_op_move_8_ix_ai, m68k_op_move_8_ix_pi,
+	m68k_op_move_8_ix_pi7, m68k_op_move_8_ix_pd, m68k_op_move_8_ix_pd7, m68k_op_move_8_ix_di,
+	m68k_op_move_8_ix_ix, m68k_op_move_8_ix_aw, m68k_op_move_8_ix_al, m68k_op_move_8_ix_pcdi,
+	m68k_op_move_8_ix_pcix, m68k_op_move_8_ix_i, m68k_op_move_8_aw_d, m68k_op_move_8_aw_ai,
+	m68k_op_move_8_aw_pi, m68k_op_move_8_aw_pi7, m68k_op_move_8_aw_pd, m68k_op_move_8_aw_pd7,
+	m68k_op_move_8_aw_di, m68k_op_move_8_aw_ix, m68k_op_move_8_aw_aw, m68k_op_move_8_aw_al,
+	m68k_op_move_8_aw_pcdi, m68k_op_move_8_aw_pcix, m68k_op_move_8_aw_i, m68k_op_move_8_al_d,
+	m68k_op_move_8_al_ai, m68k_op_move_8_al_pi, m68k_op_move_8_al_pi7, m68k_op_move_8_al_pd,
+	m68k_op_move_8_al_pd7, m68k_op_move_8_al_di, m68k_op_move_8_al_ix, m68k_op_move_8_al_aw,
+	m68k_op_move_8_al_al, m68k_op_move_8_al_pcdi, m68k_op_move_8_al_pcix, m68k_op_move_8_al_i,
+	m68k_op_move_8_pi7_d, m68k_op_move_8_pi7_ai, m68k_op_move_8_pi7_pi, m68k_op_move_8_pi7_pi7,
+	m68k_op_move_8_pi7_pd, m68k_op_move_8_pi7_pd7, m68k_op_move_8_pi7_di, m68k_op_move_8_pi7_ix,
+	m68k_op_move_8_pi7_aw, m68k_op_move_8_pi7_al, m68k_op_move_8_pi7_pcdi, m68k_op_move_8_pi7_pcix,
+	m68k_op_move_8_pi7_i, m68k_op_move_8_pd7_d, m68k_op_move_8_pd7_ai, m68k_op_move_8_pd7_pi,
+	m68k_op_move_8_pd7_pi7, m68k_op_move_8_pd7_pd, m68k_op_move_8_pd7_pd7, m68k_op_move_8_pd7_di,
+	m68k_op_move_8_pd7_ix, m68k_op_move_8_pd7_aw, m68k_op_move_8_pd7_al, m68k_op_move_8_pd7_pcdi,
+	m68k_op_move_8_pd7_pcix, m68k_op_move_8_pd7_i, m68k_op_move_32_d_pd, m68k_op_move_32_d_ix,
 	m68k_op_move_32_d_aw, m68k_op_move_32_d_al, m68k_op_move_32_d_pcdi, m68k_op_move_32_d_pcix,
-	m68k_op_move_32_d_i, m68k_op_movea_32_d, m68k_op_movea_32_a, m68k_op_movea_32_ai,
-	m68k_op_movea_32_pi, m68k_op_movea_32_pd, m68k_op_movea_32_di, m68k_op_movea_32_ix,
-	m68k_op_movea_32_aw, m68k_op_movea_32_al, m68k_op_movea_32_pcdi, m68k_op_movea_32_pcix,
-	m68k_op_movea_32_i, m68k_op_move_32_ai_d, m68k_op_move_32_ai_a, m68k_op_move_32_ai_ai,
-	m68k_op_move_32_ai_pi, m68k_op_move_32_ai_pd, m68k_op_move_32_ai_di, m68k_op_move_32_ai_ix,
-	m68k_op_move_32_ai_aw, m68k_op_move_32_ai_al, m68k_op_move_32_ai_pcdi, m68k_op_move_32_ai_pcix,
-	m68k_op_move_32_ai_i, m68k_op_move_32_pi_d, m68k_op_move_32_pi_a, m68k_op_move_32_pi_ai,
+	m68k_op_movea_32_pd, m68k_op_movea_32_pcix, m68k_op_move_32_ai_pi, m68k_op_move_32_ai_pd,
+	m68k_op_move_32_ai_ix, m68k_op_move_32_ai_aw, m68k_op_move_32_ai_al, m68k_op_move_32_ai_pcdi,
+	m68k_op_move_32_ai_pcix, m68k_op_move_32_ai_i, m68k_op_move_32_pi_a, m68k_op_move_32_pi_ai,
 	m68k_op_move_32_pi_pi, m68k_op_move_32_pi_pd, m68k_op_move_32_pi_di, m68k_op_move_32_pi_ix,
 	m68k_op_move_32_pi_aw, m68k_op_move_32_pi_al, m68k_op_move_32_pi_pcdi, m68k_op_move_32_pi_pcix,
-	m68k_op_move_32_pi_i, m68k_op_move_32_pd_d, m68k_op_move_32_pd_a, m68k_op_move_32_pd_ai,
-	m68k_op_move_32_pd_pi, m68k_op_move_32_pd_pd, m68k_op_move_32_pd_di, m68k_op_move_32_pd_ix,
-	m68k_op_move_32_pd_aw, m68k_op_move_32_pd_al, m68k_op_move_32_pd_pcdi, m68k_op_move_32_pd_pcix,
-	m68k_op_move_32_pd_i, m68k_op_move_32_di_d, m68k_op_move_32_di_a, m68k_op_move_32_di_ai,
-	m68k_op_move_32_di_pi, m68k_op_move_32_di_pd, m68k_op_move_32_di_di, m68k_op_move_32_di_ix,
-	m68k_op_move_32_di_aw, m68k_op_move_32_di_al, m68k_op_move_32_di_pcdi, m68k_op_move_32_di_pcix,
-	m68k_op_move_32_di_i, m68k_op_move_32_ix_d, m68k_op_move_32_ix_a, m68k_op_move_32_ix_ai,
+	m68k_op_move_32_pi_i, m68k_op_move_32_pd_ai, m68k_op_move_32_pd_pi, m68k_op_move_32_pd_pd,
+	m68k_op_move_32_pd_ix, m68k_op_move_32_pd_aw, m68k_op_move_32_pd_al, m68k_op_move_32_pd_pcdi,
+	m68k_op_move_32_pd_pcix, m68k_op_move_32_pd_i, m68k_op_move_32_di_ai, m68k_op_move_32_di_pi,
+	m68k_op_move_32_di_pd, m68k_op_move_32_di_aw, m68k_op_move_32_di_al, m68k_op_move_32_di_pcdi,
+	m68k_op_move_32_di_pcix, m68k_op_move_32_ix_d, m68k_op_move_32_ix_a, m68k_op_move_32_ix_ai,
 	m68k_op_move_32_ix_pi, m68k_op_move_32_ix_pd, m68k_op_move_32_ix_di, m68k_op_move_32_ix_ix,
 	m68k_op_move_32_ix_aw, m68k_op_move_32_ix_al, m68k_op_move_32_ix_pcdi, m68k_op_move_32_ix_pcix,
 	m68k_op_move_32_ix_i, m68k_op_move_32_aw_d, m68k_op_move_32_aw_a, m68k_op_move_32_aw_ai,
@@ -36625,40 +36670,35 @@ void (*const m68ki_handlers[1967])(void) = {
 	m68k_op_move_32_aw_i, m68k_op_move_32_al_d, m68k_op_move_32_al_a, m68k_op_move_32_al_ai,
 	m68k_op_move_32_al_pi, m68k_op_move_32_al_pd, m68k_op_move_32_al_di, m68k_op_move_32_al_ix,
 	m68k_op_move_32_al_aw, m68k_op_move_32_al_al, m68k_op_move_32_al_pcdi, m68k_op_move_32_al_pcix,
-	m68k_op_move_32_al_i, m68k_op_move_16_d_d, m68k_op_move_16_d_a, m68k_op_move_16_d_ai,
-	m68k_op_move_16_d_pi, m68k_op_move_16_d_pd, m68k_op_move_16_d_di, m68k_op_move_16_d_ix,
-	m68k_op_move_16_d_aw, m68k_op_move_16_d_al, m68k_op_move_16_d_pcdi, m68k_op_move_16_d_pcix,
-	m68k_op_move_16_d_i, m68k_op_movea_16_d, m68k_op_movea_16_a, m68k_op_movea_16_ai,
-	m68k_op_movea_16_pi, m68k_op_movea_16_pd, m68k_op_movea_16_di, m68k_op_movea_16_ix,
-	m68k_op_movea_16_aw, m68k_op_movea_16_al, m68k_op_movea_16_pcdi, m68k_op_movea_16_pcix,
-	m68k_op_movea_16_i, m68k_op_move_16_ai_d, m68k_op_move_16_ai_a, m68k_op_move_16_ai_ai,
+	m68k_op_move_32_al_i, m68k_op_move_16_d_a, m68k_op_move_16_d_pd, m68k_op_move_16_d_aw,
+	m68k_op_move_16_d_pcdi, m68k_op_move_16_d_pcix, m68k_op_movea_16_a, m68k_op_movea_16_ai,
+	m68k_op_movea_16_pi, m68k_op_movea_16_pd, m68k_op_movea_16_ix, m68k_op_movea_16_aw,
+	m68k_op_movea_16_al, m68k_op_movea_16_pcdi, m68k_op_move_16_ai_a, m68k_op_move_16_ai_ai,
 	m68k_op_move_16_ai_pi, m68k_op_move_16_ai_pd, m68k_op_move_16_ai_di, m68k_op_move_16_ai_ix,
 	m68k_op_move_16_ai_aw, m68k_op_move_16_ai_al, m68k_op_move_16_ai_pcdi, m68k_op_move_16_ai_pcix,
-	m68k_op_move_16_ai_i, m68k_op_move_16_pi_d, m68k_op_move_16_pi_a, m68k_op_move_16_pi_ai,
-	m68k_op_move_16_pi_pi, m68k_op_move_16_pi_pd, m68k_op_move_16_pi_di, m68k_op_move_16_pi_ix,
-	m68k_op_move_16_pi_aw, m68k_op_move_16_pi_al, m68k_op_move_16_pi_pcdi, m68k_op_move_16_pi_pcix,
-	m68k_op_move_16_pi_i, m68k_op_move_16_pd_d, m68k_op_move_16_pd_a, m68k_op_move_16_pd_ai,
-	m68k_op_move_16_pd_pi, m68k_op_move_16_pd_pd, m68k_op_move_16_pd_di, m68k_op_move_16_pd_ix,
-	m68k_op_move_16_pd_aw, m68k_op_move_16_pd_al, m68k_op_move_16_pd_pcdi, m68k_op_move_16_pd_pcix,
-	m68k_op_move_16_pd_i, m68k_op_move_16_di_d, m68k_op_move_16_di_a, m68k_op_move_16_di_ai,
-	m68k_op_move_16_di_pi, m68k_op_move_16_di_pd, m68k_op_move_16_di_di, m68k_op_move_16_di_ix,
+	m68k_op_move_16_ai_i, m68k_op_move_16_pi_a, m68k_op_move_16_pi_ai, m68k_op_move_16_pi_pi,
+	m68k_op_move_16_pi_pd, m68k_op_move_16_pi_di, m68k_op_move_16_pi_ix, m68k_op_move_16_pi_aw,
+	m68k_op_move_16_pi_al, m68k_op_move_16_pi_pcdi, m68k_op_move_16_pi_pcix, m68k_op_move_16_pi_i,
+	m68k_op_move_16_pd_d, m68k_op_move_16_pd_a, m68k_op_move_16_pd_ai, m68k_op_move_16_pd_pi,
+	m68k_op_move_16_pd_pd, m68k_op_move_16_pd_di, m68k_op_move_16_pd_ix, m68k_op_move_16_pd_aw,
+	m68k_op_move_16_pd_al, m68k_op_move_16_pd_pcdi, m68k_op_move_16_pd_pcix, m68k_op_move_16_pd_i,
+	m68k_op_move_16_di_a, m68k_op_move_16_di_pi, m68k_op_move_16_di_pd, m68k_op_move_16_di_ix,
 	m68k_op_move_16_di_aw, m68k_op_move_16_di_al, m68k_op_move_16_di_pcdi, m68k_op_move_16_di_pcix,
-	m68k_op_move_16_di_i, m68k_op_move_16_ix_d, m68k_op_move_16_ix_a, m68k_op_move_16_ix_ai,
-	m68k_op_move_16_ix_pi, m68k_op_move_16_ix_pd, m68k_op_move_16_ix_di, m68k_op_move_16_ix_ix,
-	m68k_op_move_16_ix_aw, m68k_op_move_16_ix_al, m68k_op_move_16_ix_pcdi, m68k_op_move_16_ix_pcix,
-	m68k_op_move_16_ix_i, m68k_op_move_16_aw_d, m68k_op_move_16_aw_a, m68k_op_move_16_aw_ai,
-	m68k_op_move_16_aw_pi, m68k_op_move_16_aw_pd, m68k_op_move_16_aw_di, m68k_op_move_16_aw_ix,
-	m68k_op_move_16_aw_aw, m68k_op_move_16_aw_al, m68k_op_move_16_aw_pcdi, m68k_op_move_16_aw_pcix,
-	m68k_op_move_16_aw_i, m68k_op_move_16_al_d, m68k_op_move_16_al_a, m68k_op_move_16_al_ai,
-	m68k_op_move_16_al_pi, m68k_op_move_16_al_pd, m68k_op_move_16_al_di, m68k_op_move_16_al_ix,
-	m68k_op_move_16_al_aw, m68k_op_move_16_al_al, m68k_op_move_16_al_pcdi, m68k_op_move_16_al_pcix,
-	m68k_op_move_16_al_i, m68k_op_negx_8_d, m68k_op_negx_8_ai, m68k_op_negx_8_pi,
-	m68k_op_negx_8_pi7, m68k_op_negx_8_pd, m68k_op_negx_8_pd7, m68k_op_negx_8_di,
-	m68k_op_negx_8_ix, m68k_op_negx_8_aw, m68k_op_negx_8_al, m68k_op_negx_16_d,
-	m68k_op_negx_16_ai, m68k_op_negx_16_pi, m68k_op_negx_16_pd, m68k_op_negx_16_di,
-	m68k_op_negx_16_ix, m68k_op_negx_16_aw, m68k_op_negx_16_al, m68k_op_negx_32_d,
-	m68k_op_negx_32_ai, m68k_op_negx_32_pi, m68k_op_negx_32_pd, m68k_op_negx_32_di,
-	m68k_op_negx_32_ix, m68k_op_negx_32_aw, m68k_op_negx_32_al, m68k_op_move_16_frs_d,
+	m68k_op_move_16_ix_d, m68k_op_move_16_ix_a, m68k_op_move_16_ix_ai, m68k_op_move_16_ix_pi,
+	m68k_op_move_16_ix_pd, m68k_op_move_16_ix_di, m68k_op_move_16_ix_ix, m68k_op_move_16_ix_aw,
+	m68k_op_move_16_ix_al, m68k_op_move_16_ix_pcdi, m68k_op_move_16_ix_pcix, m68k_op_move_16_ix_i,
+	m68k_op_move_16_aw_d, m68k_op_move_16_aw_a, m68k_op_move_16_aw_ai, m68k_op_move_16_aw_pi,
+	m68k_op_move_16_aw_pd, m68k_op_move_16_aw_di, m68k_op_move_16_aw_ix, m68k_op_move_16_aw_aw,
+	m68k_op_move_16_aw_al, m68k_op_move_16_aw_pcdi, m68k_op_move_16_aw_pcix, m68k_op_move_16_aw_i,
+	m68k_op_move_16_al_a, m68k_op_move_16_al_ai, m68k_op_move_16_al_pi, m68k_op_move_16_al_pd,
+	m68k_op_move_16_al_di, m68k_op_move_16_al_ix, m68k_op_move_16_al_aw, m68k_op_move_16_al_al,
+	m68k_op_move_16_al_pcdi, m68k_op_move_16_al_pcix, m68k_op_negx_8_d, m68k_op_negx_8_ai,
+	m68k_op_negx_8_pi, m68k_op_negx_8_pi7, m68k_op_negx_8_pd, m68k_op_negx_8_pd7,
+	m68k_op_negx_8_di, m68k_op_negx_8_ix, m68k_op_negx_8_aw, m68k_op_negx_8_al,
+	m68k_op_negx_16_d, m68k_op_negx_16_ai, m68k_op_negx_16_pi, m68k_op_negx_16_pd,
+	m68k_op_negx_16_di, m68k_op_negx_16_ix, m68k_op_negx_16_aw, m68k_op_negx_16_al,
+	m68k_op_negx_32_d, m68k_op_negx_32_ai, m68k_op_negx_32_pi, m68k_op_negx_32_pd,
+	m68k_op_negx_32_di, m68k_op_negx_32_ix, m68k_op_negx_32_aw, m68k_op_negx_32_al,
 	m68k_op_move_16_frs_ai, m68k_op_move_16_frs_pi, m68k_op_move_16_frs_pd, m68k_op_move_16_frs_di,
 	m68k_op_move_16_frs_ix, m68k_op_move_16_frs_aw, m68k_op_move_16_frs_al, m68k_op_chk_32_d,
 	m68k_op_chk_32_ai, m68k_op_chk_32_pi, m68k_op_chk_32_pd, m68k_op_chk_32_di,
@@ -36666,31 +36706,27 @@ void (*const m68ki_handlers[1967])(void) = {
 	m68k_op_chk_32_pcix, m68k_op_chk_32_i, m68k_op_chk_16_d, m68k_op_chk_16_ai,
 	m68k_op_chk_16_pi, m68k_op_chk_16_pd, m68k_op_chk_16_di, m68k_op_chk_16_ix,
 	m68k_op_chk_16_aw, m68k_op_chk_16_al, m68k_op_chk_16_pcdi, m68k_op_chk_16_pcix,
-	m68k_op_chk_16_i, m68k_op_lea_32_ai, m68k_op_lea_32_di, m68k_op_lea_32_ix,
-	m68k_op_lea_32_aw, m68k_op_lea_32_al, m68k_op_lea_32_pcdi, m68k_op_lea_32_pcix,
-	m68k_op_clr_8_d, m68k_op_clr_8_ai, m68k_op_clr_8_pi, m68k_op_clr_8_pi7,
-	m68k_op_clr_8_pd, m68k_op_clr_8_pd7, m68k_op_clr_8_di, m68k_op_clr_8_ix,
-	m68k_op_clr_8_aw, m68k_op_clr_8_al, m68k_op_clr_16_d, m68k_op_clr_16_ai,
-	m68k_op_clr_16_pi, m68k_op_clr_16_pd, m68k_op_clr_16_di, m68k_op_clr_16_ix,
-	m68k_op_clr_16_aw, m68k_op_clr_16_al, m68k_op_clr_32_d, m68k_op_clr_32_ai,
-	m68k_op_clr_32_pi, m68k_op_clr_32_pd, m68k_op_clr_32_di, m68k_op_clr_32_ix,
-	m68k_op_clr_32_aw, m68k_op_clr_32_al, m68k_op_move_16_frc_d, m68k_op_move_16_frc_ai,
-	m68k_op_move_16_frc_pi, m68k_op_move_16_frc_pd, m68k_op_move_16_frc_di, m68k_op_move_16_frc_ix,
-	m68k_op_move_16_frc_aw, m68k_op_move_16_frc_al, m68k_op_neg_8_d, m68k_op_neg_8_ai,
-	m68k_op_neg_8_pi, m68k_op_neg_8_pi7, m68k_op_neg_8_pd, m68k_op_neg_8_pd7,
-	m68k_op_neg_8_di, m68k_op_neg_8_ix, m68k_op_neg_8_aw, m68k_op_neg_8_al,
-	m68k_op_neg_16_d, m68k_op_neg_16_ai, m68k_op_neg_16_pi, m68k_op_neg_16_pd,
-	m68k_op_neg_16_di, m68k_op_neg_16_ix, m68k_op_neg_16_aw, m68k_op_neg_16_al,
-	m68k_op_neg_32_d, m68k_op_neg_32_ai, m68k_op_neg_32_pi, m68k_op_neg_32_pd,
-	m68k_op_neg_32_di, m68k_op_neg_32_ix, m68k_op_neg_32_aw, m68k_op_neg_32_al,
-	m68k_op_move_16_toc_d, m68k_op_move_16_toc_ai, m68k_op_move_16_toc_pi, m68k_op_move_16_toc_pd,
-	m68k_op_move_16_toc_di, m68k_op_move_16_toc_ix, m68k_op_move_16_toc_aw, m68k_op_move_16_toc_al,
-	m68k_op_move_16_toc_pcdi, m68k_op_move_16_toc_pcix, m68k_op_move_16_toc_i, m68k_op_not_8_d,
-	m68k_op_not_8_ai, m68k_op_not_8_pi, m68k_op_not_8_pi7, m68k_op_not_8_pd,
-	m68k_op_not_8_pd7, m68k_op_not_8_di, m68k_op_not_8_ix, m68k_op_not_8_aw,
-	m68k_op_not_8_al, m68k_op_not_16_d, m68k_op_not_16_ai, m68k_op_not_16_pi,
-	m68k_op_not_16_pd, m68k_op_not_16_di, m68k_op_not_16_ix, m68k_op_not_16_aw,
-	m68k_op_not_16_al, m68k_op_not_32_d, m68k_op_not_32_ai, m68k_op_not_32_pi,
+	m68k_op_chk_16_i, m68k_op_lea_32_ai, m68k_op_lea_32_aw, m68k_op_lea_32_pcix,
+	m68k_op_clr_8_ai, m68k_op_clr_8_pi, m68k_op_clr_8_pi7, m68k_op_clr_8_pd,
+	m68k_op_clr_8_pd7, m68k_op_clr_8_ix, m68k_op_clr_8_aw, m68k_op_clr_8_al,
+	m68k_op_clr_16_ai, m68k_op_clr_16_pi, m68k_op_clr_16_pd, m68k_op_clr_16_ix,
+	m68k_op_clr_16_aw, m68k_op_clr_16_al, m68k_op_clr_32_ix, m68k_op_clr_32_aw,
+	m68k_op_clr_32_al, m68k_op_move_16_frc_d, m68k_op_move_16_frc_ai, m68k_op_move_16_frc_pi,
+	m68k_op_move_16_frc_pd, m68k_op_move_16_frc_di, m68k_op_move_16_frc_ix, m68k_op_move_16_frc_aw,
+	m68k_op_move_16_frc_al, m68k_op_neg_8_d, m68k_op_neg_8_ai, m68k_op_neg_8_pi,
+	m68k_op_neg_8_pi7, m68k_op_neg_8_pd, m68k_op_neg_8_pd7, m68k_op_neg_8_di,
+	m68k_op_neg_8_ix, m68k_op_neg_8_aw, m68k_op_neg_8_al, m68k_op_neg_16_d,
+	m68k_op_neg_16_ai, m68k_op_neg_16_pi, m68k_op_neg_16_pd, m68k_op_neg_16_di,
+	m68k_op_neg_16_ix, m68k_op_neg_16_aw, m68k_op_neg_16_al, m68k_op_neg_32_d,
+	m68k_op_neg_32_ai, m68k_op_neg_32_pi, m68k_op_neg_32_pd, m68k_op_neg_32_di,
+	m68k_op_neg_32_ix, m68k_op_neg_32_aw, m68k_op_neg_32_al, m68k_op_move_16_toc_d,
+	m68k_op_move_16_toc_ai, m68k_op_move_16_toc_pi, m68k_op_move_16_toc_pd, m68k_op_move_16_toc_di,
+	m68k_op_move_16_toc_ix, m68k_op_move_16_toc_aw, m68k_op_move_16_toc_al, m68k_op_move_16_toc_pcdi,
+	m68k_op_move_16_toc_pcix, m68k_op_move_16_toc_i, m68k_op_not_8_ai, m68k_op_not_8_pi,
+	m68k_op_not_8_pi7, m68k_op_not_8_pd, m68k_op_not_8_pd7, m68k_op_not_8_ix,
+	m68k_op_not_8_aw, m68k_op_not_8_al, m68k_op_not_16_d, m68k_op_not_16_ai,
+	m68k_op_not_16_pi, m68k_op_not_16_pd, m68k_op_not_16_di, m68k_op_not_16_ix,
+	m68k_op_not_16_aw, m68k_op_not_16_al, m68k_op_not_32_ai, m68k_op_not_32_pi,
 	m68k_op_not_32_pd, m68k_op_not_32_di, m68k_op_not_32_ix, m68k_op_not_32_aw,
 	m68k_op_not_32_al, m68k_op_move_16_tos_d, m68k_op_move_16_tos_ai, m68k_op_move_16_tos_pi,
 	m68k_op_move_16_tos_pd, m68k_op_move_16_tos_di, m68k_op_move_16_tos_ix, m68k_op_move_16_tos_aw,
@@ -36698,206 +36734,177 @@ void (*const m68ki_handlers[1967])(void) = {
 	m68k_op_nbcd_8_d, m68k_op_link_32, m68k_op_link_32_a7, m68k_op_nbcd_8_ai,
 	m68k_op_nbcd_8_pi, m68k_op_nbcd_8_pi7, m68k_op_nbcd_8_pd, m68k_op_nbcd_8_pd7,
 	m68k_op_nbcd_8_di, m68k_op_nbcd_8_ix, m68k_op_nbcd_8_aw, m68k_op_nbcd_8_al,
-	m68k_op_swap_32, m68k_op_bkpt, m68k_op_pea_32_ai, m68k_op_pea_32_di,
-	m68k_op_pea_32_ix, m68k_op_pea_32_aw, m68k_op_pea_32_al, m68k_op_pea_32_pcdi,
-	m68k_op_pea_32_pcix, m68k_op_ext_16, m68k_op_movem_16_re_ai, m68k_op_movem_16_re_pd,
-	m68k_op_movem_16_re_di, m68k_op_movem_16_re_ix, m68k_op_movem_16_re_aw, m68k_op_movem_16_re_al,
-	m68k_op_ext_32, m68k_op_movem_32_re_ai, m68k_op_movem_32_re_pd, m68k_op_movem_32_re_di,
-	m68k_op_movem_32_re_ix, m68k_op_movem_32_re_aw, m68k_op_movem_32_re_al, m68k_op_extb_32,
-	m68k_op_tst_8_d, m68k_op_tst_8_ai, m68k_op_tst_8_pi, m68k_op_tst_8_pi7,
-	m68k_op_tst_8_pd, m68k_op_tst_8_pd7, m68k_op_tst_8_di, m68k_op_tst_8_ix,
-	m68k_op_tst_8_aw, m68k_op_tst_8_al, m68k_op_tst_8_pcdi, m68k_op_tst_8_pcix,
-	m68k_op_tst_8_i, m68k_op_tst_16_d, m68k_op_tst_16_a, m68k_op_tst_16_ai,
-	m68k_op_tst_16_pi, m68k_op_tst_16_pd, m68k_op_tst_16_di, m68k_op_tst_16_ix,
+	m68k_op_bkpt, m68k_op_pea_32_ai, m68k_op_pea_32_ix, m68k_op_pea_32_pcix,
+	m68k_op_movem_16_re_ai, m68k_op_movem_16_re_pd, m68k_op_movem_16_re_di, m68k_op_movem_16_re_ix,
+	m68k_op_movem_16_re_aw, m68k_op_movem_16_re_al, m68k_op_movem_32_re_di, m68k_op_movem_32_re_ix,
+	m68k_op_movem_32_re_aw, m68k_op_movem_32_re_al, m68k_op_extb_32, m68k_op_tst_8_pi7,
+	m68k_op_tst_8_pd, m68k_op_tst_8_pd7, m68k_op_tst_8_ix, m68k_op_tst_8_aw,
+	m68k_op_tst_8_al, m68k_op_tst_8_pcdi, m68k_op_tst_8_pcix, m68k_op_tst_8_i,
+	m68k_op_tst_16_a, m68k_op_tst_16_pi, m68k_op_tst_16_pd, m68k_op_tst_16_ix,
 	m68k_op_tst_16_aw, m68k_op_tst_16_al, m68k_op_tst_16_pcdi, m68k_op_tst_16_pcix,
-	m68k_op_tst_16_i, m68k_op_tst_32_d, m68k_op_tst_32_a, m68k_op_tst_32_ai,
-	m68k_op_tst_32_pi, m68k_op_tst_32_pd, m68k_op_tst_32_di, m68k_op_tst_32_ix,
-	m68k_op_tst_32_aw, m68k_op_tst_32_al, m68k_op_tst_32_pcdi, m68k_op_tst_32_pcix,
-	m68k_op_tst_32_i, m68k_op_tas_8_d, m68k_op_tas_8_ai, m68k_op_tas_8_pi,
-	m68k_op_tas_8_pi7, m68k_op_tas_8_pd, m68k_op_tas_8_pd7, m68k_op_tas_8_di,
-	m68k_op_tas_8_ix, m68k_op_tas_8_aw, m68k_op_tas_8_al, m68k_op_mull_32_d,
-	m68k_op_mull_32_ai, m68k_op_mull_32_pi, m68k_op_mull_32_pd, m68k_op_mull_32_di,
-	m68k_op_mull_32_ix, m68k_op_mull_32_aw, m68k_op_mull_32_al, m68k_op_mull_32_pcdi,
-	m68k_op_mull_32_pcix, m68k_op_mull_32_i, m68k_op_divl_32_d, m68k_op_divl_32_ai,
-	m68k_op_divl_32_pi, m68k_op_divl_32_pd, m68k_op_divl_32_di, m68k_op_divl_32_ix,
-	m68k_op_divl_32_aw, m68k_op_divl_32_al, m68k_op_divl_32_pcdi, m68k_op_divl_32_pcix,
-	m68k_op_divl_32_i, m68k_op_movem_16_er_ai, m68k_op_movem_16_er_pi, m68k_op_movem_16_er_di,
-	m68k_op_movem_16_er_ix, m68k_op_movem_16_er_aw, m68k_op_movem_16_er_al, m68k_op_movem_16_er_pcdi,
-	m68k_op_movem_16_er_pcix, m68k_op_movem_32_er_ai, m68k_op_movem_32_er_pi, m68k_op_movem_32_er_di,
-	m68k_op_movem_32_er_ix, m68k_op_movem_32_er_aw, m68k_op_movem_32_er_al, m68k_op_movem_32_er_pcdi,
-	m68k_op_movem_32_er_pcix, m68k_op_trap, m68k_op_link_16, m68k_op_link_16_a7,
-	m68k_op_unlk_32, m68k_op_unlk_32_a7, m68k_op_move_32_tou, m68k_op_move_32_fru,
-	m68k_op_reset, m68k_op_nop, m68k_op_stop, m68k_op_rte_32,
-	m68k_op_rtd_32, m68k_op_rts_32, m68k_op_trapv, m68k_op_rtr_32,
-	m68k_op_movec_32_cr, m68k_op_movec_32_rc, m68k_op_jsr_32_ai, m68k_op_jsr_32_di,
-	m68k_op_jsr_32_ix, m68k_op_jsr_32_aw, m68k_op_jsr_32_al, m68k_op_jsr_32_pcdi,
-	m68k_op_jsr_32_pcix, m68k_op_jmp_32_ai, m68k_op_jmp_32_di, m68k_op_jmp_32_ix,
-	m68k_op_jmp_32_aw, m68k_op_jmp_32_al, m68k_op_jmp_32_pcdi, m68k_op_jmp_32_pcix,
-	m68k_op_addq_8_d, m68k_op_addq_8_ai, m68k_op_addq_8_pi, m68k_op_addq_8_pi7,
-	m68k_op_addq_8_pd, m68k_op_addq_8_pd7, m68k_op_addq_8_di, m68k_op_addq_8_ix,
-	m68k_op_addq_8_aw, m68k_op_addq_8_al, m68k_op_addq_16_d, m68k_op_addq_16_a,
-	m68k_op_addq_16_ai, m68k_op_addq_16_pi, m68k_op_addq_16_pd, m68k_op_addq_16_di,
-	m68k_op_addq_16_ix, m68k_op_addq_16_aw, m68k_op_addq_16_al, m68k_op_addq_32_d,
-	m68k_op_addq_32_a, m68k_op_addq_32_ai, m68k_op_addq_32_pi, m68k_op_addq_32_pd,
-	m68k_op_addq_32_di, m68k_op_addq_32_ix, m68k_op_addq_32_aw, m68k_op_addq_32_al,
-	m68k_op_st_8_d, m68k_op_dbt_16, m68k_op_st_8_ai, m68k_op_st_8_pi,
-	m68k_op_st_8_pi7, m68k_op_st_8_pd, m68k_op_st_8_pd7, m68k_op_st_8_di,
-	m68k_op_st_8_ix, m68k_op_st_8_aw, m68k_op_st_8_al, m68k_op_trapt_16,
-	m68k_op_trapt_32, m68k_op_trapt, m68k_op_subq_8_d, m68k_op_subq_8_ai,
-	m68k_op_subq_8_pi, m68k_op_subq_8_pi7, m68k_op_subq_8_pd, m68k_op_subq_8_pd7,
-	m68k_op_subq_8_di, m68k_op_subq_8_ix, m68k_op_subq_8_aw, m68k_op_subq_8_al,
-	m68k_op_subq_16_d, m68k_op_subq_16_a, m68k_op_subq_16_ai, m68k_op_subq_16_pi,
-	m68k_op_subq_16_pd, m68k_op_subq_16_di, m68k_op_subq_16_ix, m68k_op_subq_16_aw,
-	m68k_op_subq_16_al, m68k_op_subq_32_d, m68k_op_subq_32_a, m68k_op_subq_32_ai,
-	m68k_op_subq_32_pi, m68k_op_subq_32_pd, m68k_op_subq_32_di, m68k_op_subq_32_ix,
-	m68k_op_subq_32_aw, m68k_op_subq_32_al, m68k_op_sf_8_d, m68k_op_dbf_16,
-	m68k_op_sf_8_ai, m68k_op_sf_8_pi, m68k_op_sf_8_pi7, m68k_op_sf_8_pd,
-	m68k_op_sf_8_pd7, m68k_op_sf_8_di, m68k_op_sf_8_ix, m68k_op_sf_8_aw,
-	m68k_op_sf_8_al, m68k_op_trapf_16, m68k_op_trapf_32, m68k_op_trapf,
-	m68k_op_shi_8_d, m68k_op_dbhi_16, m68k_op_shi_8_ai, m68k_op_shi_8_pi,
-	m68k_op_shi_8_pi7, m68k_op_shi_8_pd, m68k_op_shi_8_pd7, m68k_op_shi_8_di,
-	m68k_op_shi_8_ix, m68k_op_shi_8_aw, m68k_op_shi_8_al, m68k_op_traphi_16,
-	m68k_op_traphi_32, m68k_op_traphi, m68k_op_sls_8_d, m68k_op_dbls_16,
-	m68k_op_sls_8_ai, m68k_op_sls_8_pi, m68k_op_sls_8_pi7, m68k_op_sls_8_pd,
-	m68k_op_sls_8_pd7, m68k_op_sls_8_di, m68k_op_sls_8_ix, m68k_op_sls_8_aw,
-	m68k_op_sls_8_al, m68k_op_trapls_16, m68k_op_trapls_32, m68k_op_trapls,
-	m68k_op_scc_8_d, m68k_op_dbcc_16, m68k_op_scc_8_ai, m68k_op_scc_8_pi,
-	m68k_op_scc_8_pi7, m68k_op_scc_8_pd, m68k_op_scc_8_pd7, m68k_op_scc_8_di,
-	m68k_op_scc_8_ix, m68k_op_scc_8_aw, m68k_op_scc_8_al, m68k_op_trapcc_16,
-	m68k_op_trapcc_32, m68k_op_trapcc, m68k_op_scs_8_d, m68k_op_dbcs_16,
-	m68k_op_scs_8_ai, m68k_op_scs_8_pi, m68k_op_scs_8_pi7, m68k_op_scs_8_pd,
-	m68k_op_scs_8_pd7, m68k_op_scs_8_di, m68k_op_scs_8_ix, m68k_op_scs_8_aw,
-	m68k_op_scs_8_al, m68k_op_trapcs_16, m68k_op_trapcs_32, m68k_op_trapcs,
-	m68k_op_sne_8_d, m68k_op_dbne_16, m68k_op_sne_8_ai, m68k_op_sne_8_pi,
-	m68k_op_sne_8_pi7, m68k_op_sne_8_pd, m68k_op_sne_8_pd7, m68k_op_sne_8_di,
-	m68k_op_sne_8_ix, m68k_op_sne_8_aw, m68k_op_sne_8_al, m68k_op_trapne_16,
-	m68k_op_trapne_32, m68k_op_trapne, m68k_op_seq_8_d, m68k_op_dbeq_16,
-	m68k_op_seq_8_ai, m68k_op_seq_8_pi, m68k_op_seq_8_pi7, m68k_op_seq_8_pd,
-	m68k_op_seq_8_pd7, m68k_op_seq_8_di, m68k_op_seq_8_ix, m68k_op_seq_8_aw,
-	m68k_op_seq_8_al, m68k_op_trapeq_16, m68k_op_trapeq_32, m68k_op_trapeq,
-	m68k_op_svc_8_d, m68k_op_dbvc_16, m68k_op_svc_8_ai, m68k_op_svc_8_pi,
-	m68k_op_svc_8_pi7, m68k_op_svc_8_pd, m68k_op_svc_8_pd7, m68k_op_svc_8_di,
-	m68k_op_svc_8_ix, m68k_op_svc_8_aw, m68k_op_svc_8_al, m68k_op_trapvc_16,
-	m68k_op_trapvc_32, m68k_op_trapvc, m68k_op_svs_8_d, m68k_op_dbvs_16,
-	m68k_op_svs_8_ai, m68k_op_svs_8_pi, m68k_op_svs_8_pi7, m68k_op_svs_8_pd,
-	m68k_op_svs_8_pd7, m68k_op_svs_8_di, m68k_op_svs_8_ix, m68k_op_svs_8_aw,
-	m68k_op_svs_8_al, m68k_op_trapvs_16, m68k_op_trapvs_32, m68k_op_trapvs,
-	m68k_op_spl_8_d, m68k_op_dbpl_16, m68k_op_spl_8_ai, m68k_op_spl_8_pi,
-	m68k_op_spl_8_pi7, m68k_op_spl_8_pd, m68k_op_spl_8_pd7, m68k_op_spl_8_di,
-	m68k_op_spl_8_ix, m68k_op_spl_8_aw, m68k_op_spl_8_al, m68k_op_trappl_16,
-	m68k_op_trappl_32, m68k_op_trappl, m68k_op_smi_8_d, m68k_op_dbmi_16,
-	m68k_op_smi_8_ai, m68k_op_smi_8_pi, m68k_op_smi_8_pi7, m68k_op_smi_8_pd,
-	m68k_op_smi_8_pd7, m68k_op_smi_8_di, m68k_op_smi_8_ix, m68k_op_smi_8_aw,
-	m68k_op_smi_8_al, m68k_op_trapmi_16, m68k_op_trapmi_32, m68k_op_trapmi,
-	m68k_op_sge_8_d, m68k_op_dbge_16, m68k_op_sge_8_ai, m68k_op_sge_8_pi,
-	m68k_op_sge_8_pi7, m68k_op_sge_8_pd, m68k_op_sge_8_pd7, m68k_op_sge_8_di,
-	m68k_op_sge_8_ix, m68k_op_sge_8_aw, m68k_op_sge_8_al, m68k_op_trapge_16,
-	m68k_op_trapge_32, m68k_op_trapge, m68k_op_slt_8_d, m68k_op_dblt_16,
-	m68k_op_slt_8_ai, m68k_op_slt_8_pi, m68k_op_slt_8_pi7, m68k_op_slt_8_pd,
-	m68k_op_slt_8_pd7, m68k_op_slt_8_di, m68k_op_slt_8_ix, m68k_op_slt_8_aw,
-	m68k_op_slt_8_al, m68k_op_traplt_16, m68k_op_traplt_32, m68k_op_traplt,
-	m68k_op_sgt_8_d, m68k_op_dbgt_16, m68k_op_sgt_8_ai, m68k_op_sgt_8_pi,
-	m68k_op_sgt_8_pi7, m68k_op_sgt_8_pd, m68k_op_sgt_8_pd7, m68k_op_sgt_8_di,
-	m68k_op_sgt_8_ix, m68k_op_sgt_8_aw, m68k_op_sgt_8_al, m68k_op_trapgt_16,
-	m68k_op_trapgt_32, m68k_op_trapgt, m68k_op_sle_8_d, m68k_op_dble_16,
-	m68k_op_sle_8_ai, m68k_op_sle_8_pi, m68k_op_sle_8_pi7, m68k_op_sle_8_pd,
-	m68k_op_sle_8_pd7, m68k_op_sle_8_di, m68k_op_sle_8_ix, m68k_op_sle_8_aw,
-	m68k_op_sle_8_al, m68k_op_traple_16, m68k_op_traple_32, m68k_op_traple,
-	m68k_op_bra_16, m68k_op_bra_8, m68k_op_bra_32, m68k_op_bsr_16,
-	m68k_op_bsr_8, m68k_op_bsr_32, m68k_op_bhi_16, m68k_op_bhi_8,
-	m68k_op_bhi_32, m68k_op_bls_16, m68k_op_bls_8, m68k_op_bls_32,
-	m68k_op_bcc_16, m68k_op_bcc_8, m68k_op_bcc_32, m68k_op_bcs_16,
-	m68k_op_bcs_8, m68k_op_bcs_32, m68k_op_bne_16, m68k_op_bne_8,
-	m68k_op_bne_32, m68k_op_beq_16, m68k_op_beq_8, m68k_op_beq_32,
-	m68k_op_bvc_16, m68k_op_bvc_8, m68k_op_bvc_32, m68k_op_bvs_16,
-	m68k_op_bvs_8, m68k_op_bvs_32, m68k_op_bpl_16, m68k_op_bpl_8,
-	m68k_op_bpl_32, m68k_op_bmi_16, m68k_op_bmi_8, m68k_op_bmi_32,
-	m68k_op_bge_16, m68k_op_bge_8, m68k_op_bge_32, m68k_op_blt_16,
-	m68k_op_blt_8, m68k_op_blt_32, m68k_op_bgt_16, m68k_op_bgt_8,
-	m68k_op_bgt_32, m68k_op_ble_16, m68k_op_ble_8, m68k_op_ble_32,
-	m68k_op_moveq_32, m68k_op_or_8_er_d, m68k_op_or_8_er_ai, m68k_op_or_8_er_pi,
-	m68k_op_or_8_er_pi7, m68k_op_or_8_er_pd, m68k_op_or_8_er_pd7, m68k_op_or_8_er_di,
-	m68k_op_or_8_er_ix, m68k_op_or_8_er_aw, m68k_op_or_8_er_al, m68k_op_or_8_er_pcdi,
-	m68k_op_or_8_er_pcix, m68k_op_or_8_er_i, m68k_op_or_16_er_d, m68k_op_or_16_er_ai,
-	m68k_op_or_16_er_pi, m68k_op_or_16_er_pd, m68k_op_or_16_er_di, m68k_op_or_16_er_ix,
-	m68k_op_or_16_er_aw, m68k_op_or_16_er_al, m68k_op_or_16_er_pcdi, m68k_op_or_16_er_pcix,
-	m68k_op_or_16_er_i, m68k_op_or_32_er_d, m68k_op_or_32_er_ai, m68k_op_or_32_er_pi,
-	m68k_op_or_32_er_pd, m68k_op_or_32_er_di, m68k_op_or_32_er_ix, m68k_op_or_32_er_aw,
-	m68k_op_or_32_er_al, m68k_op_or_32_er_pcdi, m68k_op_or_32_er_pcix, m68k_op_or_32_er_i,
-	m68k_op_divu_16_d, m68k_op_divu_16_ai, m68k_op_divu_16_pi, m68k_op_divu_16_pd,
+	m68k_op_tst_16_i, m68k_op_tst_32_a, m68k_op_tst_32_pi, m68k_op_tst_32_pd,
+	m68k_op_tst_32_ix, m68k_op_tst_32_aw, m68k_op_tst_32_al, m68k_op_tst_32_pcdi,
+	m68k_op_tst_32_pcix, m68k_op_tst_32_i, m68k_op_tas_8_d, m68k_op_tas_8_ai,
+	m68k_op_tas_8_pi, m68k_op_tas_8_pi7, m68k_op_tas_8_pd, m68k_op_tas_8_pd7,
+	m68k_op_tas_8_di, m68k_op_tas_8_ix, m68k_op_tas_8_aw, m68k_op_tas_8_al,
+	m68k_op_mull_32_d, m68k_op_mull_32_ai, m68k_op_mull_32_pi, m68k_op_mull_32_pd,
+	m68k_op_mull_32_di, m68k_op_mull_32_ix, m68k_op_mull_32_aw, m68k_op_mull_32_al,
+	m68k_op_mull_32_pcdi, m68k_op_mull_32_pcix, m68k_op_mull_32_i, m68k_op_divl_32_d,
+	m68k_op_divl_32_ai, m68k_op_divl_32_pi, m68k_op_divl_32_pd, m68k_op_divl_32_di,
+	m68k_op_divl_32_ix, m68k_op_divl_32_aw, m68k_op_divl_32_al, m68k_op_divl_32_pcdi,
+	m68k_op_divl_32_pcix, m68k_op_divl_32_i, m68k_op_movem_16_er_ai, m68k_op_movem_16_er_pi,
+	m68k_op_movem_16_er_di, m68k_op_movem_16_er_ix, m68k_op_movem_16_er_aw, m68k_op_movem_16_er_al,
+	m68k_op_movem_16_er_pcdi, m68k_op_movem_16_er_pcix, m68k_op_movem_32_er_ix, m68k_op_movem_32_er_aw,
+	m68k_op_movem_32_er_al, m68k_op_movem_32_er_pcdi, m68k_op_movem_32_er_pcix, m68k_op_trap,
+	m68k_op_link_16_a7, m68k_op_unlk_32_a7, m68k_op_move_32_tou, m68k_op_move_32_fru,
+	m68k_op_reset, m68k_op_stop, m68k_op_rtd_32, m68k_op_trapv,
+	m68k_op_rtr_32, m68k_op_movec_32_cr, m68k_op_movec_32_rc, m68k_op_jsr_32_ix,
+	m68k_op_jsr_32_aw, m68k_op_jsr_32_pcix, m68k_op_jmp_32_di, m68k_op_jmp_32_ix,
+	m68k_op_jmp_32_aw, m68k_op_jmp_32_pcdi, m68k_op_addq_8_ai, m68k_op_addq_8_pi,
+	m68k_op_addq_8_pi7, m68k_op_addq_8_pd, m68k_op_addq_8_pd7, m68k_op_addq_8_ix,
+	m68k_op_addq_8_aw, m68k_op_addq_8_al, m68k_op_addq_16_a, m68k_op_addq_16_ai,
+	m68k_op_addq_16_pi, m68k_op_addq_16_pd, m68k_op_addq_16_ix, m68k_op_addq_16_aw,
+	m68k_op_addq_16_al, m68k_op_addq_32_pi, m68k_op_addq_32_pd, m68k_op_addq_32_ix,
+	m68k_op_addq_32_aw, m68k_op_addq_32_al, m68k_op_st_8_d, m68k_op_dbt_16,
+	m68k_op_st_8_ai, m68k_op_st_8_pi, m68k_op_st_8_pi7, m68k_op_st_8_pd,
+	m68k_op_st_8_pd7, m68k_op_st_8_di, m68k_op_st_8_ix, m68k_op_st_8_aw,
+	m68k_op_st_8_al, m68k_op_trapt_16, m68k_op_trapt_32, m68k_op_trapt,
+	m68k_op_subq_8_d, m68k_op_subq_8_ai, m68k_op_subq_8_pi, m68k_op_subq_8_pi7,
+	m68k_op_subq_8_pd, m68k_op_subq_8_pd7, m68k_op_subq_8_ix, m68k_op_subq_8_aw,
+	m68k_op_subq_8_al, m68k_op_subq_16_a, m68k_op_subq_16_ai, m68k_op_subq_16_pi,
+	m68k_op_subq_16_pd, m68k_op_subq_16_ix, m68k_op_subq_16_aw, m68k_op_subq_16_al,
+	m68k_op_subq_32_pi, m68k_op_subq_32_pd, m68k_op_subq_32_ix, m68k_op_subq_32_aw,
+	m68k_op_subq_32_al, m68k_op_sf_8_d, m68k_op_sf_8_ai, m68k_op_sf_8_pi,
+	m68k_op_sf_8_pi7, m68k_op_sf_8_pd, m68k_op_sf_8_pd7, m68k_op_sf_8_di,
+	m68k_op_sf_8_ix, m68k_op_sf_8_aw, m68k_op_sf_8_al, m68k_op_trapf_16,
+	m68k_op_trapf_32, m68k_op_trapf, m68k_op_shi_8_d, m68k_op_dbhi_16,
+	m68k_op_shi_8_ai, m68k_op_shi_8_pi, m68k_op_shi_8_pi7, m68k_op_shi_8_pd,
+	m68k_op_shi_8_pd7, m68k_op_shi_8_di, m68k_op_shi_8_ix, m68k_op_shi_8_aw,
+	m68k_op_shi_8_al, m68k_op_traphi_16, m68k_op_traphi_32, m68k_op_traphi,
+	m68k_op_sls_8_d, m68k_op_dbls_16, m68k_op_sls_8_ai, m68k_op_sls_8_pi,
+	m68k_op_sls_8_pi7, m68k_op_sls_8_pd, m68k_op_sls_8_pd7, m68k_op_sls_8_di,
+	m68k_op_sls_8_ix, m68k_op_sls_8_aw, m68k_op_sls_8_al, m68k_op_trapls_16,
+	m68k_op_trapls_32, m68k_op_trapls, m68k_op_scc_8_d, m68k_op_dbcc_16,
+	m68k_op_scc_8_ai, m68k_op_scc_8_pi, m68k_op_scc_8_pi7, m68k_op_scc_8_pd,
+	m68k_op_scc_8_pd7, m68k_op_scc_8_di, m68k_op_scc_8_ix, m68k_op_scc_8_aw,
+	m68k_op_scc_8_al, m68k_op_trapcc_16, m68k_op_trapcc_32, m68k_op_trapcc,
+	m68k_op_scs_8_d, m68k_op_dbcs_16, m68k_op_scs_8_ai, m68k_op_scs_8_pi,
+	m68k_op_scs_8_pi7, m68k_op_scs_8_pd, m68k_op_scs_8_pd7, m68k_op_scs_8_di,
+	m68k_op_scs_8_ix, m68k_op_scs_8_aw, m68k_op_scs_8_al, m68k_op_trapcs_16,
+	m68k_op_trapcs_32, m68k_op_trapcs, m68k_op_sne_8_d, m68k_op_dbne_16,
+	m68k_op_sne_8_ai, m68k_op_sne_8_pi, m68k_op_sne_8_pi7, m68k_op_sne_8_pd,
+	m68k_op_sne_8_pd7, m68k_op_sne_8_di, m68k_op_sne_8_ix, m68k_op_sne_8_aw,
+	m68k_op_sne_8_al, m68k_op_trapne_16, m68k_op_trapne_32, m68k_op_trapne,
+	m68k_op_seq_8_d, m68k_op_seq_8_ai, m68k_op_seq_8_pi, m68k_op_seq_8_pi7,
+	m68k_op_seq_8_pd, m68k_op_seq_8_pd7, m68k_op_seq_8_di, m68k_op_seq_8_ix,
+	m68k_op_seq_8_aw, m68k_op_seq_8_al, m68k_op_trapeq_16, m68k_op_trapeq_32,
+	m68k_op_trapeq, m68k_op_svc_8_d, m68k_op_dbvc_16, m68k_op_svc_8_ai,
+	m68k_op_svc_8_pi, m68k_op_svc_8_pi7, m68k_op_svc_8_pd, m68k_op_svc_8_pd7,
+	m68k_op_svc_8_di, m68k_op_svc_8_ix, m68k_op_svc_8_aw, m68k_op_svc_8_al,
+	m68k_op_trapvc_16, m68k_op_trapvc_32, m68k_op_trapvc, m68k_op_svs_8_d,
+	m68k_op_dbvs_16, m68k_op_svs_8_ai, m68k_op_svs_8_pi, m68k_op_svs_8_pi7,
+	m68k_op_svs_8_pd, m68k_op_svs_8_pd7, m68k_op_svs_8_di, m68k_op_svs_8_ix,
+	m68k_op_svs_8_aw, m68k_op_svs_8_al, m68k_op_trapvs_16, m68k_op_trapvs_32,
+	m68k_op_trapvs, m68k_op_spl_8_d, m68k_op_dbpl_16, m68k_op_spl_8_ai,
+	m68k_op_spl_8_pi, m68k_op_spl_8_pi7, m68k_op_spl_8_pd, m68k_op_spl_8_pd7,
+	m68k_op_spl_8_di, m68k_op_spl_8_ix, m68k_op_spl_8_aw, m68k_op_spl_8_al,
+	m68k_op_trappl_16, m68k_op_trappl_32, m68k_op_trappl, m68k_op_smi_8_d,
+	m68k_op_dbmi_16, m68k_op_smi_8_ai, m68k_op_smi_8_pi, m68k_op_smi_8_pi7,
+	m68k_op_smi_8_pd, m68k_op_smi_8_pd7, m68k_op_smi_8_di, m68k_op_smi_8_ix,
+	m68k_op_smi_8_aw, m68k_op_smi_8_al, m68k_op_trapmi_16, m68k_op_trapmi_32,
+	m68k_op_trapmi, m68k_op_sge_8_d, m68k_op_dbge_16, m68k_op_sge_8_ai,
+	m68k_op_sge_8_pi, m68k_op_sge_8_pi7, m68k_op_sge_8_pd, m68k_op_sge_8_pd7,
+	m68k_op_sge_8_di, m68k_op_sge_8_ix, m68k_op_sge_8_aw, m68k_op_sge_8_al,
+	m68k_op_trapge_16, m68k_op_trapge_32, m68k_op_trapge, m68k_op_slt_8_d,
+	m68k_op_dblt_16, m68k_op_slt_8_ai, m68k_op_slt_8_pi, m68k_op_slt_8_pi7,
+	m68k_op_slt_8_pd, m68k_op_slt_8_pd7, m68k_op_slt_8_di, m68k_op_slt_8_ix,
+	m68k_op_slt_8_aw, m68k_op_slt_8_al, m68k_op_traplt_16, m68k_op_traplt_32,
+	m68k_op_traplt, m68k_op_sgt_8_d, m68k_op_dbgt_16, m68k_op_sgt_8_ai,
+	m68k_op_sgt_8_pi, m68k_op_sgt_8_pi7, m68k_op_sgt_8_pd, m68k_op_sgt_8_pd7,
+	m68k_op_sgt_8_di, m68k_op_sgt_8_ix, m68k_op_sgt_8_aw, m68k_op_sgt_8_al,
+	m68k_op_trapgt_16, m68k_op_trapgt_32, m68k_op_trapgt, m68k_op_sle_8_d,
+	m68k_op_dble_16, m68k_op_sle_8_ai, m68k_op_sle_8_pi, m68k_op_sle_8_pi7,
+	m68k_op_sle_8_pd, m68k_op_sle_8_pd7, m68k_op_sle_8_di, m68k_op_sle_8_ix,
+	m68k_op_sle_8_aw, m68k_op_sle_8_al, m68k_op_traple_16, m68k_op_traple_32,
+	m68k_op_traple, m68k_op_bra_32, m68k_op_bsr_32, m68k_op_bhi_32,
+	m68k_op_bls_16, m68k_op_bls_32, m68k_op_bcc_16, m68k_op_bcc_32,
+	m68k_op_bcs_32, m68k_op_bne_32, m68k_op_beq_32, m68k_op_bvc_16,
+	m68k_op_bvc_8, m68k_op_bvc_32, m68k_op_bvs_16, m68k_op_bvs_8,
+	m68k_op_bvs_32, m68k_op_bpl_16, m68k_op_bpl_32, m68k_op_bmi_16,
+	m68k_op_bmi_32, m68k_op_bge_32, m68k_op_blt_32, m68k_op_bgt_16,
+	m68k_op_bgt_32, m68k_op_ble_16, m68k_op_ble_32, m68k_op_or_8_er_d,
+	m68k_op_or_8_er_ai, m68k_op_or_8_er_pi, m68k_op_or_8_er_pi7, m68k_op_or_8_er_pd,
+	m68k_op_or_8_er_pd7, m68k_op_or_8_er_di, m68k_op_or_8_er_ix, m68k_op_or_8_er_aw,
+	m68k_op_or_8_er_al, m68k_op_or_8_er_pcdi, m68k_op_or_8_er_pcix, m68k_op_or_8_er_i,
+	m68k_op_or_16_er_d, m68k_op_or_16_er_ai, m68k_op_or_16_er_pi, m68k_op_or_16_er_pd,
+	m68k_op_or_16_er_di, m68k_op_or_16_er_ix, m68k_op_or_16_er_aw, m68k_op_or_16_er_al,
+	m68k_op_or_16_er_pcdi, m68k_op_or_16_er_pcix, m68k_op_or_16_er_i, m68k_op_or_32_er_ai,
+	m68k_op_or_32_er_pi, m68k_op_or_32_er_pd, m68k_op_or_32_er_di, m68k_op_or_32_er_ix,
+	m68k_op_or_32_er_aw, m68k_op_or_32_er_al, m68k_op_or_32_er_pcdi, m68k_op_or_32_er_pcix,
+	m68k_op_or_32_er_i, m68k_op_divu_16_ai, m68k_op_divu_16_pi, m68k_op_divu_16_pd,
 	m68k_op_divu_16_di, m68k_op_divu_16_ix, m68k_op_divu_16_aw, m68k_op_divu_16_al,
 	m68k_op_divu_16_pcdi, m68k_op_divu_16_pcix, m68k_op_divu_16_i, m68k_op_sbcd_8_rr,
 	m68k_op_sbcd_8_mm, m68k_op_sbcd_8_mm_ay7, m68k_op_or_8_re_ai, m68k_op_or_8_re_pi,
-	m68k_op_or_8_re_pi7, m68k_op_or_8_re_pd, m68k_op_or_8_re_pd7, m68k_op_or_8_re_di,
-	m68k_op_or_8_re_ix, m68k_op_or_8_re_aw, m68k_op_or_8_re_al, m68k_op_pack_16_rr,
-	m68k_op_pack_16_mm, m68k_op_pack_16_mm_ay7, m68k_op_or_16_re_ai, m68k_op_or_16_re_pi,
-	m68k_op_or_16_re_pd, m68k_op_or_16_re_di, m68k_op_or_16_re_ix, m68k_op_or_16_re_aw,
-	m68k_op_or_16_re_al, m68k_op_unpk_16_rr, m68k_op_unpk_16_mm, m68k_op_unpk_16_mm_ay7,
-	m68k_op_or_32_re_ai, m68k_op_or_32_re_pi, m68k_op_or_32_re_pd, m68k_op_or_32_re_di,
-	m68k_op_or_32_re_ix, m68k_op_or_32_re_aw, m68k_op_or_32_re_al, m68k_op_divs_16_d,
-	m68k_op_divs_16_ai, m68k_op_divs_16_pi, m68k_op_divs_16_pd, m68k_op_divs_16_di,
-	m68k_op_divs_16_ix, m68k_op_divs_16_aw, m68k_op_divs_16_al, m68k_op_divs_16_pcdi,
-	m68k_op_divs_16_pcix, m68k_op_divs_16_i, m68k_op_sbcd_8_mm_ax7, m68k_op_sbcd_8_mm_axy7,
-	m68k_op_pack_16_mm_ax7, m68k_op_pack_16_mm_axy7, m68k_op_unpk_16_mm_ax7, m68k_op_unpk_16_mm_axy7,
-	m68k_op_sub_8_er_d, m68k_op_sub_8_er_ai, m68k_op_sub_8_er_pi, m68k_op_sub_8_er_pi7,
-	m68k_op_sub_8_er_pd, m68k_op_sub_8_er_pd7, m68k_op_sub_8_er_di, m68k_op_sub_8_er_ix,
-	m68k_op_sub_8_er_aw, m68k_op_sub_8_er_al, m68k_op_sub_8_er_pcdi, m68k_op_sub_8_er_pcix,
-	m68k_op_sub_8_er_i, m68k_op_sub_16_er_d, m68k_op_sub_16_er_a, m68k_op_sub_16_er_ai,
-	m68k_op_sub_16_er_pi, m68k_op_sub_16_er_pd, m68k_op_sub_16_er_di, m68k_op_sub_16_er_ix,
-	m68k_op_sub_16_er_aw, m68k_op_sub_16_er_al, m68k_op_sub_16_er_pcdi, m68k_op_sub_16_er_pcix,
-	m68k_op_sub_16_er_i, m68k_op_sub_32_er_d, m68k_op_sub_32_er_a, m68k_op_sub_32_er_ai,
-	m68k_op_sub_32_er_pi, m68k_op_sub_32_er_pd, m68k_op_sub_32_er_di, m68k_op_sub_32_er_ix,
+	m68k_op_or_8_re_pi7, m68k_op_or_8_re_pd, m68k_op_or_8_re_pd7, m68k_op_or_8_re_ix,
+	m68k_op_or_8_re_aw, m68k_op_or_8_re_al, m68k_op_pack_16_rr, m68k_op_pack_16_mm,
+	m68k_op_pack_16_mm_ay7, m68k_op_or_16_re_ai, m68k_op_or_16_re_pi, m68k_op_or_16_re_pd,
+	m68k_op_or_16_re_di, m68k_op_or_16_re_ix, m68k_op_or_16_re_aw, m68k_op_or_16_re_al,
+	m68k_op_unpk_16_rr, m68k_op_unpk_16_mm, m68k_op_unpk_16_mm_ay7, m68k_op_or_32_re_ai,
+	m68k_op_or_32_re_pi, m68k_op_or_32_re_pd, m68k_op_or_32_re_di, m68k_op_or_32_re_ix,
+	m68k_op_or_32_re_aw, m68k_op_or_32_re_al, m68k_op_divs_16_d, m68k_op_divs_16_ai,
+	m68k_op_divs_16_pi, m68k_op_divs_16_pd, m68k_op_divs_16_di, m68k_op_divs_16_ix,
+	m68k_op_divs_16_aw, m68k_op_divs_16_al, m68k_op_divs_16_pcdi, m68k_op_divs_16_pcix,
+	m68k_op_divs_16_i, m68k_op_sbcd_8_mm_ax7, m68k_op_sbcd_8_mm_axy7, m68k_op_pack_16_mm_ax7,
+	m68k_op_pack_16_mm_axy7, m68k_op_unpk_16_mm_ax7, m68k_op_unpk_16_mm_axy7, m68k_op_sub_8_er_ai,
+	m68k_op_sub_8_er_pi, m68k_op_sub_8_er_pi7, m68k_op_sub_8_er_pd, m68k_op_sub_8_er_pd7,
+	m68k_op_sub_8_er_ix, m68k_op_sub_8_er_aw, m68k_op_sub_8_er_al, m68k_op_sub_8_er_pcdi,
+	m68k_op_sub_8_er_pcix, m68k_op_sub_8_er_i, m68k_op_sub_16_er_a, m68k_op_sub_16_er_ai,
+	m68k_op_sub_16_er_pd, m68k_op_sub_16_er_ix, m68k_op_sub_16_er_aw, m68k_op_sub_16_er_al,
+	m68k_op_sub_16_er_pcdi, m68k_op_sub_16_er_pcix, m68k_op_sub_16_er_i, m68k_op_sub_32_er_a,
+	m68k_op_sub_32_er_ai, m68k_op_sub_32_er_pi, m68k_op_sub_32_er_pd, m68k_op_sub_32_er_ix,
 	m68k_op_sub_32_er_aw, m68k_op_sub_32_er_al, m68k_op_sub_32_er_pcdi, m68k_op_sub_32_er_pcix,
-	m68k_op_sub_32_er_i, m68k_op_suba_16_d, m68k_op_suba_16_a, m68k_op_suba_16_ai,
-	m68k_op_suba_16_pi, m68k_op_suba_16_pd, m68k_op_suba_16_di, m68k_op_suba_16_ix,
-	m68k_op_suba_16_aw, m68k_op_suba_16_al, m68k_op_suba_16_pcdi, m68k_op_suba_16_pcix,
-	m68k_op_suba_16_i, m68k_op_subx_8_rr, m68k_op_subx_8_mm, m68k_op_subx_8_mm_ay7,
-	m68k_op_sub_8_re_ai, m68k_op_sub_8_re_pi, m68k_op_sub_8_re_pi7, m68k_op_sub_8_re_pd,
-	m68k_op_sub_8_re_pd7, m68k_op_sub_8_re_di, m68k_op_sub_8_re_ix, m68k_op_sub_8_re_aw,
-	m68k_op_sub_8_re_al, m68k_op_subx_16_rr, m68k_op_subx_16_mm, m68k_op_sub_16_re_ai,
-	m68k_op_sub_16_re_pi, m68k_op_sub_16_re_pd, m68k_op_sub_16_re_di, m68k_op_sub_16_re_ix,
-	m68k_op_sub_16_re_aw, m68k_op_sub_16_re_al, m68k_op_subx_32_rr, m68k_op_subx_32_mm,
-	m68k_op_sub_32_re_ai, m68k_op_sub_32_re_pi, m68k_op_sub_32_re_pd, m68k_op_sub_32_re_di,
-	m68k_op_sub_32_re_ix, m68k_op_sub_32_re_aw, m68k_op_sub_32_re_al, m68k_op_suba_32_d,
-	m68k_op_suba_32_a, m68k_op_suba_32_ai, m68k_op_suba_32_pi, m68k_op_suba_32_pd,
-	m68k_op_suba_32_di, m68k_op_suba_32_ix, m68k_op_suba_32_aw, m68k_op_suba_32_al,
-	m68k_op_suba_32_pcdi, m68k_op_suba_32_pcix, m68k_op_suba_32_i, m68k_op_subx_8_mm_ax7,
-	m68k_op_subx_8_mm_axy7, m68k_op_1010, m68k_op_cmp_8_d, m68k_op_cmp_8_ai,
-	m68k_op_cmp_8_pi, m68k_op_cmp_8_pi7, m68k_op_cmp_8_pd, m68k_op_cmp_8_pd7,
-	m68k_op_cmp_8_di, m68k_op_cmp_8_ix, m68k_op_cmp_8_aw, m68k_op_cmp_8_al,
-	m68k_op_cmp_8_pcdi, m68k_op_cmp_8_pcix, m68k_op_cmp_8_i, m68k_op_cmp_16_d,
-	m68k_op_cmp_16_a, m68k_op_cmp_16_ai, m68k_op_cmp_16_pi, m68k_op_cmp_16_pd,
-	m68k_op_cmp_16_di, m68k_op_cmp_16_ix, m68k_op_cmp_16_aw, m68k_op_cmp_16_al,
-	m68k_op_cmp_16_pcdi, m68k_op_cmp_16_pcix, m68k_op_cmp_16_i, m68k_op_cmp_32_d,
-	m68k_op_cmp_32_a, m68k_op_cmp_32_ai, m68k_op_cmp_32_pi, m68k_op_cmp_32_pd,
-	m68k_op_cmp_32_di, m68k_op_cmp_32_ix, m68k_op_cmp_32_aw, m68k_op_cmp_32_al,
-	m68k_op_cmp_32_pcdi, m68k_op_cmp_32_pcix, m68k_op_cmp_32_i, m68k_op_cmpa_16_d,
-	m68k_op_cmpa_16_a, m68k_op_cmpa_16_ai, m68k_op_cmpa_16_pi, m68k_op_cmpa_16_pd,
-	m68k_op_cmpa_16_di, m68k_op_cmpa_16_ix, m68k_op_cmpa_16_aw, m68k_op_cmpa_16_al,
-	m68k_op_cmpa_16_pcdi, m68k_op_cmpa_16_pcix, m68k_op_cmpa_16_i, m68k_op_eor_8_d,
-	m68k_op_cmpm_8, m68k_op_cmpm_8_ay7, m68k_op_eor_8_ai, m68k_op_eor_8_pi,
+	m68k_op_suba_16_d, m68k_op_suba_16_a, m68k_op_suba_16_ai, m68k_op_suba_16_pi,
+	m68k_op_suba_16_pd, m68k_op_suba_16_di, m68k_op_suba_16_ix, m68k_op_suba_16_aw,
+	m68k_op_suba_16_al, m68k_op_suba_16_pcdi, m68k_op_suba_16_pcix, m68k_op_suba_16_i,
+	m68k_op_subx_8_rr, m68k_op_subx_8_mm, m68k_op_subx_8_mm_ay7, m68k_op_sub_8_re_ai,
+	m68k_op_sub_8_re_pi, m68k_op_sub_8_re_pi7, m68k_op_sub_8_re_pd, m68k_op_sub_8_re_pd7,
+	m68k_op_sub_8_re_di, m68k_op_sub_8_re_ix, m68k_op_sub_8_re_aw, m68k_op_sub_8_re_al,
+	m68k_op_subx_16_rr, m68k_op_subx_16_mm, m68k_op_sub_16_re_ai, m68k_op_sub_16_re_pi,
+	m68k_op_sub_16_re_pd, m68k_op_sub_16_re_ix, m68k_op_sub_16_re_aw, m68k_op_sub_16_re_al,
+	m68k_op_subx_32_rr, m68k_op_subx_32_mm, m68k_op_sub_32_re_ai, m68k_op_sub_32_re_pi,
+	m68k_op_sub_32_re_pd, m68k_op_sub_32_re_di, m68k_op_sub_32_re_ix, m68k_op_sub_32_re_aw,
+	m68k_op_sub_32_re_al, m68k_op_suba_32_d, m68k_op_suba_32_ai, m68k_op_suba_32_pi,
+	m68k_op_suba_32_pd, m68k_op_suba_32_ix, m68k_op_suba_32_aw, m68k_op_suba_32_al,
+	m68k_op_suba_32_pcdi, m68k_op_suba_32_pcix, m68k_op_subx_8_mm_ax7, m68k_op_subx_8_mm_axy7,
+	m68k_op_1010, m68k_op_cmp_8_ai, m68k_op_cmp_8_pi7, m68k_op_cmp_8_pd,
+	m68k_op_cmp_8_pd7, m68k_op_cmp_8_ix, m68k_op_cmp_8_aw, m68k_op_cmp_8_al,
+	m68k_op_cmp_8_pcdi, m68k_op_cmp_8_pcix, m68k_op_cmp_8_i, m68k_op_cmp_16_a,
+	m68k_op_cmp_16_ai, m68k_op_cmp_16_pd, m68k_op_cmp_16_ix, m68k_op_cmp_16_aw,
+	m68k_op_cmp_16_al, m68k_op_cmp_16_pcdi, m68k_op_cmp_16_pcix, m68k_op_cmp_16_i,
+	m68k_op_cmp_32_pd, m68k_op_cmp_32_ix, m68k_op_cmp_32_aw, m68k_op_cmp_32_al,
+	m68k_op_cmp_32_pcdi, m68k_op_cmp_32_pcix, m68k_op_cmpa_16_d, m68k_op_cmpa_16_a,
+	m68k_op_cmpa_16_ai, m68k_op_cmpa_16_pi, m68k_op_cmpa_16_pd, m68k_op_cmpa_16_di,
+	m68k_op_cmpa_16_ix, m68k_op_cmpa_16_aw, m68k_op_cmpa_16_al, m68k_op_cmpa_16_pcdi,
+	m68k_op_cmpa_16_pcix, m68k_op_cmpm_8_ay7, m68k_op_eor_8_ai, m68k_op_eor_8_pi,
 	m68k_op_eor_8_pi7, m68k_op_eor_8_pd, m68k_op_eor_8_pd7, m68k_op_eor_8_di,
 	m68k_op_eor_8_ix, m68k_op_eor_8_aw, m68k_op_eor_8_al, m68k_op_eor_16_d,
 	m68k_op_cmpm_16, m68k_op_eor_16_ai, m68k_op_eor_16_pi, m68k_op_eor_16_pd,
 	m68k_op_eor_16_di, m68k_op_eor_16_ix, m68k_op_eor_16_aw, m68k_op_eor_16_al,
-	m68k_op_eor_32_d, m68k_op_cmpm_32, m68k_op_eor_32_ai, m68k_op_eor_32_pi,
-	m68k_op_eor_32_pd, m68k_op_eor_32_di, m68k_op_eor_32_ix, m68k_op_eor_32_aw,
-	m68k_op_eor_32_al, m68k_op_cmpa_32_d, m68k_op_cmpa_32_a, m68k_op_cmpa_32_ai,
-	m68k_op_cmpa_32_pi, m68k_op_cmpa_32_pd, m68k_op_cmpa_32_di, m68k_op_cmpa_32_ix,
-	m68k_op_cmpa_32_aw, m68k_op_cmpa_32_al, m68k_op_cmpa_32_pcdi, m68k_op_cmpa_32_pcix,
-	m68k_op_cmpa_32_i, m68k_op_cmpm_8_ax7, m68k_op_cmpm_8_axy7, m68k_op_and_8_er_d,
-	m68k_op_and_8_er_ai, m68k_op_and_8_er_pi, m68k_op_and_8_er_pi7, m68k_op_and_8_er_pd,
-	m68k_op_and_8_er_pd7, m68k_op_and_8_er_di, m68k_op_and_8_er_ix, m68k_op_and_8_er_aw,
-	m68k_op_and_8_er_al, m68k_op_and_8_er_pcdi, m68k_op_and_8_er_pcix, m68k_op_and_8_er_i,
-	m68k_op_and_16_er_d, m68k_op_and_16_er_ai, m68k_op_and_16_er_pi, m68k_op_and_16_er_pd,
+	m68k_op_cmpm_32, m68k_op_eor_32_ai, m68k_op_eor_32_pi, m68k_op_eor_32_pd,
+	m68k_op_eor_32_di, m68k_op_eor_32_ix, m68k_op_eor_32_aw, m68k_op_eor_32_al,
+	m68k_op_cmpa_32_pi, m68k_op_cmpa_32_pd, m68k_op_cmpa_32_ix, m68k_op_cmpa_32_aw,
+	m68k_op_cmpa_32_al, m68k_op_cmpa_32_pcdi, m68k_op_cmpa_32_pcix, m68k_op_cmpm_8_ax7,
+	m68k_op_cmpm_8_axy7, m68k_op_and_8_er_d, m68k_op_and_8_er_ai, m68k_op_and_8_er_pi,
+	m68k_op_and_8_er_pi7, m68k_op_and_8_er_pd, m68k_op_and_8_er_pd7, m68k_op_and_8_er_ix,
+	m68k_op_and_8_er_aw, m68k_op_and_8_er_al, m68k_op_and_8_er_pcdi, m68k_op_and_8_er_pcix,
+	m68k_op_and_8_er_i, m68k_op_and_16_er_ai, m68k_op_and_16_er_pi, m68k_op_and_16_er_pd,
 	m68k_op_and_16_er_di, m68k_op_and_16_er_ix, m68k_op_and_16_er_aw, m68k_op_and_16_er_al,
-	m68k_op_and_16_er_pcdi, m68k_op_and_16_er_pcix, m68k_op_and_16_er_i, m68k_op_and_32_er_d,
-	m68k_op_and_32_er_ai, m68k_op_and_32_er_pi, m68k_op_and_32_er_pd, m68k_op_and_32_er_di,
-	m68k_op_and_32_er_ix, m68k_op_and_32_er_aw, m68k_op_and_32_er_al, m68k_op_and_32_er_pcdi,
-	m68k_op_and_32_er_pcix, m68k_op_and_32_er_i, m68k_op_mulu_16_d, m68k_op_mulu_16_ai,
-	m68k_op_mulu_16_pi, m68k_op_mulu_16_pd, m68k_op_mulu_16_di, m68k_op_mulu_16_ix,
-	m68k_op_mulu_16_aw, m68k_op_mulu_16_al, m68k_op_mulu_16_pcdi, m68k_op_mulu_16_pcix,
-	m68k_op_mulu_16_i, m68k_op_abcd_8_rr, m68k_op_abcd_8_mm, m68k_op_abcd_8_mm_ay7,
+	m68k_op_and_16_er_pcdi, m68k_op_and_16_er_pcix, m68k_op_and_16_er_i, m68k_op_and_32_er_ai,
+	m68k_op_and_32_er_pi, m68k_op_and_32_er_pd, m68k_op_and_32_er_ix, m68k_op_and_32_er_aw,
+	m68k_op_and_32_er_al, m68k_op_and_32_er_pcdi, m68k_op_and_32_er_pcix, m68k_op_and_32_er_i,
+	m68k_op_mulu_16_d, m68k_op_mulu_16_ai, m68k_op_mulu_16_pi, m68k_op_mulu_16_pd,
+	m68k_op_mulu_16_ix, m68k_op_mulu_16_aw, m68k_op_mulu_16_al, m68k_op_mulu_16_pcdi,
+	m68k_op_mulu_16_pcix, m68k_op_abcd_8_rr, m68k_op_abcd_8_mm, m68k_op_abcd_8_mm_ay7,
 	m68k_op_and_8_re_ai, m68k_op_and_8_re_pi, m68k_op_and_8_re_pi7, m68k_op_and_8_re_pd,
 	m68k_op_and_8_re_pd7, m68k_op_and_8_re_di, m68k_op_and_8_re_ix, m68k_op_and_8_re_aw,
 	m68k_op_and_8_re_al, m68k_op_exg_32_dd, m68k_op_exg_32_aa, m68k_op_and_16_re_ai,
@@ -36909,42 +36916,35 @@ void (*const m68ki_handlers[1967])(void) = {
 	m68k_op_muls_16_aw, m68k_op_muls_16_al, m68k_op_muls_16_pcdi, m68k_op_muls_16_pcix,
 	m68k_op_muls_16_i, m68k_op_abcd_8_mm_ax7, m68k_op_abcd_8_mm_axy7, m68k_op_add_8_er_d,
 	m68k_op_add_8_er_ai, m68k_op_add_8_er_pi, m68k_op_add_8_er_pi7, m68k_op_add_8_er_pd,
-	m68k_op_add_8_er_pd7, m68k_op_add_8_er_di, m68k_op_add_8_er_ix, m68k_op_add_8_er_aw,
-	m68k_op_add_8_er_al, m68k_op_add_8_er_pcdi, m68k_op_add_8_er_pcix, m68k_op_add_8_er_i,
-	m68k_op_add_16_er_d, m68k_op_add_16_er_a, m68k_op_add_16_er_ai, m68k_op_add_16_er_pi,
-	m68k_op_add_16_er_pd, m68k_op_add_16_er_di, m68k_op_add_16_er_ix, m68k_op_add_16_er_aw,
+	m68k_op_add_8_er_pd7, m68k_op_add_8_er_ix, m68k_op_add_8_er_aw, m68k_op_add_8_er_al,
+	m68k_op_add_8_er_pcdi, m68k_op_add_8_er_pcix, m68k_op_add_8_er_i, m68k_op_add_16_er_a,
+	m68k_op_add_16_er_ai, m68k_op_add_16_er_pd, m68k_op_add_16_er_ix, m68k_op_add_16_er_aw,
 	m68k_op_add_16_er_al, m68k_op_add_16_er_pcdi, m68k_op_add_16_er_pcix, m68k_op_add_16_er_i,
-	m68k_op_add_32_er_d, m68k_op_add_32_er_a, m68k_op_add_32_er_ai, m68k_op_add_32_er_pi,
-	m68k_op_add_32_er_pd, m68k_op_add_32_er_di, m68k_op_add_32_er_ix, m68k_op_add_32_er_aw,
-	m68k_op_add_32_er_al, m68k_op_add_32_er_pcdi, m68k_op_add_32_er_pcix, m68k_op_add_32_er_i,
-	m68k_op_adda_16_d, m68k_op_adda_16_a, m68k_op_adda_16_ai, m68k_op_adda_16_pi,
-	m68k_op_adda_16_pd, m68k_op_adda_16_di, m68k_op_adda_16_ix, m68k_op_adda_16_aw,
-	m68k_op_adda_16_al, m68k_op_adda_16_pcdi, m68k_op_adda_16_pcix, m68k_op_adda_16_i,
-	m68k_op_addx_8_rr, m68k_op_addx_8_mm, m68k_op_addx_8_mm_ay7, m68k_op_add_8_re_ai,
-	m68k_op_add_8_re_pi, m68k_op_add_8_re_pi7, m68k_op_add_8_re_pd, m68k_op_add_8_re_pd7,
-	m68k_op_add_8_re_di, m68k_op_add_8_re_ix, m68k_op_add_8_re_aw, m68k_op_add_8_re_al,
-	m68k_op_addx_16_rr, m68k_op_addx_16_mm, m68k_op_add_16_re_ai, m68k_op_add_16_re_pi,
-	m68k_op_add_16_re_pd, m68k_op_add_16_re_di, m68k_op_add_16_re_ix, m68k_op_add_16_re_aw,
-	m68k_op_add_16_re_al, m68k_op_addx_32_rr, m68k_op_addx_32_mm, m68k_op_add_32_re_ai,
-	m68k_op_add_32_re_pi, m68k_op_add_32_re_pd, m68k_op_add_32_re_di, m68k_op_add_32_re_ix,
-	m68k_op_add_32_re_aw, m68k_op_add_32_re_al, m68k_op_adda_32_d, m68k_op_adda_32_a,
-	m68k_op_adda_32_ai, m68k_op_adda_32_pi, m68k_op_adda_32_pd, m68k_op_adda_32_di,
-	m68k_op_adda_32_ix, m68k_op_adda_32_aw, m68k_op_adda_32_al, m68k_op_adda_32_pcdi,
-	m68k_op_adda_32_pcix, m68k_op_adda_32_i, m68k_op_addx_8_mm_ax7, m68k_op_addx_8_mm_axy7,
+	m68k_op_add_32_er_ai, m68k_op_add_32_er_pd, m68k_op_add_32_er_ix, m68k_op_add_32_er_aw,
+	m68k_op_add_32_er_al, m68k_op_add_32_er_pcdi, m68k_op_add_32_er_pcix, m68k_op_adda_16_a,
+	m68k_op_adda_16_ai, m68k_op_adda_16_pi, m68k_op_adda_16_pd, m68k_op_adda_16_di,
+	m68k_op_adda_16_ix, m68k_op_adda_16_aw, m68k_op_adda_16_al, m68k_op_adda_16_pcdi,
+	m68k_op_adda_16_pcix, m68k_op_adda_16_i, m68k_op_addx_8_rr, m68k_op_addx_8_mm,
+	m68k_op_addx_8_mm_ay7, m68k_op_add_8_re_ai, m68k_op_add_8_re_pi, m68k_op_add_8_re_pi7,
+	m68k_op_add_8_re_pd, m68k_op_add_8_re_pd7, m68k_op_add_8_re_di, m68k_op_add_8_re_ix,
+	m68k_op_add_8_re_aw, m68k_op_add_8_re_al, m68k_op_addx_16_rr, m68k_op_addx_16_mm,
+	m68k_op_add_16_re_ai, m68k_op_add_16_re_pi, m68k_op_add_16_re_pd, m68k_op_add_16_re_ix,
+	m68k_op_add_16_re_aw, m68k_op_add_16_re_al, m68k_op_addx_32_rr, m68k_op_addx_32_mm,
+	m68k_op_add_32_re_ai, m68k_op_add_32_re_pi, m68k_op_add_32_re_pd, m68k_op_add_32_re_ix,
+	m68k_op_add_32_re_aw, m68k_op_add_32_re_al, m68k_op_adda_32_ai, m68k_op_adda_32_pi,
+	m68k_op_adda_32_pd, m68k_op_adda_32_ix, m68k_op_adda_32_aw, m68k_op_adda_32_al,
+	m68k_op_adda_32_pcdi, m68k_op_adda_32_pcix, m68k_op_addx_8_mm_ax7, m68k_op_addx_8_mm_axy7,
 	m68k_op_asr_8_s, m68k_op_lsr_8_s, m68k_op_roxr_8_s, m68k_op_ror_8_s,
 	m68k_op_asr_8_r, m68k_op_lsr_8_r, m68k_op_roxr_8_r, m68k_op_ror_8_r,
-	m68k_op_asr_16_s, m68k_op_lsr_16_s, m68k_op_roxr_16_s, m68k_op_ror_16_s,
-	m68k_op_asr_16_r, m68k_op_lsr_16_r, m68k_op_roxr_16_r, m68k_op_ror_16_r,
-	m68k_op_asr_32_s, m68k_op_lsr_32_s, m68k_op_roxr_32_s, m68k_op_ror_32_s,
-	m68k_op_asr_32_r, m68k_op_lsr_32_r, m68k_op_roxr_32_r, m68k_op_ror_32_r,
-	m68k_op_asr_16_ai, m68k_op_asr_16_pi, m68k_op_asr_16_pd, m68k_op_asr_16_di,
-	m68k_op_asr_16_ix, m68k_op_asr_16_aw, m68k_op_asr_16_al, m68k_op_asl_8_s,
-	m68k_op_lsl_8_s, m68k_op_roxl_8_s, m68k_op_rol_8_s, m68k_op_asl_8_r,
-	m68k_op_lsl_8_r, m68k_op_roxl_8_r, m68k_op_rol_8_r, m68k_op_asl_16_s,
-	m68k_op_lsl_16_s, m68k_op_roxl_16_s, m68k_op_rol_16_s, m68k_op_asl_16_r,
-	m68k_op_lsl_16_r, m68k_op_roxl_16_r, m68k_op_rol_16_r, m68k_op_asl_32_s,
-	m68k_op_lsl_32_s, m68k_op_roxl_32_s, m68k_op_rol_32_s, m68k_op_asl_32_r,
-	m68k_op_lsl_32_r, m68k_op_roxl_32_r, m68k_op_rol_32_r, m68k_op_asl_16_ai,
+	m68k_op_roxr_16_s, m68k_op_asr_16_r, m68k_op_lsr_16_r, m68k_op_roxr_16_r,
+	m68k_op_ror_16_r, m68k_op_roxr_32_s, m68k_op_ror_32_s, m68k_op_roxr_32_r,
+	m68k_op_ror_32_r, m68k_op_asr_16_ai, m68k_op_asr_16_pi, m68k_op_asr_16_pd,
+	m68k_op_asr_16_di, m68k_op_asr_16_ix, m68k_op_asr_16_aw, m68k_op_asr_16_al,
+	m68k_op_asl_8_s, m68k_op_lsl_8_s, m68k_op_roxl_8_s, m68k_op_rol_8_s,
+	m68k_op_asl_8_r, m68k_op_lsl_8_r, m68k_op_roxl_8_r, m68k_op_rol_8_r,
+	m68k_op_asl_16_s, m68k_op_roxl_16_s, m68k_op_rol_16_s, m68k_op_asl_16_r,
+	m68k_op_lsl_16_r, m68k_op_roxl_16_r, m68k_op_rol_16_r, m68k_op_roxl_32_s,
+	m68k_op_asl_32_r, m68k_op_roxl_32_r, m68k_op_rol_32_r, m68k_op_asl_16_ai,
 	m68k_op_asl_16_pi, m68k_op_asl_16_pd, m68k_op_asl_16_di, m68k_op_asl_16_ix,
 	m68k_op_asl_16_aw, m68k_op_asl_16_al, m68k_op_lsr_16_ai, m68k_op_lsr_16_pi,
 	m68k_op_lsr_16_pd, m68k_op_lsr_16_di, m68k_op_lsr_16_ix, m68k_op_lsr_16_aw,
@@ -36976,3842 +36976,3907 @@ void (*const m68ki_handlers[1967])(void) = {
 	m68k_op_1111, m68k_op_pflush_32, m68k_op_move16_32,
 };
 
+unsigned char m68ki_handler_cycles[1967] = {
+	0,10,12,10,8,12,10,6,4,12,8,4,10,12,16,16,10,12,4,16,12,8,12,8,4,8,16,10,12,20,18,4,
+	4,12,18,12,8,12,14,28,4,16,6,16,8,8,8,18,8,12,12,8,12,6,4,12,8,16,8,18,10,8,18,10,
+	10,8,16,4,4,6,4,12,6,18,20,4,20,10,12,10,14,16,18,6,4,4,16,16,12,20,8,10,16,24,6,12,
+	10,24,8,4,6,24,14,8,10,16,16,10,16,12,12,12,14,6,6,10,16,12,10,24,12,12,4,12,8,24,4,8,
+	22,10,6,12,10,14,20,24,10,6,16,16,10,16,12,4,16,12,4,16,4,20,20,16,8,16,20,16,42,16,8,20,
+	16,30,4,4,8,20,14,46,16,8,8,10,16,24,16,6,16,4,12,8,8,18,16,12,6,6,8,16,14,4,12,6,
+	8,4,16,6,8,16,14,14,8,8,18,24,8,14,8,8,140,18,8,6,20,20,8,18,8,16,4,8,6,8,20,8,
+	4,12,12,16,8,20,8,20,4,8,6,16,14,18,12,16,20,16,8,14,18,20,8,12,12,12,16,8,16,16,16,18,
+	18,20,22,20,24,20,16,16,18,20,22,20,24,20,16,28,28,30,32,34,32,36,0,0,0,0,0,0,0,16,8,8,
+	8,10,10,12,14,12,16,12,14,8,8,24,12,12,12,14,14,16,18,16,20,10,16,12,12,12,14,14,16,18,16,20,
+	8,24,12,12,12,14,14,16,16,20,16,16,16,18,18,20,22,20,24,20,16,16,18,22,20,24,20,28,28,30,32,34,
+	32,36,0,0,0,0,0,0,0,16,16,16,18,18,20,22,20,24,8,16,16,18,20,22,20,24,16,28,28,30,32,34,
+	32,36,0,0,0,0,0,0,0,16,16,16,18,18,20,22,20,24,16,16,18,20,22,20,24,28,28,30,32,34,32,36,
+	0,0,0,0,0,0,0,0,12,12,12,14,14,18,16,16,18,12,16,16,16,18,18,20,22,20,24,14,16,16,16,18,
+	18,22,20,24,12,16,16,16,18,18,22,20,24,8,16,16,16,18,18,20,22,20,24,20,16,16,18,20,22,20,24,20,
+	28,28,30,32,34,32,36,0,0,0,0,0,0,0,0,0,12,12,12,14,14,18,16,20,0,0,12,14,18,16,20,0,
+	0,20,22,26,24,28,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,8,10,10,12,12,14,12,12,12,14,14,16,18,16,20,16,18,
+	12,12,12,14,14,16,18,16,20,16,18,8,12,12,12,14,14,16,18,16,20,16,18,12,16,16,18,18,22,20,24,20,
+	22,14,18,18,18,20,20,22,24,22,26,22,24,18,12,16,16,16,18,18,20,22,20,24,20,22,16,16,20,20,20,22,
+	22,24,26,24,28,24,26,20,8,12,12,12,14,14,16,18,16,20,16,18,12,8,12,12,12,14,14,16,18,16,20,16,
+	18,12,14,18,16,20,16,18,14,18,20,22,26,24,28,24,26,20,12,20,20,22,24,26,24,28,24,26,20,20,20,22,
+	26,24,28,24,26,20,24,24,26,28,32,28,30,18,18,26,26,28,30,32,30,34,30,32,26,16,16,24,24,26,28,30,
+	28,32,28,30,24,20,20,28,28,30,32,34,32,36,32,34,28,4,10,12,12,14,4,8,8,10,14,12,16,12,8,12,
+	12,14,16,18,16,20,16,18,12,8,12,12,14,16,18,16,20,16,18,12,8,8,12,12,14,16,18,16,20,16,18,12,
+	12,16,18,22,20,24,20,22,14,14,18,18,20,22,24,22,26,22,24,18,12,12,16,16,18,20,22,20,24,20,22,16,
+	16,20,20,22,24,26,24,28,24,26,4,12,12,12,14,14,16,18,16,20,4,12,12,14,16,18,16,20,6,20,20,22,
+	24,26,24,28,12,12,14,16,18,16,20,0,0,0,0,0,0,0,0,0,0,0,10,14,14,16,18,20,18,22,18,20,
+	14,4,8,12,12,12,12,14,14,18,16,20,12,12,14,18,16,20,26,24,28,0,0,0,0,0,0,0,0,4,12,12,
+	12,14,14,16,18,16,20,4,12,12,14,16,18,16,20,6,20,20,22,24,26,24,28,12,16,16,18,20,22,20,24,20,
+	22,16,12,12,12,14,14,18,16,20,4,12,12,14,16,18,16,20,20,20,22,24,26,24,28,12,16,16,18,20,22,20,
+	24,20,22,16,6,0,0,12,12,12,14,14,16,18,16,20,0,12,20,20,8,8,12,14,12,16,12,14,12,16,0,8,
+	10,10,14,12,16,0,0,0,0,8,10,14,12,16,0,0,0,0,12,14,18,16,20,0,0,0,4,18,18,18,20,20,
+	22,24,22,26,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,12,12,16,18,16,20,
+	16,18,18,16,20,16,18,4,16,12,4,4,0,4,0,4,20,0,0,22,18,22,10,14,10,10,12,12,12,14,14,18,
+	16,20,4,12,12,14,18,16,20,20,22,26,24,28,6,12,12,12,12,14,14,16,18,16,20,0,0,0,4,12,12,12,
+	14,14,18,16,20,8,12,12,14,18,16,20,20,22,26,24,28,4,12,12,12,14,14,16,18,16,20,0,0,0,4,12,
+	12,12,12,14,14,16,18,16,20,0,0,0,4,12,12,12,12,14,14,16,18,16,20,0,0,0,4,12,12,12,12,14,
+	14,16,18,16,20,0,0,0,4,12,12,12,12,14,14,16,18,16,20,0,0,0,4,12,12,12,12,14,14,16,18,16,
+	20,0,0,0,4,12,12,12,14,14,16,18,16,20,0,0,0,4,12,12,12,12,14,14,16,18,16,20,0,0,0,4,
+	12,12,12,12,14,14,16,18,16,20,0,0,0,4,12,12,12,12,14,14,16,18,16,20,0,0,0,4,12,12,12,12,
+	14,14,16,18,16,20,0,0,0,4,12,12,12,12,14,14,16,18,16,20,0,0,0,4,12,12,12,12,14,14,16,18,
+	16,20,0,0,0,4,12,12,12,12,14,14,16,18,16,20,0,0,0,4,12,12,12,12,14,14,16,18,16,20,0,0,
+	0,10,18,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,4,8,8,8,10,
+	10,12,14,12,16,12,14,10,4,8,8,10,12,14,12,16,12,14,10,14,14,16,18,20,18,22,18,20,16,144,144,146,
+	148,150,148,152,148,150,144,6,18,18,12,12,12,14,14,18,16,20,0,0,0,12,12,14,16,18,16,20,0,0,0,20,
+	20,22,24,26,24,28,158,162,162,164,166,168,166,170,166,168,162,18,18,0,0,0,0,8,8,8,10,10,14,12,16,12,
+	14,10,4,8,10,14,12,16,12,14,10,6,14,14,16,20,18,22,18,20,8,8,12,12,14,16,18,16,20,16,18,14,
+	4,18,18,12,12,12,14,14,16,18,16,20,4,18,12,12,14,18,16,20,8,30,20,20,22,24,26,24,28,6,14,14,
+	16,20,18,22,18,20,18,18,4,8,8,10,10,14,12,16,12,14,8,4,8,10,14,12,16,12,14,8,16,20,18,22,
+	18,20,6,6,10,10,12,14,16,14,18,14,16,12,12,12,12,14,14,16,18,16,20,4,12,12,12,14,16,18,16,20,
+	20,20,20,22,24,26,24,28,14,16,20,18,22,18,20,12,12,4,8,8,8,10,10,14,12,16,12,14,10,8,8,10,
+	12,14,12,16,12,14,10,14,14,16,20,18,22,18,20,16,38,42,42,44,48,46,50,46,48,6,18,18,12,12,12,14,
+	14,16,18,16,20,6,6,12,12,14,16,18,16,20,6,20,20,22,24,26,24,28,38,42,42,44,46,48,46,50,46,48,
+	42,18,18,4,8,8,8,10,10,14,12,16,12,14,10,4,8,10,14,12,16,12,14,10,14,16,20,18,22,18,20,8,
+	12,12,14,16,18,16,20,16,18,14,4,18,18,12,12,12,14,14,16,18,16,20,4,18,12,12,14,18,16,20,8,30,
+	20,20,22,26,24,28,14,14,16,20,18,22,18,20,18,18,6,6,6,6,6,6,6,6,6,6,6,6,6,8,8,8,
+	8,12,12,14,16,18,16,20,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,8,8,8,8,12,12,14,16,18,
+	16,20,12,12,14,16,18,16,20,12,12,14,16,18,16,20,12,12,14,16,18,16,20,12,12,14,16,18,16,20,12,12,
+	14,16,18,16,20,12,12,14,16,18,16,20,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,
+};
+
 const unsigned short m68ki_handler_index[0x10000] = {
-	1,1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,
-	2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,4,
-	5,5,5,5,5,5,5,6,7,7,7,7,7,7,7,7,
-	8,8,8,8,8,8,8,8,9,10,0,0,11,0,0,0,
-	12,12,12,12,12,12,12,12,0,0,0,0,0,0,0,0,
-	13,13,13,13,13,13,13,13,14,14,14,14,14,14,14,14,
-	15,15,15,15,15,15,15,15,16,16,16,16,16,16,16,16,
-	17,17,17,17,17,17,17,17,18,19,0,0,20,0,0,0,
-	21,21,21,21,21,21,21,21,0,0,0,0,0,0,0,0,
-	22,22,22,22,22,22,22,22,23,23,23,23,23,23,23,23,
-	24,24,24,24,24,24,24,24,25,25,25,25,25,25,25,25,
-	26,26,26,26,26,26,26,26,27,28,0,0,0,0,0,0,
+	251,251,251,251,251,251,251,251,0,0,0,0,0,0,0,0,
+	252,252,252,252,252,252,252,252,253,253,253,253,253,253,253,254,
+	255,255,255,255,255,255,255,256,257,257,257,257,257,257,257,257,
+	258,258,258,258,258,258,258,258,259,260,0,0,261,0,0,0,
+	158,158,158,158,158,158,158,158,0,0,0,0,0,0,0,0,
+	262,262,262,262,262,262,262,262,263,263,263,263,263,263,263,263,
+	264,264,264,264,264,264,264,264,265,265,265,265,265,265,265,265,
+	266,266,266,266,266,266,266,266,267,268,0,0,269,0,0,0,
+	270,270,270,270,270,270,270,270,0,0,0,0,0,0,0,0,
+	271,271,271,271,271,271,271,271,272,272,272,272,272,272,272,272,
+	273,273,273,273,273,273,273,273,274,274,274,274,274,274,274,274,
+	275,275,275,275,275,275,275,275,276,277,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	29,29,29,29,29,29,29,29,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,30,30,30,30,30,30,30,30,
-	31,31,31,31,31,31,31,31,32,33,34,35,0,0,0,0,
-	36,36,36,36,36,36,36,36,37,37,37,37,37,37,37,37,
-	38,38,38,38,38,38,38,38,39,39,39,39,39,39,39,40,
-	41,41,41,41,41,41,41,42,43,43,43,43,43,43,43,43,
-	44,44,44,44,44,44,44,44,45,46,47,48,49,0,0,0,
-	50,50,50,50,50,50,50,50,51,51,51,51,51,51,51,51,
-	52,52,52,52,52,52,52,52,53,53,53,53,53,53,53,54,
-	55,55,55,55,55,55,55,56,57,57,57,57,57,57,57,57,
-	58,58,58,58,58,58,58,58,59,60,0,0,0,0,0,0,
-	61,61,61,61,61,61,61,61,62,62,62,62,62,62,62,62,
-	63,63,63,63,63,63,63,63,64,64,64,64,64,64,64,65,
-	66,66,66,66,66,66,66,67,68,68,68,68,68,68,68,68,
-	69,69,69,69,69,69,69,69,70,71,0,0,0,0,0,0,
-	72,72,72,72,72,72,72,72,73,73,73,73,73,73,73,73,
-	74,74,74,74,74,74,74,74,75,75,75,75,75,75,75,76,
-	77,77,77,77,77,77,77,78,79,79,79,79,79,79,79,79,
-	80,80,80,80,80,80,80,80,81,82,0,0,0,0,0,0,
-	83,83,83,83,83,83,83,83,0,0,0,0,0,0,0,0,
-	84,84,84,84,84,84,84,84,85,85,85,85,85,85,85,86,
-	87,87,87,87,87,87,87,88,89,89,89,89,89,89,89,89,
-	90,90,90,90,90,90,90,90,91,92,0,0,93,0,0,0,
-	94,94,94,94,94,94,94,94,0,0,0,0,0,0,0,0,
-	95,95,95,95,95,95,95,95,96,96,96,96,96,96,96,96,
-	97,97,97,97,97,97,97,97,98,98,98,98,98,98,98,98,
-	99,99,99,99,99,99,99,99,100,101,0,0,102,0,0,0,
-	103,103,103,103,103,103,103,103,0,0,0,0,0,0,0,0,
-	104,104,104,104,104,104,104,104,105,105,105,105,105,105,105,105,
-	106,106,106,106,106,106,106,106,107,107,107,107,107,107,107,107,
-	108,108,108,108,108,108,108,108,109,110,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	111,111,111,111,111,111,111,111,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,112,112,112,112,112,112,112,112,
-	113,113,113,113,113,113,113,113,114,115,116,117,0,0,0,0,
-	36,36,36,36,36,36,36,36,37,37,37,37,37,37,37,37,
-	38,38,38,38,38,38,38,38,39,39,39,39,39,39,39,40,
-	41,41,41,41,41,41,41,42,43,43,43,43,43,43,43,43,
-	44,44,44,44,44,44,44,44,45,46,47,48,49,0,0,0,
-	50,50,50,50,50,50,50,50,51,51,51,51,51,51,51,51,
-	52,52,52,52,52,52,52,52,53,53,53,53,53,53,53,54,
-	55,55,55,55,55,55,55,56,57,57,57,57,57,57,57,57,
-	58,58,58,58,58,58,58,58,59,60,0,0,0,0,0,0,
-	61,61,61,61,61,61,61,61,62,62,62,62,62,62,62,62,
-	63,63,63,63,63,63,63,63,64,64,64,64,64,64,64,65,
-	66,66,66,66,66,66,66,67,68,68,68,68,68,68,68,68,
-	69,69,69,69,69,69,69,69,70,71,0,0,0,0,0,0,
-	72,72,72,72,72,72,72,72,73,73,73,73,73,73,73,73,
-	74,74,74,74,74,74,74,74,75,75,75,75,75,75,75,76,
-	77,77,77,77,77,77,77,78,79,79,79,79,79,79,79,79,
-	80,80,80,80,80,80,80,80,81,82,0,0,0,0,0,0,
-	118,118,118,118,118,118,118,118,0,0,0,0,0,0,0,0,
-	119,119,119,119,119,119,119,119,120,120,120,120,120,120,120,121,
-	122,122,122,122,122,122,122,123,124,124,124,124,124,124,124,124,
-	125,125,125,125,125,125,125,125,126,127,0,0,0,0,0,0,
-	128,128,128,128,128,128,128,128,0,0,0,0,0,0,0,0,
-	129,129,129,129,129,129,129,129,130,130,130,130,130,130,130,130,
-	131,131,131,131,131,131,131,131,132,132,132,132,132,132,132,132,
-	133,133,133,133,133,133,133,133,134,135,0,0,0,0,0,0,
-	136,136,136,136,136,136,136,136,0,0,0,0,0,0,0,0,
-	137,137,137,137,137,137,137,137,138,138,138,138,138,138,138,138,
-	139,139,139,139,139,139,139,139,140,140,140,140,140,140,140,140,
-	141,141,141,141,141,141,141,141,142,143,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	144,144,144,144,144,144,144,144,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,145,145,145,145,145,145,145,145,
-	146,146,146,146,146,146,146,146,147,148,149,150,0,0,0,0,
-	36,36,36,36,36,36,36,36,37,37,37,37,37,37,37,37,
-	38,38,38,38,38,38,38,38,39,39,39,39,39,39,39,40,
-	41,41,41,41,41,41,41,42,43,43,43,43,43,43,43,43,
-	44,44,44,44,44,44,44,44,45,46,47,48,49,0,0,0,
-	50,50,50,50,50,50,50,50,51,51,51,51,51,51,51,51,
-	52,52,52,52,52,52,52,52,53,53,53,53,53,53,53,54,
-	55,55,55,55,55,55,55,56,57,57,57,57,57,57,57,57,
-	58,58,58,58,58,58,58,58,59,60,0,0,0,0,0,0,
-	61,61,61,61,61,61,61,61,62,62,62,62,62,62,62,62,
-	63,63,63,63,63,63,63,63,64,64,64,64,64,64,64,65,
-	66,66,66,66,66,66,66,67,68,68,68,68,68,68,68,68,
-	69,69,69,69,69,69,69,69,70,71,0,0,0,0,0,0,
-	72,72,72,72,72,72,72,72,73,73,73,73,73,73,73,73,
-	74,74,74,74,74,74,74,74,75,75,75,75,75,75,75,76,
-	77,77,77,77,77,77,77,78,79,79,79,79,79,79,79,79,
-	80,80,80,80,80,80,80,80,81,82,0,0,0,0,0,0,
-	151,151,151,151,151,151,151,151,0,0,0,0,0,0,0,0,
-	152,152,152,152,152,152,152,152,153,153,153,153,153,153,153,154,
-	155,155,155,155,155,155,155,156,157,157,157,157,157,157,157,157,
-	158,158,158,158,158,158,158,158,159,160,0,0,0,0,0,0,
-	161,161,161,161,161,161,161,161,0,0,0,0,0,0,0,0,
-	162,162,162,162,162,162,162,162,163,163,163,163,163,163,163,163,
-	164,164,164,164,164,164,164,164,165,165,165,165,165,165,165,165,
-	166,166,166,166,166,166,166,166,167,168,0,0,0,0,0,0,
-	169,169,169,169,169,169,169,169,0,0,0,0,0,0,0,0,
-	170,170,170,170,170,170,170,170,171,171,171,171,171,171,171,171,
-	172,172,172,172,172,172,172,172,173,173,173,173,173,173,173,173,
-	174,174,174,174,174,174,174,174,175,176,0,0,0,0,0,0,
-	177,177,177,177,177,177,177,177,177,177,177,177,177,177,177,177,
-	178,178,178,178,178,178,178,178,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,179,179,179,179,179,179,179,179,
-	180,180,180,180,180,180,180,180,181,182,183,184,0,0,0,0,
-	36,36,36,36,36,36,36,36,37,37,37,37,37,37,37,37,
-	38,38,38,38,38,38,38,38,39,39,39,39,39,39,39,40,
-	41,41,41,41,41,41,41,42,43,43,43,43,43,43,43,43,
-	44,44,44,44,44,44,44,44,45,46,47,48,49,0,0,0,
-	50,50,50,50,50,50,50,50,51,51,51,51,51,51,51,51,
-	52,52,52,52,52,52,52,52,53,53,53,53,53,53,53,54,
-	55,55,55,55,55,55,55,56,57,57,57,57,57,57,57,57,
-	58,58,58,58,58,58,58,58,59,60,0,0,0,0,0,0,
-	61,61,61,61,61,61,61,61,62,62,62,62,62,62,62,62,
-	63,63,63,63,63,63,63,63,64,64,64,64,64,64,64,65,
-	66,66,66,66,66,66,66,67,68,68,68,68,68,68,68,68,
-	69,69,69,69,69,69,69,69,70,71,0,0,0,0,0,0,
-	72,72,72,72,72,72,72,72,73,73,73,73,73,73,73,73,
-	74,74,74,74,74,74,74,74,75,75,75,75,75,75,75,76,
-	77,77,77,77,77,77,77,78,79,79,79,79,79,79,79,79,
-	80,80,80,80,80,80,80,80,81,82,0,0,0,0,0,0,
-	185,185,185,185,185,185,185,185,0,0,0,0,0,0,0,0,
-	186,186,186,186,186,186,186,186,187,187,187,187,187,187,187,188,
-	189,189,189,189,189,189,189,190,191,191,191,191,191,191,191,191,
-	192,192,192,192,192,192,192,192,193,194,195,196,0,0,0,0,
-	197,197,197,197,197,197,197,197,0,0,0,0,0,0,0,0,
-	198,198,198,198,198,198,198,198,199,199,199,199,199,199,199,200,
-	201,201,201,201,201,201,201,202,203,203,203,203,203,203,203,203,
-	204,204,204,204,204,204,204,204,205,206,0,0,0,0,0,0,
-	207,207,207,207,207,207,207,207,0,0,0,0,0,0,0,0,
-	208,208,208,208,208,208,208,208,209,209,209,209,209,209,209,210,
-	211,211,211,211,211,211,211,212,213,213,213,213,213,213,213,213,
-	214,214,214,214,214,214,214,214,215,216,0,0,0,0,0,0,
-	217,217,217,217,217,217,217,217,0,0,0,0,0,0,0,0,
-	218,218,218,218,218,218,218,218,219,219,219,219,219,219,219,220,
-	221,221,221,221,221,221,221,222,223,223,223,223,223,223,223,223,
-	224,224,224,224,224,224,224,224,225,226,0,0,0,0,0,0,
-	36,36,36,36,36,36,36,36,37,37,37,37,37,37,37,37,
-	38,38,38,38,38,38,38,38,39,39,39,39,39,39,39,40,
-	41,41,41,41,41,41,41,42,43,43,43,43,43,43,43,43,
-	44,44,44,44,44,44,44,44,45,46,47,48,49,0,0,0,
-	50,50,50,50,50,50,50,50,51,51,51,51,51,51,51,51,
-	52,52,52,52,52,52,52,52,53,53,53,53,53,53,53,54,
-	55,55,55,55,55,55,55,56,57,57,57,57,57,57,57,57,
-	58,58,58,58,58,58,58,58,59,60,0,0,0,0,0,0,
-	61,61,61,61,61,61,61,61,62,62,62,62,62,62,62,62,
-	63,63,63,63,63,63,63,63,64,64,64,64,64,64,64,65,
-	66,66,66,66,66,66,66,67,68,68,68,68,68,68,68,68,
-	69,69,69,69,69,69,69,69,70,71,0,0,0,0,0,0,
-	72,72,72,72,72,72,72,72,73,73,73,73,73,73,73,73,
-	74,74,74,74,74,74,74,74,75,75,75,75,75,75,75,76,
-	77,77,77,77,77,77,77,78,79,79,79,79,79,79,79,79,
-	80,80,80,80,80,80,80,80,81,82,0,0,0,0,0,0,
-	227,227,227,227,227,227,227,227,0,0,0,0,0,0,0,0,
-	228,228,228,228,228,228,228,228,229,229,229,229,229,229,229,230,
-	231,231,231,231,231,231,231,232,233,233,233,233,233,233,233,233,
-	234,234,234,234,234,234,234,234,235,236,0,0,237,0,0,0,
-	238,238,238,238,238,238,238,238,0,0,0,0,0,0,0,0,
-	239,239,239,239,239,239,239,239,240,240,240,240,240,240,240,240,
-	241,241,241,241,241,241,241,241,242,242,242,242,242,242,242,242,
-	243,243,243,243,243,243,243,243,244,245,0,0,246,0,0,0,
-	247,247,247,247,247,247,247,247,0,0,0,0,0,0,0,0,
-	248,248,248,248,248,248,248,248,249,249,249,249,249,249,249,249,
-	250,250,250,250,250,250,250,250,251,251,251,251,251,251,251,251,
-	252,252,252,252,252,252,252,252,253,254,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	255,255,255,255,255,255,255,255,256,256,256,256,256,256,256,257,
-	258,258,258,258,258,258,258,259,260,260,260,260,260,260,260,260,
-	261,261,261,261,261,261,261,261,262,263,0,0,0,0,0,0,
-	36,36,36,36,36,36,36,36,37,37,37,37,37,37,37,37,
-	38,38,38,38,38,38,38,38,39,39,39,39,39,39,39,40,
-	41,41,41,41,41,41,41,42,43,43,43,43,43,43,43,43,
-	44,44,44,44,44,44,44,44,45,46,47,48,49,0,0,0,
-	50,50,50,50,50,50,50,50,51,51,51,51,51,51,51,51,
-	52,52,52,52,52,52,52,52,53,53,53,53,53,53,53,54,
-	55,55,55,55,55,55,55,56,57,57,57,57,57,57,57,57,
-	58,58,58,58,58,58,58,58,59,60,0,0,0,0,0,0,
-	61,61,61,61,61,61,61,61,62,62,62,62,62,62,62,62,
-	63,63,63,63,63,63,63,63,64,64,64,64,64,64,64,65,
-	66,66,66,66,66,66,66,67,68,68,68,68,68,68,68,68,
-	69,69,69,69,69,69,69,69,70,71,0,0,0,0,0,0,
-	72,72,72,72,72,72,72,72,73,73,73,73,73,73,73,73,
-	74,74,74,74,74,74,74,74,75,75,75,75,75,75,75,76,
-	77,77,77,77,77,77,77,78,79,79,79,79,79,79,79,79,
-	80,80,80,80,80,80,80,80,81,82,0,0,0,0,0,0,
-	264,264,264,264,264,264,264,264,0,0,0,0,0,0,0,0,
-	265,265,265,265,265,265,265,265,266,266,266,266,266,266,266,267,
-	268,268,268,268,268,268,268,269,270,270,270,270,270,270,270,270,
-	271,271,271,271,271,271,271,271,272,273,274,275,0,0,0,0,
-	276,276,276,276,276,276,276,276,0,0,0,0,0,0,0,0,
-	277,277,277,277,277,277,277,277,278,278,278,278,278,278,278,278,
-	279,279,279,279,279,279,279,279,280,280,280,280,280,280,280,280,
-	281,281,281,281,281,281,281,281,282,283,284,285,0,0,0,0,
-	286,286,286,286,286,286,286,286,0,0,0,0,0,0,0,0,
-	287,287,287,287,287,287,287,287,288,288,288,288,288,288,288,288,
-	289,289,289,289,289,289,289,289,290,290,290,290,290,290,290,290,
-	291,291,291,291,291,291,291,291,292,293,294,295,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	296,296,296,296,296,296,296,296,297,297,297,297,297,297,297,297,
+	278,278,278,278,278,278,278,278,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,279,279,279,279,279,279,279,279,
+	280,280,280,280,280,280,280,280,281,282,283,284,0,0,0,0,
+	72,72,72,72,72,72,72,72,285,285,285,285,285,285,285,285,
+	286,286,286,286,286,286,286,286,287,287,287,287,287,287,287,288,
+	289,289,289,289,289,289,289,290,291,291,291,291,291,291,291,291,
+	292,292,292,292,292,292,292,292,293,294,295,296,297,0,0,0,
 	298,298,298,298,298,298,298,298,299,299,299,299,299,299,299,299,
-	300,300,300,300,300,300,300,300,301,302,0,0,303,0,0,0,
-	36,36,36,36,36,36,36,36,37,37,37,37,37,37,37,37,
-	38,38,38,38,38,38,38,38,39,39,39,39,39,39,39,40,
-	41,41,41,41,41,41,41,42,43,43,43,43,43,43,43,43,
-	44,44,44,44,44,44,44,44,45,46,47,48,49,0,0,0,
-	50,50,50,50,50,50,50,50,51,51,51,51,51,51,51,51,
-	52,52,52,52,52,52,52,52,53,53,53,53,53,53,53,54,
-	55,55,55,55,55,55,55,56,57,57,57,57,57,57,57,57,
-	58,58,58,58,58,58,58,58,59,60,0,0,0,0,0,0,
-	61,61,61,61,61,61,61,61,62,62,62,62,62,62,62,62,
-	63,63,63,63,63,63,63,63,64,64,64,64,64,64,64,65,
-	66,66,66,66,66,66,66,67,68,68,68,68,68,68,68,68,
-	69,69,69,69,69,69,69,69,70,71,0,0,0,0,0,0,
-	72,72,72,72,72,72,72,72,73,73,73,73,73,73,73,73,
-	74,74,74,74,74,74,74,74,75,75,75,75,75,75,75,76,
-	77,77,77,77,77,77,77,78,79,79,79,79,79,79,79,79,
-	80,80,80,80,80,80,80,80,81,82,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	304,304,304,304,304,304,304,304,305,305,305,305,305,305,305,306,
-	307,307,307,307,307,307,307,308,309,309,309,309,309,309,309,309,
-	310,310,310,310,310,310,310,310,311,312,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	313,313,313,313,313,313,313,313,314,314,314,314,314,314,314,314,
-	315,315,315,315,315,315,315,315,316,316,316,316,316,316,316,316,
+	300,300,300,300,300,300,300,300,301,301,301,301,301,301,301,302,
+	303,303,303,303,303,303,303,304,305,305,305,305,305,305,305,305,
+	306,306,306,306,306,306,306,306,307,308,0,0,0,0,0,0,
+	309,309,309,309,309,309,309,309,310,310,310,310,310,310,310,310,
+	311,311,311,311,311,311,311,311,312,312,312,312,312,312,312,313,
+	314,314,314,314,314,314,314,315,316,316,316,316,316,316,316,316,
 	317,317,317,317,317,317,317,317,318,319,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	320,320,320,320,320,320,320,320,321,321,321,321,321,321,321,321,
-	322,322,322,322,322,322,322,322,323,323,323,323,323,323,323,323,
-	324,324,324,324,324,324,324,324,325,326,0,0,0,0,0,0,
+	322,322,322,322,322,322,322,322,323,323,323,323,323,323,323,324,
+	325,325,325,325,325,325,325,326,327,327,327,327,327,327,327,327,
+	47,47,47,47,47,47,47,47,328,329,0,0,0,0,0,0,
+	196,196,196,196,196,196,196,196,0,0,0,0,0,0,0,0,
+	330,330,330,330,330,330,330,330,331,331,331,331,331,331,331,332,
+	333,333,333,333,333,333,333,334,335,335,335,335,335,335,335,335,
+	336,336,336,336,336,336,336,336,337,338,0,0,339,0,0,0,
+	124,124,124,124,124,124,124,124,0,0,0,0,0,0,0,0,
+	340,340,340,340,340,340,340,340,341,341,341,341,341,341,341,341,
+	342,342,342,342,342,342,342,342,213,213,213,213,213,213,213,213,
+	343,343,343,343,343,343,343,343,344,345,0,0,346,0,0,0,
+	80,80,80,80,80,80,80,80,0,0,0,0,0,0,0,0,
+	347,347,347,347,347,347,347,347,348,348,348,348,348,348,348,348,
+	349,349,349,349,349,349,349,349,350,350,350,350,350,350,350,350,
+	351,351,351,351,351,351,351,351,352,353,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	327,327,327,327,327,327,327,327,328,328,328,328,328,328,328,328,
-	329,329,329,329,329,329,329,329,330,330,330,330,330,330,330,330,
-	331,331,331,331,331,331,331,331,332,333,0,0,334,0,0,0,
-	36,36,36,36,36,36,36,36,37,37,37,37,37,37,37,37,
-	38,38,38,38,38,38,38,38,39,39,39,39,39,39,39,40,
-	41,41,41,41,41,41,41,42,43,43,43,43,43,43,43,43,
-	44,44,44,44,44,44,44,44,45,46,47,48,49,0,0,0,
-	50,50,50,50,50,50,50,50,51,51,51,51,51,51,51,51,
-	52,52,52,52,52,52,52,52,53,53,53,53,53,53,53,54,
-	55,55,55,55,55,55,55,56,57,57,57,57,57,57,57,57,
-	58,58,58,58,58,58,58,58,59,60,0,0,0,0,0,0,
-	61,61,61,61,61,61,61,61,62,62,62,62,62,62,62,62,
-	63,63,63,63,63,63,63,63,64,64,64,64,64,64,64,65,
-	66,66,66,66,66,66,66,67,68,68,68,68,68,68,68,68,
-	69,69,69,69,69,69,69,69,70,71,0,0,0,0,0,0,
-	72,72,72,72,72,72,72,72,73,73,73,73,73,73,73,73,
-	74,74,74,74,74,74,74,74,75,75,75,75,75,75,75,76,
-	77,77,77,77,77,77,77,78,79,79,79,79,79,79,79,79,
-	80,80,80,80,80,80,80,80,81,82,0,0,0,0,0,0,
-	335,335,335,335,335,335,335,335,0,0,0,0,0,0,0,0,
-	336,336,336,336,336,336,336,336,337,337,337,337,337,337,337,338,
-	339,339,339,339,339,339,339,340,341,341,341,341,341,341,341,341,
-	342,342,342,342,342,342,342,342,343,344,345,346,347,0,0,0,
+	354,354,354,354,354,354,354,354,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,355,355,355,355,355,355,355,355,
+	356,356,356,356,356,356,356,356,357,358,359,360,0,0,0,0,
+	72,72,72,72,72,72,72,72,285,285,285,285,285,285,285,285,
+	286,286,286,286,286,286,286,286,287,287,287,287,287,287,287,288,
+	289,289,289,289,289,289,289,290,291,291,291,291,291,291,291,291,
+	292,292,292,292,292,292,292,292,293,294,295,296,297,0,0,0,
+	298,298,298,298,298,298,298,298,299,299,299,299,299,299,299,299,
+	300,300,300,300,300,300,300,300,301,301,301,301,301,301,301,302,
+	303,303,303,303,303,303,303,304,305,305,305,305,305,305,305,305,
+	306,306,306,306,306,306,306,306,307,308,0,0,0,0,0,0,
+	309,309,309,309,309,309,309,309,310,310,310,310,310,310,310,310,
+	311,311,311,311,311,311,311,311,312,312,312,312,312,312,312,313,
+	314,314,314,314,314,314,314,315,316,316,316,316,316,316,316,316,
+	317,317,317,317,317,317,317,317,318,319,0,0,0,0,0,0,
+	320,320,320,320,320,320,320,320,321,321,321,321,321,321,321,321,
+	322,322,322,322,322,322,322,322,323,323,323,323,323,323,323,324,
+	325,325,325,325,325,325,325,326,327,327,327,327,327,327,327,327,
+	47,47,47,47,47,47,47,47,328,329,0,0,0,0,0,0,
+	180,180,180,180,180,180,180,180,0,0,0,0,0,0,0,0,
+	361,361,361,361,361,361,361,361,362,362,362,362,362,362,362,363,
+	364,364,364,364,364,364,364,365,366,366,366,366,366,366,366,366,
+	367,367,367,367,367,367,367,367,368,369,0,0,0,0,0,0,
+	370,370,370,370,370,370,370,370,0,0,0,0,0,0,0,0,
+	371,371,371,371,371,371,371,371,372,372,372,372,372,372,372,372,
+	373,373,373,373,373,373,373,373,374,374,374,374,374,374,374,374,
+	375,375,375,375,375,375,375,375,376,377,0,0,0,0,0,0,
+	378,378,378,378,378,378,378,378,0,0,0,0,0,0,0,0,
+	379,379,379,379,379,379,379,379,380,380,380,380,380,380,380,380,
+	381,381,381,381,381,381,381,381,382,382,382,382,382,382,382,382,
+	383,383,383,383,383,383,383,383,384,385,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	348,348,348,348,348,348,348,348,0,0,0,0,0,0,0,0,
-	349,349,349,349,349,349,349,349,350,350,350,350,350,350,350,351,
-	352,352,352,352,352,352,352,353,354,354,354,354,354,354,354,354,
-	355,355,355,355,355,355,355,355,356,357,358,359,360,0,0,0,
-	361,361,361,361,361,361,361,361,0,0,0,0,0,0,0,0,
-	362,362,362,362,362,362,362,362,363,363,363,363,363,363,363,364,
-	365,365,365,365,365,365,365,366,367,367,367,367,367,367,367,367,
-	368,368,368,368,368,368,368,368,369,370,371,372,373,0,0,0,
-	374,374,374,374,374,374,374,374,0,0,0,0,0,0,0,0,
-	375,375,375,375,375,375,375,375,376,376,376,376,376,376,376,377,
-	378,378,378,378,378,378,378,379,380,380,380,380,380,380,380,380,
-	381,381,381,381,381,381,381,381,382,383,384,385,386,0,0,0,
-	387,387,387,387,387,387,387,387,0,0,0,0,0,0,0,0,
-	388,388,388,388,388,388,388,388,389,389,389,389,389,389,389,390,
-	391,391,391,391,391,391,391,392,393,393,393,393,393,393,393,393,
-	394,394,394,394,394,394,394,394,395,396,397,398,399,0,0,0,
-	400,400,400,400,400,400,400,400,0,0,0,0,0,0,0,0,
-	401,401,401,401,401,401,401,401,402,402,402,402,402,402,402,403,
-	404,404,404,404,404,404,404,405,406,406,406,406,406,406,406,406,
-	407,407,407,407,407,407,407,407,408,409,410,411,412,0,0,0,
-	413,413,413,413,413,413,413,413,0,0,0,0,0,0,0,0,
-	414,414,414,414,414,414,414,414,415,415,415,415,415,415,415,416,
-	417,417,417,417,417,417,417,418,419,419,419,419,419,419,419,419,
-	420,420,420,420,420,420,420,420,421,422,423,424,425,0,0,0,
-	335,335,335,335,335,335,335,335,0,0,0,0,0,0,0,0,
-	336,336,336,336,336,336,336,336,337,337,337,337,337,337,337,338,
-	339,339,339,339,339,339,339,340,341,341,341,341,341,341,341,341,
-	342,342,342,342,342,342,342,342,343,344,345,346,347,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	348,348,348,348,348,348,348,348,0,0,0,0,0,0,0,0,
-	349,349,349,349,349,349,349,349,350,350,350,350,350,350,350,351,
-	352,352,352,352,352,352,352,353,354,354,354,354,354,354,354,354,
-	355,355,355,355,355,355,355,355,356,357,358,359,360,0,0,0,
-	361,361,361,361,361,361,361,361,0,0,0,0,0,0,0,0,
-	362,362,362,362,362,362,362,362,363,363,363,363,363,363,363,364,
-	365,365,365,365,365,365,365,366,367,367,367,367,367,367,367,367,
-	368,368,368,368,368,368,368,368,369,370,371,372,373,0,0,0,
-	374,374,374,374,374,374,374,374,0,0,0,0,0,0,0,0,
-	375,375,375,375,375,375,375,375,376,376,376,376,376,376,376,377,
-	378,378,378,378,378,378,378,379,380,380,380,380,380,380,380,380,
-	381,381,381,381,381,381,381,381,382,383,384,385,386,0,0,0,
-	387,387,387,387,387,387,387,387,0,0,0,0,0,0,0,0,
-	388,388,388,388,388,388,388,388,389,389,389,389,389,389,389,390,
-	391,391,391,391,391,391,391,392,393,393,393,393,393,393,393,393,
-	394,394,394,394,394,394,394,394,395,396,397,398,399,0,0,0,
-	400,400,400,400,400,400,400,400,0,0,0,0,0,0,0,0,
-	401,401,401,401,401,401,401,401,402,402,402,402,402,402,402,403,
-	404,404,404,404,404,404,404,405,406,406,406,406,406,406,406,406,
-	407,407,407,407,407,407,407,407,408,409,410,411,412,0,0,0,
-	426,426,426,426,426,426,426,426,0,0,0,0,0,0,0,0,
-	427,427,427,427,427,427,427,427,428,428,428,428,428,428,428,429,
-	430,430,430,430,430,430,430,431,432,432,432,432,432,432,432,432,
-	433,433,433,433,433,433,433,433,434,435,436,437,438,0,0,0,
-	335,335,335,335,335,335,335,335,0,0,0,0,0,0,0,0,
-	336,336,336,336,336,336,336,336,337,337,337,337,337,337,337,338,
-	339,339,339,339,339,339,339,340,341,341,341,341,341,341,341,341,
-	342,342,342,342,342,342,342,342,343,344,345,346,347,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	348,348,348,348,348,348,348,348,0,0,0,0,0,0,0,0,
-	349,349,349,349,349,349,349,349,350,350,350,350,350,350,350,351,
-	352,352,352,352,352,352,352,353,354,354,354,354,354,354,354,354,
-	355,355,355,355,355,355,355,355,356,357,358,359,360,0,0,0,
-	361,361,361,361,361,361,361,361,0,0,0,0,0,0,0,0,
-	362,362,362,362,362,362,362,362,363,363,363,363,363,363,363,364,
-	365,365,365,365,365,365,365,366,367,367,367,367,367,367,367,367,
-	368,368,368,368,368,368,368,368,369,370,371,372,373,0,0,0,
-	374,374,374,374,374,374,374,374,0,0,0,0,0,0,0,0,
-	375,375,375,375,375,375,375,375,376,376,376,376,376,376,376,377,
-	378,378,378,378,378,378,378,379,380,380,380,380,380,380,380,380,
-	381,381,381,381,381,381,381,381,382,383,384,385,386,0,0,0,
-	387,387,387,387,387,387,387,387,0,0,0,0,0,0,0,0,
-	388,388,388,388,388,388,388,388,389,389,389,389,389,389,389,390,
-	391,391,391,391,391,391,391,392,393,393,393,393,393,393,393,393,
-	394,394,394,394,394,394,394,394,395,396,397,398,399,0,0,0,
-	400,400,400,400,400,400,400,400,0,0,0,0,0,0,0,0,
-	401,401,401,401,401,401,401,401,402,402,402,402,402,402,402,403,
-	404,404,404,404,404,404,404,405,406,406,406,406,406,406,406,406,
-	407,407,407,407,407,407,407,407,408,409,410,411,412,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	335,335,335,335,335,335,335,335,0,0,0,0,0,0,0,0,
-	336,336,336,336,336,336,336,336,337,337,337,337,337,337,337,338,
-	339,339,339,339,339,339,339,340,341,341,341,341,341,341,341,341,
-	342,342,342,342,342,342,342,342,343,344,345,346,347,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	348,348,348,348,348,348,348,348,0,0,0,0,0,0,0,0,
-	349,349,349,349,349,349,349,349,350,350,350,350,350,350,350,351,
-	352,352,352,352,352,352,352,353,354,354,354,354,354,354,354,354,
-	355,355,355,355,355,355,355,355,356,357,358,359,360,0,0,0,
-	361,361,361,361,361,361,361,361,0,0,0,0,0,0,0,0,
-	362,362,362,362,362,362,362,362,363,363,363,363,363,363,363,364,
-	365,365,365,365,365,365,365,366,367,367,367,367,367,367,367,367,
-	368,368,368,368,368,368,368,368,369,370,371,372,373,0,0,0,
-	374,374,374,374,374,374,374,374,0,0,0,0,0,0,0,0,
-	375,375,375,375,375,375,375,375,376,376,376,376,376,376,376,377,
-	378,378,378,378,378,378,378,379,380,380,380,380,380,380,380,380,
-	381,381,381,381,381,381,381,381,382,383,384,385,386,0,0,0,
-	387,387,387,387,387,387,387,387,0,0,0,0,0,0,0,0,
-	388,388,388,388,388,388,388,388,389,389,389,389,389,389,389,390,
-	391,391,391,391,391,391,391,392,393,393,393,393,393,393,393,393,
-	394,394,394,394,394,394,394,394,395,396,397,398,399,0,0,0,
-	400,400,400,400,400,400,400,400,0,0,0,0,0,0,0,0,
-	401,401,401,401,401,401,401,401,402,402,402,402,402,402,402,403,
-	404,404,404,404,404,404,404,405,406,406,406,406,406,406,406,406,
-	407,407,407,407,407,407,407,407,408,409,410,411,412,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	335,335,335,335,335,335,335,335,0,0,0,0,0,0,0,0,
-	336,336,336,336,336,336,336,336,337,337,337,337,337,337,337,338,
-	339,339,339,339,339,339,339,340,341,341,341,341,341,341,341,341,
-	342,342,342,342,342,342,342,342,343,344,345,346,347,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	348,348,348,348,348,348,348,348,0,0,0,0,0,0,0,0,
-	349,349,349,349,349,349,349,349,350,350,350,350,350,350,350,351,
-	352,352,352,352,352,352,352,353,354,354,354,354,354,354,354,354,
-	355,355,355,355,355,355,355,355,356,357,358,359,360,0,0,0,
-	361,361,361,361,361,361,361,361,0,0,0,0,0,0,0,0,
-	362,362,362,362,362,362,362,362,363,363,363,363,363,363,363,364,
-	365,365,365,365,365,365,365,366,367,367,367,367,367,367,367,367,
-	368,368,368,368,368,368,368,368,369,370,371,372,373,0,0,0,
-	374,374,374,374,374,374,374,374,0,0,0,0,0,0,0,0,
-	375,375,375,375,375,375,375,375,376,376,376,376,376,376,376,377,
-	378,378,378,378,378,378,378,379,380,380,380,380,380,380,380,380,
-	381,381,381,381,381,381,381,381,382,383,384,385,386,0,0,0,
-	387,387,387,387,387,387,387,387,0,0,0,0,0,0,0,0,
-	388,388,388,388,388,388,388,388,389,389,389,389,389,389,389,390,
-	391,391,391,391,391,391,391,392,393,393,393,393,393,393,393,393,
-	394,394,394,394,394,394,394,394,395,396,397,398,399,0,0,0,
-	400,400,400,400,400,400,400,400,0,0,0,0,0,0,0,0,
-	401,401,401,401,401,401,401,401,402,402,402,402,402,402,402,403,
-	404,404,404,404,404,404,404,405,406,406,406,406,406,406,406,406,
-	407,407,407,407,407,407,407,407,408,409,410,411,412,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	335,335,335,335,335,335,335,335,0,0,0,0,0,0,0,0,
-	336,336,336,336,336,336,336,336,337,337,337,337,337,337,337,338,
-	339,339,339,339,339,339,339,340,341,341,341,341,341,341,341,341,
-	342,342,342,342,342,342,342,342,343,344,345,346,347,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	348,348,348,348,348,348,348,348,0,0,0,0,0,0,0,0,
-	349,349,349,349,349,349,349,349,350,350,350,350,350,350,350,351,
-	352,352,352,352,352,352,352,353,354,354,354,354,354,354,354,354,
-	355,355,355,355,355,355,355,355,356,357,358,359,360,0,0,0,
-	361,361,361,361,361,361,361,361,0,0,0,0,0,0,0,0,
-	362,362,362,362,362,362,362,362,363,363,363,363,363,363,363,364,
-	365,365,365,365,365,365,365,366,367,367,367,367,367,367,367,367,
-	368,368,368,368,368,368,368,368,369,370,371,372,373,0,0,0,
-	374,374,374,374,374,374,374,374,0,0,0,0,0,0,0,0,
-	375,375,375,375,375,375,375,375,376,376,376,376,376,376,376,377,
-	378,378,378,378,378,378,378,379,380,380,380,380,380,380,380,380,
-	381,381,381,381,381,381,381,381,382,383,384,385,386,0,0,0,
-	387,387,387,387,387,387,387,387,0,0,0,0,0,0,0,0,
-	388,388,388,388,388,388,388,388,389,389,389,389,389,389,389,390,
-	391,391,391,391,391,391,391,392,393,393,393,393,393,393,393,393,
-	394,394,394,394,394,394,394,394,395,396,397,398,399,0,0,0,
-	400,400,400,400,400,400,400,400,0,0,0,0,0,0,0,0,
-	401,401,401,401,401,401,401,401,402,402,402,402,402,402,402,403,
-	404,404,404,404,404,404,404,405,406,406,406,406,406,406,406,406,
-	407,407,407,407,407,407,407,407,408,409,410,411,412,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	335,335,335,335,335,335,335,335,0,0,0,0,0,0,0,0,
-	336,336,336,336,336,336,336,336,337,337,337,337,337,337,337,338,
-	339,339,339,339,339,339,339,340,341,341,341,341,341,341,341,341,
-	342,342,342,342,342,342,342,342,343,344,345,346,347,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	348,348,348,348,348,348,348,348,0,0,0,0,0,0,0,0,
-	349,349,349,349,349,349,349,349,350,350,350,350,350,350,350,351,
-	352,352,352,352,352,352,352,353,354,354,354,354,354,354,354,354,
-	355,355,355,355,355,355,355,355,356,357,358,359,360,0,0,0,
-	361,361,361,361,361,361,361,361,0,0,0,0,0,0,0,0,
-	362,362,362,362,362,362,362,362,363,363,363,363,363,363,363,364,
-	365,365,365,365,365,365,365,366,367,367,367,367,367,367,367,367,
-	368,368,368,368,368,368,368,368,369,370,371,372,373,0,0,0,
-	374,374,374,374,374,374,374,374,0,0,0,0,0,0,0,0,
-	375,375,375,375,375,375,375,375,376,376,376,376,376,376,376,377,
-	378,378,378,378,378,378,378,379,380,380,380,380,380,380,380,380,
-	381,381,381,381,381,381,381,381,382,383,384,385,386,0,0,0,
-	387,387,387,387,387,387,387,387,0,0,0,0,0,0,0,0,
-	388,388,388,388,388,388,388,388,389,389,389,389,389,389,389,390,
-	391,391,391,391,391,391,391,392,393,393,393,393,393,393,393,393,
-	394,394,394,394,394,394,394,394,395,396,397,398,399,0,0,0,
-	400,400,400,400,400,400,400,400,0,0,0,0,0,0,0,0,
-	401,401,401,401,401,401,401,401,402,402,402,402,402,402,402,403,
-	404,404,404,404,404,404,404,405,406,406,406,406,406,406,406,406,
-	407,407,407,407,407,407,407,407,408,409,410,411,412,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	335,335,335,335,335,335,335,335,0,0,0,0,0,0,0,0,
-	336,336,336,336,336,336,336,336,337,337,337,337,337,337,337,338,
-	339,339,339,339,339,339,339,340,341,341,341,341,341,341,341,341,
-	342,342,342,342,342,342,342,342,343,344,345,346,347,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	348,348,348,348,348,348,348,348,0,0,0,0,0,0,0,0,
-	349,349,349,349,349,349,349,349,350,350,350,350,350,350,350,351,
-	352,352,352,352,352,352,352,353,354,354,354,354,354,354,354,354,
-	355,355,355,355,355,355,355,355,356,357,358,359,360,0,0,0,
-	439,439,439,439,439,439,439,439,0,0,0,0,0,0,0,0,
-	440,440,440,440,440,440,440,440,441,441,441,441,441,441,441,442,
-	443,443,443,443,443,443,443,444,445,445,445,445,445,445,445,445,
-	446,446,446,446,446,446,446,446,447,448,449,450,451,0,0,0,
+	386,386,386,386,386,386,386,386,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,387,387,387,387,387,387,387,387,
+	388,388,388,388,388,388,388,388,389,390,391,392,0,0,0,0,
+	72,72,72,72,72,72,72,72,285,285,285,285,285,285,285,285,
+	286,286,286,286,286,286,286,286,287,287,287,287,287,287,287,288,
+	289,289,289,289,289,289,289,290,291,291,291,291,291,291,291,291,
+	292,292,292,292,292,292,292,292,293,294,295,296,297,0,0,0,
+	298,298,298,298,298,298,298,298,299,299,299,299,299,299,299,299,
+	300,300,300,300,300,300,300,300,301,301,301,301,301,301,301,302,
+	303,303,303,303,303,303,303,304,305,305,305,305,305,305,305,305,
+	306,306,306,306,306,306,306,306,307,308,0,0,0,0,0,0,
+	309,309,309,309,309,309,309,309,310,310,310,310,310,310,310,310,
+	311,311,311,311,311,311,311,311,312,312,312,312,312,312,312,313,
+	314,314,314,314,314,314,314,315,316,316,316,316,316,316,316,316,
+	317,317,317,317,317,317,317,317,318,319,0,0,0,0,0,0,
+	320,320,320,320,320,320,320,320,321,321,321,321,321,321,321,321,
+	322,322,322,322,322,322,322,322,323,323,323,323,323,323,323,324,
+	325,325,325,325,325,325,325,326,327,327,327,327,327,327,327,327,
+	47,47,47,47,47,47,47,47,328,329,0,0,0,0,0,0,
+	216,216,216,216,216,216,216,216,0,0,0,0,0,0,0,0,
+	393,393,393,393,393,393,393,393,394,394,394,394,394,394,394,395,
+	396,396,396,396,396,396,396,397,398,398,398,398,398,398,398,398,
+	399,399,399,399,399,399,399,399,400,401,0,0,0,0,0,0,
+	200,200,200,200,200,200,200,200,0,0,0,0,0,0,0,0,
+	402,402,402,402,402,402,402,402,403,403,403,403,403,403,403,403,
+	404,404,404,404,404,404,404,404,405,405,405,405,405,405,405,405,
+	406,406,406,406,406,406,406,406,407,408,0,0,0,0,0,0,
+	153,153,153,153,153,153,153,153,0,0,0,0,0,0,0,0,
+	409,409,409,409,409,409,409,409,410,410,410,410,410,410,410,410,
+	411,411,411,411,411,411,411,411,412,412,412,412,412,412,412,412,
+	413,413,413,413,413,413,413,413,414,415,0,0,0,0,0,0,
+	416,416,416,416,416,416,416,416,416,416,416,416,416,416,416,416,
+	417,417,417,417,417,417,417,417,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,418,418,418,418,418,418,418,418,
+	419,419,419,419,419,419,419,419,420,421,422,423,0,0,0,0,
+	72,72,72,72,72,72,72,72,285,285,285,285,285,285,285,285,
+	286,286,286,286,286,286,286,286,287,287,287,287,287,287,287,288,
+	289,289,289,289,289,289,289,290,291,291,291,291,291,291,291,291,
+	292,292,292,292,292,292,292,292,293,294,295,296,297,0,0,0,
+	298,298,298,298,298,298,298,298,299,299,299,299,299,299,299,299,
+	300,300,300,300,300,300,300,300,301,301,301,301,301,301,301,302,
+	303,303,303,303,303,303,303,304,305,305,305,305,305,305,305,305,
+	306,306,306,306,306,306,306,306,307,308,0,0,0,0,0,0,
+	309,309,309,309,309,309,309,309,310,310,310,310,310,310,310,310,
+	311,311,311,311,311,311,311,311,312,312,312,312,312,312,312,313,
+	314,314,314,314,314,314,314,315,316,316,316,316,316,316,316,316,
+	317,317,317,317,317,317,317,317,318,319,0,0,0,0,0,0,
+	320,320,320,320,320,320,320,320,321,321,321,321,321,321,321,321,
+	322,322,322,322,322,322,322,322,323,323,323,323,323,323,323,324,
+	325,325,325,325,325,325,325,326,327,327,327,327,327,327,327,327,
+	47,47,47,47,47,47,47,47,328,329,0,0,0,0,0,0,
+	129,129,129,129,129,129,129,129,0,0,0,0,0,0,0,0,
+	424,424,424,424,424,424,424,424,425,425,425,425,425,425,425,426,
+	427,427,427,427,427,427,427,428,26,26,26,26,26,26,26,26,
+	429,429,429,429,429,429,429,429,430,29,431,432,0,0,0,0,
+	433,433,433,433,433,433,433,433,0,0,0,0,0,0,0,0,
+	434,434,434,434,434,434,434,434,435,435,435,435,435,435,435,436,
+	437,437,437,437,437,437,437,438,439,439,439,439,439,439,439,439,
+	440,440,440,440,440,440,440,440,441,442,0,0,0,0,0,0,
+	443,443,443,443,443,443,443,443,0,0,0,0,0,0,0,0,
+	444,444,444,444,444,444,444,444,445,445,445,445,445,445,445,446,
+	447,447,447,447,447,447,447,448,212,212,212,212,212,212,212,212,
+	449,449,449,449,449,449,449,449,450,451,0,0,0,0,0,0,
 	452,452,452,452,452,452,452,452,0,0,0,0,0,0,0,0,
 	453,453,453,453,453,453,453,453,454,454,454,454,454,454,454,455,
-	456,456,456,456,456,456,456,457,458,458,458,458,458,458,458,458,
-	459,459,459,459,459,459,459,459,460,461,462,463,464,0,0,0,
-	387,387,387,387,387,387,387,387,0,0,0,0,0,0,0,0,
-	388,388,388,388,388,388,388,388,389,389,389,389,389,389,389,390,
-	391,391,391,391,391,391,391,392,393,393,393,393,393,393,393,393,
-	394,394,394,394,394,394,394,394,395,396,397,398,399,0,0,0,
-	400,400,400,400,400,400,400,400,0,0,0,0,0,0,0,0,
-	401,401,401,401,401,401,401,401,402,402,402,402,402,402,402,403,
-	404,404,404,404,404,404,404,405,406,406,406,406,406,406,406,406,
-	407,407,407,407,407,407,407,407,408,409,410,411,412,0,0,0,
+	456,456,456,456,456,456,456,457,74,74,74,74,74,74,74,74,
+	458,458,458,458,458,458,458,458,459,460,0,0,0,0,0,0,
+	72,72,72,72,72,72,72,72,285,285,285,285,285,285,285,285,
+	286,286,286,286,286,286,286,286,287,287,287,287,287,287,287,288,
+	289,289,289,289,289,289,289,290,291,291,291,291,291,291,291,291,
+	292,292,292,292,292,292,292,292,293,294,295,296,297,0,0,0,
+	298,298,298,298,298,298,298,298,299,299,299,299,299,299,299,299,
+	300,300,300,300,300,300,300,300,301,301,301,301,301,301,301,302,
+	303,303,303,303,303,303,303,304,305,305,305,305,305,305,305,305,
+	306,306,306,306,306,306,306,306,307,308,0,0,0,0,0,0,
+	309,309,309,309,309,309,309,309,310,310,310,310,310,310,310,310,
+	311,311,311,311,311,311,311,311,312,312,312,312,312,312,312,313,
+	314,314,314,314,314,314,314,315,316,316,316,316,316,316,316,316,
+	317,317,317,317,317,317,317,317,318,319,0,0,0,0,0,0,
+	320,320,320,320,320,320,320,320,321,321,321,321,321,321,321,321,
+	322,322,322,322,322,322,322,322,323,323,323,323,323,323,323,324,
+	325,325,325,325,325,325,325,326,327,327,327,327,327,327,327,327,
+	47,47,47,47,47,47,47,47,328,329,0,0,0,0,0,0,
+	461,461,461,461,461,461,461,461,0,0,0,0,0,0,0,0,
+	462,462,462,462,462,462,462,462,463,463,463,463,463,463,463,464,
+	465,465,465,465,465,465,465,466,467,467,467,467,467,467,467,467,
+	468,468,468,468,468,468,468,468,469,470,0,0,471,0,0,0,
+	48,48,48,48,48,48,48,48,0,0,0,0,0,0,0,0,
+	472,472,472,472,472,472,472,472,473,473,473,473,473,473,473,473,
+	474,474,474,474,474,474,474,474,475,475,475,475,475,475,475,475,
+	476,476,476,476,476,476,476,476,477,478,0,0,479,0,0,0,
+	168,168,168,168,168,168,168,168,0,0,0,0,0,0,0,0,
+	480,480,480,480,480,480,480,480,481,481,481,481,481,481,481,481,
+	482,482,482,482,482,482,482,482,483,483,483,483,483,483,483,483,
+	484,484,484,484,484,484,484,484,485,486,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	487,487,487,487,487,487,487,487,488,488,488,488,488,488,488,489,
+	490,490,490,490,490,490,490,491,492,492,492,492,492,492,492,492,
+	493,493,493,493,493,493,493,493,494,495,0,0,0,0,0,0,
+	72,72,72,72,72,72,72,72,285,285,285,285,285,285,285,285,
+	286,286,286,286,286,286,286,286,287,287,287,287,287,287,287,288,
+	289,289,289,289,289,289,289,290,291,291,291,291,291,291,291,291,
+	292,292,292,292,292,292,292,292,293,294,295,296,297,0,0,0,
+	298,298,298,298,298,298,298,298,299,299,299,299,299,299,299,299,
+	300,300,300,300,300,300,300,300,301,301,301,301,301,301,301,302,
+	303,303,303,303,303,303,303,304,305,305,305,305,305,305,305,305,
+	306,306,306,306,306,306,306,306,307,308,0,0,0,0,0,0,
+	309,309,309,309,309,309,309,309,310,310,310,310,310,310,310,310,
+	311,311,311,311,311,311,311,311,312,312,312,312,312,312,312,313,
+	314,314,314,314,314,314,314,315,316,316,316,316,316,316,316,316,
+	317,317,317,317,317,317,317,317,318,319,0,0,0,0,0,0,
+	320,320,320,320,320,320,320,320,321,321,321,321,321,321,321,321,
+	322,322,322,322,322,322,322,322,323,323,323,323,323,323,323,324,
+	325,325,325,325,325,325,325,326,327,327,327,327,327,327,327,327,
+	47,47,47,47,47,47,47,47,328,329,0,0,0,0,0,0,
+	58,58,58,58,58,58,58,58,0,0,0,0,0,0,0,0,
+	496,496,496,496,496,496,496,496,497,497,497,497,497,497,497,498,
+	499,499,499,499,499,499,499,500,92,92,92,92,92,92,92,92,
+	501,501,501,501,501,501,501,501,502,503,504,505,0,0,0,0,
+	164,164,164,164,164,164,164,164,0,0,0,0,0,0,0,0,
+	13,13,13,13,13,13,13,13,506,506,506,506,506,506,506,506,
+	507,507,507,507,507,507,507,507,182,182,182,182,182,182,182,182,
+	508,508,508,508,508,508,508,508,509,510,511,512,0,0,0,0,
+	188,188,188,188,188,188,188,188,0,0,0,0,0,0,0,0,
+	245,245,245,245,245,245,245,245,513,513,513,513,513,513,513,513,
+	514,514,514,514,514,514,514,514,101,101,101,101,101,101,101,101,
+	515,515,515,515,515,515,515,515,516,517,518,519,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	520,520,520,520,520,520,520,520,521,521,521,521,521,521,521,521,
+	522,522,522,522,522,522,522,522,523,523,523,523,523,523,523,523,
+	524,524,524,524,524,524,524,524,525,526,0,0,527,0,0,0,
+	72,72,72,72,72,72,72,72,285,285,285,285,285,285,285,285,
+	286,286,286,286,286,286,286,286,287,287,287,287,287,287,287,288,
+	289,289,289,289,289,289,289,290,291,291,291,291,291,291,291,291,
+	292,292,292,292,292,292,292,292,293,294,295,296,297,0,0,0,
+	298,298,298,298,298,298,298,298,299,299,299,299,299,299,299,299,
+	300,300,300,300,300,300,300,300,301,301,301,301,301,301,301,302,
+	303,303,303,303,303,303,303,304,305,305,305,305,305,305,305,305,
+	306,306,306,306,306,306,306,306,307,308,0,0,0,0,0,0,
+	309,309,309,309,309,309,309,309,310,310,310,310,310,310,310,310,
+	311,311,311,311,311,311,311,311,312,312,312,312,312,312,312,313,
+	314,314,314,314,314,314,314,315,316,316,316,316,316,316,316,316,
+	317,317,317,317,317,317,317,317,318,319,0,0,0,0,0,0,
+	320,320,320,320,320,320,320,320,321,321,321,321,321,321,321,321,
+	322,322,322,322,322,322,322,322,323,323,323,323,323,323,323,324,
+	325,325,325,325,325,325,325,326,327,327,327,327,327,327,327,327,
+	47,47,47,47,47,47,47,47,328,329,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	528,528,528,528,528,528,528,528,529,529,529,529,529,529,529,530,
+	531,531,531,531,531,531,531,532,533,533,533,533,533,533,533,533,
+	534,534,534,534,534,534,534,534,535,536,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	465,465,465,465,465,465,465,465,466,466,466,466,466,466,466,466,
-	467,467,467,467,467,467,467,467,468,468,468,468,468,468,468,468,
-	469,469,469,469,469,469,469,469,470,470,470,470,470,470,470,470,
-	471,471,471,471,471,471,471,471,472,473,474,475,476,0,0,0,
-	477,477,477,477,477,477,477,477,478,478,478,478,478,478,478,478,
-	479,479,479,479,479,479,479,479,480,480,480,480,480,480,480,480,
-	481,481,481,481,481,481,481,481,482,482,482,482,482,482,482,482,
-	483,483,483,483,483,483,483,483,484,485,486,487,488,0,0,0,
-	489,489,489,489,489,489,489,489,490,490,490,490,490,490,490,490,
-	491,491,491,491,491,491,491,491,492,492,492,492,492,492,492,492,
-	493,493,493,493,493,493,493,493,494,494,494,494,494,494,494,494,
-	495,495,495,495,495,495,495,495,496,497,498,499,500,0,0,0,
-	501,501,501,501,501,501,501,501,502,502,502,502,502,502,502,502,
-	503,503,503,503,503,503,503,503,504,504,504,504,504,504,504,504,
-	505,505,505,505,505,505,505,505,506,506,506,506,506,506,506,506,
-	507,507,507,507,507,507,507,507,508,509,510,511,512,0,0,0,
-	513,513,513,513,513,513,513,513,514,514,514,514,514,514,514,514,
-	515,515,515,515,515,515,515,515,516,516,516,516,516,516,516,516,
-	517,517,517,517,517,517,517,517,518,518,518,518,518,518,518,518,
-	519,519,519,519,519,519,519,519,520,521,522,523,524,0,0,0,
-	525,525,525,525,525,525,525,525,526,526,526,526,526,526,526,526,
-	527,527,527,527,527,527,527,527,528,528,528,528,528,528,528,528,
-	529,529,529,529,529,529,529,529,530,530,530,530,530,530,530,530,
-	531,531,531,531,531,531,531,531,532,533,534,535,536,0,0,0,
 	537,537,537,537,537,537,537,537,538,538,538,538,538,538,538,538,
 	539,539,539,539,539,539,539,539,540,540,540,540,540,540,540,540,
-	541,541,541,541,541,541,541,541,542,542,542,542,542,542,542,542,
-	543,543,543,543,543,543,543,543,544,545,546,547,548,0,0,0,
-	549,549,549,549,549,549,549,549,550,550,550,550,550,550,550,550,
+	541,541,541,541,541,541,541,541,542,543,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	544,544,544,544,544,544,544,544,545,545,545,545,545,545,545,545,
+	546,546,546,546,546,546,546,546,547,547,547,547,547,547,547,547,
+	548,548,548,548,548,548,548,548,549,550,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	551,551,551,551,551,551,551,551,552,552,552,552,552,552,552,552,
 	553,553,553,553,553,553,553,553,554,554,554,554,554,554,554,554,
-	555,555,555,555,555,555,555,555,556,557,558,559,560,0,0,0,
-	465,465,465,465,465,465,465,465,466,466,466,466,466,466,466,466,
-	467,467,467,467,467,467,467,467,468,468,468,468,468,468,468,468,
-	469,469,469,469,469,469,469,469,470,470,470,470,470,470,470,470,
-	471,471,471,471,471,471,471,471,472,473,474,475,476,0,0,0,
-	477,477,477,477,477,477,477,477,478,478,478,478,478,478,478,478,
-	479,479,479,479,479,479,479,479,480,480,480,480,480,480,480,480,
-	481,481,481,481,481,481,481,481,482,482,482,482,482,482,482,482,
-	483,483,483,483,483,483,483,483,484,485,486,487,488,0,0,0,
-	489,489,489,489,489,489,489,489,490,490,490,490,490,490,490,490,
-	491,491,491,491,491,491,491,491,492,492,492,492,492,492,492,492,
-	493,493,493,493,493,493,493,493,494,494,494,494,494,494,494,494,
-	495,495,495,495,495,495,495,495,496,497,498,499,500,0,0,0,
-	501,501,501,501,501,501,501,501,502,502,502,502,502,502,502,502,
-	503,503,503,503,503,503,503,503,504,504,504,504,504,504,504,504,
-	505,505,505,505,505,505,505,505,506,506,506,506,506,506,506,506,
-	507,507,507,507,507,507,507,507,508,509,510,511,512,0,0,0,
-	513,513,513,513,513,513,513,513,514,514,514,514,514,514,514,514,
-	515,515,515,515,515,515,515,515,516,516,516,516,516,516,516,516,
-	517,517,517,517,517,517,517,517,518,518,518,518,518,518,518,518,
-	519,519,519,519,519,519,519,519,520,521,522,523,524,0,0,0,
-	525,525,525,525,525,525,525,525,526,526,526,526,526,526,526,526,
-	527,527,527,527,527,527,527,527,528,528,528,528,528,528,528,528,
-	529,529,529,529,529,529,529,529,530,530,530,530,530,530,530,530,
-	531,531,531,531,531,531,531,531,532,533,534,535,536,0,0,0,
-	537,537,537,537,537,537,537,537,538,538,538,538,538,538,538,538,
-	539,539,539,539,539,539,539,539,540,540,540,540,540,540,540,540,
-	541,541,541,541,541,541,541,541,542,542,542,542,542,542,542,542,
-	543,543,543,543,543,543,543,543,544,545,546,547,548,0,0,0,
-	561,561,561,561,561,561,561,561,562,562,562,562,562,562,562,562,
-	563,563,563,563,563,563,563,563,564,564,564,564,564,564,564,564,
-	565,565,565,565,565,565,565,565,566,566,566,566,566,566,566,566,
-	567,567,567,567,567,567,567,567,568,569,570,571,572,0,0,0,
-	465,465,465,465,465,465,465,465,466,466,466,466,466,466,466,466,
-	467,467,467,467,467,467,467,467,468,468,468,468,468,468,468,468,
-	469,469,469,469,469,469,469,469,470,470,470,470,470,470,470,470,
-	471,471,471,471,471,471,471,471,472,473,474,475,476,0,0,0,
-	477,477,477,477,477,477,477,477,478,478,478,478,478,478,478,478,
-	479,479,479,479,479,479,479,479,480,480,480,480,480,480,480,480,
-	481,481,481,481,481,481,481,481,482,482,482,482,482,482,482,482,
-	483,483,483,483,483,483,483,483,484,485,486,487,488,0,0,0,
-	489,489,489,489,489,489,489,489,490,490,490,490,490,490,490,490,
-	491,491,491,491,491,491,491,491,492,492,492,492,492,492,492,492,
-	493,493,493,493,493,493,493,493,494,494,494,494,494,494,494,494,
-	495,495,495,495,495,495,495,495,496,497,498,499,500,0,0,0,
-	501,501,501,501,501,501,501,501,502,502,502,502,502,502,502,502,
-	503,503,503,503,503,503,503,503,504,504,504,504,504,504,504,504,
-	505,505,505,505,505,505,505,505,506,506,506,506,506,506,506,506,
-	507,507,507,507,507,507,507,507,508,509,510,511,512,0,0,0,
-	513,513,513,513,513,513,513,513,514,514,514,514,514,514,514,514,
-	515,515,515,515,515,515,515,515,516,516,516,516,516,516,516,516,
-	517,517,517,517,517,517,517,517,518,518,518,518,518,518,518,518,
-	519,519,519,519,519,519,519,519,520,521,522,523,524,0,0,0,
-	525,525,525,525,525,525,525,525,526,526,526,526,526,526,526,526,
-	527,527,527,527,527,527,527,527,528,528,528,528,528,528,528,528,
-	529,529,529,529,529,529,529,529,530,530,530,530,530,530,530,530,
-	531,531,531,531,531,531,531,531,532,533,534,535,536,0,0,0,
-	537,537,537,537,537,537,537,537,538,538,538,538,538,538,538,538,
-	539,539,539,539,539,539,539,539,540,540,540,540,540,540,540,540,
-	541,541,541,541,541,541,541,541,542,542,542,542,542,542,542,542,
-	543,543,543,543,543,543,543,543,544,545,546,547,548,0,0,0,
+	555,555,555,555,555,555,555,555,556,557,0,0,558,0,0,0,
+	72,72,72,72,72,72,72,72,285,285,285,285,285,285,285,285,
+	286,286,286,286,286,286,286,286,287,287,287,287,287,287,287,288,
+	289,289,289,289,289,289,289,290,291,291,291,291,291,291,291,291,
+	292,292,292,292,292,292,292,292,293,294,295,296,297,0,0,0,
+	298,298,298,298,298,298,298,298,299,299,299,299,299,299,299,299,
+	300,300,300,300,300,300,300,300,301,301,301,301,301,301,301,302,
+	303,303,303,303,303,303,303,304,305,305,305,305,305,305,305,305,
+	306,306,306,306,306,306,306,306,307,308,0,0,0,0,0,0,
+	309,309,309,309,309,309,309,309,310,310,310,310,310,310,310,310,
+	311,311,311,311,311,311,311,311,312,312,312,312,312,312,312,313,
+	314,314,314,314,314,314,314,315,316,316,316,316,316,316,316,316,
+	317,317,317,317,317,317,317,317,318,319,0,0,0,0,0,0,
+	320,320,320,320,320,320,320,320,321,321,321,321,321,321,321,321,
+	322,322,322,322,322,322,322,322,323,323,323,323,323,323,323,324,
+	325,325,325,325,325,325,325,326,327,327,327,327,327,327,327,327,
+	47,47,47,47,47,47,47,47,328,329,0,0,0,0,0,0,
+	54,54,54,54,54,54,54,54,0,0,0,0,0,0,0,0,
+	21,21,21,21,21,21,21,21,98,98,98,98,98,98,98,559,
+	560,560,560,560,560,560,560,561,9,9,9,9,9,9,9,9,
+	166,166,166,166,166,166,166,166,562,157,563,564,170,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	465,465,465,465,465,465,465,465,466,466,466,466,466,466,466,466,
-	467,467,467,467,467,467,467,467,468,468,468,468,468,468,468,468,
-	469,469,469,469,469,469,469,469,470,470,470,470,470,470,470,470,
-	471,471,471,471,471,471,471,471,472,473,474,475,476,0,0,0,
-	477,477,477,477,477,477,477,477,478,478,478,478,478,478,478,478,
-	479,479,479,479,479,479,479,479,480,480,480,480,480,480,480,480,
-	481,481,481,481,481,481,481,481,482,482,482,482,482,482,482,482,
-	483,483,483,483,483,483,483,483,484,485,486,487,488,0,0,0,
-	489,489,489,489,489,489,489,489,490,490,490,490,490,490,490,490,
-	491,491,491,491,491,491,491,491,492,492,492,492,492,492,492,492,
-	493,493,493,493,493,493,493,493,494,494,494,494,494,494,494,494,
-	495,495,495,495,495,495,495,495,496,497,498,499,500,0,0,0,
-	501,501,501,501,501,501,501,501,502,502,502,502,502,502,502,502,
-	503,503,503,503,503,503,503,503,504,504,504,504,504,504,504,504,
-	505,505,505,505,505,505,505,505,506,506,506,506,506,506,506,506,
-	507,507,507,507,507,507,507,507,508,509,510,511,512,0,0,0,
-	513,513,513,513,513,513,513,513,514,514,514,514,514,514,514,514,
-	515,515,515,515,515,515,515,515,516,516,516,516,516,516,516,516,
-	517,517,517,517,517,517,517,517,518,518,518,518,518,518,518,518,
-	519,519,519,519,519,519,519,519,520,521,522,523,524,0,0,0,
-	525,525,525,525,525,525,525,525,526,526,526,526,526,526,526,526,
-	527,527,527,527,527,527,527,527,528,528,528,528,528,528,528,528,
-	529,529,529,529,529,529,529,529,530,530,530,530,530,530,530,530,
-	531,531,531,531,531,531,531,531,532,533,534,535,536,0,0,0,
-	537,537,537,537,537,537,537,537,538,538,538,538,538,538,538,538,
-	539,539,539,539,539,539,539,539,540,540,540,540,540,540,540,540,
-	541,541,541,541,541,541,541,541,542,542,542,542,542,542,542,542,
-	543,543,543,543,543,543,543,543,544,545,546,547,548,0,0,0,
+	127,127,127,127,127,127,127,127,0,0,0,0,0,0,0,0,
+	565,565,565,565,565,565,565,565,566,566,566,566,566,566,566,567,
+	568,568,568,568,568,568,568,569,570,570,570,570,570,570,570,570,
+	571,571,571,571,571,571,571,571,572,573,574,575,576,0,0,0,
+	179,179,179,179,179,179,179,179,0,0,0,0,0,0,0,0,
+	577,577,577,577,577,577,577,577,123,123,123,123,123,123,123,578,
+	579,579,579,579,579,579,579,580,581,581,581,581,581,581,581,581,
+	582,582,582,582,582,582,582,582,583,584,585,586,225,0,0,0,
+	587,587,587,587,587,587,587,587,0,0,0,0,0,0,0,0,
+	588,588,588,588,588,588,588,588,589,589,589,589,589,589,589,590,
+	591,591,591,591,591,591,591,592,593,593,593,593,593,593,593,593,
+	594,594,594,594,594,594,594,594,595,596,597,598,599,0,0,0,
+	50,50,50,50,50,50,50,50,0,0,0,0,0,0,0,0,
+	106,106,106,106,106,106,106,106,600,600,600,600,600,600,600,601,
+	602,602,602,602,602,602,602,603,76,76,76,76,76,76,76,76,
+	604,604,604,604,604,604,604,604,605,606,607,608,19,0,0,0,
+	609,609,609,609,609,609,609,609,0,0,0,0,0,0,0,0,
+	610,610,610,610,610,610,610,610,611,611,611,611,611,611,611,612,
+	613,613,613,613,613,613,613,614,615,615,615,615,615,615,615,615,
+	616,616,616,616,616,616,616,616,617,618,619,620,621,0,0,0,
+	622,622,622,622,622,622,622,622,0,0,0,0,0,0,0,0,
+	623,623,623,623,623,623,623,623,624,624,624,624,624,624,624,625,
+	626,626,626,626,626,626,626,627,628,628,628,628,628,628,628,628,
+	629,629,629,629,629,629,629,629,630,631,632,633,634,0,0,0,
+	54,54,54,54,54,54,54,54,0,0,0,0,0,0,0,0,
+	21,21,21,21,21,21,21,21,98,98,98,98,98,98,98,559,
+	560,560,560,560,560,560,560,561,9,9,9,9,9,9,9,9,
+	166,166,166,166,166,166,166,166,562,157,563,564,170,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	465,465,465,465,465,465,465,465,466,466,466,466,466,466,466,466,
-	467,467,467,467,467,467,467,467,468,468,468,468,468,468,468,468,
-	469,469,469,469,469,469,469,469,470,470,470,470,470,470,470,470,
-	471,471,471,471,471,471,471,471,472,473,474,475,476,0,0,0,
-	477,477,477,477,477,477,477,477,478,478,478,478,478,478,478,478,
-	479,479,479,479,479,479,479,479,480,480,480,480,480,480,480,480,
-	481,481,481,481,481,481,481,481,482,482,482,482,482,482,482,482,
-	483,483,483,483,483,483,483,483,484,485,486,487,488,0,0,0,
-	489,489,489,489,489,489,489,489,490,490,490,490,490,490,490,490,
-	491,491,491,491,491,491,491,491,492,492,492,492,492,492,492,492,
-	493,493,493,493,493,493,493,493,494,494,494,494,494,494,494,494,
-	495,495,495,495,495,495,495,495,496,497,498,499,500,0,0,0,
-	501,501,501,501,501,501,501,501,502,502,502,502,502,502,502,502,
-	503,503,503,503,503,503,503,503,504,504,504,504,504,504,504,504,
-	505,505,505,505,505,505,505,505,506,506,506,506,506,506,506,506,
-	507,507,507,507,507,507,507,507,508,509,510,511,512,0,0,0,
-	513,513,513,513,513,513,513,513,514,514,514,514,514,514,514,514,
-	515,515,515,515,515,515,515,515,516,516,516,516,516,516,516,516,
-	517,517,517,517,517,517,517,517,518,518,518,518,518,518,518,518,
-	519,519,519,519,519,519,519,519,520,521,522,523,524,0,0,0,
-	525,525,525,525,525,525,525,525,526,526,526,526,526,526,526,526,
-	527,527,527,527,527,527,527,527,528,528,528,528,528,528,528,528,
-	529,529,529,529,529,529,529,529,530,530,530,530,530,530,530,530,
-	531,531,531,531,531,531,531,531,532,533,534,535,536,0,0,0,
-	537,537,537,537,537,537,537,537,538,538,538,538,538,538,538,538,
-	539,539,539,539,539,539,539,539,540,540,540,540,540,540,540,540,
-	541,541,541,541,541,541,541,541,542,542,542,542,542,542,542,542,
-	543,543,543,543,543,543,543,543,544,545,546,547,548,0,0,0,
+	127,127,127,127,127,127,127,127,0,0,0,0,0,0,0,0,
+	565,565,565,565,565,565,565,565,566,566,566,566,566,566,566,567,
+	568,568,568,568,568,568,568,569,570,570,570,570,570,570,570,570,
+	571,571,571,571,571,571,571,571,572,573,574,575,576,0,0,0,
+	179,179,179,179,179,179,179,179,0,0,0,0,0,0,0,0,
+	577,577,577,577,577,577,577,577,123,123,123,123,123,123,123,578,
+	579,579,579,579,579,579,579,580,581,581,581,581,581,581,581,581,
+	582,582,582,582,582,582,582,582,583,584,585,586,225,0,0,0,
+	587,587,587,587,587,587,587,587,0,0,0,0,0,0,0,0,
+	588,588,588,588,588,588,588,588,589,589,589,589,589,589,589,590,
+	591,591,591,591,591,591,591,592,593,593,593,593,593,593,593,593,
+	594,594,594,594,594,594,594,594,595,596,597,598,599,0,0,0,
+	50,50,50,50,50,50,50,50,0,0,0,0,0,0,0,0,
+	106,106,106,106,106,106,106,106,600,600,600,600,600,600,600,601,
+	602,602,602,602,602,602,602,603,76,76,76,76,76,76,76,76,
+	604,604,604,604,604,604,604,604,605,606,607,608,19,0,0,0,
+	609,609,609,609,609,609,609,609,0,0,0,0,0,0,0,0,
+	610,610,610,610,610,610,610,610,611,611,611,611,611,611,611,612,
+	613,613,613,613,613,613,613,614,615,615,615,615,615,615,615,615,
+	616,616,616,616,616,616,616,616,617,618,619,620,621,0,0,0,
+	635,635,635,635,635,635,635,635,0,0,0,0,0,0,0,0,
+	636,636,636,636,636,636,636,636,637,637,637,637,637,637,637,638,
+	639,639,639,639,639,639,639,640,641,641,641,641,641,641,641,641,
+	642,642,642,642,642,642,642,642,643,644,645,646,647,0,0,0,
+	54,54,54,54,54,54,54,54,0,0,0,0,0,0,0,0,
+	21,21,21,21,21,21,21,21,98,98,98,98,98,98,98,559,
+	560,560,560,560,560,560,560,561,9,9,9,9,9,9,9,9,
+	166,166,166,166,166,166,166,166,562,157,563,564,170,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	465,465,465,465,465,465,465,465,466,466,466,466,466,466,466,466,
-	467,467,467,467,467,467,467,467,468,468,468,468,468,468,468,468,
-	469,469,469,469,469,469,469,469,470,470,470,470,470,470,470,470,
-	471,471,471,471,471,471,471,471,472,473,474,475,476,0,0,0,
-	477,477,477,477,477,477,477,477,478,478,478,478,478,478,478,478,
-	479,479,479,479,479,479,479,479,480,480,480,480,480,480,480,480,
-	481,481,481,481,481,481,481,481,482,482,482,482,482,482,482,482,
-	483,483,483,483,483,483,483,483,484,485,486,487,488,0,0,0,
-	489,489,489,489,489,489,489,489,490,490,490,490,490,490,490,490,
-	491,491,491,491,491,491,491,491,492,492,492,492,492,492,492,492,
-	493,493,493,493,493,493,493,493,494,494,494,494,494,494,494,494,
-	495,495,495,495,495,495,495,495,496,497,498,499,500,0,0,0,
-	501,501,501,501,501,501,501,501,502,502,502,502,502,502,502,502,
-	503,503,503,503,503,503,503,503,504,504,504,504,504,504,504,504,
-	505,505,505,505,505,505,505,505,506,506,506,506,506,506,506,506,
-	507,507,507,507,507,507,507,507,508,509,510,511,512,0,0,0,
-	513,513,513,513,513,513,513,513,514,514,514,514,514,514,514,514,
-	515,515,515,515,515,515,515,515,516,516,516,516,516,516,516,516,
-	517,517,517,517,517,517,517,517,518,518,518,518,518,518,518,518,
-	519,519,519,519,519,519,519,519,520,521,522,523,524,0,0,0,
-	525,525,525,525,525,525,525,525,526,526,526,526,526,526,526,526,
-	527,527,527,527,527,527,527,527,528,528,528,528,528,528,528,528,
-	529,529,529,529,529,529,529,529,530,530,530,530,530,530,530,530,
-	531,531,531,531,531,531,531,531,532,533,534,535,536,0,0,0,
-	537,537,537,537,537,537,537,537,538,538,538,538,538,538,538,538,
-	539,539,539,539,539,539,539,539,540,540,540,540,540,540,540,540,
-	541,541,541,541,541,541,541,541,542,542,542,542,542,542,542,542,
-	543,543,543,543,543,543,543,543,544,545,546,547,548,0,0,0,
+	127,127,127,127,127,127,127,127,0,0,0,0,0,0,0,0,
+	565,565,565,565,565,565,565,565,566,566,566,566,566,566,566,567,
+	568,568,568,568,568,568,568,569,570,570,570,570,570,570,570,570,
+	571,571,571,571,571,571,571,571,572,573,574,575,576,0,0,0,
+	179,179,179,179,179,179,179,179,0,0,0,0,0,0,0,0,
+	577,577,577,577,577,577,577,577,123,123,123,123,123,123,123,578,
+	579,579,579,579,579,579,579,580,581,581,581,581,581,581,581,581,
+	582,582,582,582,582,582,582,582,583,584,585,586,225,0,0,0,
+	587,587,587,587,587,587,587,587,0,0,0,0,0,0,0,0,
+	588,588,588,588,588,588,588,588,589,589,589,589,589,589,589,590,
+	591,591,591,591,591,591,591,592,593,593,593,593,593,593,593,593,
+	594,594,594,594,594,594,594,594,595,596,597,598,599,0,0,0,
+	50,50,50,50,50,50,50,50,0,0,0,0,0,0,0,0,
+	106,106,106,106,106,106,106,106,600,600,600,600,600,600,600,601,
+	602,602,602,602,602,602,602,603,76,76,76,76,76,76,76,76,
+	604,604,604,604,604,604,604,604,605,606,607,608,19,0,0,0,
+	609,609,609,609,609,609,609,609,0,0,0,0,0,0,0,0,
+	610,610,610,610,610,610,610,610,611,611,611,611,611,611,611,612,
+	613,613,613,613,613,613,613,614,615,615,615,615,615,615,615,615,
+	616,616,616,616,616,616,616,616,617,618,619,620,621,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	465,465,465,465,465,465,465,465,466,466,466,466,466,466,466,466,
-	467,467,467,467,467,467,467,467,468,468,468,468,468,468,468,468,
-	469,469,469,469,469,469,469,469,470,470,470,470,470,470,470,470,
-	471,471,471,471,471,471,471,471,472,473,474,475,476,0,0,0,
-	477,477,477,477,477,477,477,477,478,478,478,478,478,478,478,478,
-	479,479,479,479,479,479,479,479,480,480,480,480,480,480,480,480,
-	481,481,481,481,481,481,481,481,482,482,482,482,482,482,482,482,
-	483,483,483,483,483,483,483,483,484,485,486,487,488,0,0,0,
-	489,489,489,489,489,489,489,489,490,490,490,490,490,490,490,490,
-	491,491,491,491,491,491,491,491,492,492,492,492,492,492,492,492,
-	493,493,493,493,493,493,493,493,494,494,494,494,494,494,494,494,
-	495,495,495,495,495,495,495,495,496,497,498,499,500,0,0,0,
-	501,501,501,501,501,501,501,501,502,502,502,502,502,502,502,502,
-	503,503,503,503,503,503,503,503,504,504,504,504,504,504,504,504,
-	505,505,505,505,505,505,505,505,506,506,506,506,506,506,506,506,
-	507,507,507,507,507,507,507,507,508,509,510,511,512,0,0,0,
-	513,513,513,513,513,513,513,513,514,514,514,514,514,514,514,514,
-	515,515,515,515,515,515,515,515,516,516,516,516,516,516,516,516,
-	517,517,517,517,517,517,517,517,518,518,518,518,518,518,518,518,
-	519,519,519,519,519,519,519,519,520,521,522,523,524,0,0,0,
-	525,525,525,525,525,525,525,525,526,526,526,526,526,526,526,526,
-	527,527,527,527,527,527,527,527,528,528,528,528,528,528,528,528,
-	529,529,529,529,529,529,529,529,530,530,530,530,530,530,530,530,
-	531,531,531,531,531,531,531,531,532,533,534,535,536,0,0,0,
-	537,537,537,537,537,537,537,537,538,538,538,538,538,538,538,538,
-	539,539,539,539,539,539,539,539,540,540,540,540,540,540,540,540,
-	541,541,541,541,541,541,541,541,542,542,542,542,542,542,542,542,
-	543,543,543,543,543,543,543,543,544,545,546,547,548,0,0,0,
+	54,54,54,54,54,54,54,54,0,0,0,0,0,0,0,0,
+	21,21,21,21,21,21,21,21,98,98,98,98,98,98,98,559,
+	560,560,560,560,560,560,560,561,9,9,9,9,9,9,9,9,
+	166,166,166,166,166,166,166,166,562,157,563,564,170,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	465,465,465,465,465,465,465,465,466,466,466,466,466,466,466,466,
-	467,467,467,467,467,467,467,467,468,468,468,468,468,468,468,468,
-	469,469,469,469,469,469,469,469,470,470,470,470,470,470,470,470,
-	471,471,471,471,471,471,471,471,472,473,474,475,476,0,0,0,
-	477,477,477,477,477,477,477,477,478,478,478,478,478,478,478,478,
-	479,479,479,479,479,479,479,479,480,480,480,480,480,480,480,480,
-	481,481,481,481,481,481,481,481,482,482,482,482,482,482,482,482,
-	483,483,483,483,483,483,483,483,484,485,486,487,488,0,0,0,
-	489,489,489,489,489,489,489,489,490,490,490,490,490,490,490,490,
-	491,491,491,491,491,491,491,491,492,492,492,492,492,492,492,492,
-	493,493,493,493,493,493,493,493,494,494,494,494,494,494,494,494,
-	495,495,495,495,495,495,495,495,496,497,498,499,500,0,0,0,
-	501,501,501,501,501,501,501,501,502,502,502,502,502,502,502,502,
-	503,503,503,503,503,503,503,503,504,504,504,504,504,504,504,504,
-	505,505,505,505,505,505,505,505,506,506,506,506,506,506,506,506,
-	507,507,507,507,507,507,507,507,508,509,510,511,512,0,0,0,
-	513,513,513,513,513,513,513,513,514,514,514,514,514,514,514,514,
-	515,515,515,515,515,515,515,515,516,516,516,516,516,516,516,516,
-	517,517,517,517,517,517,517,517,518,518,518,518,518,518,518,518,
-	519,519,519,519,519,519,519,519,520,521,522,523,524,0,0,0,
-	525,525,525,525,525,525,525,525,526,526,526,526,526,526,526,526,
-	527,527,527,527,527,527,527,527,528,528,528,528,528,528,528,528,
-	529,529,529,529,529,529,529,529,530,530,530,530,530,530,530,530,
-	531,531,531,531,531,531,531,531,532,533,534,535,536,0,0,0,
-	537,537,537,537,537,537,537,537,538,538,538,538,538,538,538,538,
-	539,539,539,539,539,539,539,539,540,540,540,540,540,540,540,540,
-	541,541,541,541,541,541,541,541,542,542,542,542,542,542,542,542,
-	543,543,543,543,543,543,543,543,544,545,546,547,548,0,0,0,
+	127,127,127,127,127,127,127,127,0,0,0,0,0,0,0,0,
+	565,565,565,565,565,565,565,565,566,566,566,566,566,566,566,567,
+	568,568,568,568,568,568,568,569,570,570,570,570,570,570,570,570,
+	571,571,571,571,571,571,571,571,572,573,574,575,576,0,0,0,
+	179,179,179,179,179,179,179,179,0,0,0,0,0,0,0,0,
+	577,577,577,577,577,577,577,577,123,123,123,123,123,123,123,578,
+	579,579,579,579,579,579,579,580,581,581,581,581,581,581,581,581,
+	582,582,582,582,582,582,582,582,583,584,585,586,225,0,0,0,
+	587,587,587,587,587,587,587,587,0,0,0,0,0,0,0,0,
+	588,588,588,588,588,588,588,588,589,589,589,589,589,589,589,590,
+	591,591,591,591,591,591,591,592,593,593,593,593,593,593,593,593,
+	594,594,594,594,594,594,594,594,595,596,597,598,599,0,0,0,
+	50,50,50,50,50,50,50,50,0,0,0,0,0,0,0,0,
+	106,106,106,106,106,106,106,106,600,600,600,600,600,600,600,601,
+	602,602,602,602,602,602,602,603,76,76,76,76,76,76,76,76,
+	604,604,604,604,604,604,604,604,605,606,607,608,19,0,0,0,
+	609,609,609,609,609,609,609,609,0,0,0,0,0,0,0,0,
+	610,610,610,610,610,610,610,610,611,611,611,611,611,611,611,612,
+	613,613,613,613,613,613,613,614,615,615,615,615,615,615,615,615,
+	616,616,616,616,616,616,616,616,617,618,619,620,621,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	573,573,573,573,573,573,573,573,574,574,574,574,574,574,574,574,
-	575,575,575,575,575,575,575,575,576,576,576,576,576,576,576,576,
-	577,577,577,577,577,577,577,577,578,578,578,578,578,578,578,578,
-	579,579,579,579,579,579,579,579,580,581,582,583,584,0,0,0,
-	585,585,585,585,585,585,585,585,586,586,586,586,586,586,586,586,
-	587,587,587,587,587,587,587,587,588,588,588,588,588,588,588,588,
-	589,589,589,589,589,589,589,589,590,590,590,590,590,590,590,590,
-	591,591,591,591,591,591,591,591,592,593,594,595,596,0,0,0,
-	597,597,597,597,597,597,597,597,598,598,598,598,598,598,598,598,
-	599,599,599,599,599,599,599,599,600,600,600,600,600,600,600,600,
-	601,601,601,601,601,601,601,601,602,602,602,602,602,602,602,602,
-	603,603,603,603,603,603,603,603,604,605,606,607,608,0,0,0,
-	609,609,609,609,609,609,609,609,610,610,610,610,610,610,610,610,
-	611,611,611,611,611,611,611,611,612,612,612,612,612,612,612,612,
-	613,613,613,613,613,613,613,613,614,614,614,614,614,614,614,614,
-	615,615,615,615,615,615,615,615,616,617,618,619,620,0,0,0,
-	621,621,621,621,621,621,621,621,622,622,622,622,622,622,622,622,
-	623,623,623,623,623,623,623,623,624,624,624,624,624,624,624,624,
-	625,625,625,625,625,625,625,625,626,626,626,626,626,626,626,626,
-	627,627,627,627,627,627,627,627,628,629,630,631,632,0,0,0,
-	633,633,633,633,633,633,633,633,634,634,634,634,634,634,634,634,
-	635,635,635,635,635,635,635,635,636,636,636,636,636,636,636,636,
-	637,637,637,637,637,637,637,637,638,638,638,638,638,638,638,638,
-	639,639,639,639,639,639,639,639,640,641,642,643,644,0,0,0,
-	645,645,645,645,645,645,645,645,646,646,646,646,646,646,646,646,
-	647,647,647,647,647,647,647,647,648,648,648,648,648,648,648,648,
-	649,649,649,649,649,649,649,649,650,650,650,650,650,650,650,650,
-	651,651,651,651,651,651,651,651,652,653,654,655,656,0,0,0,
-	657,657,657,657,657,657,657,657,658,658,658,658,658,658,658,658,
-	659,659,659,659,659,659,659,659,660,660,660,660,660,660,660,660,
-	661,661,661,661,661,661,661,661,662,662,662,662,662,662,662,662,
-	663,663,663,663,663,663,663,663,664,665,666,667,668,0,0,0,
-	573,573,573,573,573,573,573,573,574,574,574,574,574,574,574,574,
-	575,575,575,575,575,575,575,575,576,576,576,576,576,576,576,576,
-	577,577,577,577,577,577,577,577,578,578,578,578,578,578,578,578,
-	579,579,579,579,579,579,579,579,580,581,582,583,584,0,0,0,
-	585,585,585,585,585,585,585,585,586,586,586,586,586,586,586,586,
-	587,587,587,587,587,587,587,587,588,588,588,588,588,588,588,588,
-	589,589,589,589,589,589,589,589,590,590,590,590,590,590,590,590,
-	591,591,591,591,591,591,591,591,592,593,594,595,596,0,0,0,
-	597,597,597,597,597,597,597,597,598,598,598,598,598,598,598,598,
-	599,599,599,599,599,599,599,599,600,600,600,600,600,600,600,600,
-	601,601,601,601,601,601,601,601,602,602,602,602,602,602,602,602,
-	603,603,603,603,603,603,603,603,604,605,606,607,608,0,0,0,
-	609,609,609,609,609,609,609,609,610,610,610,610,610,610,610,610,
-	611,611,611,611,611,611,611,611,612,612,612,612,612,612,612,612,
-	613,613,613,613,613,613,613,613,614,614,614,614,614,614,614,614,
-	615,615,615,615,615,615,615,615,616,617,618,619,620,0,0,0,
-	621,621,621,621,621,621,621,621,622,622,622,622,622,622,622,622,
-	623,623,623,623,623,623,623,623,624,624,624,624,624,624,624,624,
-	625,625,625,625,625,625,625,625,626,626,626,626,626,626,626,626,
-	627,627,627,627,627,627,627,627,628,629,630,631,632,0,0,0,
-	633,633,633,633,633,633,633,633,634,634,634,634,634,634,634,634,
-	635,635,635,635,635,635,635,635,636,636,636,636,636,636,636,636,
-	637,637,637,637,637,637,637,637,638,638,638,638,638,638,638,638,
-	639,639,639,639,639,639,639,639,640,641,642,643,644,0,0,0,
-	645,645,645,645,645,645,645,645,646,646,646,646,646,646,646,646,
-	647,647,647,647,647,647,647,647,648,648,648,648,648,648,648,648,
-	649,649,649,649,649,649,649,649,650,650,650,650,650,650,650,650,
-	651,651,651,651,651,651,651,651,652,653,654,655,656,0,0,0,
-	669,669,669,669,669,669,669,669,670,670,670,670,670,670,670,670,
-	671,671,671,671,671,671,671,671,672,672,672,672,672,672,672,672,
-	673,673,673,673,673,673,673,673,674,674,674,674,674,674,674,674,
-	675,675,675,675,675,675,675,675,676,677,678,679,680,0,0,0,
-	573,573,573,573,573,573,573,573,574,574,574,574,574,574,574,574,
-	575,575,575,575,575,575,575,575,576,576,576,576,576,576,576,576,
-	577,577,577,577,577,577,577,577,578,578,578,578,578,578,578,578,
-	579,579,579,579,579,579,579,579,580,581,582,583,584,0,0,0,
-	585,585,585,585,585,585,585,585,586,586,586,586,586,586,586,586,
-	587,587,587,587,587,587,587,587,588,588,588,588,588,588,588,588,
-	589,589,589,589,589,589,589,589,590,590,590,590,590,590,590,590,
-	591,591,591,591,591,591,591,591,592,593,594,595,596,0,0,0,
-	597,597,597,597,597,597,597,597,598,598,598,598,598,598,598,598,
-	599,599,599,599,599,599,599,599,600,600,600,600,600,600,600,600,
-	601,601,601,601,601,601,601,601,602,602,602,602,602,602,602,602,
-	603,603,603,603,603,603,603,603,604,605,606,607,608,0,0,0,
-	609,609,609,609,609,609,609,609,610,610,610,610,610,610,610,610,
-	611,611,611,611,611,611,611,611,612,612,612,612,612,612,612,612,
-	613,613,613,613,613,613,613,613,614,614,614,614,614,614,614,614,
-	615,615,615,615,615,615,615,615,616,617,618,619,620,0,0,0,
-	621,621,621,621,621,621,621,621,622,622,622,622,622,622,622,622,
-	623,623,623,623,623,623,623,623,624,624,624,624,624,624,624,624,
-	625,625,625,625,625,625,625,625,626,626,626,626,626,626,626,626,
-	627,627,627,627,627,627,627,627,628,629,630,631,632,0,0,0,
-	633,633,633,633,633,633,633,633,634,634,634,634,634,634,634,634,
-	635,635,635,635,635,635,635,635,636,636,636,636,636,636,636,636,
-	637,637,637,637,637,637,637,637,638,638,638,638,638,638,638,638,
-	639,639,639,639,639,639,639,639,640,641,642,643,644,0,0,0,
-	645,645,645,645,645,645,645,645,646,646,646,646,646,646,646,646,
-	647,647,647,647,647,647,647,647,648,648,648,648,648,648,648,648,
-	649,649,649,649,649,649,649,649,650,650,650,650,650,650,650,650,
-	651,651,651,651,651,651,651,651,652,653,654,655,656,0,0,0,
+	54,54,54,54,54,54,54,54,0,0,0,0,0,0,0,0,
+	21,21,21,21,21,21,21,21,98,98,98,98,98,98,98,559,
+	560,560,560,560,560,560,560,561,9,9,9,9,9,9,9,9,
+	166,166,166,166,166,166,166,166,562,157,563,564,170,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	573,573,573,573,573,573,573,573,574,574,574,574,574,574,574,574,
-	575,575,575,575,575,575,575,575,576,576,576,576,576,576,576,576,
-	577,577,577,577,577,577,577,577,578,578,578,578,578,578,578,578,
-	579,579,579,579,579,579,579,579,580,581,582,583,584,0,0,0,
-	585,585,585,585,585,585,585,585,586,586,586,586,586,586,586,586,
-	587,587,587,587,587,587,587,587,588,588,588,588,588,588,588,588,
-	589,589,589,589,589,589,589,589,590,590,590,590,590,590,590,590,
-	591,591,591,591,591,591,591,591,592,593,594,595,596,0,0,0,
-	597,597,597,597,597,597,597,597,598,598,598,598,598,598,598,598,
-	599,599,599,599,599,599,599,599,600,600,600,600,600,600,600,600,
-	601,601,601,601,601,601,601,601,602,602,602,602,602,602,602,602,
-	603,603,603,603,603,603,603,603,604,605,606,607,608,0,0,0,
-	609,609,609,609,609,609,609,609,610,610,610,610,610,610,610,610,
-	611,611,611,611,611,611,611,611,612,612,612,612,612,612,612,612,
-	613,613,613,613,613,613,613,613,614,614,614,614,614,614,614,614,
-	615,615,615,615,615,615,615,615,616,617,618,619,620,0,0,0,
-	621,621,621,621,621,621,621,621,622,622,622,622,622,622,622,622,
-	623,623,623,623,623,623,623,623,624,624,624,624,624,624,624,624,
-	625,625,625,625,625,625,625,625,626,626,626,626,626,626,626,626,
-	627,627,627,627,627,627,627,627,628,629,630,631,632,0,0,0,
-	633,633,633,633,633,633,633,633,634,634,634,634,634,634,634,634,
-	635,635,635,635,635,635,635,635,636,636,636,636,636,636,636,636,
-	637,637,637,637,637,637,637,637,638,638,638,638,638,638,638,638,
-	639,639,639,639,639,639,639,639,640,641,642,643,644,0,0,0,
-	645,645,645,645,645,645,645,645,646,646,646,646,646,646,646,646,
-	647,647,647,647,647,647,647,647,648,648,648,648,648,648,648,648,
-	649,649,649,649,649,649,649,649,650,650,650,650,650,650,650,650,
-	651,651,651,651,651,651,651,651,652,653,654,655,656,0,0,0,
+	127,127,127,127,127,127,127,127,0,0,0,0,0,0,0,0,
+	565,565,565,565,565,565,565,565,566,566,566,566,566,566,566,567,
+	568,568,568,568,568,568,568,569,570,570,570,570,570,570,570,570,
+	571,571,571,571,571,571,571,571,572,573,574,575,576,0,0,0,
+	179,179,179,179,179,179,179,179,0,0,0,0,0,0,0,0,
+	577,577,577,577,577,577,577,577,123,123,123,123,123,123,123,578,
+	579,579,579,579,579,579,579,580,581,581,581,581,581,581,581,581,
+	582,582,582,582,582,582,582,582,583,584,585,586,225,0,0,0,
+	587,587,587,587,587,587,587,587,0,0,0,0,0,0,0,0,
+	588,588,588,588,588,588,588,588,589,589,589,589,589,589,589,590,
+	591,591,591,591,591,591,591,592,593,593,593,593,593,593,593,593,
+	594,594,594,594,594,594,594,594,595,596,597,598,599,0,0,0,
+	50,50,50,50,50,50,50,50,0,0,0,0,0,0,0,0,
+	106,106,106,106,106,106,106,106,600,600,600,600,600,600,600,601,
+	602,602,602,602,602,602,602,603,76,76,76,76,76,76,76,76,
+	604,604,604,604,604,604,604,604,605,606,607,608,19,0,0,0,
+	609,609,609,609,609,609,609,609,0,0,0,0,0,0,0,0,
+	610,610,610,610,610,610,610,610,611,611,611,611,611,611,611,612,
+	613,613,613,613,613,613,613,614,615,615,615,615,615,615,615,615,
+	616,616,616,616,616,616,616,616,617,618,619,620,621,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	573,573,573,573,573,573,573,573,574,574,574,574,574,574,574,574,
-	575,575,575,575,575,575,575,575,576,576,576,576,576,576,576,576,
-	577,577,577,577,577,577,577,577,578,578,578,578,578,578,578,578,
-	579,579,579,579,579,579,579,579,580,581,582,583,584,0,0,0,
-	585,585,585,585,585,585,585,585,586,586,586,586,586,586,586,586,
-	587,587,587,587,587,587,587,587,588,588,588,588,588,588,588,588,
-	589,589,589,589,589,589,589,589,590,590,590,590,590,590,590,590,
-	591,591,591,591,591,591,591,591,592,593,594,595,596,0,0,0,
-	597,597,597,597,597,597,597,597,598,598,598,598,598,598,598,598,
-	599,599,599,599,599,599,599,599,600,600,600,600,600,600,600,600,
-	601,601,601,601,601,601,601,601,602,602,602,602,602,602,602,602,
-	603,603,603,603,603,603,603,603,604,605,606,607,608,0,0,0,
-	609,609,609,609,609,609,609,609,610,610,610,610,610,610,610,610,
-	611,611,611,611,611,611,611,611,612,612,612,612,612,612,612,612,
-	613,613,613,613,613,613,613,613,614,614,614,614,614,614,614,614,
-	615,615,615,615,615,615,615,615,616,617,618,619,620,0,0,0,
-	621,621,621,621,621,621,621,621,622,622,622,622,622,622,622,622,
-	623,623,623,623,623,623,623,623,624,624,624,624,624,624,624,624,
-	625,625,625,625,625,625,625,625,626,626,626,626,626,626,626,626,
-	627,627,627,627,627,627,627,627,628,629,630,631,632,0,0,0,
-	633,633,633,633,633,633,633,633,634,634,634,634,634,634,634,634,
-	635,635,635,635,635,635,635,635,636,636,636,636,636,636,636,636,
-	637,637,637,637,637,637,637,637,638,638,638,638,638,638,638,638,
-	639,639,639,639,639,639,639,639,640,641,642,643,644,0,0,0,
-	645,645,645,645,645,645,645,645,646,646,646,646,646,646,646,646,
-	647,647,647,647,647,647,647,647,648,648,648,648,648,648,648,648,
-	649,649,649,649,649,649,649,649,650,650,650,650,650,650,650,650,
-	651,651,651,651,651,651,651,651,652,653,654,655,656,0,0,0,
+	54,54,54,54,54,54,54,54,0,0,0,0,0,0,0,0,
+	21,21,21,21,21,21,21,21,98,98,98,98,98,98,98,559,
+	560,560,560,560,560,560,560,561,9,9,9,9,9,9,9,9,
+	166,166,166,166,166,166,166,166,562,157,563,564,170,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	573,573,573,573,573,573,573,573,574,574,574,574,574,574,574,574,
-	575,575,575,575,575,575,575,575,576,576,576,576,576,576,576,576,
-	577,577,577,577,577,577,577,577,578,578,578,578,578,578,578,578,
-	579,579,579,579,579,579,579,579,580,581,582,583,584,0,0,0,
-	585,585,585,585,585,585,585,585,586,586,586,586,586,586,586,586,
-	587,587,587,587,587,587,587,587,588,588,588,588,588,588,588,588,
-	589,589,589,589,589,589,589,589,590,590,590,590,590,590,590,590,
-	591,591,591,591,591,591,591,591,592,593,594,595,596,0,0,0,
-	597,597,597,597,597,597,597,597,598,598,598,598,598,598,598,598,
-	599,599,599,599,599,599,599,599,600,600,600,600,600,600,600,600,
-	601,601,601,601,601,601,601,601,602,602,602,602,602,602,602,602,
-	603,603,603,603,603,603,603,603,604,605,606,607,608,0,0,0,
-	609,609,609,609,609,609,609,609,610,610,610,610,610,610,610,610,
-	611,611,611,611,611,611,611,611,612,612,612,612,612,612,612,612,
-	613,613,613,613,613,613,613,613,614,614,614,614,614,614,614,614,
-	615,615,615,615,615,615,615,615,616,617,618,619,620,0,0,0,
-	621,621,621,621,621,621,621,621,622,622,622,622,622,622,622,622,
-	623,623,623,623,623,623,623,623,624,624,624,624,624,624,624,624,
-	625,625,625,625,625,625,625,625,626,626,626,626,626,626,626,626,
-	627,627,627,627,627,627,627,627,628,629,630,631,632,0,0,0,
-	633,633,633,633,633,633,633,633,634,634,634,634,634,634,634,634,
-	635,635,635,635,635,635,635,635,636,636,636,636,636,636,636,636,
-	637,637,637,637,637,637,637,637,638,638,638,638,638,638,638,638,
-	639,639,639,639,639,639,639,639,640,641,642,643,644,0,0,0,
-	645,645,645,645,645,645,645,645,646,646,646,646,646,646,646,646,
-	647,647,647,647,647,647,647,647,648,648,648,648,648,648,648,648,
-	649,649,649,649,649,649,649,649,650,650,650,650,650,650,650,650,
-	651,651,651,651,651,651,651,651,652,653,654,655,656,0,0,0,
+	127,127,127,127,127,127,127,127,0,0,0,0,0,0,0,0,
+	565,565,565,565,565,565,565,565,566,566,566,566,566,566,566,567,
+	568,568,568,568,568,568,568,569,570,570,570,570,570,570,570,570,
+	571,571,571,571,571,571,571,571,572,573,574,575,576,0,0,0,
+	179,179,179,179,179,179,179,179,0,0,0,0,0,0,0,0,
+	577,577,577,577,577,577,577,577,123,123,123,123,123,123,123,578,
+	579,579,579,579,579,579,579,580,581,581,581,581,581,581,581,581,
+	582,582,582,582,582,582,582,582,583,584,585,586,225,0,0,0,
+	587,587,587,587,587,587,587,587,0,0,0,0,0,0,0,0,
+	588,588,588,588,588,588,588,588,589,589,589,589,589,589,589,590,
+	591,591,591,591,591,591,591,592,593,593,593,593,593,593,593,593,
+	594,594,594,594,594,594,594,594,595,596,597,598,599,0,0,0,
+	50,50,50,50,50,50,50,50,0,0,0,0,0,0,0,0,
+	106,106,106,106,106,106,106,106,600,600,600,600,600,600,600,601,
+	602,602,602,602,602,602,602,603,76,76,76,76,76,76,76,76,
+	604,604,604,604,604,604,604,604,605,606,607,608,19,0,0,0,
+	609,609,609,609,609,609,609,609,0,0,0,0,0,0,0,0,
+	610,610,610,610,610,610,610,610,611,611,611,611,611,611,611,612,
+	613,613,613,613,613,613,613,614,615,615,615,615,615,615,615,615,
+	616,616,616,616,616,616,616,616,617,618,619,620,621,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	573,573,573,573,573,573,573,573,574,574,574,574,574,574,574,574,
-	575,575,575,575,575,575,575,575,576,576,576,576,576,576,576,576,
-	577,577,577,577,577,577,577,577,578,578,578,578,578,578,578,578,
-	579,579,579,579,579,579,579,579,580,581,582,583,584,0,0,0,
-	585,585,585,585,585,585,585,585,586,586,586,586,586,586,586,586,
-	587,587,587,587,587,587,587,587,588,588,588,588,588,588,588,588,
-	589,589,589,589,589,589,589,589,590,590,590,590,590,590,590,590,
-	591,591,591,591,591,591,591,591,592,593,594,595,596,0,0,0,
-	597,597,597,597,597,597,597,597,598,598,598,598,598,598,598,598,
-	599,599,599,599,599,599,599,599,600,600,600,600,600,600,600,600,
-	601,601,601,601,601,601,601,601,602,602,602,602,602,602,602,602,
-	603,603,603,603,603,603,603,603,604,605,606,607,608,0,0,0,
-	609,609,609,609,609,609,609,609,610,610,610,610,610,610,610,610,
-	611,611,611,611,611,611,611,611,612,612,612,612,612,612,612,612,
-	613,613,613,613,613,613,613,613,614,614,614,614,614,614,614,614,
-	615,615,615,615,615,615,615,615,616,617,618,619,620,0,0,0,
-	621,621,621,621,621,621,621,621,622,622,622,622,622,622,622,622,
-	623,623,623,623,623,623,623,623,624,624,624,624,624,624,624,624,
-	625,625,625,625,625,625,625,625,626,626,626,626,626,626,626,626,
-	627,627,627,627,627,627,627,627,628,629,630,631,632,0,0,0,
-	633,633,633,633,633,633,633,633,634,634,634,634,634,634,634,634,
-	635,635,635,635,635,635,635,635,636,636,636,636,636,636,636,636,
-	637,637,637,637,637,637,637,637,638,638,638,638,638,638,638,638,
-	639,639,639,639,639,639,639,639,640,641,642,643,644,0,0,0,
-	645,645,645,645,645,645,645,645,646,646,646,646,646,646,646,646,
-	647,647,647,647,647,647,647,647,648,648,648,648,648,648,648,648,
-	649,649,649,649,649,649,649,649,650,650,650,650,650,650,650,650,
-	651,651,651,651,651,651,651,651,652,653,654,655,656,0,0,0,
+	54,54,54,54,54,54,54,54,0,0,0,0,0,0,0,0,
+	21,21,21,21,21,21,21,21,98,98,98,98,98,98,98,559,
+	560,560,560,560,560,560,560,561,9,9,9,9,9,9,9,9,
+	166,166,166,166,166,166,166,166,562,157,563,564,170,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	573,573,573,573,573,573,573,573,574,574,574,574,574,574,574,574,
-	575,575,575,575,575,575,575,575,576,576,576,576,576,576,576,576,
-	577,577,577,577,577,577,577,577,578,578,578,578,578,578,578,578,
-	579,579,579,579,579,579,579,579,580,581,582,583,584,0,0,0,
-	585,585,585,585,585,585,585,585,586,586,586,586,586,586,586,586,
-	587,587,587,587,587,587,587,587,588,588,588,588,588,588,588,588,
-	589,589,589,589,589,589,589,589,590,590,590,590,590,590,590,590,
-	591,591,591,591,591,591,591,591,592,593,594,595,596,0,0,0,
-	597,597,597,597,597,597,597,597,598,598,598,598,598,598,598,598,
-	599,599,599,599,599,599,599,599,600,600,600,600,600,600,600,600,
-	601,601,601,601,601,601,601,601,602,602,602,602,602,602,602,602,
-	603,603,603,603,603,603,603,603,604,605,606,607,608,0,0,0,
-	609,609,609,609,609,609,609,609,610,610,610,610,610,610,610,610,
-	611,611,611,611,611,611,611,611,612,612,612,612,612,612,612,612,
-	613,613,613,613,613,613,613,613,614,614,614,614,614,614,614,614,
-	615,615,615,615,615,615,615,615,616,617,618,619,620,0,0,0,
-	621,621,621,621,621,621,621,621,622,622,622,622,622,622,622,622,
-	623,623,623,623,623,623,623,623,624,624,624,624,624,624,624,624,
-	625,625,625,625,625,625,625,625,626,626,626,626,626,626,626,626,
-	627,627,627,627,627,627,627,627,628,629,630,631,632,0,0,0,
-	633,633,633,633,633,633,633,633,634,634,634,634,634,634,634,634,
-	635,635,635,635,635,635,635,635,636,636,636,636,636,636,636,636,
-	637,637,637,637,637,637,637,637,638,638,638,638,638,638,638,638,
-	639,639,639,639,639,639,639,639,640,641,642,643,644,0,0,0,
-	645,645,645,645,645,645,645,645,646,646,646,646,646,646,646,646,
-	647,647,647,647,647,647,647,647,648,648,648,648,648,648,648,648,
-	649,649,649,649,649,649,649,649,650,650,650,650,650,650,650,650,
-	651,651,651,651,651,651,651,651,652,653,654,655,656,0,0,0,
+	127,127,127,127,127,127,127,127,0,0,0,0,0,0,0,0,
+	565,565,565,565,565,565,565,565,566,566,566,566,566,566,566,567,
+	568,568,568,568,568,568,568,569,570,570,570,570,570,570,570,570,
+	571,571,571,571,571,571,571,571,572,573,574,575,576,0,0,0,
+	179,179,179,179,179,179,179,179,0,0,0,0,0,0,0,0,
+	577,577,577,577,577,577,577,577,123,123,123,123,123,123,123,578,
+	579,579,579,579,579,579,579,580,581,581,581,581,581,581,581,581,
+	582,582,582,582,582,582,582,582,583,584,585,586,225,0,0,0,
+	587,587,587,587,587,587,587,587,0,0,0,0,0,0,0,0,
+	588,588,588,588,588,588,588,588,589,589,589,589,589,589,589,590,
+	591,591,591,591,591,591,591,592,593,593,593,593,593,593,593,593,
+	594,594,594,594,594,594,594,594,595,596,597,598,599,0,0,0,
+	50,50,50,50,50,50,50,50,0,0,0,0,0,0,0,0,
+	106,106,106,106,106,106,106,106,600,600,600,600,600,600,600,601,
+	602,602,602,602,602,602,602,603,76,76,76,76,76,76,76,76,
+	604,604,604,604,604,604,604,604,605,606,607,608,19,0,0,0,
+	609,609,609,609,609,609,609,609,0,0,0,0,0,0,0,0,
+	610,610,610,610,610,610,610,610,611,611,611,611,611,611,611,612,
+	613,613,613,613,613,613,613,614,615,615,615,615,615,615,615,615,
+	616,616,616,616,616,616,616,616,617,618,619,620,621,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	681,681,681,681,681,681,681,681,0,0,0,0,0,0,0,0,
-	682,682,682,682,682,682,682,682,683,683,683,683,683,683,683,684,
-	685,685,685,685,685,685,685,686,687,687,687,687,687,687,687,687,
-	688,688,688,688,688,688,688,688,689,690,0,0,0,0,0,0,
-	691,691,691,691,691,691,691,691,0,0,0,0,0,0,0,0,
-	692,692,692,692,692,692,692,692,693,693,693,693,693,693,693,693,
-	694,694,694,694,694,694,694,694,695,695,695,695,695,695,695,695,
-	696,696,696,696,696,696,696,696,697,698,0,0,0,0,0,0,
-	699,699,699,699,699,699,699,699,0,0,0,0,0,0,0,0,
-	700,700,700,700,700,700,700,700,701,701,701,701,701,701,701,701,
-	702,702,702,702,702,702,702,702,703,703,703,703,703,703,703,703,
-	704,704,704,704,704,704,704,704,705,706,0,0,0,0,0,0,
-	707,707,707,707,707,707,707,707,0,0,0,0,0,0,0,0,
-	708,708,708,708,708,708,708,708,709,709,709,709,709,709,709,709,
+	54,54,54,54,54,54,54,54,0,0,0,0,0,0,0,0,
+	21,21,21,21,21,21,21,21,98,98,98,98,98,98,98,559,
+	560,560,560,560,560,560,560,561,9,9,9,9,9,9,9,9,
+	166,166,166,166,166,166,166,166,562,157,563,564,170,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	127,127,127,127,127,127,127,127,0,0,0,0,0,0,0,0,
+	565,565,565,565,565,565,565,565,566,566,566,566,566,566,566,567,
+	568,568,568,568,568,568,568,569,570,570,570,570,570,570,570,570,
+	571,571,571,571,571,571,571,571,572,573,574,575,576,0,0,0,
+	648,648,648,648,648,648,648,648,0,0,0,0,0,0,0,0,
+	649,649,649,649,649,649,649,649,650,650,650,650,650,650,650,651,
+	652,652,652,652,652,652,652,653,654,654,654,654,654,654,654,654,
+	655,655,655,655,655,655,655,655,656,657,658,659,660,0,0,0,
+	661,661,661,661,661,661,661,661,0,0,0,0,0,0,0,0,
+	662,662,662,662,662,662,662,662,663,663,663,663,663,663,663,664,
+	665,665,665,665,665,665,665,666,667,667,667,667,667,667,667,667,
+	668,668,668,668,668,668,668,668,669,670,671,672,673,0,0,0,
+	50,50,50,50,50,50,50,50,0,0,0,0,0,0,0,0,
+	106,106,106,106,106,106,106,106,600,600,600,600,600,600,600,601,
+	602,602,602,602,602,602,602,603,76,76,76,76,76,76,76,76,
+	604,604,604,604,604,604,604,604,605,606,607,608,19,0,0,0,
+	609,609,609,609,609,609,609,609,0,0,0,0,0,0,0,0,
+	610,610,610,610,610,610,610,610,611,611,611,611,611,611,611,612,
+	613,613,613,613,613,613,613,614,615,615,615,615,615,615,615,615,
+	616,616,616,616,616,616,616,616,617,618,619,620,621,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	84,84,84,84,84,84,84,84,85,85,85,85,85,85,85,85,
+	37,37,37,37,37,37,37,37,88,88,88,88,88,88,88,88,
+	674,674,674,674,674,674,674,674,41,41,41,41,41,41,41,41,
+	675,675,675,675,675,675,675,675,676,677,678,679,71,0,0,0,
+	24,24,24,24,24,24,24,24,8,8,8,8,8,8,8,8,
+	109,109,109,109,109,109,109,109,20,20,20,20,20,20,20,20,
+	680,680,680,680,680,680,680,680,15,15,15,15,15,15,15,15,
+	73,73,73,73,73,73,73,73,187,154,217,681,52,0,0,0,
+	110,110,110,110,110,110,110,110,95,95,95,95,95,95,95,95,
+	229,229,229,229,229,229,229,229,682,682,682,682,682,682,682,682,
+	683,683,683,683,683,683,683,683,203,203,203,203,203,203,203,203,
+	684,684,684,684,684,684,684,684,685,686,687,688,689,0,0,0,
+	28,28,28,28,28,28,28,28,690,690,690,690,690,690,690,690,
+	691,691,691,691,691,691,691,691,692,692,692,692,692,692,692,692,
+	693,693,693,693,693,693,693,693,694,694,694,694,694,694,694,694,
+	695,695,695,695,695,695,695,695,696,697,698,699,700,0,0,0,
+	78,78,78,78,78,78,78,78,17,17,17,17,17,17,17,17,
+	701,701,701,701,701,701,701,701,702,702,702,702,702,702,702,702,
+	703,703,703,703,703,703,703,703,119,119,119,119,119,119,119,119,
+	704,704,704,704,704,704,704,704,705,706,707,708,709,0,0,0,
+	86,86,86,86,86,86,86,86,105,105,105,105,105,105,105,105,
 	710,710,710,710,710,710,710,710,711,711,711,711,711,711,711,711,
-	712,712,712,712,712,712,712,712,713,714,0,0,0,0,0,0,
-	715,715,715,715,715,715,715,715,0,0,0,0,0,0,0,0,
-	716,716,716,716,716,716,716,716,717,717,717,717,717,717,717,717,
-	718,718,718,718,718,718,718,718,719,719,719,719,719,719,719,719,
-	720,720,720,720,720,720,720,720,721,722,723,724,725,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	726,726,726,726,726,726,726,726,0,0,0,0,0,0,0,0,
-	727,727,727,727,727,727,727,727,728,728,728,728,728,728,728,728,
+	712,712,712,712,712,712,712,712,39,39,39,39,39,39,39,39,
+	161,161,161,161,161,161,161,161,713,714,715,716,125,0,0,0,
+	717,717,717,717,717,717,717,717,718,718,718,718,718,718,718,718,
+	719,719,719,719,719,719,719,719,720,720,720,720,720,720,720,720,
+	721,721,721,721,721,721,721,721,722,722,722,722,722,722,722,722,
+	723,723,723,723,723,723,723,723,724,725,726,727,728,0,0,0,
 	729,729,729,729,729,729,729,729,730,730,730,730,730,730,730,730,
-	731,731,731,731,731,731,731,731,732,733,734,735,736,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	737,737,737,737,737,737,737,737,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,738,738,738,738,738,738,738,738,
-	739,739,739,739,739,739,739,739,740,741,742,743,0,0,0,0,
-	744,744,744,744,744,744,744,744,0,0,0,0,0,0,0,0,
-	745,745,745,745,745,745,745,745,746,746,746,746,746,746,746,747,
-	748,748,748,748,748,748,748,749,750,750,750,750,750,750,750,750,
-	751,751,751,751,751,751,751,751,752,753,0,0,0,0,0,0,
-	754,754,754,754,754,754,754,754,0,0,0,0,0,0,0,0,
-	755,755,755,755,755,755,755,755,756,756,756,756,756,756,756,756,
-	757,757,757,757,757,757,757,757,758,758,758,758,758,758,758,758,
-	759,759,759,759,759,759,759,759,760,761,0,0,0,0,0,0,
-	762,762,762,762,762,762,762,762,0,0,0,0,0,0,0,0,
-	763,763,763,763,763,763,763,763,764,764,764,764,764,764,764,764,
-	765,765,765,765,765,765,765,765,766,766,766,766,766,766,766,766,
-	767,767,767,767,767,767,767,767,768,769,0,0,0,0,0,0,
-	770,770,770,770,770,770,770,770,0,0,0,0,0,0,0,0,
-	771,771,771,771,771,771,771,771,772,772,772,772,772,772,772,772,
-	773,773,773,773,773,773,773,773,774,774,774,774,774,774,774,774,
-	775,775,775,775,775,775,775,775,776,777,0,0,0,0,0,0,
-	715,715,715,715,715,715,715,715,0,0,0,0,0,0,0,0,
-	716,716,716,716,716,716,716,716,717,717,717,717,717,717,717,717,
-	718,718,718,718,718,718,718,718,719,719,719,719,719,719,719,719,
-	720,720,720,720,720,720,720,720,721,722,723,724,725,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	726,726,726,726,726,726,726,726,0,0,0,0,0,0,0,0,
-	727,727,727,727,727,727,727,727,728,728,728,728,728,728,728,728,
-	729,729,729,729,729,729,729,729,730,730,730,730,730,730,730,730,
-	731,731,731,731,731,731,731,731,732,733,734,735,736,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	737,737,737,737,737,737,737,737,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,738,738,738,738,738,738,738,738,
-	739,739,739,739,739,739,739,739,740,741,742,743,0,0,0,0,
-	778,778,778,778,778,778,778,778,0,0,0,0,0,0,0,0,
-	779,779,779,779,779,779,779,779,780,780,780,780,780,780,780,781,
-	782,782,782,782,782,782,782,783,784,784,784,784,784,784,784,784,
-	785,785,785,785,785,785,785,785,786,787,0,0,0,0,0,0,
-	788,788,788,788,788,788,788,788,0,0,0,0,0,0,0,0,
-	789,789,789,789,789,789,789,789,790,790,790,790,790,790,790,790,
-	791,791,791,791,791,791,791,791,792,792,792,792,792,792,792,792,
-	793,793,793,793,793,793,793,793,794,795,0,0,0,0,0,0,
-	796,796,796,796,796,796,796,796,0,0,0,0,0,0,0,0,
-	797,797,797,797,797,797,797,797,798,798,798,798,798,798,798,798,
-	799,799,799,799,799,799,799,799,800,800,800,800,800,800,800,800,
-	801,801,801,801,801,801,801,801,802,803,0,0,0,0,0,0,
-	804,804,804,804,804,804,804,804,0,0,0,0,0,0,0,0,
-	805,805,805,805,805,805,805,805,806,806,806,806,806,806,806,806,
-	807,807,807,807,807,807,807,807,808,808,808,808,808,808,808,808,
-	809,809,809,809,809,809,809,809,810,811,812,813,814,0,0,0,
-	715,715,715,715,715,715,715,715,0,0,0,0,0,0,0,0,
-	716,716,716,716,716,716,716,716,717,717,717,717,717,717,717,717,
-	718,718,718,718,718,718,718,718,719,719,719,719,719,719,719,719,
-	720,720,720,720,720,720,720,720,721,722,723,724,725,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	726,726,726,726,726,726,726,726,0,0,0,0,0,0,0,0,
-	727,727,727,727,727,727,727,727,728,728,728,728,728,728,728,728,
-	729,729,729,729,729,729,729,729,730,730,730,730,730,730,730,730,
-	731,731,731,731,731,731,731,731,732,733,734,735,736,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	737,737,737,737,737,737,737,737,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,738,738,738,738,738,738,738,738,
-	739,739,739,739,739,739,739,739,740,741,742,743,0,0,0,0,
-	815,815,815,815,815,815,815,815,0,0,0,0,0,0,0,0,
-	816,816,816,816,816,816,816,816,817,817,817,817,817,817,817,818,
-	819,819,819,819,819,819,819,820,821,821,821,821,821,821,821,821,
-	822,822,822,822,822,822,822,822,823,824,0,0,0,0,0,0,
-	825,825,825,825,825,825,825,825,0,0,0,0,0,0,0,0,
-	826,826,826,826,826,826,826,826,827,827,827,827,827,827,827,827,
-	828,828,828,828,828,828,828,828,829,829,829,829,829,829,829,829,
-	830,830,830,830,830,830,830,830,831,832,0,0,0,0,0,0,
-	833,833,833,833,833,833,833,833,0,0,0,0,0,0,0,0,
-	834,834,834,834,834,834,834,834,835,835,835,835,835,835,835,835,
-	836,836,836,836,836,836,836,836,837,837,837,837,837,837,837,837,
-	838,838,838,838,838,838,838,838,839,840,0,0,0,0,0,0,
-	841,841,841,841,841,841,841,841,0,0,0,0,0,0,0,0,
-	842,842,842,842,842,842,842,842,843,843,843,843,843,843,843,843,
-	844,844,844,844,844,844,844,844,845,845,845,845,845,845,845,845,
-	846,846,846,846,846,846,846,846,847,848,849,850,851,0,0,0,
-	715,715,715,715,715,715,715,715,0,0,0,0,0,0,0,0,
-	716,716,716,716,716,716,716,716,717,717,717,717,717,717,717,717,
-	718,718,718,718,718,718,718,718,719,719,719,719,719,719,719,719,
-	720,720,720,720,720,720,720,720,721,722,723,724,725,0,0,0,
+	731,731,731,731,731,731,731,731,732,732,732,732,732,732,732,732,
+	733,733,733,733,733,733,733,733,734,734,734,734,734,734,734,734,
+	735,735,735,735,735,735,735,735,736,737,738,739,740,0,0,0,
+	84,84,84,84,84,84,84,84,85,85,85,85,85,85,85,85,
+	37,37,37,37,37,37,37,37,88,88,88,88,88,88,88,88,
+	674,674,674,674,674,674,674,674,41,41,41,41,41,41,41,41,
+	675,675,675,675,675,675,675,675,676,677,678,679,71,0,0,0,
+	24,24,24,24,24,24,24,24,8,8,8,8,8,8,8,8,
+	109,109,109,109,109,109,109,109,20,20,20,20,20,20,20,20,
+	680,680,680,680,680,680,680,680,15,15,15,15,15,15,15,15,
+	73,73,73,73,73,73,73,73,187,154,217,681,52,0,0,0,
+	110,110,110,110,110,110,110,110,95,95,95,95,95,95,95,95,
+	229,229,229,229,229,229,229,229,682,682,682,682,682,682,682,682,
+	683,683,683,683,683,683,683,683,203,203,203,203,203,203,203,203,
+	684,684,684,684,684,684,684,684,685,686,687,688,689,0,0,0,
+	28,28,28,28,28,28,28,28,690,690,690,690,690,690,690,690,
+	691,691,691,691,691,691,691,691,692,692,692,692,692,692,692,692,
+	693,693,693,693,693,693,693,693,694,694,694,694,694,694,694,694,
+	695,695,695,695,695,695,695,695,696,697,698,699,700,0,0,0,
+	78,78,78,78,78,78,78,78,17,17,17,17,17,17,17,17,
+	701,701,701,701,701,701,701,701,702,702,702,702,702,702,702,702,
+	703,703,703,703,703,703,703,703,119,119,119,119,119,119,119,119,
+	704,704,704,704,704,704,704,704,705,706,707,708,709,0,0,0,
+	86,86,86,86,86,86,86,86,105,105,105,105,105,105,105,105,
+	710,710,710,710,710,710,710,710,711,711,711,711,711,711,711,711,
+	712,712,712,712,712,712,712,712,39,39,39,39,39,39,39,39,
+	161,161,161,161,161,161,161,161,713,714,715,716,125,0,0,0,
+	717,717,717,717,717,717,717,717,718,718,718,718,718,718,718,718,
+	719,719,719,719,719,719,719,719,720,720,720,720,720,720,720,720,
+	721,721,721,721,721,721,721,721,722,722,722,722,722,722,722,722,
+	723,723,723,723,723,723,723,723,724,725,726,727,728,0,0,0,
+	741,741,741,741,741,741,741,741,742,742,742,742,742,742,742,742,
+	743,743,743,743,743,743,743,743,744,744,744,744,744,744,744,744,
+	745,745,745,745,745,745,745,745,746,746,746,746,746,746,746,746,
+	747,747,747,747,747,747,747,747,748,749,750,751,752,0,0,0,
+	84,84,84,84,84,84,84,84,85,85,85,85,85,85,85,85,
+	37,37,37,37,37,37,37,37,88,88,88,88,88,88,88,88,
+	674,674,674,674,674,674,674,674,41,41,41,41,41,41,41,41,
+	675,675,675,675,675,675,675,675,676,677,678,679,71,0,0,0,
+	24,24,24,24,24,24,24,24,8,8,8,8,8,8,8,8,
+	109,109,109,109,109,109,109,109,20,20,20,20,20,20,20,20,
+	680,680,680,680,680,680,680,680,15,15,15,15,15,15,15,15,
+	73,73,73,73,73,73,73,73,187,154,217,681,52,0,0,0,
+	110,110,110,110,110,110,110,110,95,95,95,95,95,95,95,95,
+	229,229,229,229,229,229,229,229,682,682,682,682,682,682,682,682,
+	683,683,683,683,683,683,683,683,203,203,203,203,203,203,203,203,
+	684,684,684,684,684,684,684,684,685,686,687,688,689,0,0,0,
+	28,28,28,28,28,28,28,28,690,690,690,690,690,690,690,690,
+	691,691,691,691,691,691,691,691,692,692,692,692,692,692,692,692,
+	693,693,693,693,693,693,693,693,694,694,694,694,694,694,694,694,
+	695,695,695,695,695,695,695,695,696,697,698,699,700,0,0,0,
+	78,78,78,78,78,78,78,78,17,17,17,17,17,17,17,17,
+	701,701,701,701,701,701,701,701,702,702,702,702,702,702,702,702,
+	703,703,703,703,703,703,703,703,119,119,119,119,119,119,119,119,
+	704,704,704,704,704,704,704,704,705,706,707,708,709,0,0,0,
+	86,86,86,86,86,86,86,86,105,105,105,105,105,105,105,105,
+	710,710,710,710,710,710,710,710,711,711,711,711,711,711,711,711,
+	712,712,712,712,712,712,712,712,39,39,39,39,39,39,39,39,
+	161,161,161,161,161,161,161,161,713,714,715,716,125,0,0,0,
+	717,717,717,717,717,717,717,717,718,718,718,718,718,718,718,718,
+	719,719,719,719,719,719,719,719,720,720,720,720,720,720,720,720,
+	721,721,721,721,721,721,721,721,722,722,722,722,722,722,722,722,
+	723,723,723,723,723,723,723,723,724,725,726,727,728,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	726,726,726,726,726,726,726,726,0,0,0,0,0,0,0,0,
-	727,727,727,727,727,727,727,727,728,728,728,728,728,728,728,728,
-	729,729,729,729,729,729,729,729,730,730,730,730,730,730,730,730,
-	731,731,731,731,731,731,731,731,732,733,734,735,736,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	737,737,737,737,737,737,737,737,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,738,738,738,738,738,738,738,738,
-	739,739,739,739,739,739,739,739,740,741,742,743,0,0,0,0,
-	852,852,852,852,852,852,852,852,853,853,853,853,853,853,853,854,
-	855,855,855,855,855,855,855,855,856,856,856,856,856,856,856,857,
-	858,858,858,858,858,858,858,859,860,860,860,860,860,860,860,860,
-	861,861,861,861,861,861,861,861,862,863,0,0,0,0,0,0,
-	864,864,864,864,864,864,864,864,865,865,865,865,865,865,865,865,
-	866,866,866,866,866,866,866,866,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,867,867,867,867,867,867,867,867,
-	868,868,868,868,868,868,868,868,869,870,871,872,0,0,0,0,
-	873,873,873,873,873,873,873,873,0,0,0,0,0,0,0,0,
-	874,874,874,874,874,874,874,874,0,0,0,0,0,0,0,0,
-	875,875,875,875,875,875,875,875,876,876,876,876,876,876,876,876,
-	877,877,877,877,877,877,877,877,878,879,0,0,0,0,0,0,
-	880,880,880,880,880,880,880,880,0,0,0,0,0,0,0,0,
-	881,881,881,881,881,881,881,881,0,0,0,0,0,0,0,0,
-	882,882,882,882,882,882,882,882,883,883,883,883,883,883,883,883,
-	884,884,884,884,884,884,884,884,885,886,0,0,0,0,0,0,
-	715,715,715,715,715,715,715,715,0,0,0,0,0,0,0,0,
-	716,716,716,716,716,716,716,716,717,717,717,717,717,717,717,717,
-	718,718,718,718,718,718,718,718,719,719,719,719,719,719,719,719,
-	720,720,720,720,720,720,720,720,721,722,723,724,725,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	84,84,84,84,84,84,84,84,85,85,85,85,85,85,85,85,
+	37,37,37,37,37,37,37,37,88,88,88,88,88,88,88,88,
+	674,674,674,674,674,674,674,674,41,41,41,41,41,41,41,41,
+	675,675,675,675,675,675,675,675,676,677,678,679,71,0,0,0,
+	24,24,24,24,24,24,24,24,8,8,8,8,8,8,8,8,
+	109,109,109,109,109,109,109,109,20,20,20,20,20,20,20,20,
+	680,680,680,680,680,680,680,680,15,15,15,15,15,15,15,15,
+	73,73,73,73,73,73,73,73,187,154,217,681,52,0,0,0,
+	110,110,110,110,110,110,110,110,95,95,95,95,95,95,95,95,
+	229,229,229,229,229,229,229,229,682,682,682,682,682,682,682,682,
+	683,683,683,683,683,683,683,683,203,203,203,203,203,203,203,203,
+	684,684,684,684,684,684,684,684,685,686,687,688,689,0,0,0,
+	28,28,28,28,28,28,28,28,690,690,690,690,690,690,690,690,
+	691,691,691,691,691,691,691,691,692,692,692,692,692,692,692,692,
+	693,693,693,693,693,693,693,693,694,694,694,694,694,694,694,694,
+	695,695,695,695,695,695,695,695,696,697,698,699,700,0,0,0,
+	78,78,78,78,78,78,78,78,17,17,17,17,17,17,17,17,
+	701,701,701,701,701,701,701,701,702,702,702,702,702,702,702,702,
+	703,703,703,703,703,703,703,703,119,119,119,119,119,119,119,119,
+	704,704,704,704,704,704,704,704,705,706,707,708,709,0,0,0,
+	86,86,86,86,86,86,86,86,105,105,105,105,105,105,105,105,
+	710,710,710,710,710,710,710,710,711,711,711,711,711,711,711,711,
+	712,712,712,712,712,712,712,712,39,39,39,39,39,39,39,39,
+	161,161,161,161,161,161,161,161,713,714,715,716,125,0,0,0,
+	717,717,717,717,717,717,717,717,718,718,718,718,718,718,718,718,
+	719,719,719,719,719,719,719,719,720,720,720,720,720,720,720,720,
+	721,721,721,721,721,721,721,721,722,722,722,722,722,722,722,722,
+	723,723,723,723,723,723,723,723,724,725,726,727,728,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	726,726,726,726,726,726,726,726,0,0,0,0,0,0,0,0,
-	727,727,727,727,727,727,727,727,728,728,728,728,728,728,728,728,
-	729,729,729,729,729,729,729,729,730,730,730,730,730,730,730,730,
-	731,731,731,731,731,731,731,731,732,733,734,735,736,0,0,0,
-	887,887,887,887,887,887,887,887,0,0,0,0,0,0,0,0,
-	737,737,737,737,737,737,737,737,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,738,738,738,738,738,738,738,738,
-	739,739,739,739,739,739,739,739,740,741,742,743,0,0,0,0,
-	888,888,888,888,888,888,888,888,0,0,0,0,0,0,0,0,
-	889,889,889,889,889,889,889,889,890,890,890,890,890,890,890,891,
-	892,892,892,892,892,892,892,893,894,894,894,894,894,894,894,894,
-	895,895,895,895,895,895,895,895,896,897,898,899,900,0,0,0,
-	901,901,901,901,901,901,901,901,902,902,902,902,902,902,902,902,
-	903,903,903,903,903,903,903,903,904,904,904,904,904,904,904,904,
-	905,905,905,905,905,905,905,905,906,906,906,906,906,906,906,906,
-	907,907,907,907,907,907,907,907,908,909,910,911,912,0,0,0,
-	913,913,913,913,913,913,913,913,914,914,914,914,914,914,914,914,
-	915,915,915,915,915,915,915,915,916,916,916,916,916,916,916,916,
-	917,917,917,917,917,917,917,917,918,918,918,918,918,918,918,918,
-	919,919,919,919,919,919,919,919,920,921,922,923,924,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	84,84,84,84,84,84,84,84,85,85,85,85,85,85,85,85,
+	37,37,37,37,37,37,37,37,88,88,88,88,88,88,88,88,
+	674,674,674,674,674,674,674,674,41,41,41,41,41,41,41,41,
+	675,675,675,675,675,675,675,675,676,677,678,679,71,0,0,0,
+	24,24,24,24,24,24,24,24,8,8,8,8,8,8,8,8,
+	109,109,109,109,109,109,109,109,20,20,20,20,20,20,20,20,
+	680,680,680,680,680,680,680,680,15,15,15,15,15,15,15,15,
+	73,73,73,73,73,73,73,73,187,154,217,681,52,0,0,0,
+	110,110,110,110,110,110,110,110,95,95,95,95,95,95,95,95,
+	229,229,229,229,229,229,229,229,682,682,682,682,682,682,682,682,
+	683,683,683,683,683,683,683,683,203,203,203,203,203,203,203,203,
+	684,684,684,684,684,684,684,684,685,686,687,688,689,0,0,0,
+	28,28,28,28,28,28,28,28,690,690,690,690,690,690,690,690,
+	691,691,691,691,691,691,691,691,692,692,692,692,692,692,692,692,
+	693,693,693,693,693,693,693,693,694,694,694,694,694,694,694,694,
+	695,695,695,695,695,695,695,695,696,697,698,699,700,0,0,0,
+	78,78,78,78,78,78,78,78,17,17,17,17,17,17,17,17,
+	701,701,701,701,701,701,701,701,702,702,702,702,702,702,702,702,
+	703,703,703,703,703,703,703,703,119,119,119,119,119,119,119,119,
+	704,704,704,704,704,704,704,704,705,706,707,708,709,0,0,0,
+	86,86,86,86,86,86,86,86,105,105,105,105,105,105,105,105,
+	710,710,710,710,710,710,710,710,711,711,711,711,711,711,711,711,
+	712,712,712,712,712,712,712,712,39,39,39,39,39,39,39,39,
+	161,161,161,161,161,161,161,161,713,714,715,716,125,0,0,0,
+	717,717,717,717,717,717,717,717,718,718,718,718,718,718,718,718,
+	719,719,719,719,719,719,719,719,720,720,720,720,720,720,720,720,
+	721,721,721,721,721,721,721,721,722,722,722,722,722,722,722,722,
+	723,723,723,723,723,723,723,723,724,725,726,727,728,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	84,84,84,84,84,84,84,84,85,85,85,85,85,85,85,85,
+	37,37,37,37,37,37,37,37,88,88,88,88,88,88,88,88,
+	674,674,674,674,674,674,674,674,41,41,41,41,41,41,41,41,
+	675,675,675,675,675,675,675,675,676,677,678,679,71,0,0,0,
+	24,24,24,24,24,24,24,24,8,8,8,8,8,8,8,8,
+	109,109,109,109,109,109,109,109,20,20,20,20,20,20,20,20,
+	680,680,680,680,680,680,680,680,15,15,15,15,15,15,15,15,
+	73,73,73,73,73,73,73,73,187,154,217,681,52,0,0,0,
+	110,110,110,110,110,110,110,110,95,95,95,95,95,95,95,95,
+	229,229,229,229,229,229,229,229,682,682,682,682,682,682,682,682,
+	683,683,683,683,683,683,683,683,203,203,203,203,203,203,203,203,
+	684,684,684,684,684,684,684,684,685,686,687,688,689,0,0,0,
+	28,28,28,28,28,28,28,28,690,690,690,690,690,690,690,690,
+	691,691,691,691,691,691,691,691,692,692,692,692,692,692,692,692,
+	693,693,693,693,693,693,693,693,694,694,694,694,694,694,694,694,
+	695,695,695,695,695,695,695,695,696,697,698,699,700,0,0,0,
+	78,78,78,78,78,78,78,78,17,17,17,17,17,17,17,17,
+	701,701,701,701,701,701,701,701,702,702,702,702,702,702,702,702,
+	703,703,703,703,703,703,703,703,119,119,119,119,119,119,119,119,
+	704,704,704,704,704,704,704,704,705,706,707,708,709,0,0,0,
+	86,86,86,86,86,86,86,86,105,105,105,105,105,105,105,105,
+	710,710,710,710,710,710,710,710,711,711,711,711,711,711,711,711,
+	712,712,712,712,712,712,712,712,39,39,39,39,39,39,39,39,
+	161,161,161,161,161,161,161,161,713,714,715,716,125,0,0,0,
+	717,717,717,717,717,717,717,717,718,718,718,718,718,718,718,718,
+	719,719,719,719,719,719,719,719,720,720,720,720,720,720,720,720,
+	721,721,721,721,721,721,721,721,722,722,722,722,722,722,722,722,
+	723,723,723,723,723,723,723,723,724,725,726,727,728,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	84,84,84,84,84,84,84,84,85,85,85,85,85,85,85,85,
+	37,37,37,37,37,37,37,37,88,88,88,88,88,88,88,88,
+	674,674,674,674,674,674,674,674,41,41,41,41,41,41,41,41,
+	675,675,675,675,675,675,675,675,676,677,678,679,71,0,0,0,
+	24,24,24,24,24,24,24,24,8,8,8,8,8,8,8,8,
+	109,109,109,109,109,109,109,109,20,20,20,20,20,20,20,20,
+	680,680,680,680,680,680,680,680,15,15,15,15,15,15,15,15,
+	73,73,73,73,73,73,73,73,187,154,217,681,52,0,0,0,
+	110,110,110,110,110,110,110,110,95,95,95,95,95,95,95,95,
+	229,229,229,229,229,229,229,229,682,682,682,682,682,682,682,682,
+	683,683,683,683,683,683,683,683,203,203,203,203,203,203,203,203,
+	684,684,684,684,684,684,684,684,685,686,687,688,689,0,0,0,
+	28,28,28,28,28,28,28,28,690,690,690,690,690,690,690,690,
+	691,691,691,691,691,691,691,691,692,692,692,692,692,692,692,692,
+	693,693,693,693,693,693,693,693,694,694,694,694,694,694,694,694,
+	695,695,695,695,695,695,695,695,696,697,698,699,700,0,0,0,
+	78,78,78,78,78,78,78,78,17,17,17,17,17,17,17,17,
+	701,701,701,701,701,701,701,701,702,702,702,702,702,702,702,702,
+	703,703,703,703,703,703,703,703,119,119,119,119,119,119,119,119,
+	704,704,704,704,704,704,704,704,705,706,707,708,709,0,0,0,
+	86,86,86,86,86,86,86,86,105,105,105,105,105,105,105,105,
+	710,710,710,710,710,710,710,710,711,711,711,711,711,711,711,711,
+	712,712,712,712,712,712,712,712,39,39,39,39,39,39,39,39,
+	161,161,161,161,161,161,161,161,713,714,715,716,125,0,0,0,
+	717,717,717,717,717,717,717,717,718,718,718,718,718,718,718,718,
+	719,719,719,719,719,719,719,719,720,720,720,720,720,720,720,720,
+	721,721,721,721,721,721,721,721,722,722,722,722,722,722,722,722,
+	723,723,723,723,723,723,723,723,724,725,726,727,728,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	84,84,84,84,84,84,84,84,85,85,85,85,85,85,85,85,
+	37,37,37,37,37,37,37,37,88,88,88,88,88,88,88,88,
+	674,674,674,674,674,674,674,674,41,41,41,41,41,41,41,41,
+	675,675,675,675,675,675,675,675,676,677,678,679,71,0,0,0,
+	24,24,24,24,24,24,24,24,8,8,8,8,8,8,8,8,
+	109,109,109,109,109,109,109,109,20,20,20,20,20,20,20,20,
+	680,680,680,680,680,680,680,680,15,15,15,15,15,15,15,15,
+	73,73,73,73,73,73,73,73,187,154,217,681,52,0,0,0,
+	110,110,110,110,110,110,110,110,95,95,95,95,95,95,95,95,
+	229,229,229,229,229,229,229,229,682,682,682,682,682,682,682,682,
+	683,683,683,683,683,683,683,683,203,203,203,203,203,203,203,203,
+	684,684,684,684,684,684,684,684,685,686,687,688,689,0,0,0,
+	28,28,28,28,28,28,28,28,690,690,690,690,690,690,690,690,
+	691,691,691,691,691,691,691,691,692,692,692,692,692,692,692,692,
+	693,693,693,693,693,693,693,693,694,694,694,694,694,694,694,694,
+	695,695,695,695,695,695,695,695,696,697,698,699,700,0,0,0,
+	78,78,78,78,78,78,78,78,17,17,17,17,17,17,17,17,
+	701,701,701,701,701,701,701,701,702,702,702,702,702,702,702,702,
+	703,703,703,703,703,703,703,703,119,119,119,119,119,119,119,119,
+	704,704,704,704,704,704,704,704,705,706,707,708,709,0,0,0,
+	86,86,86,86,86,86,86,86,105,105,105,105,105,105,105,105,
+	710,710,710,710,710,710,710,710,711,711,711,711,711,711,711,711,
+	712,712,712,712,712,712,712,712,39,39,39,39,39,39,39,39,
+	161,161,161,161,161,161,161,161,713,714,715,716,125,0,0,0,
+	717,717,717,717,717,717,717,717,718,718,718,718,718,718,718,718,
+	719,719,719,719,719,719,719,719,720,720,720,720,720,720,720,720,
+	721,721,721,721,721,721,721,721,722,722,722,722,722,722,722,722,
+	723,723,723,723,723,723,723,723,724,725,726,727,728,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	18,18,18,18,18,18,18,18,753,753,753,753,753,753,753,753,
+	4,4,4,4,4,4,4,4,45,45,45,45,45,45,45,45,
+	754,754,754,754,754,754,754,754,49,49,49,49,49,49,49,49,
+	199,199,199,199,199,199,199,199,755,139,756,757,223,0,0,0,
+	162,162,162,162,162,162,162,162,758,758,758,758,758,758,758,758,
+	759,759,759,759,759,759,759,759,760,760,760,760,760,760,760,760,
+	761,761,761,761,761,761,761,761,247,247,247,247,247,247,247,247,
+	762,762,762,762,762,762,762,762,763,764,765,236,246,0,0,0,
+	221,221,221,221,221,221,221,221,766,766,766,766,766,766,766,766,
+	767,767,767,767,767,767,767,767,768,768,768,768,768,768,768,768,
+	769,769,769,769,769,769,769,769,770,770,770,770,770,770,770,770,
+	771,771,771,771,771,771,771,771,772,773,774,775,776,0,0,0,
+	204,204,204,204,204,204,204,204,777,777,777,777,777,777,777,777,
+	778,778,778,778,778,778,778,778,779,779,779,779,779,779,779,779,
+	780,780,780,780,780,780,780,780,781,781,781,781,781,781,781,781,
+	782,782,782,782,782,782,782,782,783,784,785,786,787,0,0,0,
+	788,788,788,788,788,788,788,788,789,789,789,789,789,789,789,789,
+	790,790,790,790,790,790,790,790,791,791,791,791,791,791,791,791,
+	792,792,792,792,792,792,792,792,793,793,793,793,793,793,793,793,
+	794,794,794,794,794,794,794,794,795,796,797,798,799,0,0,0,
+	117,117,117,117,117,117,117,117,800,800,800,800,800,800,800,800,
+	176,176,176,176,176,176,176,176,801,801,801,801,801,801,801,801,
+	802,802,802,802,802,802,802,802,134,134,134,134,134,134,134,134,
+	803,803,803,803,803,803,803,803,804,805,806,807,43,0,0,0,
+	808,808,808,808,808,808,808,808,809,809,809,809,809,809,809,809,
+	810,810,810,810,810,810,810,810,811,811,811,811,811,811,811,811,
+	812,812,812,812,812,812,812,812,813,813,813,813,813,813,813,813,
+	814,814,814,814,814,814,814,814,815,816,817,818,819,0,0,0,
+	820,820,820,820,820,820,820,820,821,821,821,821,821,821,821,821,
+	822,822,822,822,822,822,822,822,823,823,823,823,823,823,823,823,
+	824,824,824,824,824,824,824,824,825,825,825,825,825,825,825,825,
+	826,826,826,826,826,826,826,826,827,828,829,830,831,0,0,0,
+	18,18,18,18,18,18,18,18,753,753,753,753,753,753,753,753,
+	4,4,4,4,4,4,4,4,45,45,45,45,45,45,45,45,
+	754,754,754,754,754,754,754,754,49,49,49,49,49,49,49,49,
+	199,199,199,199,199,199,199,199,755,139,756,757,223,0,0,0,
+	162,162,162,162,162,162,162,162,758,758,758,758,758,758,758,758,
+	759,759,759,759,759,759,759,759,760,760,760,760,760,760,760,760,
+	761,761,761,761,761,761,761,761,247,247,247,247,247,247,247,247,
+	762,762,762,762,762,762,762,762,763,764,765,236,246,0,0,0,
+	221,221,221,221,221,221,221,221,766,766,766,766,766,766,766,766,
+	767,767,767,767,767,767,767,767,768,768,768,768,768,768,768,768,
+	769,769,769,769,769,769,769,769,770,770,770,770,770,770,770,770,
+	771,771,771,771,771,771,771,771,772,773,774,775,776,0,0,0,
+	204,204,204,204,204,204,204,204,777,777,777,777,777,777,777,777,
+	778,778,778,778,778,778,778,778,779,779,779,779,779,779,779,779,
+	780,780,780,780,780,780,780,780,781,781,781,781,781,781,781,781,
+	782,782,782,782,782,782,782,782,783,784,785,786,787,0,0,0,
+	788,788,788,788,788,788,788,788,789,789,789,789,789,789,789,789,
+	790,790,790,790,790,790,790,790,791,791,791,791,791,791,791,791,
+	792,792,792,792,792,792,792,792,793,793,793,793,793,793,793,793,
+	794,794,794,794,794,794,794,794,795,796,797,798,799,0,0,0,
+	117,117,117,117,117,117,117,117,800,800,800,800,800,800,800,800,
+	176,176,176,176,176,176,176,176,801,801,801,801,801,801,801,801,
+	802,802,802,802,802,802,802,802,134,134,134,134,134,134,134,134,
+	803,803,803,803,803,803,803,803,804,805,806,807,43,0,0,0,
+	808,808,808,808,808,808,808,808,809,809,809,809,809,809,809,809,
+	810,810,810,810,810,810,810,810,811,811,811,811,811,811,811,811,
+	812,812,812,812,812,812,812,812,813,813,813,813,813,813,813,813,
+	814,814,814,814,814,814,814,814,815,816,817,818,819,0,0,0,
+	160,160,160,160,160,160,160,160,832,832,832,832,832,832,832,832,
+	833,833,833,833,833,833,833,833,834,834,834,834,834,834,834,834,
+	835,835,835,835,835,835,835,835,836,836,836,836,836,836,836,836,
+	837,837,837,837,837,837,837,837,838,839,840,841,165,0,0,0,
+	18,18,18,18,18,18,18,18,753,753,753,753,753,753,753,753,
+	4,4,4,4,4,4,4,4,45,45,45,45,45,45,45,45,
+	754,754,754,754,754,754,754,754,49,49,49,49,49,49,49,49,
+	199,199,199,199,199,199,199,199,755,139,756,757,223,0,0,0,
+	162,162,162,162,162,162,162,162,758,758,758,758,758,758,758,758,
+	759,759,759,759,759,759,759,759,760,760,760,760,760,760,760,760,
+	761,761,761,761,761,761,761,761,247,247,247,247,247,247,247,247,
+	762,762,762,762,762,762,762,762,763,764,765,236,246,0,0,0,
+	221,221,221,221,221,221,221,221,766,766,766,766,766,766,766,766,
+	767,767,767,767,767,767,767,767,768,768,768,768,768,768,768,768,
+	769,769,769,769,769,769,769,769,770,770,770,770,770,770,770,770,
+	771,771,771,771,771,771,771,771,772,773,774,775,776,0,0,0,
+	204,204,204,204,204,204,204,204,777,777,777,777,777,777,777,777,
+	778,778,778,778,778,778,778,778,779,779,779,779,779,779,779,779,
+	780,780,780,780,780,780,780,780,781,781,781,781,781,781,781,781,
+	782,782,782,782,782,782,782,782,783,784,785,786,787,0,0,0,
+	788,788,788,788,788,788,788,788,789,789,789,789,789,789,789,789,
+	790,790,790,790,790,790,790,790,791,791,791,791,791,791,791,791,
+	792,792,792,792,792,792,792,792,793,793,793,793,793,793,793,793,
+	794,794,794,794,794,794,794,794,795,796,797,798,799,0,0,0,
+	117,117,117,117,117,117,117,117,800,800,800,800,800,800,800,800,
+	176,176,176,176,176,176,176,176,801,801,801,801,801,801,801,801,
+	802,802,802,802,802,802,802,802,134,134,134,134,134,134,134,134,
+	803,803,803,803,803,803,803,803,804,805,806,807,43,0,0,0,
+	808,808,808,808,808,808,808,808,809,809,809,809,809,809,809,809,
+	810,810,810,810,810,810,810,810,811,811,811,811,811,811,811,811,
+	812,812,812,812,812,812,812,812,813,813,813,813,813,813,813,813,
+	814,814,814,814,814,814,814,814,815,816,817,818,819,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	18,18,18,18,18,18,18,18,753,753,753,753,753,753,753,753,
+	4,4,4,4,4,4,4,4,45,45,45,45,45,45,45,45,
+	754,754,754,754,754,754,754,754,49,49,49,49,49,49,49,49,
+	199,199,199,199,199,199,199,199,755,139,756,757,223,0,0,0,
+	162,162,162,162,162,162,162,162,758,758,758,758,758,758,758,758,
+	759,759,759,759,759,759,759,759,760,760,760,760,760,760,760,760,
+	761,761,761,761,761,761,761,761,247,247,247,247,247,247,247,247,
+	762,762,762,762,762,762,762,762,763,764,765,236,246,0,0,0,
+	221,221,221,221,221,221,221,221,766,766,766,766,766,766,766,766,
+	767,767,767,767,767,767,767,767,768,768,768,768,768,768,768,768,
+	769,769,769,769,769,769,769,769,770,770,770,770,770,770,770,770,
+	771,771,771,771,771,771,771,771,772,773,774,775,776,0,0,0,
+	204,204,204,204,204,204,204,204,777,777,777,777,777,777,777,777,
+	778,778,778,778,778,778,778,778,779,779,779,779,779,779,779,779,
+	780,780,780,780,780,780,780,780,781,781,781,781,781,781,781,781,
+	782,782,782,782,782,782,782,782,783,784,785,786,787,0,0,0,
+	788,788,788,788,788,788,788,788,789,789,789,789,789,789,789,789,
+	790,790,790,790,790,790,790,790,791,791,791,791,791,791,791,791,
+	792,792,792,792,792,792,792,792,793,793,793,793,793,793,793,793,
+	794,794,794,794,794,794,794,794,795,796,797,798,799,0,0,0,
+	117,117,117,117,117,117,117,117,800,800,800,800,800,800,800,800,
+	176,176,176,176,176,176,176,176,801,801,801,801,801,801,801,801,
+	802,802,802,802,802,802,802,802,134,134,134,134,134,134,134,134,
+	803,803,803,803,803,803,803,803,804,805,806,807,43,0,0,0,
+	808,808,808,808,808,808,808,808,809,809,809,809,809,809,809,809,
+	810,810,810,810,810,810,810,810,811,811,811,811,811,811,811,811,
+	812,812,812,812,812,812,812,812,813,813,813,813,813,813,813,813,
+	814,814,814,814,814,814,814,814,815,816,817,818,819,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	18,18,18,18,18,18,18,18,753,753,753,753,753,753,753,753,
+	4,4,4,4,4,4,4,4,45,45,45,45,45,45,45,45,
+	754,754,754,754,754,754,754,754,49,49,49,49,49,49,49,49,
+	199,199,199,199,199,199,199,199,755,139,756,757,223,0,0,0,
+	162,162,162,162,162,162,162,162,758,758,758,758,758,758,758,758,
+	759,759,759,759,759,759,759,759,760,760,760,760,760,760,760,760,
+	761,761,761,761,761,761,761,761,247,247,247,247,247,247,247,247,
+	762,762,762,762,762,762,762,762,763,764,765,236,246,0,0,0,
+	221,221,221,221,221,221,221,221,766,766,766,766,766,766,766,766,
+	767,767,767,767,767,767,767,767,768,768,768,768,768,768,768,768,
+	769,769,769,769,769,769,769,769,770,770,770,770,770,770,770,770,
+	771,771,771,771,771,771,771,771,772,773,774,775,776,0,0,0,
+	204,204,204,204,204,204,204,204,777,777,777,777,777,777,777,777,
+	778,778,778,778,778,778,778,778,779,779,779,779,779,779,779,779,
+	780,780,780,780,780,780,780,780,781,781,781,781,781,781,781,781,
+	782,782,782,782,782,782,782,782,783,784,785,786,787,0,0,0,
+	788,788,788,788,788,788,788,788,789,789,789,789,789,789,789,789,
+	790,790,790,790,790,790,790,790,791,791,791,791,791,791,791,791,
+	792,792,792,792,792,792,792,792,793,793,793,793,793,793,793,793,
+	794,794,794,794,794,794,794,794,795,796,797,798,799,0,0,0,
+	117,117,117,117,117,117,117,117,800,800,800,800,800,800,800,800,
+	176,176,176,176,176,176,176,176,801,801,801,801,801,801,801,801,
+	802,802,802,802,802,802,802,802,134,134,134,134,134,134,134,134,
+	803,803,803,803,803,803,803,803,804,805,806,807,43,0,0,0,
+	808,808,808,808,808,808,808,808,809,809,809,809,809,809,809,809,
+	810,810,810,810,810,810,810,810,811,811,811,811,811,811,811,811,
+	812,812,812,812,812,812,812,812,813,813,813,813,813,813,813,813,
+	814,814,814,814,814,814,814,814,815,816,817,818,819,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	18,18,18,18,18,18,18,18,753,753,753,753,753,753,753,753,
+	4,4,4,4,4,4,4,4,45,45,45,45,45,45,45,45,
+	754,754,754,754,754,754,754,754,49,49,49,49,49,49,49,49,
+	199,199,199,199,199,199,199,199,755,139,756,757,223,0,0,0,
+	162,162,162,162,162,162,162,162,758,758,758,758,758,758,758,758,
+	759,759,759,759,759,759,759,759,760,760,760,760,760,760,760,760,
+	761,761,761,761,761,761,761,761,247,247,247,247,247,247,247,247,
+	762,762,762,762,762,762,762,762,763,764,765,236,246,0,0,0,
+	221,221,221,221,221,221,221,221,766,766,766,766,766,766,766,766,
+	767,767,767,767,767,767,767,767,768,768,768,768,768,768,768,768,
+	769,769,769,769,769,769,769,769,770,770,770,770,770,770,770,770,
+	771,771,771,771,771,771,771,771,772,773,774,775,776,0,0,0,
+	204,204,204,204,204,204,204,204,777,777,777,777,777,777,777,777,
+	778,778,778,778,778,778,778,778,779,779,779,779,779,779,779,779,
+	780,780,780,780,780,780,780,780,781,781,781,781,781,781,781,781,
+	782,782,782,782,782,782,782,782,783,784,785,786,787,0,0,0,
+	788,788,788,788,788,788,788,788,789,789,789,789,789,789,789,789,
+	790,790,790,790,790,790,790,790,791,791,791,791,791,791,791,791,
+	792,792,792,792,792,792,792,792,793,793,793,793,793,793,793,793,
+	794,794,794,794,794,794,794,794,795,796,797,798,799,0,0,0,
+	117,117,117,117,117,117,117,117,800,800,800,800,800,800,800,800,
+	176,176,176,176,176,176,176,176,801,801,801,801,801,801,801,801,
+	802,802,802,802,802,802,802,802,134,134,134,134,134,134,134,134,
+	803,803,803,803,803,803,803,803,804,805,806,807,43,0,0,0,
+	808,808,808,808,808,808,808,808,809,809,809,809,809,809,809,809,
+	810,810,810,810,810,810,810,810,811,811,811,811,811,811,811,811,
+	812,812,812,812,812,812,812,812,813,813,813,813,813,813,813,813,
+	814,814,814,814,814,814,814,814,815,816,817,818,819,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	18,18,18,18,18,18,18,18,753,753,753,753,753,753,753,753,
+	4,4,4,4,4,4,4,4,45,45,45,45,45,45,45,45,
+	754,754,754,754,754,754,754,754,49,49,49,49,49,49,49,49,
+	199,199,199,199,199,199,199,199,755,139,756,757,223,0,0,0,
+	162,162,162,162,162,162,162,162,758,758,758,758,758,758,758,758,
+	759,759,759,759,759,759,759,759,760,760,760,760,760,760,760,760,
+	761,761,761,761,761,761,761,761,247,247,247,247,247,247,247,247,
+	762,762,762,762,762,762,762,762,763,764,765,236,246,0,0,0,
+	221,221,221,221,221,221,221,221,766,766,766,766,766,766,766,766,
+	767,767,767,767,767,767,767,767,768,768,768,768,768,768,768,768,
+	769,769,769,769,769,769,769,769,770,770,770,770,770,770,770,770,
+	771,771,771,771,771,771,771,771,772,773,774,775,776,0,0,0,
+	204,204,204,204,204,204,204,204,777,777,777,777,777,777,777,777,
+	778,778,778,778,778,778,778,778,779,779,779,779,779,779,779,779,
+	780,780,780,780,780,780,780,780,781,781,781,781,781,781,781,781,
+	782,782,782,782,782,782,782,782,783,784,785,786,787,0,0,0,
+	788,788,788,788,788,788,788,788,789,789,789,789,789,789,789,789,
+	790,790,790,790,790,790,790,790,791,791,791,791,791,791,791,791,
+	792,792,792,792,792,792,792,792,793,793,793,793,793,793,793,793,
+	794,794,794,794,794,794,794,794,795,796,797,798,799,0,0,0,
+	117,117,117,117,117,117,117,117,800,800,800,800,800,800,800,800,
+	176,176,176,176,176,176,176,176,801,801,801,801,801,801,801,801,
+	802,802,802,802,802,802,802,802,134,134,134,134,134,134,134,134,
+	803,803,803,803,803,803,803,803,804,805,806,807,43,0,0,0,
+	808,808,808,808,808,808,808,808,809,809,809,809,809,809,809,809,
+	810,810,810,810,810,810,810,810,811,811,811,811,811,811,811,811,
+	812,812,812,812,812,812,812,812,813,813,813,813,813,813,813,813,
+	814,814,814,814,814,814,814,814,815,816,817,818,819,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	18,18,18,18,18,18,18,18,753,753,753,753,753,753,753,753,
+	4,4,4,4,4,4,4,4,45,45,45,45,45,45,45,45,
+	754,754,754,754,754,754,754,754,49,49,49,49,49,49,49,49,
+	199,199,199,199,199,199,199,199,755,139,756,757,223,0,0,0,
+	162,162,162,162,162,162,162,162,758,758,758,758,758,758,758,758,
+	759,759,759,759,759,759,759,759,760,760,760,760,760,760,760,760,
+	761,761,761,761,761,761,761,761,247,247,247,247,247,247,247,247,
+	762,762,762,762,762,762,762,762,763,764,765,236,246,0,0,0,
+	221,221,221,221,221,221,221,221,766,766,766,766,766,766,766,766,
+	767,767,767,767,767,767,767,767,768,768,768,768,768,768,768,768,
+	769,769,769,769,769,769,769,769,770,770,770,770,770,770,770,770,
+	771,771,771,771,771,771,771,771,772,773,774,775,776,0,0,0,
+	204,204,204,204,204,204,204,204,777,777,777,777,777,777,777,777,
+	778,778,778,778,778,778,778,778,779,779,779,779,779,779,779,779,
+	780,780,780,780,780,780,780,780,781,781,781,781,781,781,781,781,
+	782,782,782,782,782,782,782,782,783,784,785,786,787,0,0,0,
+	788,788,788,788,788,788,788,788,789,789,789,789,789,789,789,789,
+	790,790,790,790,790,790,790,790,791,791,791,791,791,791,791,791,
+	792,792,792,792,792,792,792,792,793,793,793,793,793,793,793,793,
+	794,794,794,794,794,794,794,794,795,796,797,798,799,0,0,0,
+	117,117,117,117,117,117,117,117,800,800,800,800,800,800,800,800,
+	176,176,176,176,176,176,176,176,801,801,801,801,801,801,801,801,
+	802,802,802,802,802,802,802,802,134,134,134,134,134,134,134,134,
+	803,803,803,803,803,803,803,803,804,805,806,807,43,0,0,0,
+	808,808,808,808,808,808,808,808,809,809,809,809,809,809,809,809,
+	810,810,810,810,810,810,810,810,811,811,811,811,811,811,811,811,
+	812,812,812,812,812,812,812,812,813,813,813,813,813,813,813,813,
+	814,814,814,814,814,814,814,814,815,816,817,818,819,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	842,842,842,842,842,842,842,842,0,0,0,0,0,0,0,0,
+	843,843,843,843,843,843,843,843,844,844,844,844,844,844,844,845,
+	846,846,846,846,846,846,846,847,848,848,848,848,848,848,848,848,
+	849,849,849,849,849,849,849,849,850,851,0,0,0,0,0,0,
+	852,852,852,852,852,852,852,852,0,0,0,0,0,0,0,0,
+	853,853,853,853,853,853,853,853,854,854,854,854,854,854,854,854,
+	855,855,855,855,855,855,855,855,856,856,856,856,856,856,856,856,
+	857,857,857,857,857,857,857,857,858,859,0,0,0,0,0,0,
+	860,860,860,860,860,860,860,860,0,0,0,0,0,0,0,0,
+	861,861,861,861,861,861,861,861,862,862,862,862,862,862,862,862,
+	863,863,863,863,863,863,863,863,864,864,864,864,864,864,864,864,
+	865,865,865,865,865,865,865,865,866,867,0,0,0,0,0,0,
+	175,175,175,175,175,175,175,175,0,0,0,0,0,0,0,0,
+	868,868,868,868,868,868,868,868,869,869,869,869,869,869,869,869,
+	870,870,870,870,870,870,870,870,871,871,871,871,871,871,871,871,
+	872,872,872,872,872,872,872,872,873,874,0,0,0,0,0,0,
+	875,875,875,875,875,875,875,875,0,0,0,0,0,0,0,0,
+	876,876,876,876,876,876,876,876,877,877,877,877,877,877,877,877,
+	878,878,878,878,878,878,878,878,879,879,879,879,879,879,879,879,
+	880,880,880,880,880,880,880,880,881,882,883,884,885,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	886,886,886,886,886,886,886,886,0,0,0,0,0,0,0,0,
+	887,887,887,887,887,887,887,887,888,888,888,888,888,888,888,888,
+	889,889,889,889,889,889,889,889,890,890,890,890,890,890,890,890,
+	891,891,891,891,891,891,891,891,892,893,894,895,896,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	897,897,897,897,897,897,897,897,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,36,36,36,36,36,36,36,36,
+	131,131,131,131,131,131,131,131,898,111,65,899,0,0,0,0,
+	224,224,224,224,224,224,224,224,0,0,0,0,0,0,0,0,
+	900,900,900,900,900,900,900,900,901,901,901,901,901,901,901,902,
+	903,903,903,903,903,903,903,904,66,66,66,66,66,66,66,66,
+	905,905,905,905,905,905,905,905,906,907,0,0,0,0,0,0,
+	148,148,148,148,148,148,148,148,0,0,0,0,0,0,0,0,
+	908,908,908,908,908,908,908,908,909,909,909,909,909,909,909,909,
+	910,910,910,910,910,910,910,910,138,138,138,138,138,138,138,138,
+	911,911,911,911,911,911,911,911,912,913,0,0,0,0,0,0,
+	211,211,211,211,211,211,211,211,0,0,0,0,0,0,0,0,
+	159,159,159,159,159,159,159,159,149,149,149,149,149,149,149,149,
+	128,128,128,128,128,128,128,128,135,135,135,135,135,135,135,135,
+	914,914,914,914,914,914,914,914,915,916,0,0,0,0,0,0,
+	917,917,917,917,917,917,917,917,0,0,0,0,0,0,0,0,
+	918,918,918,918,918,918,918,918,919,919,919,919,919,919,919,919,
+	920,920,920,920,920,920,920,920,921,921,921,921,921,921,921,921,
+	922,922,922,922,922,922,922,922,923,924,0,0,0,0,0,0,
+	875,875,875,875,875,875,875,875,0,0,0,0,0,0,0,0,
+	876,876,876,876,876,876,876,876,877,877,877,877,877,877,877,877,
+	878,878,878,878,878,878,878,878,879,879,879,879,879,879,879,879,
+	880,880,880,880,880,880,880,880,881,882,883,884,885,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	886,886,886,886,886,886,886,886,0,0,0,0,0,0,0,0,
+	887,887,887,887,887,887,887,887,888,888,888,888,888,888,888,888,
+	889,889,889,889,889,889,889,889,890,890,890,890,890,890,890,890,
+	891,891,891,891,891,891,891,891,892,893,894,895,896,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	897,897,897,897,897,897,897,897,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,36,36,36,36,36,36,36,36,
+	131,131,131,131,131,131,131,131,898,111,65,899,0,0,0,0,
 	925,925,925,925,925,925,925,925,0,0,0,0,0,0,0,0,
 	926,926,926,926,926,926,926,926,927,927,927,927,927,927,927,928,
 	929,929,929,929,929,929,929,930,931,931,931,931,931,931,931,931,
 	932,932,932,932,932,932,932,932,933,934,0,0,0,0,0,0,
-	715,715,715,715,715,715,715,715,0,0,0,0,0,0,0,0,
-	716,716,716,716,716,716,716,716,717,717,717,717,717,717,717,717,
-	718,718,718,718,718,718,718,718,719,719,719,719,719,719,719,719,
-	720,720,720,720,720,720,720,720,721,722,723,724,725,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	726,726,726,726,726,726,726,726,0,0,0,0,0,0,0,0,
-	727,727,727,727,727,727,727,727,728,728,728,728,728,728,728,728,
-	729,729,729,729,729,729,729,729,730,730,730,730,730,730,730,730,
-	731,731,731,731,731,731,731,731,732,733,734,735,736,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	737,737,737,737,737,737,737,737,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,738,738,738,738,738,738,738,738,
-	739,739,739,739,739,739,739,739,740,741,742,743,0,0,0,0,
 	935,935,935,935,935,935,935,935,0,0,0,0,0,0,0,0,
 	936,936,936,936,936,936,936,936,937,937,937,937,937,937,937,937,
 	938,938,938,938,938,938,938,938,939,939,939,939,939,939,939,939,
-	940,940,940,940,940,940,940,940,941,942,943,944,945,0,0,0,
-	946,946,946,946,946,946,946,946,0,0,0,0,0,0,0,0,
-	947,947,947,947,947,947,947,947,948,948,948,948,948,948,948,948,
-	949,949,949,949,949,949,949,949,950,950,950,950,950,950,950,950,
-	951,951,951,951,951,951,951,951,952,953,954,955,956,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	957,957,957,957,957,957,957,957,958,958,958,958,958,958,958,958,
-	0,0,0,0,0,0,0,0,959,959,959,959,959,959,959,959,
-	960,960,960,960,960,960,960,960,961,962,963,964,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	965,965,965,965,965,965,965,965,966,966,966,966,966,966,966,966,
-	0,0,0,0,0,0,0,0,967,967,967,967,967,967,967,967,
-	968,968,968,968,968,968,968,968,969,970,971,972,0,0,0,0,
-	715,715,715,715,715,715,715,715,0,0,0,0,0,0,0,0,
-	716,716,716,716,716,716,716,716,717,717,717,717,717,717,717,717,
-	718,718,718,718,718,718,718,718,719,719,719,719,719,719,719,719,
-	720,720,720,720,720,720,720,720,721,722,723,724,725,0,0,0,
+	940,940,940,940,940,940,940,940,941,942,0,0,0,0,0,0,
+	943,943,943,943,943,943,943,943,0,0,0,0,0,0,0,0,
+	944,944,944,944,944,944,944,944,945,945,945,945,945,945,945,945,
+	946,946,946,946,946,946,946,946,947,947,947,947,947,947,947,947,
+	948,948,948,948,948,948,948,948,949,950,0,0,0,0,0,0,
+	951,951,951,951,951,951,951,951,0,0,0,0,0,0,0,0,
+	952,952,952,952,952,952,952,952,953,953,953,953,953,953,953,953,
+	954,954,954,954,954,954,954,954,955,955,955,955,955,955,955,955,
+	956,956,956,956,956,956,956,956,957,958,959,960,961,0,0,0,
+	875,875,875,875,875,875,875,875,0,0,0,0,0,0,0,0,
+	876,876,876,876,876,876,876,876,877,877,877,877,877,877,877,877,
+	878,878,878,878,878,878,878,878,879,879,879,879,879,879,879,879,
+	880,880,880,880,880,880,880,880,881,882,883,884,885,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	726,726,726,726,726,726,726,726,0,0,0,0,0,0,0,0,
-	727,727,727,727,727,727,727,727,728,728,728,728,728,728,728,728,
-	729,729,729,729,729,729,729,729,730,730,730,730,730,730,730,730,
-	731,731,731,731,731,731,731,731,732,733,734,735,736,0,0,0,
+	886,886,886,886,886,886,886,886,0,0,0,0,0,0,0,0,
+	887,887,887,887,887,887,887,887,888,888,888,888,888,888,888,888,
+	889,889,889,889,889,889,889,889,890,890,890,890,890,890,890,890,
+	891,891,891,891,891,891,891,891,892,893,894,895,896,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	737,737,737,737,737,737,737,737,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,738,738,738,738,738,738,738,738,
-	739,739,739,739,739,739,739,739,740,741,742,743,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	973,973,973,973,973,973,973,973,973,973,973,973,973,973,973,973,
-	974,974,974,974,974,974,974,975,976,976,976,976,976,976,976,977,
+	897,897,897,897,897,897,897,897,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,36,36,36,36,36,36,36,36,
+	131,131,131,131,131,131,131,131,898,111,65,899,0,0,0,0,
+	146,146,146,146,146,146,146,146,0,0,0,0,0,0,0,0,
+	962,962,962,962,962,962,962,962,963,963,963,963,963,963,963,964,
+	965,965,965,965,965,965,965,966,241,241,241,241,241,241,241,241,
+	967,967,967,967,967,967,967,967,968,969,0,0,0,0,0,0,
+	970,970,970,970,970,970,970,970,0,0,0,0,0,0,0,0,
+	971,971,971,971,971,971,971,971,972,972,972,972,972,972,972,972,
+	973,973,973,973,973,973,973,973,974,974,974,974,974,974,974,974,
+	975,975,975,975,975,975,975,975,976,977,0,0,0,0,0,0,
+	234,234,234,234,234,234,234,234,0,0,0,0,0,0,0,0,
 	978,978,978,978,978,978,978,978,979,979,979,979,979,979,979,979,
-	980,981,982,983,984,985,986,987,0,0,988,989,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	990,990,990,990,990,990,990,990,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,991,991,991,991,991,991,991,991,
-	992,992,992,992,992,992,992,992,993,994,995,996,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	997,997,997,997,997,997,997,997,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,998,998,998,998,998,998,998,998,
-	999,999,999,999,999,999,999,999,1000,1001,1002,1003,0,0,0,0,
-	715,715,715,715,715,715,715,715,0,0,0,0,0,0,0,0,
-	716,716,716,716,716,716,716,716,717,717,717,717,717,717,717,717,
-	718,718,718,718,718,718,718,718,719,719,719,719,719,719,719,719,
-	720,720,720,720,720,720,720,720,721,722,723,724,725,0,0,0,
+	980,980,980,980,980,980,980,980,981,981,981,981,981,981,981,981,
+	982,982,982,982,982,982,982,982,983,984,0,0,0,0,0,0,
+	985,985,985,985,985,985,985,985,0,0,0,0,0,0,0,0,
+	986,986,986,986,986,986,986,986,987,987,987,987,987,987,987,987,
+	988,988,988,988,988,988,988,988,989,989,989,989,989,989,989,989,
+	990,990,990,990,990,990,990,990,991,992,993,994,995,0,0,0,
+	875,875,875,875,875,875,875,875,0,0,0,0,0,0,0,0,
+	876,876,876,876,876,876,876,876,877,877,877,877,877,877,877,877,
+	878,878,878,878,878,878,878,878,879,879,879,879,879,879,879,879,
+	880,880,880,880,880,880,880,880,881,882,883,884,885,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	726,726,726,726,726,726,726,726,0,0,0,0,0,0,0,0,
-	727,727,727,727,727,727,727,727,728,728,728,728,728,728,728,728,
-	729,729,729,729,729,729,729,729,730,730,730,730,730,730,730,730,
-	731,731,731,731,731,731,731,731,732,733,734,735,736,0,0,0,
+	886,886,886,886,886,886,886,886,0,0,0,0,0,0,0,0,
+	887,887,887,887,887,887,887,887,888,888,888,888,888,888,888,888,
+	889,889,889,889,889,889,889,889,890,890,890,890,890,890,890,890,
+	891,891,891,891,891,891,891,891,892,893,894,895,896,0,0,0,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	737,737,737,737,737,737,737,737,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,738,738,738,738,738,738,738,738,
-	739,739,739,739,739,739,739,739,740,741,742,743,0,0,0,0,
-	1004,1004,1004,1004,1004,1004,1004,1004,0,0,0,0,0,0,0,0,
-	1005,1005,1005,1005,1005,1005,1005,1005,1006,1006,1006,1006,1006,1006,1006,1007,
-	1008,1008,1008,1008,1008,1008,1008,1009,1010,1010,1010,1010,1010,1010,1010,1010,
-	1011,1011,1011,1011,1011,1011,1011,1011,1012,1013,0,0,0,0,0,0,
-	1014,1014,1014,1014,1014,1014,1014,1014,1015,1015,1015,1015,1015,1015,1015,1015,
-	1016,1016,1016,1016,1016,1016,1016,1016,1017,1017,1017,1017,1017,1017,1017,1017,
-	1018,1018,1018,1018,1018,1018,1018,1018,1019,1019,1019,1019,1019,1019,1019,1019,
-	1020,1020,1020,1020,1020,1020,1020,1020,1021,1022,0,0,0,0,0,0,
-	1023,1023,1023,1023,1023,1023,1023,1023,1024,1024,1024,1024,1024,1024,1024,1024,
-	1025,1025,1025,1025,1025,1025,1025,1025,1026,1026,1026,1026,1026,1026,1026,1026,
-	1027,1027,1027,1027,1027,1027,1027,1027,1028,1028,1028,1028,1028,1028,1028,1028,
-	1029,1029,1029,1029,1029,1029,1029,1029,1030,1031,0,0,0,0,0,0,
-	1032,1032,1032,1032,1032,1032,1032,1032,1033,1033,1033,1033,1033,1033,1033,1033,
-	1034,1034,1034,1034,1034,1034,1034,1034,1035,1035,1035,1035,1035,1035,1035,1036,
-	1037,1037,1037,1037,1037,1037,1037,1038,1039,1039,1039,1039,1039,1039,1039,1039,
-	1040,1040,1040,1040,1040,1040,1040,1040,1041,1042,1043,1044,1045,0,0,0,
-	1046,1046,1046,1046,1046,1046,1046,1046,0,0,0,0,0,0,0,0,
-	1047,1047,1047,1047,1047,1047,1047,1047,1048,1048,1048,1048,1048,1048,1048,1049,
-	1050,1050,1050,1050,1050,1050,1050,1051,1052,1052,1052,1052,1052,1052,1052,1052,
-	1053,1053,1053,1053,1053,1053,1053,1053,1054,1055,0,0,0,0,0,0,
-	1056,1056,1056,1056,1056,1056,1056,1056,1057,1057,1057,1057,1057,1057,1057,1057,
-	1058,1058,1058,1058,1058,1058,1058,1058,1059,1059,1059,1059,1059,1059,1059,1059,
-	1060,1060,1060,1060,1060,1060,1060,1060,1061,1061,1061,1061,1061,1061,1061,1061,
-	1062,1062,1062,1062,1062,1062,1062,1062,1063,1064,0,0,0,0,0,0,
-	1065,1065,1065,1065,1065,1065,1065,1065,1066,1066,1066,1066,1066,1066,1066,1066,
-	1067,1067,1067,1067,1067,1067,1067,1067,1068,1068,1068,1068,1068,1068,1068,1068,
-	1069,1069,1069,1069,1069,1069,1069,1069,1070,1070,1070,1070,1070,1070,1070,1070,
-	1071,1071,1071,1071,1071,1071,1071,1071,1072,1073,0,0,0,0,0,0,
+	897,897,897,897,897,897,897,897,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,36,36,36,36,36,36,36,36,
+	131,131,131,131,131,131,131,131,898,111,65,899,0,0,0,0,
+	996,996,996,996,996,996,996,996,997,997,997,997,997,997,997,998,
+	999,999,999,999,999,999,999,999,1000,1000,1000,1000,1000,1000,1000,1001,
+	1002,1002,1002,1002,1002,1002,1002,1003,1004,1004,1004,1004,1004,1004,1004,1004,
+	1005,1005,1005,1005,1005,1005,1005,1005,1006,1007,0,0,0,0,0,0,
+	143,143,143,143,143,143,143,143,1008,1008,1008,1008,1008,1008,1008,1008,
+	1009,1009,1009,1009,1009,1009,1009,1009,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,155,155,155,155,155,155,155,155,
+	1010,1010,1010,1010,1010,1010,1010,1010,194,240,235,1011,0,0,0,0,
+	67,67,67,67,67,67,67,67,0,0,0,0,0,0,0,0,
+	1012,1012,1012,1012,1012,1012,1012,1012,0,0,0,0,0,0,0,0,
+	1013,1013,1013,1013,1013,1013,1013,1013,1014,1014,1014,1014,1014,1014,1014,1014,
+	1015,1015,1015,1015,1015,1015,1015,1015,1016,1017,0,0,0,0,0,0,
+	68,68,68,68,68,68,68,68,0,0,0,0,0,0,0,0,
+	242,242,242,242,242,242,242,242,0,0,0,0,0,0,0,0,
+	51,51,51,51,51,51,51,51,1018,1018,1018,1018,1018,1018,1018,1018,
+	1019,1019,1019,1019,1019,1019,1019,1019,1020,1021,0,0,0,0,0,0,
+	875,875,875,875,875,875,875,875,0,0,0,0,0,0,0,0,
+	876,876,876,876,876,876,876,876,877,877,877,877,877,877,877,877,
+	878,878,878,878,878,878,878,878,879,879,879,879,879,879,879,879,
+	880,880,880,880,880,880,880,880,881,882,883,884,885,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	886,886,886,886,886,886,886,886,0,0,0,0,0,0,0,0,
+	887,887,887,887,887,887,887,887,888,888,888,888,888,888,888,888,
+	889,889,889,889,889,889,889,889,890,890,890,890,890,890,890,890,
+	891,891,891,891,891,891,891,891,892,893,894,895,896,0,0,0,
+	1022,1022,1022,1022,1022,1022,1022,1022,0,0,0,0,0,0,0,0,
+	897,897,897,897,897,897,897,897,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,36,36,36,36,36,36,36,36,
+	131,131,131,131,131,131,131,131,898,111,65,899,0,0,0,0,
+	31,31,31,31,31,31,31,31,0,0,0,0,0,0,0,0,
+	186,186,186,186,186,186,186,186,230,230,230,230,230,230,230,1023,
+	1024,1024,1024,1024,1024,1024,1024,1025,2,2,2,2,2,2,2,2,
+	1026,1026,1026,1026,1026,1026,1026,1026,1027,1028,1029,1030,1031,0,0,0,
+	99,99,99,99,99,99,99,99,1032,1032,1032,1032,1032,1032,1032,1032,
+	56,56,56,56,56,56,56,56,1033,1033,1033,1033,1033,1033,1033,1033,
+	1034,1034,1034,1034,1034,1034,1034,1034,178,178,178,178,178,178,178,178,
+	1035,1035,1035,1035,1035,1035,1035,1035,1036,1037,1038,1039,1040,0,0,0,
+	32,32,32,32,32,32,32,32,1041,1041,1041,1041,1041,1041,1041,1041,
+	120,120,120,120,120,120,120,120,1042,1042,1042,1042,1042,1042,1042,1042,
+	1043,1043,1043,1043,1043,1043,1043,1043,151,151,151,151,151,151,151,151,
+	1044,1044,1044,1044,1044,1044,1044,1044,1045,1046,1047,1048,1049,0,0,0,
+	1050,1050,1050,1050,1050,1050,1050,1050,0,0,0,0,0,0,0,0,
+	1051,1051,1051,1051,1051,1051,1051,1051,1052,1052,1052,1052,1052,1052,1052,1053,
+	1054,1054,1054,1054,1054,1054,1054,1055,1056,1056,1056,1056,1056,1056,1056,1056,
+	1057,1057,1057,1057,1057,1057,1057,1057,1058,1059,0,0,0,0,0,0,
+	875,875,875,875,875,875,875,875,0,0,0,0,0,0,0,0,
+	876,876,876,876,876,876,876,876,877,877,877,877,877,877,877,877,
+	878,878,878,878,878,878,878,878,879,879,879,879,879,879,879,879,
+	880,880,880,880,880,880,880,880,881,882,883,884,885,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	886,886,886,886,886,886,886,886,0,0,0,0,0,0,0,0,
+	887,887,887,887,887,887,887,887,888,888,888,888,888,888,888,888,
+	889,889,889,889,889,889,889,889,890,890,890,890,890,890,890,890,
+	891,891,891,891,891,891,891,891,892,893,894,895,896,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	897,897,897,897,897,897,897,897,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,36,36,36,36,36,36,36,36,
+	131,131,131,131,131,131,131,131,898,111,65,899,0,0,0,0,
+	1060,1060,1060,1060,1060,1060,1060,1060,0,0,0,0,0,0,0,0,
+	1061,1061,1061,1061,1061,1061,1061,1061,1062,1062,1062,1062,1062,1062,1062,1062,
+	1063,1063,1063,1063,1063,1063,1063,1063,1064,1064,1064,1064,1064,1064,1064,1064,
+	1065,1065,1065,1065,1065,1065,1065,1065,1066,1067,1068,1069,1070,0,0,0,
+	1071,1071,1071,1071,1071,1071,1071,1071,0,0,0,0,0,0,0,0,
+	1072,1072,1072,1072,1072,1072,1072,1072,1073,1073,1073,1073,1073,1073,1073,1073,
 	1074,1074,1074,1074,1074,1074,1074,1074,1075,1075,1075,1075,1075,1075,1075,1075,
-	1076,1076,1076,1076,1076,1076,1076,1076,1077,1077,1077,1077,1077,1077,1077,1078,
-	1079,1079,1079,1079,1079,1079,1079,1080,1081,1081,1081,1081,1081,1081,1081,1081,
-	1082,1082,1082,1082,1082,1082,1082,1082,1083,1084,1085,1086,1087,0,0,0,
-	1004,1004,1004,1004,1004,1004,1004,1004,0,0,0,0,0,0,0,0,
-	1005,1005,1005,1005,1005,1005,1005,1005,1006,1006,1006,1006,1006,1006,1006,1007,
-	1008,1008,1008,1008,1008,1008,1008,1009,1010,1010,1010,1010,1010,1010,1010,1010,
-	1011,1011,1011,1011,1011,1011,1011,1011,1012,1013,0,0,0,0,0,0,
-	1014,1014,1014,1014,1014,1014,1014,1014,1015,1015,1015,1015,1015,1015,1015,1015,
-	1016,1016,1016,1016,1016,1016,1016,1016,1017,1017,1017,1017,1017,1017,1017,1017,
-	1018,1018,1018,1018,1018,1018,1018,1018,1019,1019,1019,1019,1019,1019,1019,1019,
-	1020,1020,1020,1020,1020,1020,1020,1020,1021,1022,0,0,0,0,0,0,
-	1023,1023,1023,1023,1023,1023,1023,1023,1024,1024,1024,1024,1024,1024,1024,1024,
-	1025,1025,1025,1025,1025,1025,1025,1025,1026,1026,1026,1026,1026,1026,1026,1026,
-	1027,1027,1027,1027,1027,1027,1027,1027,1028,1028,1028,1028,1028,1028,1028,1028,
-	1029,1029,1029,1029,1029,1029,1029,1029,1030,1031,0,0,0,0,0,0,
-	1088,1088,1088,1088,1088,1088,1088,1088,1089,1089,1089,1089,1089,1089,1089,1089,
-	1090,1090,1090,1090,1090,1090,1090,1090,1091,1091,1091,1091,1091,1091,1091,1092,
-	1093,1093,1093,1093,1093,1093,1093,1094,1095,1095,1095,1095,1095,1095,1095,1095,
-	1096,1096,1096,1096,1096,1096,1096,1096,1097,1098,1099,1100,1101,0,0,0,
-	1046,1046,1046,1046,1046,1046,1046,1046,0,0,0,0,0,0,0,0,
-	1047,1047,1047,1047,1047,1047,1047,1047,1048,1048,1048,1048,1048,1048,1048,1049,
-	1050,1050,1050,1050,1050,1050,1050,1051,1052,1052,1052,1052,1052,1052,1052,1052,
-	1053,1053,1053,1053,1053,1053,1053,1053,1054,1055,0,0,0,0,0,0,
-	1056,1056,1056,1056,1056,1056,1056,1056,1057,1057,1057,1057,1057,1057,1057,1057,
-	1058,1058,1058,1058,1058,1058,1058,1058,1059,1059,1059,1059,1059,1059,1059,1059,
-	1060,1060,1060,1060,1060,1060,1060,1060,1061,1061,1061,1061,1061,1061,1061,1061,
-	1062,1062,1062,1062,1062,1062,1062,1062,1063,1064,0,0,0,0,0,0,
-	1065,1065,1065,1065,1065,1065,1065,1065,1066,1066,1066,1066,1066,1066,1066,1066,
-	1067,1067,1067,1067,1067,1067,1067,1067,1068,1068,1068,1068,1068,1068,1068,1068,
-	1069,1069,1069,1069,1069,1069,1069,1069,1070,1070,1070,1070,1070,1070,1070,1070,
-	1071,1071,1071,1071,1071,1071,1071,1071,1072,1073,0,0,0,0,0,0,
-	1102,1102,1102,1102,1102,1102,1102,1102,1103,1103,1103,1103,1103,1103,1103,1103,
-	1104,1104,1104,1104,1104,1104,1104,1104,1105,1105,1105,1105,1105,1105,1105,1106,
-	1107,1107,1107,1107,1107,1107,1107,1108,1109,1109,1109,1109,1109,1109,1109,1109,
-	1110,1110,1110,1110,1110,1110,1110,1110,1111,1112,1113,1114,1115,0,0,0,
-	1004,1004,1004,1004,1004,1004,1004,1004,0,0,0,0,0,0,0,0,
-	1005,1005,1005,1005,1005,1005,1005,1005,1006,1006,1006,1006,1006,1006,1006,1007,
-	1008,1008,1008,1008,1008,1008,1008,1009,1010,1010,1010,1010,1010,1010,1010,1010,
-	1011,1011,1011,1011,1011,1011,1011,1011,1012,1013,0,0,0,0,0,0,
-	1014,1014,1014,1014,1014,1014,1014,1014,1015,1015,1015,1015,1015,1015,1015,1015,
-	1016,1016,1016,1016,1016,1016,1016,1016,1017,1017,1017,1017,1017,1017,1017,1017,
-	1018,1018,1018,1018,1018,1018,1018,1018,1019,1019,1019,1019,1019,1019,1019,1019,
-	1020,1020,1020,1020,1020,1020,1020,1020,1021,1022,0,0,0,0,0,0,
-	1023,1023,1023,1023,1023,1023,1023,1023,1024,1024,1024,1024,1024,1024,1024,1024,
-	1025,1025,1025,1025,1025,1025,1025,1025,1026,1026,1026,1026,1026,1026,1026,1026,
-	1027,1027,1027,1027,1027,1027,1027,1027,1028,1028,1028,1028,1028,1028,1028,1028,
-	1029,1029,1029,1029,1029,1029,1029,1029,1030,1031,0,0,0,0,0,0,
-	1116,1116,1116,1116,1116,1116,1116,1116,1117,1117,1117,1117,1117,1117,1117,1117,
-	1118,1118,1118,1118,1118,1118,1118,1118,1119,1119,1119,1119,1119,1119,1119,1120,
-	1121,1121,1121,1121,1121,1121,1121,1122,1123,1123,1123,1123,1123,1123,1123,1123,
-	1124,1124,1124,1124,1124,1124,1124,1124,1125,1126,1127,1128,1129,0,0,0,
-	1046,1046,1046,1046,1046,1046,1046,1046,0,0,0,0,0,0,0,0,
-	1047,1047,1047,1047,1047,1047,1047,1047,1048,1048,1048,1048,1048,1048,1048,1049,
-	1050,1050,1050,1050,1050,1050,1050,1051,1052,1052,1052,1052,1052,1052,1052,1052,
-	1053,1053,1053,1053,1053,1053,1053,1053,1054,1055,0,0,0,0,0,0,
-	1056,1056,1056,1056,1056,1056,1056,1056,1057,1057,1057,1057,1057,1057,1057,1057,
-	1058,1058,1058,1058,1058,1058,1058,1058,1059,1059,1059,1059,1059,1059,1059,1059,
-	1060,1060,1060,1060,1060,1060,1060,1060,1061,1061,1061,1061,1061,1061,1061,1061,
-	1062,1062,1062,1062,1062,1062,1062,1062,1063,1064,0,0,0,0,0,0,
-	1065,1065,1065,1065,1065,1065,1065,1065,1066,1066,1066,1066,1066,1066,1066,1066,
-	1067,1067,1067,1067,1067,1067,1067,1067,1068,1068,1068,1068,1068,1068,1068,1068,
-	1069,1069,1069,1069,1069,1069,1069,1069,1070,1070,1070,1070,1070,1070,1070,1070,
-	1071,1071,1071,1071,1071,1071,1071,1071,1072,1073,0,0,0,0,0,0,
-	1130,1130,1130,1130,1130,1130,1130,1130,1131,1131,1131,1131,1131,1131,1131,1131,
-	1132,1132,1132,1132,1132,1132,1132,1132,1133,1133,1133,1133,1133,1133,1133,1134,
-	1135,1135,1135,1135,1135,1135,1135,1136,1137,1137,1137,1137,1137,1137,1137,1137,
-	1138,1138,1138,1138,1138,1138,1138,1138,1139,1140,1141,1142,1143,0,0,0,
-	1004,1004,1004,1004,1004,1004,1004,1004,0,0,0,0,0,0,0,0,
-	1005,1005,1005,1005,1005,1005,1005,1005,1006,1006,1006,1006,1006,1006,1006,1007,
-	1008,1008,1008,1008,1008,1008,1008,1009,1010,1010,1010,1010,1010,1010,1010,1010,
-	1011,1011,1011,1011,1011,1011,1011,1011,1012,1013,0,0,0,0,0,0,
-	1014,1014,1014,1014,1014,1014,1014,1014,1015,1015,1015,1015,1015,1015,1015,1015,
-	1016,1016,1016,1016,1016,1016,1016,1016,1017,1017,1017,1017,1017,1017,1017,1017,
-	1018,1018,1018,1018,1018,1018,1018,1018,1019,1019,1019,1019,1019,1019,1019,1019,
-	1020,1020,1020,1020,1020,1020,1020,1020,1021,1022,0,0,0,0,0,0,
-	1023,1023,1023,1023,1023,1023,1023,1023,1024,1024,1024,1024,1024,1024,1024,1024,
-	1025,1025,1025,1025,1025,1025,1025,1025,1026,1026,1026,1026,1026,1026,1026,1026,
-	1027,1027,1027,1027,1027,1027,1027,1027,1028,1028,1028,1028,1028,1028,1028,1028,
-	1029,1029,1029,1029,1029,1029,1029,1029,1030,1031,0,0,0,0,0,0,
-	1144,1144,1144,1144,1144,1144,1144,1144,1145,1145,1145,1145,1145,1145,1145,1145,
-	1146,1146,1146,1146,1146,1146,1146,1146,1147,1147,1147,1147,1147,1147,1147,1148,
-	1149,1149,1149,1149,1149,1149,1149,1150,1151,1151,1151,1151,1151,1151,1151,1151,
-	1152,1152,1152,1152,1152,1152,1152,1152,1153,1154,1155,1156,1157,0,0,0,
-	1046,1046,1046,1046,1046,1046,1046,1046,0,0,0,0,0,0,0,0,
-	1047,1047,1047,1047,1047,1047,1047,1047,1048,1048,1048,1048,1048,1048,1048,1049,
-	1050,1050,1050,1050,1050,1050,1050,1051,1052,1052,1052,1052,1052,1052,1052,1052,
-	1053,1053,1053,1053,1053,1053,1053,1053,1054,1055,0,0,0,0,0,0,
-	1056,1056,1056,1056,1056,1056,1056,1056,1057,1057,1057,1057,1057,1057,1057,1057,
-	1058,1058,1058,1058,1058,1058,1058,1058,1059,1059,1059,1059,1059,1059,1059,1059,
-	1060,1060,1060,1060,1060,1060,1060,1060,1061,1061,1061,1061,1061,1061,1061,1061,
-	1062,1062,1062,1062,1062,1062,1062,1062,1063,1064,0,0,0,0,0,0,
-	1065,1065,1065,1065,1065,1065,1065,1065,1066,1066,1066,1066,1066,1066,1066,1066,
-	1067,1067,1067,1067,1067,1067,1067,1067,1068,1068,1068,1068,1068,1068,1068,1068,
-	1069,1069,1069,1069,1069,1069,1069,1069,1070,1070,1070,1070,1070,1070,1070,1070,
-	1071,1071,1071,1071,1071,1071,1071,1071,1072,1073,0,0,0,0,0,0,
+	1076,1076,1076,1076,1076,1076,1076,1076,1077,1078,1079,1080,1081,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	1082,1082,1082,1082,1082,1082,1082,1082,1083,1083,1083,1083,1083,1083,1083,1083,
+	0,0,0,0,0,0,0,0,1084,1084,1084,1084,1084,1084,1084,1084,
+	1085,1085,1085,1085,1085,1085,1085,1085,1086,1087,1088,1089,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	249,249,249,249,249,249,249,249,55,55,55,55,55,55,55,55,
+	0,0,0,0,0,0,0,0,147,147,147,147,147,147,147,147,
+	1090,1090,1090,1090,1090,1090,1090,1090,1091,1092,1093,1094,0,0,0,0,
+	875,875,875,875,875,875,875,875,0,0,0,0,0,0,0,0,
+	876,876,876,876,876,876,876,876,877,877,877,877,877,877,877,877,
+	878,878,878,878,878,878,878,878,879,879,879,879,879,879,879,879,
+	880,880,880,880,880,880,880,880,881,882,883,884,885,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	886,886,886,886,886,886,886,886,0,0,0,0,0,0,0,0,
+	887,887,887,887,887,887,887,887,888,888,888,888,888,888,888,888,
+	889,889,889,889,889,889,889,889,890,890,890,890,890,890,890,890,
+	891,891,891,891,891,891,891,891,892,893,894,895,896,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	897,897,897,897,897,897,897,897,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,36,36,36,36,36,36,36,36,
+	131,131,131,131,131,131,131,131,898,111,65,899,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	1095,1095,1095,1095,1095,1095,1095,1095,1095,1095,1095,1095,1095,1095,1095,1095,
+	141,141,141,141,141,141,141,1096,142,142,142,142,142,142,142,1097,
+	1098,1098,1098,1098,1098,1098,1098,1098,1099,1099,1099,1099,1099,1099,1099,1099,
+	1100,70,1101,231,1102,14,1103,1104,0,0,1105,1106,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	57,57,57,57,57,57,57,57,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,34,34,34,34,34,34,34,34,
+	1107,1107,1107,1107,1107,1107,1107,1107,1108,89,82,1109,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	207,207,207,207,207,207,207,207,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,1110,1110,1110,1110,1110,1110,1110,1110,
+	1111,1111,1111,1111,1111,1111,1111,1111,1112,33,1113,205,0,0,0,0,
+	875,875,875,875,875,875,875,875,0,0,0,0,0,0,0,0,
+	876,876,876,876,876,876,876,876,877,877,877,877,877,877,877,877,
+	878,878,878,878,878,878,878,878,879,879,879,879,879,879,879,879,
+	880,880,880,880,880,880,880,880,881,882,883,884,885,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	886,886,886,886,886,886,886,886,0,0,0,0,0,0,0,0,
+	887,887,887,887,887,887,887,887,888,888,888,888,888,888,888,888,
+	889,889,889,889,889,889,889,889,890,890,890,890,890,890,890,890,
+	891,891,891,891,891,891,891,891,892,893,894,895,896,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	897,897,897,897,897,897,897,897,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,36,36,36,36,36,36,36,36,
+	131,131,131,131,131,131,131,131,898,111,65,899,0,0,0,0,
+	75,75,75,75,75,75,75,75,0,0,0,0,0,0,0,0,
+	1114,1114,1114,1114,1114,1114,1114,1114,1115,1115,1115,1115,1115,1115,1115,1116,
+	1117,1117,1117,1117,1117,1117,1117,1118,172,172,172,172,172,172,172,172,
+	1119,1119,1119,1119,1119,1119,1119,1119,1120,1121,0,0,0,0,0,0,
+	126,126,126,126,126,126,126,126,1122,1122,1122,1122,1122,1122,1122,1122,
+	1123,1123,1123,1123,1123,1123,1123,1123,1124,1124,1124,1124,1124,1124,1124,1124,
+	1125,1125,1125,1125,1125,1125,1125,1125,174,174,174,174,174,174,174,174,
+	1126,1126,1126,1126,1126,1126,1126,1126,1127,1128,0,0,0,0,0,0,
+	61,61,61,61,61,61,61,61,10,10,10,10,10,10,10,10,
+	222,222,222,222,222,222,222,222,1129,1129,1129,1129,1129,1129,1129,1129,
+	1130,1130,1130,1130,1130,1130,1130,1130,97,97,97,97,97,97,97,97,
+	1131,1131,1131,1131,1131,1131,1131,1131,1132,1133,0,0,0,0,0,0,
+	1134,1134,1134,1134,1134,1134,1134,1134,1135,1135,1135,1135,1135,1135,1135,1135,
+	1136,1136,1136,1136,1136,1136,1136,1136,1137,1137,1137,1137,1137,1137,1137,1138,
+	1139,1139,1139,1139,1139,1139,1139,1140,1141,1141,1141,1141,1141,1141,1141,1141,
+	1142,1142,1142,1142,1142,1142,1142,1142,1143,1144,1145,1146,1147,0,0,0,
+	1148,1148,1148,1148,1148,1148,1148,1148,0,0,0,0,0,0,0,0,
+	1149,1149,1149,1149,1149,1149,1149,1149,1150,1150,1150,1150,1150,1150,1150,1151,
+	1152,1152,1152,1152,1152,1152,1152,1153,144,144,144,144,144,144,144,144,
+	1154,1154,1154,1154,1154,1154,1154,1154,1155,1156,0,0,0,0,0,0,
+	189,189,189,189,189,189,189,189,1157,1157,1157,1157,1157,1157,1157,1157,
 	1158,1158,1158,1158,1158,1158,1158,1158,1159,1159,1159,1159,1159,1159,1159,1159,
-	1160,1160,1160,1160,1160,1160,1160,1160,1161,1161,1161,1161,1161,1161,1161,1162,
-	1163,1163,1163,1163,1163,1163,1163,1164,1165,1165,1165,1165,1165,1165,1165,1165,
-	1166,1166,1166,1166,1166,1166,1166,1166,1167,1168,1169,1170,1171,0,0,0,
-	1004,1004,1004,1004,1004,1004,1004,1004,0,0,0,0,0,0,0,0,
-	1005,1005,1005,1005,1005,1005,1005,1005,1006,1006,1006,1006,1006,1006,1006,1007,
-	1008,1008,1008,1008,1008,1008,1008,1009,1010,1010,1010,1010,1010,1010,1010,1010,
-	1011,1011,1011,1011,1011,1011,1011,1011,1012,1013,0,0,0,0,0,0,
-	1014,1014,1014,1014,1014,1014,1014,1014,1015,1015,1015,1015,1015,1015,1015,1015,
-	1016,1016,1016,1016,1016,1016,1016,1016,1017,1017,1017,1017,1017,1017,1017,1017,
-	1018,1018,1018,1018,1018,1018,1018,1018,1019,1019,1019,1019,1019,1019,1019,1019,
-	1020,1020,1020,1020,1020,1020,1020,1020,1021,1022,0,0,0,0,0,0,
-	1023,1023,1023,1023,1023,1023,1023,1023,1024,1024,1024,1024,1024,1024,1024,1024,
-	1025,1025,1025,1025,1025,1025,1025,1025,1026,1026,1026,1026,1026,1026,1026,1026,
-	1027,1027,1027,1027,1027,1027,1027,1027,1028,1028,1028,1028,1028,1028,1028,1028,
-	1029,1029,1029,1029,1029,1029,1029,1029,1030,1031,0,0,0,0,0,0,
-	1172,1172,1172,1172,1172,1172,1172,1172,1173,1173,1173,1173,1173,1173,1173,1173,
-	1174,1174,1174,1174,1174,1174,1174,1174,1175,1175,1175,1175,1175,1175,1175,1176,
-	1177,1177,1177,1177,1177,1177,1177,1178,1179,1179,1179,1179,1179,1179,1179,1179,
-	1180,1180,1180,1180,1180,1180,1180,1180,1181,1182,1183,1184,1185,0,0,0,
-	1046,1046,1046,1046,1046,1046,1046,1046,0,0,0,0,0,0,0,0,
-	1047,1047,1047,1047,1047,1047,1047,1047,1048,1048,1048,1048,1048,1048,1048,1049,
-	1050,1050,1050,1050,1050,1050,1050,1051,1052,1052,1052,1052,1052,1052,1052,1052,
-	1053,1053,1053,1053,1053,1053,1053,1053,1054,1055,0,0,0,0,0,0,
-	1056,1056,1056,1056,1056,1056,1056,1056,1057,1057,1057,1057,1057,1057,1057,1057,
-	1058,1058,1058,1058,1058,1058,1058,1058,1059,1059,1059,1059,1059,1059,1059,1059,
-	1060,1060,1060,1060,1060,1060,1060,1060,1061,1061,1061,1061,1061,1061,1061,1061,
-	1062,1062,1062,1062,1062,1062,1062,1062,1063,1064,0,0,0,0,0,0,
-	1065,1065,1065,1065,1065,1065,1065,1065,1066,1066,1066,1066,1066,1066,1066,1066,
-	1067,1067,1067,1067,1067,1067,1067,1067,1068,1068,1068,1068,1068,1068,1068,1068,
-	1069,1069,1069,1069,1069,1069,1069,1069,1070,1070,1070,1070,1070,1070,1070,1070,
-	1071,1071,1071,1071,1071,1071,1071,1071,1072,1073,0,0,0,0,0,0,
-	1186,1186,1186,1186,1186,1186,1186,1186,1187,1187,1187,1187,1187,1187,1187,1187,
-	1188,1188,1188,1188,1188,1188,1188,1188,1189,1189,1189,1189,1189,1189,1189,1190,
-	1191,1191,1191,1191,1191,1191,1191,1192,1193,1193,1193,1193,1193,1193,1193,1193,
-	1194,1194,1194,1194,1194,1194,1194,1194,1195,1196,1197,1198,1199,0,0,0,
-	1004,1004,1004,1004,1004,1004,1004,1004,0,0,0,0,0,0,0,0,
-	1005,1005,1005,1005,1005,1005,1005,1005,1006,1006,1006,1006,1006,1006,1006,1007,
-	1008,1008,1008,1008,1008,1008,1008,1009,1010,1010,1010,1010,1010,1010,1010,1010,
-	1011,1011,1011,1011,1011,1011,1011,1011,1012,1013,0,0,0,0,0,0,
-	1014,1014,1014,1014,1014,1014,1014,1014,1015,1015,1015,1015,1015,1015,1015,1015,
-	1016,1016,1016,1016,1016,1016,1016,1016,1017,1017,1017,1017,1017,1017,1017,1017,
-	1018,1018,1018,1018,1018,1018,1018,1018,1019,1019,1019,1019,1019,1019,1019,1019,
-	1020,1020,1020,1020,1020,1020,1020,1020,1021,1022,0,0,0,0,0,0,
-	1023,1023,1023,1023,1023,1023,1023,1023,1024,1024,1024,1024,1024,1024,1024,1024,
-	1025,1025,1025,1025,1025,1025,1025,1025,1026,1026,1026,1026,1026,1026,1026,1026,
-	1027,1027,1027,1027,1027,1027,1027,1027,1028,1028,1028,1028,1028,1028,1028,1028,
-	1029,1029,1029,1029,1029,1029,1029,1029,1030,1031,0,0,0,0,0,0,
-	1200,1200,1200,1200,1200,1200,1200,1200,1201,1201,1201,1201,1201,1201,1201,1201,
-	1202,1202,1202,1202,1202,1202,1202,1202,1203,1203,1203,1203,1203,1203,1203,1204,
-	1205,1205,1205,1205,1205,1205,1205,1206,1207,1207,1207,1207,1207,1207,1207,1207,
-	1208,1208,1208,1208,1208,1208,1208,1208,1209,1210,1211,1212,1213,0,0,0,
-	1046,1046,1046,1046,1046,1046,1046,1046,0,0,0,0,0,0,0,0,
-	1047,1047,1047,1047,1047,1047,1047,1047,1048,1048,1048,1048,1048,1048,1048,1049,
-	1050,1050,1050,1050,1050,1050,1050,1051,1052,1052,1052,1052,1052,1052,1052,1052,
-	1053,1053,1053,1053,1053,1053,1053,1053,1054,1055,0,0,0,0,0,0,
-	1056,1056,1056,1056,1056,1056,1056,1056,1057,1057,1057,1057,1057,1057,1057,1057,
-	1058,1058,1058,1058,1058,1058,1058,1058,1059,1059,1059,1059,1059,1059,1059,1059,
-	1060,1060,1060,1060,1060,1060,1060,1060,1061,1061,1061,1061,1061,1061,1061,1061,
-	1062,1062,1062,1062,1062,1062,1062,1062,1063,1064,0,0,0,0,0,0,
-	1065,1065,1065,1065,1065,1065,1065,1065,1066,1066,1066,1066,1066,1066,1066,1066,
-	1067,1067,1067,1067,1067,1067,1067,1067,1068,1068,1068,1068,1068,1068,1068,1068,
-	1069,1069,1069,1069,1069,1069,1069,1069,1070,1070,1070,1070,1070,1070,1070,1070,
-	1071,1071,1071,1071,1071,1071,1071,1071,1072,1073,0,0,0,0,0,0,
-	1214,1214,1214,1214,1214,1214,1214,1214,1215,1215,1215,1215,1215,1215,1215,1215,
-	1216,1216,1216,1216,1216,1216,1216,1216,1217,1217,1217,1217,1217,1217,1217,1218,
-	1219,1219,1219,1219,1219,1219,1219,1220,1221,1221,1221,1221,1221,1221,1221,1221,
-	1222,1222,1222,1222,1222,1222,1222,1222,1223,1224,1225,1226,1227,0,0,0,
-	1004,1004,1004,1004,1004,1004,1004,1004,0,0,0,0,0,0,0,0,
-	1005,1005,1005,1005,1005,1005,1005,1005,1006,1006,1006,1006,1006,1006,1006,1007,
-	1008,1008,1008,1008,1008,1008,1008,1009,1010,1010,1010,1010,1010,1010,1010,1010,
-	1011,1011,1011,1011,1011,1011,1011,1011,1012,1013,0,0,0,0,0,0,
-	1014,1014,1014,1014,1014,1014,1014,1014,1015,1015,1015,1015,1015,1015,1015,1015,
-	1016,1016,1016,1016,1016,1016,1016,1016,1017,1017,1017,1017,1017,1017,1017,1017,
-	1018,1018,1018,1018,1018,1018,1018,1018,1019,1019,1019,1019,1019,1019,1019,1019,
-	1020,1020,1020,1020,1020,1020,1020,1020,1021,1022,0,0,0,0,0,0,
-	1023,1023,1023,1023,1023,1023,1023,1023,1024,1024,1024,1024,1024,1024,1024,1024,
-	1025,1025,1025,1025,1025,1025,1025,1025,1026,1026,1026,1026,1026,1026,1026,1026,
-	1027,1027,1027,1027,1027,1027,1027,1027,1028,1028,1028,1028,1028,1028,1028,1028,
-	1029,1029,1029,1029,1029,1029,1029,1029,1030,1031,0,0,0,0,0,0,
-	1228,1228,1228,1228,1228,1228,1228,1228,1229,1229,1229,1229,1229,1229,1229,1229,
-	1230,1230,1230,1230,1230,1230,1230,1230,1231,1231,1231,1231,1231,1231,1231,1232,
-	1233,1233,1233,1233,1233,1233,1233,1234,1235,1235,1235,1235,1235,1235,1235,1235,
-	1236,1236,1236,1236,1236,1236,1236,1236,1237,1238,1239,1240,1241,0,0,0,
-	1046,1046,1046,1046,1046,1046,1046,1046,0,0,0,0,0,0,0,0,
-	1047,1047,1047,1047,1047,1047,1047,1047,1048,1048,1048,1048,1048,1048,1048,1049,
-	1050,1050,1050,1050,1050,1050,1050,1051,1052,1052,1052,1052,1052,1052,1052,1052,
-	1053,1053,1053,1053,1053,1053,1053,1053,1054,1055,0,0,0,0,0,0,
-	1056,1056,1056,1056,1056,1056,1056,1056,1057,1057,1057,1057,1057,1057,1057,1057,
-	1058,1058,1058,1058,1058,1058,1058,1058,1059,1059,1059,1059,1059,1059,1059,1059,
-	1060,1060,1060,1060,1060,1060,1060,1060,1061,1061,1061,1061,1061,1061,1061,1061,
-	1062,1062,1062,1062,1062,1062,1062,1062,1063,1064,0,0,0,0,0,0,
-	1065,1065,1065,1065,1065,1065,1065,1065,1066,1066,1066,1066,1066,1066,1066,1066,
-	1067,1067,1067,1067,1067,1067,1067,1067,1068,1068,1068,1068,1068,1068,1068,1068,
-	1069,1069,1069,1069,1069,1069,1069,1069,1070,1070,1070,1070,1070,1070,1070,1070,
-	1071,1071,1071,1071,1071,1071,1071,1071,1072,1073,0,0,0,0,0,0,
-	1242,1242,1242,1242,1242,1242,1242,1242,1243,1243,1243,1243,1243,1243,1243,1243,
-	1244,1244,1244,1244,1244,1244,1244,1244,1245,1245,1245,1245,1245,1245,1245,1246,
-	1247,1247,1247,1247,1247,1247,1247,1248,1249,1249,1249,1249,1249,1249,1249,1249,
-	1250,1250,1250,1250,1250,1250,1250,1250,1251,1252,1253,1254,1255,0,0,0,
-	1004,1004,1004,1004,1004,1004,1004,1004,0,0,0,0,0,0,0,0,
-	1005,1005,1005,1005,1005,1005,1005,1005,1006,1006,1006,1006,1006,1006,1006,1007,
-	1008,1008,1008,1008,1008,1008,1008,1009,1010,1010,1010,1010,1010,1010,1010,1010,
-	1011,1011,1011,1011,1011,1011,1011,1011,1012,1013,0,0,0,0,0,0,
-	1014,1014,1014,1014,1014,1014,1014,1014,1015,1015,1015,1015,1015,1015,1015,1015,
-	1016,1016,1016,1016,1016,1016,1016,1016,1017,1017,1017,1017,1017,1017,1017,1017,
-	1018,1018,1018,1018,1018,1018,1018,1018,1019,1019,1019,1019,1019,1019,1019,1019,
-	1020,1020,1020,1020,1020,1020,1020,1020,1021,1022,0,0,0,0,0,0,
-	1023,1023,1023,1023,1023,1023,1023,1023,1024,1024,1024,1024,1024,1024,1024,1024,
-	1025,1025,1025,1025,1025,1025,1025,1025,1026,1026,1026,1026,1026,1026,1026,1026,
-	1027,1027,1027,1027,1027,1027,1027,1027,1028,1028,1028,1028,1028,1028,1028,1028,
-	1029,1029,1029,1029,1029,1029,1029,1029,1030,1031,0,0,0,0,0,0,
-	1256,1256,1256,1256,1256,1256,1256,1256,1257,1257,1257,1257,1257,1257,1257,1257,
-	1258,1258,1258,1258,1258,1258,1258,1258,1259,1259,1259,1259,1259,1259,1259,1260,
-	1261,1261,1261,1261,1261,1261,1261,1262,1263,1263,1263,1263,1263,1263,1263,1263,
-	1264,1264,1264,1264,1264,1264,1264,1264,1265,1266,1267,1268,1269,0,0,0,
-	1046,1046,1046,1046,1046,1046,1046,1046,0,0,0,0,0,0,0,0,
-	1047,1047,1047,1047,1047,1047,1047,1047,1048,1048,1048,1048,1048,1048,1048,1049,
-	1050,1050,1050,1050,1050,1050,1050,1051,1052,1052,1052,1052,1052,1052,1052,1052,
-	1053,1053,1053,1053,1053,1053,1053,1053,1054,1055,0,0,0,0,0,0,
-	1056,1056,1056,1056,1056,1056,1056,1056,1057,1057,1057,1057,1057,1057,1057,1057,
-	1058,1058,1058,1058,1058,1058,1058,1058,1059,1059,1059,1059,1059,1059,1059,1059,
-	1060,1060,1060,1060,1060,1060,1060,1060,1061,1061,1061,1061,1061,1061,1061,1061,
-	1062,1062,1062,1062,1062,1062,1062,1062,1063,1064,0,0,0,0,0,0,
-	1065,1065,1065,1065,1065,1065,1065,1065,1066,1066,1066,1066,1066,1066,1066,1066,
-	1067,1067,1067,1067,1067,1067,1067,1067,1068,1068,1068,1068,1068,1068,1068,1068,
-	1069,1069,1069,1069,1069,1069,1069,1069,1070,1070,1070,1070,1070,1070,1070,1070,
-	1071,1071,1071,1071,1071,1071,1071,1071,1072,1073,0,0,0,0,0,0,
-	1270,1270,1270,1270,1270,1270,1270,1270,1271,1271,1271,1271,1271,1271,1271,1271,
-	1272,1272,1272,1272,1272,1272,1272,1272,1273,1273,1273,1273,1273,1273,1273,1274,
-	1275,1275,1275,1275,1275,1275,1275,1276,1277,1277,1277,1277,1277,1277,1277,1277,
-	1278,1278,1278,1278,1278,1278,1278,1278,1279,1280,1281,1282,1283,0,0,0,
-	1284,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,
-	1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,
-	1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,
-	1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,
-	1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,
-	1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,
-	1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,
-	1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,
-	1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,
-	1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,
-	1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,
-	1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,
-	1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,
-	1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,
-	1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,
-	1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1285,1286,
-	1287,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,
-	1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,
-	1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,
-	1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,
-	1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,
-	1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,
-	1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,
-	1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,
-	1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,
-	1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,
-	1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,
-	1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,
-	1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,
-	1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,
-	1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,
-	1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1288,1289,
-	1290,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,
-	1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,
-	1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,
-	1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,
-	1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,
-	1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,
-	1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,
-	1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,
-	1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,
-	1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,
-	1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,
-	1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,
-	1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,
-	1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,
-	1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,
-	1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1291,1292,
-	1293,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,
-	1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,
-	1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,
-	1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,
-	1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,
-	1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,
-	1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,
-	1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,
-	1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,
-	1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,
-	1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,
-	1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,
-	1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,
-	1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,
-	1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,
-	1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1294,1295,
-	1296,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,
-	1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,
-	1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,
-	1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,
-	1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,
-	1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,
-	1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,
-	1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,
-	1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,
-	1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,
-	1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,
-	1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,
-	1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,
-	1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,
-	1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,
-	1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1297,1298,
-	1299,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,
-	1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,
-	1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,
-	1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,
-	1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,
-	1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,
-	1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,
-	1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,
-	1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,
-	1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,
-	1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,
-	1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,
-	1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,
-	1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,
-	1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,
-	1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1300,1301,
-	1302,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,
-	1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,
-	1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,
-	1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,
-	1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,
-	1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,
-	1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,
-	1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,
-	1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,
-	1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,
-	1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,
-	1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,
-	1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,
-	1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,
-	1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,
-	1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1303,1304,
-	1305,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,
-	1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,
-	1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,
-	1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,
-	1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,
-	1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,
-	1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,
-	1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,
-	1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,
-	1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,
-	1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,
-	1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,
-	1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,
-	1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,
-	1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,
-	1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1306,1307,
-	1308,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,
-	1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,
-	1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,
-	1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,
-	1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,
-	1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,
-	1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,
-	1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,
-	1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,
-	1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,
-	1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,
-	1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,
-	1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,
-	1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,
-	1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,
-	1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1309,1310,
-	1311,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,
-	1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,
-	1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,
-	1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,
-	1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,
-	1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,
-	1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,
-	1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,
-	1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,
-	1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,
-	1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,
-	1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,
-	1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,
-	1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,
-	1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,
-	1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1312,1313,
-	1314,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,
-	1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,
-	1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,
-	1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,
-	1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,
-	1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,
-	1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,
-	1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,
-	1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,
-	1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,
-	1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,
-	1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,
-	1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,
-	1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,
-	1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,
-	1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1315,1316,
-	1317,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,
-	1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,
-	1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,
-	1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,
-	1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,
-	1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,
-	1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,
-	1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,
-	1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,
-	1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,
-	1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,
-	1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,
-	1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,
-	1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,
-	1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,
-	1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1318,1319,
-	1320,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,
-	1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,
-	1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,
-	1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,
-	1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,
-	1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,
-	1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,
-	1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,
-	1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,
-	1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,
-	1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,
-	1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,
-	1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,
-	1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,
-	1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,
-	1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1321,1322,
-	1323,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,
-	1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,
-	1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,
-	1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,
-	1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,
-	1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,
-	1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,
-	1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,
-	1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,
-	1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,
-	1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,
-	1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,
-	1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,
-	1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,
-	1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,
-	1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1324,1325,
-	1326,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,
-	1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,
-	1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,
-	1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,
-	1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,
-	1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,
-	1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,
-	1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,
-	1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,
-	1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,
-	1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,
-	1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,
-	1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,
-	1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,
-	1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,
-	1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1327,1328,
-	1329,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,
-	1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,
-	1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,
-	1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,
-	1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,
-	1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,
-	1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,
-	1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,
-	1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,
-	1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,
-	1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,
-	1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,
-	1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,
-	1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,
-	1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,
-	1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1330,1331,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,1332,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	1333,1333,1333,1333,1333,1333,1333,1333,0,0,0,0,0,0,0,0,
-	1334,1334,1334,1334,1334,1334,1334,1334,1335,1335,1335,1335,1335,1335,1335,1336,
-	1337,1337,1337,1337,1337,1337,1337,1338,1339,1339,1339,1339,1339,1339,1339,1339,
-	1340,1340,1340,1340,1340,1340,1340,1340,1341,1342,1343,1344,1345,0,0,0,
-	1346,1346,1346,1346,1346,1346,1346,1346,0,0,0,0,0,0,0,0,
-	1347,1347,1347,1347,1347,1347,1347,1347,1348,1348,1348,1348,1348,1348,1348,1348,
+	1160,1160,1160,1160,1160,1160,1160,1160,250,250,250,250,250,250,250,250,
+	1161,1161,1161,1161,1161,1161,1161,1161,1162,1163,0,0,0,0,0,0,
+	25,25,25,25,25,25,25,25,44,44,44,44,44,44,44,44,
+	150,150,150,150,150,150,150,150,1164,1164,1164,1164,1164,1164,1164,1164,
+	1165,1165,1165,1165,1165,1165,1165,1165,173,173,173,173,173,173,173,173,
+	1166,1166,1166,1166,1166,1166,1166,1166,1167,1168,0,0,0,0,0,0,
+	1169,1169,1169,1169,1169,1169,1169,1169,5,5,5,5,5,5,5,5,
+	1170,1170,1170,1170,1170,1170,1170,1170,1171,1171,1171,1171,1171,1171,1171,1172,
+	1173,1173,1173,1173,1173,1173,1173,1174,1175,1175,1175,1175,1175,1175,1175,1175,
+	1176,1176,1176,1176,1176,1176,1176,1176,1177,1178,1179,1180,1181,0,0,0,
+	75,75,75,75,75,75,75,75,0,0,0,0,0,0,0,0,
+	1114,1114,1114,1114,1114,1114,1114,1114,1115,1115,1115,1115,1115,1115,1115,1116,
+	1117,1117,1117,1117,1117,1117,1117,1118,172,172,172,172,172,172,172,172,
+	1119,1119,1119,1119,1119,1119,1119,1119,1120,1121,0,0,0,0,0,0,
+	126,126,126,126,126,126,126,126,1122,1122,1122,1122,1122,1122,1122,1122,
+	1123,1123,1123,1123,1123,1123,1123,1123,1124,1124,1124,1124,1124,1124,1124,1124,
+	1125,1125,1125,1125,1125,1125,1125,1125,174,174,174,174,174,174,174,174,
+	1126,1126,1126,1126,1126,1126,1126,1126,1127,1128,0,0,0,0,0,0,
+	61,61,61,61,61,61,61,61,10,10,10,10,10,10,10,10,
+	222,222,222,222,222,222,222,222,1129,1129,1129,1129,1129,1129,1129,1129,
+	1130,1130,1130,1130,1130,1130,1130,1130,97,97,97,97,97,97,97,97,
+	1131,1131,1131,1131,1131,1131,1131,1131,1132,1133,0,0,0,0,0,0,
+	1182,1182,1182,1182,1182,1182,1182,1182,1183,1183,1183,1183,1183,1183,1183,1183,
+	1184,1184,1184,1184,1184,1184,1184,1184,1185,1185,1185,1185,1185,1185,1185,1186,
+	1187,1187,1187,1187,1187,1187,1187,1188,1189,1189,1189,1189,1189,1189,1189,1189,
+	1190,1190,1190,1190,1190,1190,1190,1190,1191,1192,1193,1194,1195,0,0,0,
+	1148,1148,1148,1148,1148,1148,1148,1148,0,0,0,0,0,0,0,0,
+	1149,1149,1149,1149,1149,1149,1149,1149,1150,1150,1150,1150,1150,1150,1150,1151,
+	1152,1152,1152,1152,1152,1152,1152,1153,144,144,144,144,144,144,144,144,
+	1154,1154,1154,1154,1154,1154,1154,1154,1155,1156,0,0,0,0,0,0,
+	189,189,189,189,189,189,189,189,1157,1157,1157,1157,1157,1157,1157,1157,
+	1158,1158,1158,1158,1158,1158,1158,1158,1159,1159,1159,1159,1159,1159,1159,1159,
+	1160,1160,1160,1160,1160,1160,1160,1160,250,250,250,250,250,250,250,250,
+	1161,1161,1161,1161,1161,1161,1161,1161,1162,1163,0,0,0,0,0,0,
+	25,25,25,25,25,25,25,25,44,44,44,44,44,44,44,44,
+	150,150,150,150,150,150,150,150,1164,1164,1164,1164,1164,1164,1164,1164,
+	1165,1165,1165,1165,1165,1165,1165,1165,173,173,173,173,173,173,173,173,
+	1166,1166,1166,1166,1166,1166,1166,1166,1167,1168,0,0,0,0,0,0,
+	1196,1196,1196,1196,1196,1196,1196,1196,1197,1197,1197,1197,1197,1197,1197,1197,
+	1198,1198,1198,1198,1198,1198,1198,1198,1199,1199,1199,1199,1199,1199,1199,1200,
+	1201,1201,1201,1201,1201,1201,1201,1202,1203,1203,1203,1203,1203,1203,1203,1203,
+	1204,1204,1204,1204,1204,1204,1204,1204,1205,1206,1207,1208,1209,0,0,0,
+	75,75,75,75,75,75,75,75,0,0,0,0,0,0,0,0,
+	1114,1114,1114,1114,1114,1114,1114,1114,1115,1115,1115,1115,1115,1115,1115,1116,
+	1117,1117,1117,1117,1117,1117,1117,1118,172,172,172,172,172,172,172,172,
+	1119,1119,1119,1119,1119,1119,1119,1119,1120,1121,0,0,0,0,0,0,
+	126,126,126,126,126,126,126,126,1122,1122,1122,1122,1122,1122,1122,1122,
+	1123,1123,1123,1123,1123,1123,1123,1123,1124,1124,1124,1124,1124,1124,1124,1124,
+	1125,1125,1125,1125,1125,1125,1125,1125,174,174,174,174,174,174,174,174,
+	1126,1126,1126,1126,1126,1126,1126,1126,1127,1128,0,0,0,0,0,0,
+	61,61,61,61,61,61,61,61,10,10,10,10,10,10,10,10,
+	222,222,222,222,222,222,222,222,1129,1129,1129,1129,1129,1129,1129,1129,
+	1130,1130,1130,1130,1130,1130,1130,1130,97,97,97,97,97,97,97,97,
+	1131,1131,1131,1131,1131,1131,1131,1131,1132,1133,0,0,0,0,0,0,
+	1210,1210,1210,1210,1210,1210,1210,1210,1211,1211,1211,1211,1211,1211,1211,1211,
+	1212,1212,1212,1212,1212,1212,1212,1212,1213,1213,1213,1213,1213,1213,1213,1214,
+	1215,1215,1215,1215,1215,1215,1215,1216,1217,1217,1217,1217,1217,1217,1217,1217,
+	1218,1218,1218,1218,1218,1218,1218,1218,1219,1220,1221,1222,1223,0,0,0,
+	1148,1148,1148,1148,1148,1148,1148,1148,0,0,0,0,0,0,0,0,
+	1149,1149,1149,1149,1149,1149,1149,1149,1150,1150,1150,1150,1150,1150,1150,1151,
+	1152,1152,1152,1152,1152,1152,1152,1153,144,144,144,144,144,144,144,144,
+	1154,1154,1154,1154,1154,1154,1154,1154,1155,1156,0,0,0,0,0,0,
+	189,189,189,189,189,189,189,189,1157,1157,1157,1157,1157,1157,1157,1157,
+	1158,1158,1158,1158,1158,1158,1158,1158,1159,1159,1159,1159,1159,1159,1159,1159,
+	1160,1160,1160,1160,1160,1160,1160,1160,250,250,250,250,250,250,250,250,
+	1161,1161,1161,1161,1161,1161,1161,1161,1162,1163,0,0,0,0,0,0,
+	25,25,25,25,25,25,25,25,44,44,44,44,44,44,44,44,
+	150,150,150,150,150,150,150,150,1164,1164,1164,1164,1164,1164,1164,1164,
+	1165,1165,1165,1165,1165,1165,1165,1165,173,173,173,173,173,173,173,173,
+	1166,1166,1166,1166,1166,1166,1166,1166,1167,1168,0,0,0,0,0,0,
+	1224,1224,1224,1224,1224,1224,1224,1224,1225,1225,1225,1225,1225,1225,1225,1225,
+	1226,1226,1226,1226,1226,1226,1226,1226,1227,1227,1227,1227,1227,1227,1227,1228,
+	1229,1229,1229,1229,1229,1229,1229,1230,1231,1231,1231,1231,1231,1231,1231,1231,
+	1232,1232,1232,1232,1232,1232,1232,1232,1233,1234,1235,1236,1237,0,0,0,
+	75,75,75,75,75,75,75,75,0,0,0,0,0,0,0,0,
+	1114,1114,1114,1114,1114,1114,1114,1114,1115,1115,1115,1115,1115,1115,1115,1116,
+	1117,1117,1117,1117,1117,1117,1117,1118,172,172,172,172,172,172,172,172,
+	1119,1119,1119,1119,1119,1119,1119,1119,1120,1121,0,0,0,0,0,0,
+	126,126,126,126,126,126,126,126,1122,1122,1122,1122,1122,1122,1122,1122,
+	1123,1123,1123,1123,1123,1123,1123,1123,1124,1124,1124,1124,1124,1124,1124,1124,
+	1125,1125,1125,1125,1125,1125,1125,1125,174,174,174,174,174,174,174,174,
+	1126,1126,1126,1126,1126,1126,1126,1126,1127,1128,0,0,0,0,0,0,
+	61,61,61,61,61,61,61,61,10,10,10,10,10,10,10,10,
+	222,222,222,222,222,222,222,222,1129,1129,1129,1129,1129,1129,1129,1129,
+	1130,1130,1130,1130,1130,1130,1130,1130,97,97,97,97,97,97,97,97,
+	1131,1131,1131,1131,1131,1131,1131,1131,1132,1133,0,0,0,0,0,0,
+	1238,1238,1238,1238,1238,1238,1238,1238,1239,1239,1239,1239,1239,1239,1239,1239,
+	1240,1240,1240,1240,1240,1240,1240,1240,1241,1241,1241,1241,1241,1241,1241,1242,
+	1243,1243,1243,1243,1243,1243,1243,1244,1245,1245,1245,1245,1245,1245,1245,1245,
+	1246,1246,1246,1246,1246,1246,1246,1246,1247,1248,1249,1250,1251,0,0,0,
+	1148,1148,1148,1148,1148,1148,1148,1148,0,0,0,0,0,0,0,0,
+	1149,1149,1149,1149,1149,1149,1149,1149,1150,1150,1150,1150,1150,1150,1150,1151,
+	1152,1152,1152,1152,1152,1152,1152,1153,144,144,144,144,144,144,144,144,
+	1154,1154,1154,1154,1154,1154,1154,1154,1155,1156,0,0,0,0,0,0,
+	189,189,189,189,189,189,189,189,1157,1157,1157,1157,1157,1157,1157,1157,
+	1158,1158,1158,1158,1158,1158,1158,1158,1159,1159,1159,1159,1159,1159,1159,1159,
+	1160,1160,1160,1160,1160,1160,1160,1160,250,250,250,250,250,250,250,250,
+	1161,1161,1161,1161,1161,1161,1161,1161,1162,1163,0,0,0,0,0,0,
+	25,25,25,25,25,25,25,25,44,44,44,44,44,44,44,44,
+	150,150,150,150,150,150,150,150,1164,1164,1164,1164,1164,1164,1164,1164,
+	1165,1165,1165,1165,1165,1165,1165,1165,173,173,173,173,173,173,173,173,
+	1166,1166,1166,1166,1166,1166,1166,1166,1167,1168,0,0,0,0,0,0,
+	1252,1252,1252,1252,1252,1252,1252,1252,22,22,22,22,22,22,22,22,
+	1253,1253,1253,1253,1253,1253,1253,1253,1254,1254,1254,1254,1254,1254,1254,1255,
+	1256,1256,1256,1256,1256,1256,1256,1257,1258,1258,1258,1258,1258,1258,1258,1258,
+	1259,1259,1259,1259,1259,1259,1259,1259,1260,1261,1262,1263,1264,0,0,0,
+	75,75,75,75,75,75,75,75,0,0,0,0,0,0,0,0,
+	1114,1114,1114,1114,1114,1114,1114,1114,1115,1115,1115,1115,1115,1115,1115,1116,
+	1117,1117,1117,1117,1117,1117,1117,1118,172,172,172,172,172,172,172,172,
+	1119,1119,1119,1119,1119,1119,1119,1119,1120,1121,0,0,0,0,0,0,
+	126,126,126,126,126,126,126,126,1122,1122,1122,1122,1122,1122,1122,1122,
+	1123,1123,1123,1123,1123,1123,1123,1123,1124,1124,1124,1124,1124,1124,1124,1124,
+	1125,1125,1125,1125,1125,1125,1125,1125,174,174,174,174,174,174,174,174,
+	1126,1126,1126,1126,1126,1126,1126,1126,1127,1128,0,0,0,0,0,0,
+	61,61,61,61,61,61,61,61,10,10,10,10,10,10,10,10,
+	222,222,222,222,222,222,222,222,1129,1129,1129,1129,1129,1129,1129,1129,
+	1130,1130,1130,1130,1130,1130,1130,1130,97,97,97,97,97,97,97,97,
+	1131,1131,1131,1131,1131,1131,1131,1131,1132,1133,0,0,0,0,0,0,
+	1265,1265,1265,1265,1265,1265,1265,1265,1266,1266,1266,1266,1266,1266,1266,1266,
+	1267,1267,1267,1267,1267,1267,1267,1267,1268,1268,1268,1268,1268,1268,1268,1269,
+	1270,1270,1270,1270,1270,1270,1270,1271,1272,1272,1272,1272,1272,1272,1272,1272,
+	1273,1273,1273,1273,1273,1273,1273,1273,1274,1275,1276,1277,1278,0,0,0,
+	1148,1148,1148,1148,1148,1148,1148,1148,0,0,0,0,0,0,0,0,
+	1149,1149,1149,1149,1149,1149,1149,1149,1150,1150,1150,1150,1150,1150,1150,1151,
+	1152,1152,1152,1152,1152,1152,1152,1153,144,144,144,144,144,144,144,144,
+	1154,1154,1154,1154,1154,1154,1154,1154,1155,1156,0,0,0,0,0,0,
+	189,189,189,189,189,189,189,189,1157,1157,1157,1157,1157,1157,1157,1157,
+	1158,1158,1158,1158,1158,1158,1158,1158,1159,1159,1159,1159,1159,1159,1159,1159,
+	1160,1160,1160,1160,1160,1160,1160,1160,250,250,250,250,250,250,250,250,
+	1161,1161,1161,1161,1161,1161,1161,1161,1162,1163,0,0,0,0,0,0,
+	25,25,25,25,25,25,25,25,44,44,44,44,44,44,44,44,
+	150,150,150,150,150,150,150,150,1164,1164,1164,1164,1164,1164,1164,1164,
+	1165,1165,1165,1165,1165,1165,1165,1165,173,173,173,173,173,173,173,173,
+	1166,1166,1166,1166,1166,1166,1166,1166,1167,1168,0,0,0,0,0,0,
+	1279,1279,1279,1279,1279,1279,1279,1279,1280,1280,1280,1280,1280,1280,1280,1280,
+	1281,1281,1281,1281,1281,1281,1281,1281,1282,1282,1282,1282,1282,1282,1282,1283,
+	1284,1284,1284,1284,1284,1284,1284,1285,1286,1286,1286,1286,1286,1286,1286,1286,
+	1287,1287,1287,1287,1287,1287,1287,1287,1288,1289,1290,1291,1292,0,0,0,
+	75,75,75,75,75,75,75,75,0,0,0,0,0,0,0,0,
+	1114,1114,1114,1114,1114,1114,1114,1114,1115,1115,1115,1115,1115,1115,1115,1116,
+	1117,1117,1117,1117,1117,1117,1117,1118,172,172,172,172,172,172,172,172,
+	1119,1119,1119,1119,1119,1119,1119,1119,1120,1121,0,0,0,0,0,0,
+	126,126,126,126,126,126,126,126,1122,1122,1122,1122,1122,1122,1122,1122,
+	1123,1123,1123,1123,1123,1123,1123,1123,1124,1124,1124,1124,1124,1124,1124,1124,
+	1125,1125,1125,1125,1125,1125,1125,1125,174,174,174,174,174,174,174,174,
+	1126,1126,1126,1126,1126,1126,1126,1126,1127,1128,0,0,0,0,0,0,
+	61,61,61,61,61,61,61,61,10,10,10,10,10,10,10,10,
+	222,222,222,222,222,222,222,222,1129,1129,1129,1129,1129,1129,1129,1129,
+	1130,1130,1130,1130,1130,1130,1130,1130,97,97,97,97,97,97,97,97,
+	1131,1131,1131,1131,1131,1131,1131,1131,1132,1133,0,0,0,0,0,0,
+	1293,1293,1293,1293,1293,1293,1293,1293,1294,1294,1294,1294,1294,1294,1294,1294,
+	1295,1295,1295,1295,1295,1295,1295,1295,1296,1296,1296,1296,1296,1296,1296,1297,
+	1298,1298,1298,1298,1298,1298,1298,1299,1300,1300,1300,1300,1300,1300,1300,1300,
+	1301,1301,1301,1301,1301,1301,1301,1301,1302,1303,1304,1305,1306,0,0,0,
+	1148,1148,1148,1148,1148,1148,1148,1148,0,0,0,0,0,0,0,0,
+	1149,1149,1149,1149,1149,1149,1149,1149,1150,1150,1150,1150,1150,1150,1150,1151,
+	1152,1152,1152,1152,1152,1152,1152,1153,144,144,144,144,144,144,144,144,
+	1154,1154,1154,1154,1154,1154,1154,1154,1155,1156,0,0,0,0,0,0,
+	189,189,189,189,189,189,189,189,1157,1157,1157,1157,1157,1157,1157,1157,
+	1158,1158,1158,1158,1158,1158,1158,1158,1159,1159,1159,1159,1159,1159,1159,1159,
+	1160,1160,1160,1160,1160,1160,1160,1160,250,250,250,250,250,250,250,250,
+	1161,1161,1161,1161,1161,1161,1161,1161,1162,1163,0,0,0,0,0,0,
+	25,25,25,25,25,25,25,25,44,44,44,44,44,44,44,44,
+	150,150,150,150,150,150,150,150,1164,1164,1164,1164,1164,1164,1164,1164,
+	1165,1165,1165,1165,1165,1165,1165,1165,173,173,173,173,173,173,173,173,
+	1166,1166,1166,1166,1166,1166,1166,1166,1167,1168,0,0,0,0,0,0,
+	1307,1307,1307,1307,1307,1307,1307,1307,1308,1308,1308,1308,1308,1308,1308,1308,
+	1309,1309,1309,1309,1309,1309,1309,1309,1310,1310,1310,1310,1310,1310,1310,1311,
+	1312,1312,1312,1312,1312,1312,1312,1313,1314,1314,1314,1314,1314,1314,1314,1314,
+	1315,1315,1315,1315,1315,1315,1315,1315,1316,1317,1318,1319,1320,0,0,0,
+	75,75,75,75,75,75,75,75,0,0,0,0,0,0,0,0,
+	1114,1114,1114,1114,1114,1114,1114,1114,1115,1115,1115,1115,1115,1115,1115,1116,
+	1117,1117,1117,1117,1117,1117,1117,1118,172,172,172,172,172,172,172,172,
+	1119,1119,1119,1119,1119,1119,1119,1119,1120,1121,0,0,0,0,0,0,
+	126,126,126,126,126,126,126,126,1122,1122,1122,1122,1122,1122,1122,1122,
+	1123,1123,1123,1123,1123,1123,1123,1123,1124,1124,1124,1124,1124,1124,1124,1124,
+	1125,1125,1125,1125,1125,1125,1125,1125,174,174,174,174,174,174,174,174,
+	1126,1126,1126,1126,1126,1126,1126,1126,1127,1128,0,0,0,0,0,0,
+	61,61,61,61,61,61,61,61,10,10,10,10,10,10,10,10,
+	222,222,222,222,222,222,222,222,1129,1129,1129,1129,1129,1129,1129,1129,
+	1130,1130,1130,1130,1130,1130,1130,1130,97,97,97,97,97,97,97,97,
+	1131,1131,1131,1131,1131,1131,1131,1131,1132,1133,0,0,0,0,0,0,
+	1321,1321,1321,1321,1321,1321,1321,1321,1322,1322,1322,1322,1322,1322,1322,1322,
+	1323,1323,1323,1323,1323,1323,1323,1323,1324,1324,1324,1324,1324,1324,1324,1325,
+	1326,1326,1326,1326,1326,1326,1326,1327,1328,1328,1328,1328,1328,1328,1328,1328,
+	1329,1329,1329,1329,1329,1329,1329,1329,1330,1331,1332,1333,1334,0,0,0,
+	1148,1148,1148,1148,1148,1148,1148,1148,0,0,0,0,0,0,0,0,
+	1149,1149,1149,1149,1149,1149,1149,1149,1150,1150,1150,1150,1150,1150,1150,1151,
+	1152,1152,1152,1152,1152,1152,1152,1153,144,144,144,144,144,144,144,144,
+	1154,1154,1154,1154,1154,1154,1154,1154,1155,1156,0,0,0,0,0,0,
+	189,189,189,189,189,189,189,189,1157,1157,1157,1157,1157,1157,1157,1157,
+	1158,1158,1158,1158,1158,1158,1158,1158,1159,1159,1159,1159,1159,1159,1159,1159,
+	1160,1160,1160,1160,1160,1160,1160,1160,250,250,250,250,250,250,250,250,
+	1161,1161,1161,1161,1161,1161,1161,1161,1162,1163,0,0,0,0,0,0,
+	25,25,25,25,25,25,25,25,44,44,44,44,44,44,44,44,
+	150,150,150,150,150,150,150,150,1164,1164,1164,1164,1164,1164,1164,1164,
+	1165,1165,1165,1165,1165,1165,1165,1165,173,173,173,173,173,173,173,173,
+	1166,1166,1166,1166,1166,1166,1166,1166,1167,1168,0,0,0,0,0,0,
+	1335,1335,1335,1335,1335,1335,1335,1335,1336,1336,1336,1336,1336,1336,1336,1336,
+	1337,1337,1337,1337,1337,1337,1337,1337,1338,1338,1338,1338,1338,1338,1338,1339,
+	1340,1340,1340,1340,1340,1340,1340,1341,1342,1342,1342,1342,1342,1342,1342,1342,
+	1343,1343,1343,1343,1343,1343,1343,1343,1344,1345,1346,1347,1348,0,0,0,
+	75,75,75,75,75,75,75,75,0,0,0,0,0,0,0,0,
+	1114,1114,1114,1114,1114,1114,1114,1114,1115,1115,1115,1115,1115,1115,1115,1116,
+	1117,1117,1117,1117,1117,1117,1117,1118,172,172,172,172,172,172,172,172,
+	1119,1119,1119,1119,1119,1119,1119,1119,1120,1121,0,0,0,0,0,0,
+	126,126,126,126,126,126,126,126,1122,1122,1122,1122,1122,1122,1122,1122,
+	1123,1123,1123,1123,1123,1123,1123,1123,1124,1124,1124,1124,1124,1124,1124,1124,
+	1125,1125,1125,1125,1125,1125,1125,1125,174,174,174,174,174,174,174,174,
+	1126,1126,1126,1126,1126,1126,1126,1126,1127,1128,0,0,0,0,0,0,
+	61,61,61,61,61,61,61,61,10,10,10,10,10,10,10,10,
+	222,222,222,222,222,222,222,222,1129,1129,1129,1129,1129,1129,1129,1129,
+	1130,1130,1130,1130,1130,1130,1130,1130,97,97,97,97,97,97,97,97,
+	1131,1131,1131,1131,1131,1131,1131,1131,1132,1133,0,0,0,0,0,0,
 	1349,1349,1349,1349,1349,1349,1349,1349,1350,1350,1350,1350,1350,1350,1350,1350,
-	1351,1351,1351,1351,1351,1351,1351,1351,1352,1353,1354,1355,1356,0,0,0,
-	1357,1357,1357,1357,1357,1357,1357,1357,0,0,0,0,0,0,0,0,
-	1358,1358,1358,1358,1358,1358,1358,1358,1359,1359,1359,1359,1359,1359,1359,1359,
-	1360,1360,1360,1360,1360,1360,1360,1360,1361,1361,1361,1361,1361,1361,1361,1361,
-	1362,1362,1362,1362,1362,1362,1362,1362,1363,1364,1365,1366,1367,0,0,0,
-	1368,1368,1368,1368,1368,1368,1368,1368,0,0,0,0,0,0,0,0,
-	1369,1369,1369,1369,1369,1369,1369,1369,1370,1370,1370,1370,1370,1370,1370,1370,
-	1371,1371,1371,1371,1371,1371,1371,1371,1372,1372,1372,1372,1372,1372,1372,1372,
-	1373,1373,1373,1373,1373,1373,1373,1373,1374,1375,1376,1377,1378,0,0,0,
-	1379,1379,1379,1379,1379,1379,1379,1379,1380,1380,1380,1380,1380,1380,1380,1381,
-	1382,1382,1382,1382,1382,1382,1382,1382,1383,1383,1383,1383,1383,1383,1383,1384,
-	1385,1385,1385,1385,1385,1385,1385,1386,1387,1387,1387,1387,1387,1387,1387,1387,
-	1388,1388,1388,1388,1388,1388,1388,1388,1389,1390,0,0,0,0,0,0,
-	1391,1391,1391,1391,1391,1391,1391,1391,1392,1392,1392,1392,1392,1392,1392,1393,
-	1394,1394,1394,1394,1394,1394,1394,1394,1395,1395,1395,1395,1395,1395,1395,1395,
-	1396,1396,1396,1396,1396,1396,1396,1396,1397,1397,1397,1397,1397,1397,1397,1397,
-	1398,1398,1398,1398,1398,1398,1398,1398,1399,1400,0,0,0,0,0,0,
-	1401,1401,1401,1401,1401,1401,1401,1401,1402,1402,1402,1402,1402,1402,1402,1403,
-	1404,1404,1404,1404,1404,1404,1404,1404,1405,1405,1405,1405,1405,1405,1405,1405,
-	1406,1406,1406,1406,1406,1406,1406,1406,1407,1407,1407,1407,1407,1407,1407,1407,
-	1408,1408,1408,1408,1408,1408,1408,1408,1409,1410,0,0,0,0,0,0,
-	1411,1411,1411,1411,1411,1411,1411,1411,0,0,0,0,0,0,0,0,
-	1412,1412,1412,1412,1412,1412,1412,1412,1413,1413,1413,1413,1413,1413,1413,1413,
-	1414,1414,1414,1414,1414,1414,1414,1414,1415,1415,1415,1415,1415,1415,1415,1415,
-	1416,1416,1416,1416,1416,1416,1416,1416,1417,1418,1419,1420,1421,0,0,0,
-	1333,1333,1333,1333,1333,1333,1333,1333,0,0,0,0,0,0,0,0,
-	1334,1334,1334,1334,1334,1334,1334,1334,1335,1335,1335,1335,1335,1335,1335,1336,
-	1337,1337,1337,1337,1337,1337,1337,1338,1339,1339,1339,1339,1339,1339,1339,1339,
-	1340,1340,1340,1340,1340,1340,1340,1340,1341,1342,1343,1344,1345,0,0,0,
-	1346,1346,1346,1346,1346,1346,1346,1346,0,0,0,0,0,0,0,0,
-	1347,1347,1347,1347,1347,1347,1347,1347,1348,1348,1348,1348,1348,1348,1348,1348,
-	1349,1349,1349,1349,1349,1349,1349,1349,1350,1350,1350,1350,1350,1350,1350,1350,
-	1351,1351,1351,1351,1351,1351,1351,1351,1352,1353,1354,1355,1356,0,0,0,
-	1357,1357,1357,1357,1357,1357,1357,1357,0,0,0,0,0,0,0,0,
-	1358,1358,1358,1358,1358,1358,1358,1358,1359,1359,1359,1359,1359,1359,1359,1359,
-	1360,1360,1360,1360,1360,1360,1360,1360,1361,1361,1361,1361,1361,1361,1361,1361,
-	1362,1362,1362,1362,1362,1362,1362,1362,1363,1364,1365,1366,1367,0,0,0,
-	1368,1368,1368,1368,1368,1368,1368,1368,0,0,0,0,0,0,0,0,
-	1369,1369,1369,1369,1369,1369,1369,1369,1370,1370,1370,1370,1370,1370,1370,1370,
-	1371,1371,1371,1371,1371,1371,1371,1371,1372,1372,1372,1372,1372,1372,1372,1372,
-	1373,1373,1373,1373,1373,1373,1373,1373,1374,1375,1376,1377,1378,0,0,0,
-	1379,1379,1379,1379,1379,1379,1379,1379,1380,1380,1380,1380,1380,1380,1380,1381,
-	1382,1382,1382,1382,1382,1382,1382,1382,1383,1383,1383,1383,1383,1383,1383,1384,
-	1385,1385,1385,1385,1385,1385,1385,1386,1387,1387,1387,1387,1387,1387,1387,1387,
-	1388,1388,1388,1388,1388,1388,1388,1388,1389,1390,0,0,0,0,0,0,
-	1391,1391,1391,1391,1391,1391,1391,1391,1392,1392,1392,1392,1392,1392,1392,1393,
-	1394,1394,1394,1394,1394,1394,1394,1394,1395,1395,1395,1395,1395,1395,1395,1395,
-	1396,1396,1396,1396,1396,1396,1396,1396,1397,1397,1397,1397,1397,1397,1397,1397,
-	1398,1398,1398,1398,1398,1398,1398,1398,1399,1400,0,0,0,0,0,0,
-	1401,1401,1401,1401,1401,1401,1401,1401,1402,1402,1402,1402,1402,1402,1402,1403,
-	1404,1404,1404,1404,1404,1404,1404,1404,1405,1405,1405,1405,1405,1405,1405,1405,
-	1406,1406,1406,1406,1406,1406,1406,1406,1407,1407,1407,1407,1407,1407,1407,1407,
-	1408,1408,1408,1408,1408,1408,1408,1408,1409,1410,0,0,0,0,0,0,
-	1411,1411,1411,1411,1411,1411,1411,1411,0,0,0,0,0,0,0,0,
-	1412,1412,1412,1412,1412,1412,1412,1412,1413,1413,1413,1413,1413,1413,1413,1413,
-	1414,1414,1414,1414,1414,1414,1414,1414,1415,1415,1415,1415,1415,1415,1415,1415,
-	1416,1416,1416,1416,1416,1416,1416,1416,1417,1418,1419,1420,1421,0,0,0,
-	1333,1333,1333,1333,1333,1333,1333,1333,0,0,0,0,0,0,0,0,
-	1334,1334,1334,1334,1334,1334,1334,1334,1335,1335,1335,1335,1335,1335,1335,1336,
-	1337,1337,1337,1337,1337,1337,1337,1338,1339,1339,1339,1339,1339,1339,1339,1339,
-	1340,1340,1340,1340,1340,1340,1340,1340,1341,1342,1343,1344,1345,0,0,0,
-	1346,1346,1346,1346,1346,1346,1346,1346,0,0,0,0,0,0,0,0,
-	1347,1347,1347,1347,1347,1347,1347,1347,1348,1348,1348,1348,1348,1348,1348,1348,
-	1349,1349,1349,1349,1349,1349,1349,1349,1350,1350,1350,1350,1350,1350,1350,1350,
-	1351,1351,1351,1351,1351,1351,1351,1351,1352,1353,1354,1355,1356,0,0,0,
-	1357,1357,1357,1357,1357,1357,1357,1357,0,0,0,0,0,0,0,0,
-	1358,1358,1358,1358,1358,1358,1358,1358,1359,1359,1359,1359,1359,1359,1359,1359,
-	1360,1360,1360,1360,1360,1360,1360,1360,1361,1361,1361,1361,1361,1361,1361,1361,
-	1362,1362,1362,1362,1362,1362,1362,1362,1363,1364,1365,1366,1367,0,0,0,
-	1368,1368,1368,1368,1368,1368,1368,1368,0,0,0,0,0,0,0,0,
-	1369,1369,1369,1369,1369,1369,1369,1369,1370,1370,1370,1370,1370,1370,1370,1370,
-	1371,1371,1371,1371,1371,1371,1371,1371,1372,1372,1372,1372,1372,1372,1372,1372,
-	1373,1373,1373,1373,1373,1373,1373,1373,1374,1375,1376,1377,1378,0,0,0,
-	1379,1379,1379,1379,1379,1379,1379,1379,1380,1380,1380,1380,1380,1380,1380,1381,
-	1382,1382,1382,1382,1382,1382,1382,1382,1383,1383,1383,1383,1383,1383,1383,1384,
-	1385,1385,1385,1385,1385,1385,1385,1386,1387,1387,1387,1387,1387,1387,1387,1387,
-	1388,1388,1388,1388,1388,1388,1388,1388,1389,1390,0,0,0,0,0,0,
-	1391,1391,1391,1391,1391,1391,1391,1391,1392,1392,1392,1392,1392,1392,1392,1393,
-	1394,1394,1394,1394,1394,1394,1394,1394,1395,1395,1395,1395,1395,1395,1395,1395,
-	1396,1396,1396,1396,1396,1396,1396,1396,1397,1397,1397,1397,1397,1397,1397,1397,
-	1398,1398,1398,1398,1398,1398,1398,1398,1399,1400,0,0,0,0,0,0,
-	1401,1401,1401,1401,1401,1401,1401,1401,1402,1402,1402,1402,1402,1402,1402,1403,
-	1404,1404,1404,1404,1404,1404,1404,1404,1405,1405,1405,1405,1405,1405,1405,1405,
-	1406,1406,1406,1406,1406,1406,1406,1406,1407,1407,1407,1407,1407,1407,1407,1407,
-	1408,1408,1408,1408,1408,1408,1408,1408,1409,1410,0,0,0,0,0,0,
-	1411,1411,1411,1411,1411,1411,1411,1411,0,0,0,0,0,0,0,0,
-	1412,1412,1412,1412,1412,1412,1412,1412,1413,1413,1413,1413,1413,1413,1413,1413,
-	1414,1414,1414,1414,1414,1414,1414,1414,1415,1415,1415,1415,1415,1415,1415,1415,
-	1416,1416,1416,1416,1416,1416,1416,1416,1417,1418,1419,1420,1421,0,0,0,
-	1333,1333,1333,1333,1333,1333,1333,1333,0,0,0,0,0,0,0,0,
-	1334,1334,1334,1334,1334,1334,1334,1334,1335,1335,1335,1335,1335,1335,1335,1336,
-	1337,1337,1337,1337,1337,1337,1337,1338,1339,1339,1339,1339,1339,1339,1339,1339,
-	1340,1340,1340,1340,1340,1340,1340,1340,1341,1342,1343,1344,1345,0,0,0,
-	1346,1346,1346,1346,1346,1346,1346,1346,0,0,0,0,0,0,0,0,
-	1347,1347,1347,1347,1347,1347,1347,1347,1348,1348,1348,1348,1348,1348,1348,1348,
-	1349,1349,1349,1349,1349,1349,1349,1349,1350,1350,1350,1350,1350,1350,1350,1350,
-	1351,1351,1351,1351,1351,1351,1351,1351,1352,1353,1354,1355,1356,0,0,0,
-	1357,1357,1357,1357,1357,1357,1357,1357,0,0,0,0,0,0,0,0,
-	1358,1358,1358,1358,1358,1358,1358,1358,1359,1359,1359,1359,1359,1359,1359,1359,
-	1360,1360,1360,1360,1360,1360,1360,1360,1361,1361,1361,1361,1361,1361,1361,1361,
-	1362,1362,1362,1362,1362,1362,1362,1362,1363,1364,1365,1366,1367,0,0,0,
-	1368,1368,1368,1368,1368,1368,1368,1368,0,0,0,0,0,0,0,0,
-	1369,1369,1369,1369,1369,1369,1369,1369,1370,1370,1370,1370,1370,1370,1370,1370,
-	1371,1371,1371,1371,1371,1371,1371,1371,1372,1372,1372,1372,1372,1372,1372,1372,
-	1373,1373,1373,1373,1373,1373,1373,1373,1374,1375,1376,1377,1378,0,0,0,
-	1379,1379,1379,1379,1379,1379,1379,1379,1380,1380,1380,1380,1380,1380,1380,1381,
-	1382,1382,1382,1382,1382,1382,1382,1382,1383,1383,1383,1383,1383,1383,1383,1384,
-	1385,1385,1385,1385,1385,1385,1385,1386,1387,1387,1387,1387,1387,1387,1387,1387,
-	1388,1388,1388,1388,1388,1388,1388,1388,1389,1390,0,0,0,0,0,0,
-	1391,1391,1391,1391,1391,1391,1391,1391,1392,1392,1392,1392,1392,1392,1392,1393,
-	1394,1394,1394,1394,1394,1394,1394,1394,1395,1395,1395,1395,1395,1395,1395,1395,
-	1396,1396,1396,1396,1396,1396,1396,1396,1397,1397,1397,1397,1397,1397,1397,1397,
-	1398,1398,1398,1398,1398,1398,1398,1398,1399,1400,0,0,0,0,0,0,
-	1401,1401,1401,1401,1401,1401,1401,1401,1402,1402,1402,1402,1402,1402,1402,1403,
-	1404,1404,1404,1404,1404,1404,1404,1404,1405,1405,1405,1405,1405,1405,1405,1405,
-	1406,1406,1406,1406,1406,1406,1406,1406,1407,1407,1407,1407,1407,1407,1407,1407,
-	1408,1408,1408,1408,1408,1408,1408,1408,1409,1410,0,0,0,0,0,0,
-	1411,1411,1411,1411,1411,1411,1411,1411,0,0,0,0,0,0,0,0,
-	1412,1412,1412,1412,1412,1412,1412,1412,1413,1413,1413,1413,1413,1413,1413,1413,
-	1414,1414,1414,1414,1414,1414,1414,1414,1415,1415,1415,1415,1415,1415,1415,1415,
-	1416,1416,1416,1416,1416,1416,1416,1416,1417,1418,1419,1420,1421,0,0,0,
-	1333,1333,1333,1333,1333,1333,1333,1333,0,0,0,0,0,0,0,0,
-	1334,1334,1334,1334,1334,1334,1334,1334,1335,1335,1335,1335,1335,1335,1335,1336,
-	1337,1337,1337,1337,1337,1337,1337,1338,1339,1339,1339,1339,1339,1339,1339,1339,
-	1340,1340,1340,1340,1340,1340,1340,1340,1341,1342,1343,1344,1345,0,0,0,
-	1346,1346,1346,1346,1346,1346,1346,1346,0,0,0,0,0,0,0,0,
-	1347,1347,1347,1347,1347,1347,1347,1347,1348,1348,1348,1348,1348,1348,1348,1348,
-	1349,1349,1349,1349,1349,1349,1349,1349,1350,1350,1350,1350,1350,1350,1350,1350,
-	1351,1351,1351,1351,1351,1351,1351,1351,1352,1353,1354,1355,1356,0,0,0,
-	1357,1357,1357,1357,1357,1357,1357,1357,0,0,0,0,0,0,0,0,
-	1358,1358,1358,1358,1358,1358,1358,1358,1359,1359,1359,1359,1359,1359,1359,1359,
-	1360,1360,1360,1360,1360,1360,1360,1360,1361,1361,1361,1361,1361,1361,1361,1361,
-	1362,1362,1362,1362,1362,1362,1362,1362,1363,1364,1365,1366,1367,0,0,0,
-	1368,1368,1368,1368,1368,1368,1368,1368,0,0,0,0,0,0,0,0,
-	1369,1369,1369,1369,1369,1369,1369,1369,1370,1370,1370,1370,1370,1370,1370,1370,
-	1371,1371,1371,1371,1371,1371,1371,1371,1372,1372,1372,1372,1372,1372,1372,1372,
-	1373,1373,1373,1373,1373,1373,1373,1373,1374,1375,1376,1377,1378,0,0,0,
-	1379,1379,1379,1379,1379,1379,1379,1379,1380,1380,1380,1380,1380,1380,1380,1381,
-	1382,1382,1382,1382,1382,1382,1382,1382,1383,1383,1383,1383,1383,1383,1383,1384,
-	1385,1385,1385,1385,1385,1385,1385,1386,1387,1387,1387,1387,1387,1387,1387,1387,
-	1388,1388,1388,1388,1388,1388,1388,1388,1389,1390,0,0,0,0,0,0,
-	1391,1391,1391,1391,1391,1391,1391,1391,1392,1392,1392,1392,1392,1392,1392,1393,
-	1394,1394,1394,1394,1394,1394,1394,1394,1395,1395,1395,1395,1395,1395,1395,1395,
-	1396,1396,1396,1396,1396,1396,1396,1396,1397,1397,1397,1397,1397,1397,1397,1397,
-	1398,1398,1398,1398,1398,1398,1398,1398,1399,1400,0,0,0,0,0,0,
-	1401,1401,1401,1401,1401,1401,1401,1401,1402,1402,1402,1402,1402,1402,1402,1403,
-	1404,1404,1404,1404,1404,1404,1404,1404,1405,1405,1405,1405,1405,1405,1405,1405,
-	1406,1406,1406,1406,1406,1406,1406,1406,1407,1407,1407,1407,1407,1407,1407,1407,
-	1408,1408,1408,1408,1408,1408,1408,1408,1409,1410,0,0,0,0,0,0,
-	1411,1411,1411,1411,1411,1411,1411,1411,0,0,0,0,0,0,0,0,
-	1412,1412,1412,1412,1412,1412,1412,1412,1413,1413,1413,1413,1413,1413,1413,1413,
-	1414,1414,1414,1414,1414,1414,1414,1414,1415,1415,1415,1415,1415,1415,1415,1415,
-	1416,1416,1416,1416,1416,1416,1416,1416,1417,1418,1419,1420,1421,0,0,0,
-	1333,1333,1333,1333,1333,1333,1333,1333,0,0,0,0,0,0,0,0,
-	1334,1334,1334,1334,1334,1334,1334,1334,1335,1335,1335,1335,1335,1335,1335,1336,
-	1337,1337,1337,1337,1337,1337,1337,1338,1339,1339,1339,1339,1339,1339,1339,1339,
-	1340,1340,1340,1340,1340,1340,1340,1340,1341,1342,1343,1344,1345,0,0,0,
-	1346,1346,1346,1346,1346,1346,1346,1346,0,0,0,0,0,0,0,0,
-	1347,1347,1347,1347,1347,1347,1347,1347,1348,1348,1348,1348,1348,1348,1348,1348,
-	1349,1349,1349,1349,1349,1349,1349,1349,1350,1350,1350,1350,1350,1350,1350,1350,
-	1351,1351,1351,1351,1351,1351,1351,1351,1352,1353,1354,1355,1356,0,0,0,
-	1357,1357,1357,1357,1357,1357,1357,1357,0,0,0,0,0,0,0,0,
-	1358,1358,1358,1358,1358,1358,1358,1358,1359,1359,1359,1359,1359,1359,1359,1359,
-	1360,1360,1360,1360,1360,1360,1360,1360,1361,1361,1361,1361,1361,1361,1361,1361,
-	1362,1362,1362,1362,1362,1362,1362,1362,1363,1364,1365,1366,1367,0,0,0,
-	1368,1368,1368,1368,1368,1368,1368,1368,0,0,0,0,0,0,0,0,
-	1369,1369,1369,1369,1369,1369,1369,1369,1370,1370,1370,1370,1370,1370,1370,1370,
-	1371,1371,1371,1371,1371,1371,1371,1371,1372,1372,1372,1372,1372,1372,1372,1372,
-	1373,1373,1373,1373,1373,1373,1373,1373,1374,1375,1376,1377,1378,0,0,0,
-	1379,1379,1379,1379,1379,1379,1379,1379,1380,1380,1380,1380,1380,1380,1380,1381,
-	1382,1382,1382,1382,1382,1382,1382,1382,1383,1383,1383,1383,1383,1383,1383,1384,
-	1385,1385,1385,1385,1385,1385,1385,1386,1387,1387,1387,1387,1387,1387,1387,1387,
-	1388,1388,1388,1388,1388,1388,1388,1388,1389,1390,0,0,0,0,0,0,
-	1391,1391,1391,1391,1391,1391,1391,1391,1392,1392,1392,1392,1392,1392,1392,1393,
-	1394,1394,1394,1394,1394,1394,1394,1394,1395,1395,1395,1395,1395,1395,1395,1395,
-	1396,1396,1396,1396,1396,1396,1396,1396,1397,1397,1397,1397,1397,1397,1397,1397,
-	1398,1398,1398,1398,1398,1398,1398,1398,1399,1400,0,0,0,0,0,0,
-	1401,1401,1401,1401,1401,1401,1401,1401,1402,1402,1402,1402,1402,1402,1402,1403,
-	1404,1404,1404,1404,1404,1404,1404,1404,1405,1405,1405,1405,1405,1405,1405,1405,
-	1406,1406,1406,1406,1406,1406,1406,1406,1407,1407,1407,1407,1407,1407,1407,1407,
-	1408,1408,1408,1408,1408,1408,1408,1408,1409,1410,0,0,0,0,0,0,
-	1411,1411,1411,1411,1411,1411,1411,1411,0,0,0,0,0,0,0,0,
-	1412,1412,1412,1412,1412,1412,1412,1412,1413,1413,1413,1413,1413,1413,1413,1413,
-	1414,1414,1414,1414,1414,1414,1414,1414,1415,1415,1415,1415,1415,1415,1415,1415,
-	1416,1416,1416,1416,1416,1416,1416,1416,1417,1418,1419,1420,1421,0,0,0,
-	1333,1333,1333,1333,1333,1333,1333,1333,0,0,0,0,0,0,0,0,
-	1334,1334,1334,1334,1334,1334,1334,1334,1335,1335,1335,1335,1335,1335,1335,1336,
-	1337,1337,1337,1337,1337,1337,1337,1338,1339,1339,1339,1339,1339,1339,1339,1339,
-	1340,1340,1340,1340,1340,1340,1340,1340,1341,1342,1343,1344,1345,0,0,0,
-	1346,1346,1346,1346,1346,1346,1346,1346,0,0,0,0,0,0,0,0,
-	1347,1347,1347,1347,1347,1347,1347,1347,1348,1348,1348,1348,1348,1348,1348,1348,
-	1349,1349,1349,1349,1349,1349,1349,1349,1350,1350,1350,1350,1350,1350,1350,1350,
-	1351,1351,1351,1351,1351,1351,1351,1351,1352,1353,1354,1355,1356,0,0,0,
-	1357,1357,1357,1357,1357,1357,1357,1357,0,0,0,0,0,0,0,0,
-	1358,1358,1358,1358,1358,1358,1358,1358,1359,1359,1359,1359,1359,1359,1359,1359,
-	1360,1360,1360,1360,1360,1360,1360,1360,1361,1361,1361,1361,1361,1361,1361,1361,
-	1362,1362,1362,1362,1362,1362,1362,1362,1363,1364,1365,1366,1367,0,0,0,
-	1368,1368,1368,1368,1368,1368,1368,1368,0,0,0,0,0,0,0,0,
-	1369,1369,1369,1369,1369,1369,1369,1369,1370,1370,1370,1370,1370,1370,1370,1370,
-	1371,1371,1371,1371,1371,1371,1371,1371,1372,1372,1372,1372,1372,1372,1372,1372,
-	1373,1373,1373,1373,1373,1373,1373,1373,1374,1375,1376,1377,1378,0,0,0,
-	1379,1379,1379,1379,1379,1379,1379,1379,1380,1380,1380,1380,1380,1380,1380,1381,
-	1382,1382,1382,1382,1382,1382,1382,1382,1383,1383,1383,1383,1383,1383,1383,1384,
-	1385,1385,1385,1385,1385,1385,1385,1386,1387,1387,1387,1387,1387,1387,1387,1387,
-	1388,1388,1388,1388,1388,1388,1388,1388,1389,1390,0,0,0,0,0,0,
-	1391,1391,1391,1391,1391,1391,1391,1391,1392,1392,1392,1392,1392,1392,1392,1393,
-	1394,1394,1394,1394,1394,1394,1394,1394,1395,1395,1395,1395,1395,1395,1395,1395,
-	1396,1396,1396,1396,1396,1396,1396,1396,1397,1397,1397,1397,1397,1397,1397,1397,
-	1398,1398,1398,1398,1398,1398,1398,1398,1399,1400,0,0,0,0,0,0,
-	1401,1401,1401,1401,1401,1401,1401,1401,1402,1402,1402,1402,1402,1402,1402,1403,
-	1404,1404,1404,1404,1404,1404,1404,1404,1405,1405,1405,1405,1405,1405,1405,1405,
-	1406,1406,1406,1406,1406,1406,1406,1406,1407,1407,1407,1407,1407,1407,1407,1407,
-	1408,1408,1408,1408,1408,1408,1408,1408,1409,1410,0,0,0,0,0,0,
-	1411,1411,1411,1411,1411,1411,1411,1411,0,0,0,0,0,0,0,0,
-	1412,1412,1412,1412,1412,1412,1412,1412,1413,1413,1413,1413,1413,1413,1413,1413,
-	1414,1414,1414,1414,1414,1414,1414,1414,1415,1415,1415,1415,1415,1415,1415,1415,
-	1416,1416,1416,1416,1416,1416,1416,1416,1417,1418,1419,1420,1421,0,0,0,
-	1333,1333,1333,1333,1333,1333,1333,1333,0,0,0,0,0,0,0,0,
-	1334,1334,1334,1334,1334,1334,1334,1334,1335,1335,1335,1335,1335,1335,1335,1336,
-	1337,1337,1337,1337,1337,1337,1337,1338,1339,1339,1339,1339,1339,1339,1339,1339,
-	1340,1340,1340,1340,1340,1340,1340,1340,1341,1342,1343,1344,1345,0,0,0,
-	1346,1346,1346,1346,1346,1346,1346,1346,0,0,0,0,0,0,0,0,
-	1347,1347,1347,1347,1347,1347,1347,1347,1348,1348,1348,1348,1348,1348,1348,1348,
-	1349,1349,1349,1349,1349,1349,1349,1349,1350,1350,1350,1350,1350,1350,1350,1350,
-	1351,1351,1351,1351,1351,1351,1351,1351,1352,1353,1354,1355,1356,0,0,0,
-	1357,1357,1357,1357,1357,1357,1357,1357,0,0,0,0,0,0,0,0,
-	1358,1358,1358,1358,1358,1358,1358,1358,1359,1359,1359,1359,1359,1359,1359,1359,
-	1360,1360,1360,1360,1360,1360,1360,1360,1361,1361,1361,1361,1361,1361,1361,1361,
-	1362,1362,1362,1362,1362,1362,1362,1362,1363,1364,1365,1366,1367,0,0,0,
-	1368,1368,1368,1368,1368,1368,1368,1368,0,0,0,0,0,0,0,0,
-	1369,1369,1369,1369,1369,1369,1369,1369,1370,1370,1370,1370,1370,1370,1370,1370,
-	1371,1371,1371,1371,1371,1371,1371,1371,1372,1372,1372,1372,1372,1372,1372,1372,
-	1373,1373,1373,1373,1373,1373,1373,1373,1374,1375,1376,1377,1378,0,0,0,
-	1379,1379,1379,1379,1379,1379,1379,1379,1422,1422,1422,1422,1422,1422,1422,1423,
-	1382,1382,1382,1382,1382,1382,1382,1382,1383,1383,1383,1383,1383,1383,1383,1384,
-	1385,1385,1385,1385,1385,1385,1385,1386,1387,1387,1387,1387,1387,1387,1387,1387,
-	1388,1388,1388,1388,1388,1388,1388,1388,1389,1390,0,0,0,0,0,0,
-	1391,1391,1391,1391,1391,1391,1391,1391,1424,1424,1424,1424,1424,1424,1424,1425,
-	1394,1394,1394,1394,1394,1394,1394,1394,1395,1395,1395,1395,1395,1395,1395,1395,
-	1396,1396,1396,1396,1396,1396,1396,1396,1397,1397,1397,1397,1397,1397,1397,1397,
-	1398,1398,1398,1398,1398,1398,1398,1398,1399,1400,0,0,0,0,0,0,
-	1401,1401,1401,1401,1401,1401,1401,1401,1426,1426,1426,1426,1426,1426,1426,1427,
-	1404,1404,1404,1404,1404,1404,1404,1404,1405,1405,1405,1405,1405,1405,1405,1405,
-	1406,1406,1406,1406,1406,1406,1406,1406,1407,1407,1407,1407,1407,1407,1407,1407,
-	1408,1408,1408,1408,1408,1408,1408,1408,1409,1410,0,0,0,0,0,0,
-	1411,1411,1411,1411,1411,1411,1411,1411,0,0,0,0,0,0,0,0,
-	1412,1412,1412,1412,1412,1412,1412,1412,1413,1413,1413,1413,1413,1413,1413,1413,
-	1414,1414,1414,1414,1414,1414,1414,1414,1415,1415,1415,1415,1415,1415,1415,1415,
-	1416,1416,1416,1416,1416,1416,1416,1416,1417,1418,1419,1420,1421,0,0,0,
-	1428,1428,1428,1428,1428,1428,1428,1428,0,0,0,0,0,0,0,0,
-	1429,1429,1429,1429,1429,1429,1429,1429,1430,1430,1430,1430,1430,1430,1430,1431,
-	1432,1432,1432,1432,1432,1432,1432,1433,1434,1434,1434,1434,1434,1434,1434,1434,
-	1435,1435,1435,1435,1435,1435,1435,1435,1436,1437,1438,1439,1440,0,0,0,
-	1441,1441,1441,1441,1441,1441,1441,1441,1442,1442,1442,1442,1442,1442,1442,1442,
-	1443,1443,1443,1443,1443,1443,1443,1443,1444,1444,1444,1444,1444,1444,1444,1444,
-	1445,1445,1445,1445,1445,1445,1445,1445,1446,1446,1446,1446,1446,1446,1446,1446,
-	1447,1447,1447,1447,1447,1447,1447,1447,1448,1449,1450,1451,1452,0,0,0,
-	1453,1453,1453,1453,1453,1453,1453,1453,1454,1454,1454,1454,1454,1454,1454,1454,
-	1455,1455,1455,1455,1455,1455,1455,1455,1456,1456,1456,1456,1456,1456,1456,1456,
-	1457,1457,1457,1457,1457,1457,1457,1457,1458,1458,1458,1458,1458,1458,1458,1458,
-	1459,1459,1459,1459,1459,1459,1459,1459,1460,1461,1462,1463,1464,0,0,0,
-	1465,1465,1465,1465,1465,1465,1465,1465,1466,1466,1466,1466,1466,1466,1466,1466,
-	1467,1467,1467,1467,1467,1467,1467,1467,1468,1468,1468,1468,1468,1468,1468,1468,
-	1469,1469,1469,1469,1469,1469,1469,1469,1470,1470,1470,1470,1470,1470,1470,1470,
-	1471,1471,1471,1471,1471,1471,1471,1471,1472,1473,1474,1475,1476,0,0,0,
-	1477,1477,1477,1477,1477,1477,1477,1477,1478,1478,1478,1478,1478,1478,1478,1479,
-	1480,1480,1480,1480,1480,1480,1480,1480,1481,1481,1481,1481,1481,1481,1481,1482,
-	1483,1483,1483,1483,1483,1483,1483,1484,1485,1485,1485,1485,1485,1485,1485,1485,
-	1486,1486,1486,1486,1486,1486,1486,1486,1487,1488,0,0,0,0,0,0,
-	1489,1489,1489,1489,1489,1489,1489,1489,1490,1490,1490,1490,1490,1490,1490,1490,
-	1491,1491,1491,1491,1491,1491,1491,1491,1492,1492,1492,1492,1492,1492,1492,1492,
-	1493,1493,1493,1493,1493,1493,1493,1493,1494,1494,1494,1494,1494,1494,1494,1494,
-	1495,1495,1495,1495,1495,1495,1495,1495,1496,1497,0,0,0,0,0,0,
-	1498,1498,1498,1498,1498,1498,1498,1498,1499,1499,1499,1499,1499,1499,1499,1499,
-	1500,1500,1500,1500,1500,1500,1500,1500,1501,1501,1501,1501,1501,1501,1501,1501,
-	1502,1502,1502,1502,1502,1502,1502,1502,1503,1503,1503,1503,1503,1503,1503,1503,
-	1504,1504,1504,1504,1504,1504,1504,1504,1505,1506,0,0,0,0,0,0,
-	1507,1507,1507,1507,1507,1507,1507,1507,1508,1508,1508,1508,1508,1508,1508,1508,
-	1509,1509,1509,1509,1509,1509,1509,1509,1510,1510,1510,1510,1510,1510,1510,1510,
-	1511,1511,1511,1511,1511,1511,1511,1511,1512,1512,1512,1512,1512,1512,1512,1512,
-	1513,1513,1513,1513,1513,1513,1513,1513,1514,1515,1516,1517,1518,0,0,0,
-	1428,1428,1428,1428,1428,1428,1428,1428,0,0,0,0,0,0,0,0,
-	1429,1429,1429,1429,1429,1429,1429,1429,1430,1430,1430,1430,1430,1430,1430,1431,
-	1432,1432,1432,1432,1432,1432,1432,1433,1434,1434,1434,1434,1434,1434,1434,1434,
-	1435,1435,1435,1435,1435,1435,1435,1435,1436,1437,1438,1439,1440,0,0,0,
-	1441,1441,1441,1441,1441,1441,1441,1441,1442,1442,1442,1442,1442,1442,1442,1442,
-	1443,1443,1443,1443,1443,1443,1443,1443,1444,1444,1444,1444,1444,1444,1444,1444,
-	1445,1445,1445,1445,1445,1445,1445,1445,1446,1446,1446,1446,1446,1446,1446,1446,
-	1447,1447,1447,1447,1447,1447,1447,1447,1448,1449,1450,1451,1452,0,0,0,
-	1453,1453,1453,1453,1453,1453,1453,1453,1454,1454,1454,1454,1454,1454,1454,1454,
-	1455,1455,1455,1455,1455,1455,1455,1455,1456,1456,1456,1456,1456,1456,1456,1456,
-	1457,1457,1457,1457,1457,1457,1457,1457,1458,1458,1458,1458,1458,1458,1458,1458,
-	1459,1459,1459,1459,1459,1459,1459,1459,1460,1461,1462,1463,1464,0,0,0,
-	1465,1465,1465,1465,1465,1465,1465,1465,1466,1466,1466,1466,1466,1466,1466,1466,
-	1467,1467,1467,1467,1467,1467,1467,1467,1468,1468,1468,1468,1468,1468,1468,1468,
-	1469,1469,1469,1469,1469,1469,1469,1469,1470,1470,1470,1470,1470,1470,1470,1470,
-	1471,1471,1471,1471,1471,1471,1471,1471,1472,1473,1474,1475,1476,0,0,0,
-	1477,1477,1477,1477,1477,1477,1477,1477,1478,1478,1478,1478,1478,1478,1478,1479,
-	1480,1480,1480,1480,1480,1480,1480,1480,1481,1481,1481,1481,1481,1481,1481,1482,
-	1483,1483,1483,1483,1483,1483,1483,1484,1485,1485,1485,1485,1485,1485,1485,1485,
-	1486,1486,1486,1486,1486,1486,1486,1486,1487,1488,0,0,0,0,0,0,
-	1489,1489,1489,1489,1489,1489,1489,1489,1490,1490,1490,1490,1490,1490,1490,1490,
-	1491,1491,1491,1491,1491,1491,1491,1491,1492,1492,1492,1492,1492,1492,1492,1492,
-	1493,1493,1493,1493,1493,1493,1493,1493,1494,1494,1494,1494,1494,1494,1494,1494,
-	1495,1495,1495,1495,1495,1495,1495,1495,1496,1497,0,0,0,0,0,0,
-	1498,1498,1498,1498,1498,1498,1498,1498,1499,1499,1499,1499,1499,1499,1499,1499,
-	1500,1500,1500,1500,1500,1500,1500,1500,1501,1501,1501,1501,1501,1501,1501,1501,
-	1502,1502,1502,1502,1502,1502,1502,1502,1503,1503,1503,1503,1503,1503,1503,1503,
-	1504,1504,1504,1504,1504,1504,1504,1504,1505,1506,0,0,0,0,0,0,
-	1507,1507,1507,1507,1507,1507,1507,1507,1508,1508,1508,1508,1508,1508,1508,1508,
-	1509,1509,1509,1509,1509,1509,1509,1509,1510,1510,1510,1510,1510,1510,1510,1510,
-	1511,1511,1511,1511,1511,1511,1511,1511,1512,1512,1512,1512,1512,1512,1512,1512,
-	1513,1513,1513,1513,1513,1513,1513,1513,1514,1515,1516,1517,1518,0,0,0,
-	1428,1428,1428,1428,1428,1428,1428,1428,0,0,0,0,0,0,0,0,
-	1429,1429,1429,1429,1429,1429,1429,1429,1430,1430,1430,1430,1430,1430,1430,1431,
-	1432,1432,1432,1432,1432,1432,1432,1433,1434,1434,1434,1434,1434,1434,1434,1434,
-	1435,1435,1435,1435,1435,1435,1435,1435,1436,1437,1438,1439,1440,0,0,0,
-	1441,1441,1441,1441,1441,1441,1441,1441,1442,1442,1442,1442,1442,1442,1442,1442,
-	1443,1443,1443,1443,1443,1443,1443,1443,1444,1444,1444,1444,1444,1444,1444,1444,
-	1445,1445,1445,1445,1445,1445,1445,1445,1446,1446,1446,1446,1446,1446,1446,1446,
-	1447,1447,1447,1447,1447,1447,1447,1447,1448,1449,1450,1451,1452,0,0,0,
-	1453,1453,1453,1453,1453,1453,1453,1453,1454,1454,1454,1454,1454,1454,1454,1454,
-	1455,1455,1455,1455,1455,1455,1455,1455,1456,1456,1456,1456,1456,1456,1456,1456,
-	1457,1457,1457,1457,1457,1457,1457,1457,1458,1458,1458,1458,1458,1458,1458,1458,
-	1459,1459,1459,1459,1459,1459,1459,1459,1460,1461,1462,1463,1464,0,0,0,
-	1465,1465,1465,1465,1465,1465,1465,1465,1466,1466,1466,1466,1466,1466,1466,1466,
-	1467,1467,1467,1467,1467,1467,1467,1467,1468,1468,1468,1468,1468,1468,1468,1468,
-	1469,1469,1469,1469,1469,1469,1469,1469,1470,1470,1470,1470,1470,1470,1470,1470,
-	1471,1471,1471,1471,1471,1471,1471,1471,1472,1473,1474,1475,1476,0,0,0,
-	1477,1477,1477,1477,1477,1477,1477,1477,1478,1478,1478,1478,1478,1478,1478,1479,
-	1480,1480,1480,1480,1480,1480,1480,1480,1481,1481,1481,1481,1481,1481,1481,1482,
-	1483,1483,1483,1483,1483,1483,1483,1484,1485,1485,1485,1485,1485,1485,1485,1485,
-	1486,1486,1486,1486,1486,1486,1486,1486,1487,1488,0,0,0,0,0,0,
-	1489,1489,1489,1489,1489,1489,1489,1489,1490,1490,1490,1490,1490,1490,1490,1490,
-	1491,1491,1491,1491,1491,1491,1491,1491,1492,1492,1492,1492,1492,1492,1492,1492,
-	1493,1493,1493,1493,1493,1493,1493,1493,1494,1494,1494,1494,1494,1494,1494,1494,
-	1495,1495,1495,1495,1495,1495,1495,1495,1496,1497,0,0,0,0,0,0,
-	1498,1498,1498,1498,1498,1498,1498,1498,1499,1499,1499,1499,1499,1499,1499,1499,
-	1500,1500,1500,1500,1500,1500,1500,1500,1501,1501,1501,1501,1501,1501,1501,1501,
-	1502,1502,1502,1502,1502,1502,1502,1502,1503,1503,1503,1503,1503,1503,1503,1503,
-	1504,1504,1504,1504,1504,1504,1504,1504,1505,1506,0,0,0,0,0,0,
-	1507,1507,1507,1507,1507,1507,1507,1507,1508,1508,1508,1508,1508,1508,1508,1508,
-	1509,1509,1509,1509,1509,1509,1509,1509,1510,1510,1510,1510,1510,1510,1510,1510,
-	1511,1511,1511,1511,1511,1511,1511,1511,1512,1512,1512,1512,1512,1512,1512,1512,
-	1513,1513,1513,1513,1513,1513,1513,1513,1514,1515,1516,1517,1518,0,0,0,
-	1428,1428,1428,1428,1428,1428,1428,1428,0,0,0,0,0,0,0,0,
-	1429,1429,1429,1429,1429,1429,1429,1429,1430,1430,1430,1430,1430,1430,1430,1431,
-	1432,1432,1432,1432,1432,1432,1432,1433,1434,1434,1434,1434,1434,1434,1434,1434,
-	1435,1435,1435,1435,1435,1435,1435,1435,1436,1437,1438,1439,1440,0,0,0,
-	1441,1441,1441,1441,1441,1441,1441,1441,1442,1442,1442,1442,1442,1442,1442,1442,
-	1443,1443,1443,1443,1443,1443,1443,1443,1444,1444,1444,1444,1444,1444,1444,1444,
-	1445,1445,1445,1445,1445,1445,1445,1445,1446,1446,1446,1446,1446,1446,1446,1446,
-	1447,1447,1447,1447,1447,1447,1447,1447,1448,1449,1450,1451,1452,0,0,0,
-	1453,1453,1453,1453,1453,1453,1453,1453,1454,1454,1454,1454,1454,1454,1454,1454,
-	1455,1455,1455,1455,1455,1455,1455,1455,1456,1456,1456,1456,1456,1456,1456,1456,
-	1457,1457,1457,1457,1457,1457,1457,1457,1458,1458,1458,1458,1458,1458,1458,1458,
-	1459,1459,1459,1459,1459,1459,1459,1459,1460,1461,1462,1463,1464,0,0,0,
-	1465,1465,1465,1465,1465,1465,1465,1465,1466,1466,1466,1466,1466,1466,1466,1466,
-	1467,1467,1467,1467,1467,1467,1467,1467,1468,1468,1468,1468,1468,1468,1468,1468,
-	1469,1469,1469,1469,1469,1469,1469,1469,1470,1470,1470,1470,1470,1470,1470,1470,
-	1471,1471,1471,1471,1471,1471,1471,1471,1472,1473,1474,1475,1476,0,0,0,
-	1477,1477,1477,1477,1477,1477,1477,1477,1478,1478,1478,1478,1478,1478,1478,1479,
-	1480,1480,1480,1480,1480,1480,1480,1480,1481,1481,1481,1481,1481,1481,1481,1482,
-	1483,1483,1483,1483,1483,1483,1483,1484,1485,1485,1485,1485,1485,1485,1485,1485,
-	1486,1486,1486,1486,1486,1486,1486,1486,1487,1488,0,0,0,0,0,0,
-	1489,1489,1489,1489,1489,1489,1489,1489,1490,1490,1490,1490,1490,1490,1490,1490,
-	1491,1491,1491,1491,1491,1491,1491,1491,1492,1492,1492,1492,1492,1492,1492,1492,
-	1493,1493,1493,1493,1493,1493,1493,1493,1494,1494,1494,1494,1494,1494,1494,1494,
-	1495,1495,1495,1495,1495,1495,1495,1495,1496,1497,0,0,0,0,0,0,
-	1498,1498,1498,1498,1498,1498,1498,1498,1499,1499,1499,1499,1499,1499,1499,1499,
-	1500,1500,1500,1500,1500,1500,1500,1500,1501,1501,1501,1501,1501,1501,1501,1501,
-	1502,1502,1502,1502,1502,1502,1502,1502,1503,1503,1503,1503,1503,1503,1503,1503,
-	1504,1504,1504,1504,1504,1504,1504,1504,1505,1506,0,0,0,0,0,0,
-	1507,1507,1507,1507,1507,1507,1507,1507,1508,1508,1508,1508,1508,1508,1508,1508,
-	1509,1509,1509,1509,1509,1509,1509,1509,1510,1510,1510,1510,1510,1510,1510,1510,
-	1511,1511,1511,1511,1511,1511,1511,1511,1512,1512,1512,1512,1512,1512,1512,1512,
-	1513,1513,1513,1513,1513,1513,1513,1513,1514,1515,1516,1517,1518,0,0,0,
-	1428,1428,1428,1428,1428,1428,1428,1428,0,0,0,0,0,0,0,0,
-	1429,1429,1429,1429,1429,1429,1429,1429,1430,1430,1430,1430,1430,1430,1430,1431,
-	1432,1432,1432,1432,1432,1432,1432,1433,1434,1434,1434,1434,1434,1434,1434,1434,
-	1435,1435,1435,1435,1435,1435,1435,1435,1436,1437,1438,1439,1440,0,0,0,
-	1441,1441,1441,1441,1441,1441,1441,1441,1442,1442,1442,1442,1442,1442,1442,1442,
-	1443,1443,1443,1443,1443,1443,1443,1443,1444,1444,1444,1444,1444,1444,1444,1444,
-	1445,1445,1445,1445,1445,1445,1445,1445,1446,1446,1446,1446,1446,1446,1446,1446,
-	1447,1447,1447,1447,1447,1447,1447,1447,1448,1449,1450,1451,1452,0,0,0,
-	1453,1453,1453,1453,1453,1453,1453,1453,1454,1454,1454,1454,1454,1454,1454,1454,
-	1455,1455,1455,1455,1455,1455,1455,1455,1456,1456,1456,1456,1456,1456,1456,1456,
-	1457,1457,1457,1457,1457,1457,1457,1457,1458,1458,1458,1458,1458,1458,1458,1458,
-	1459,1459,1459,1459,1459,1459,1459,1459,1460,1461,1462,1463,1464,0,0,0,
-	1465,1465,1465,1465,1465,1465,1465,1465,1466,1466,1466,1466,1466,1466,1466,1466,
-	1467,1467,1467,1467,1467,1467,1467,1467,1468,1468,1468,1468,1468,1468,1468,1468,
-	1469,1469,1469,1469,1469,1469,1469,1469,1470,1470,1470,1470,1470,1470,1470,1470,
-	1471,1471,1471,1471,1471,1471,1471,1471,1472,1473,1474,1475,1476,0,0,0,
-	1477,1477,1477,1477,1477,1477,1477,1477,1478,1478,1478,1478,1478,1478,1478,1479,
-	1480,1480,1480,1480,1480,1480,1480,1480,1481,1481,1481,1481,1481,1481,1481,1482,
-	1483,1483,1483,1483,1483,1483,1483,1484,1485,1485,1485,1485,1485,1485,1485,1485,
-	1486,1486,1486,1486,1486,1486,1486,1486,1487,1488,0,0,0,0,0,0,
-	1489,1489,1489,1489,1489,1489,1489,1489,1490,1490,1490,1490,1490,1490,1490,1490,
-	1491,1491,1491,1491,1491,1491,1491,1491,1492,1492,1492,1492,1492,1492,1492,1492,
-	1493,1493,1493,1493,1493,1493,1493,1493,1494,1494,1494,1494,1494,1494,1494,1494,
-	1495,1495,1495,1495,1495,1495,1495,1495,1496,1497,0,0,0,0,0,0,
-	1498,1498,1498,1498,1498,1498,1498,1498,1499,1499,1499,1499,1499,1499,1499,1499,
-	1500,1500,1500,1500,1500,1500,1500,1500,1501,1501,1501,1501,1501,1501,1501,1501,
-	1502,1502,1502,1502,1502,1502,1502,1502,1503,1503,1503,1503,1503,1503,1503,1503,
-	1504,1504,1504,1504,1504,1504,1504,1504,1505,1506,0,0,0,0,0,0,
-	1507,1507,1507,1507,1507,1507,1507,1507,1508,1508,1508,1508,1508,1508,1508,1508,
-	1509,1509,1509,1509,1509,1509,1509,1509,1510,1510,1510,1510,1510,1510,1510,1510,
-	1511,1511,1511,1511,1511,1511,1511,1511,1512,1512,1512,1512,1512,1512,1512,1512,
-	1513,1513,1513,1513,1513,1513,1513,1513,1514,1515,1516,1517,1518,0,0,0,
-	1428,1428,1428,1428,1428,1428,1428,1428,0,0,0,0,0,0,0,0,
-	1429,1429,1429,1429,1429,1429,1429,1429,1430,1430,1430,1430,1430,1430,1430,1431,
-	1432,1432,1432,1432,1432,1432,1432,1433,1434,1434,1434,1434,1434,1434,1434,1434,
-	1435,1435,1435,1435,1435,1435,1435,1435,1436,1437,1438,1439,1440,0,0,0,
-	1441,1441,1441,1441,1441,1441,1441,1441,1442,1442,1442,1442,1442,1442,1442,1442,
-	1443,1443,1443,1443,1443,1443,1443,1443,1444,1444,1444,1444,1444,1444,1444,1444,
-	1445,1445,1445,1445,1445,1445,1445,1445,1446,1446,1446,1446,1446,1446,1446,1446,
-	1447,1447,1447,1447,1447,1447,1447,1447,1448,1449,1450,1451,1452,0,0,0,
-	1453,1453,1453,1453,1453,1453,1453,1453,1454,1454,1454,1454,1454,1454,1454,1454,
-	1455,1455,1455,1455,1455,1455,1455,1455,1456,1456,1456,1456,1456,1456,1456,1456,
-	1457,1457,1457,1457,1457,1457,1457,1457,1458,1458,1458,1458,1458,1458,1458,1458,
-	1459,1459,1459,1459,1459,1459,1459,1459,1460,1461,1462,1463,1464,0,0,0,
-	1465,1465,1465,1465,1465,1465,1465,1465,1466,1466,1466,1466,1466,1466,1466,1466,
-	1467,1467,1467,1467,1467,1467,1467,1467,1468,1468,1468,1468,1468,1468,1468,1468,
-	1469,1469,1469,1469,1469,1469,1469,1469,1470,1470,1470,1470,1470,1470,1470,1470,
-	1471,1471,1471,1471,1471,1471,1471,1471,1472,1473,1474,1475,1476,0,0,0,
-	1477,1477,1477,1477,1477,1477,1477,1477,1478,1478,1478,1478,1478,1478,1478,1479,
-	1480,1480,1480,1480,1480,1480,1480,1480,1481,1481,1481,1481,1481,1481,1481,1482,
-	1483,1483,1483,1483,1483,1483,1483,1484,1485,1485,1485,1485,1485,1485,1485,1485,
-	1486,1486,1486,1486,1486,1486,1486,1486,1487,1488,0,0,0,0,0,0,
-	1489,1489,1489,1489,1489,1489,1489,1489,1490,1490,1490,1490,1490,1490,1490,1490,
-	1491,1491,1491,1491,1491,1491,1491,1491,1492,1492,1492,1492,1492,1492,1492,1492,
-	1493,1493,1493,1493,1493,1493,1493,1493,1494,1494,1494,1494,1494,1494,1494,1494,
-	1495,1495,1495,1495,1495,1495,1495,1495,1496,1497,0,0,0,0,0,0,
-	1498,1498,1498,1498,1498,1498,1498,1498,1499,1499,1499,1499,1499,1499,1499,1499,
-	1500,1500,1500,1500,1500,1500,1500,1500,1501,1501,1501,1501,1501,1501,1501,1501,
-	1502,1502,1502,1502,1502,1502,1502,1502,1503,1503,1503,1503,1503,1503,1503,1503,
-	1504,1504,1504,1504,1504,1504,1504,1504,1505,1506,0,0,0,0,0,0,
-	1507,1507,1507,1507,1507,1507,1507,1507,1508,1508,1508,1508,1508,1508,1508,1508,
-	1509,1509,1509,1509,1509,1509,1509,1509,1510,1510,1510,1510,1510,1510,1510,1510,
-	1511,1511,1511,1511,1511,1511,1511,1511,1512,1512,1512,1512,1512,1512,1512,1512,
-	1513,1513,1513,1513,1513,1513,1513,1513,1514,1515,1516,1517,1518,0,0,0,
-	1428,1428,1428,1428,1428,1428,1428,1428,0,0,0,0,0,0,0,0,
-	1429,1429,1429,1429,1429,1429,1429,1429,1430,1430,1430,1430,1430,1430,1430,1431,
-	1432,1432,1432,1432,1432,1432,1432,1433,1434,1434,1434,1434,1434,1434,1434,1434,
-	1435,1435,1435,1435,1435,1435,1435,1435,1436,1437,1438,1439,1440,0,0,0,
-	1441,1441,1441,1441,1441,1441,1441,1441,1442,1442,1442,1442,1442,1442,1442,1442,
-	1443,1443,1443,1443,1443,1443,1443,1443,1444,1444,1444,1444,1444,1444,1444,1444,
-	1445,1445,1445,1445,1445,1445,1445,1445,1446,1446,1446,1446,1446,1446,1446,1446,
-	1447,1447,1447,1447,1447,1447,1447,1447,1448,1449,1450,1451,1452,0,0,0,
-	1453,1453,1453,1453,1453,1453,1453,1453,1454,1454,1454,1454,1454,1454,1454,1454,
-	1455,1455,1455,1455,1455,1455,1455,1455,1456,1456,1456,1456,1456,1456,1456,1456,
-	1457,1457,1457,1457,1457,1457,1457,1457,1458,1458,1458,1458,1458,1458,1458,1458,
-	1459,1459,1459,1459,1459,1459,1459,1459,1460,1461,1462,1463,1464,0,0,0,
-	1465,1465,1465,1465,1465,1465,1465,1465,1466,1466,1466,1466,1466,1466,1466,1466,
-	1467,1467,1467,1467,1467,1467,1467,1467,1468,1468,1468,1468,1468,1468,1468,1468,
-	1469,1469,1469,1469,1469,1469,1469,1469,1470,1470,1470,1470,1470,1470,1470,1470,
-	1471,1471,1471,1471,1471,1471,1471,1471,1472,1473,1474,1475,1476,0,0,0,
-	1477,1477,1477,1477,1477,1477,1477,1477,1478,1478,1478,1478,1478,1478,1478,1479,
-	1480,1480,1480,1480,1480,1480,1480,1480,1481,1481,1481,1481,1481,1481,1481,1482,
-	1483,1483,1483,1483,1483,1483,1483,1484,1485,1485,1485,1485,1485,1485,1485,1485,
-	1486,1486,1486,1486,1486,1486,1486,1486,1487,1488,0,0,0,0,0,0,
-	1489,1489,1489,1489,1489,1489,1489,1489,1490,1490,1490,1490,1490,1490,1490,1490,
-	1491,1491,1491,1491,1491,1491,1491,1491,1492,1492,1492,1492,1492,1492,1492,1492,
-	1493,1493,1493,1493,1493,1493,1493,1493,1494,1494,1494,1494,1494,1494,1494,1494,
-	1495,1495,1495,1495,1495,1495,1495,1495,1496,1497,0,0,0,0,0,0,
-	1498,1498,1498,1498,1498,1498,1498,1498,1499,1499,1499,1499,1499,1499,1499,1499,
-	1500,1500,1500,1500,1500,1500,1500,1500,1501,1501,1501,1501,1501,1501,1501,1501,
-	1502,1502,1502,1502,1502,1502,1502,1502,1503,1503,1503,1503,1503,1503,1503,1503,
-	1504,1504,1504,1504,1504,1504,1504,1504,1505,1506,0,0,0,0,0,0,
-	1507,1507,1507,1507,1507,1507,1507,1507,1508,1508,1508,1508,1508,1508,1508,1508,
-	1509,1509,1509,1509,1509,1509,1509,1509,1510,1510,1510,1510,1510,1510,1510,1510,
-	1511,1511,1511,1511,1511,1511,1511,1511,1512,1512,1512,1512,1512,1512,1512,1512,
-	1513,1513,1513,1513,1513,1513,1513,1513,1514,1515,1516,1517,1518,0,0,0,
-	1428,1428,1428,1428,1428,1428,1428,1428,0,0,0,0,0,0,0,0,
-	1429,1429,1429,1429,1429,1429,1429,1429,1430,1430,1430,1430,1430,1430,1430,1431,
-	1432,1432,1432,1432,1432,1432,1432,1433,1434,1434,1434,1434,1434,1434,1434,1434,
-	1435,1435,1435,1435,1435,1435,1435,1435,1436,1437,1438,1439,1440,0,0,0,
-	1441,1441,1441,1441,1441,1441,1441,1441,1442,1442,1442,1442,1442,1442,1442,1442,
-	1443,1443,1443,1443,1443,1443,1443,1443,1444,1444,1444,1444,1444,1444,1444,1444,
-	1445,1445,1445,1445,1445,1445,1445,1445,1446,1446,1446,1446,1446,1446,1446,1446,
-	1447,1447,1447,1447,1447,1447,1447,1447,1448,1449,1450,1451,1452,0,0,0,
-	1453,1453,1453,1453,1453,1453,1453,1453,1454,1454,1454,1454,1454,1454,1454,1454,
-	1455,1455,1455,1455,1455,1455,1455,1455,1456,1456,1456,1456,1456,1456,1456,1456,
-	1457,1457,1457,1457,1457,1457,1457,1457,1458,1458,1458,1458,1458,1458,1458,1458,
-	1459,1459,1459,1459,1459,1459,1459,1459,1460,1461,1462,1463,1464,0,0,0,
-	1465,1465,1465,1465,1465,1465,1465,1465,1466,1466,1466,1466,1466,1466,1466,1466,
-	1467,1467,1467,1467,1467,1467,1467,1467,1468,1468,1468,1468,1468,1468,1468,1468,
-	1469,1469,1469,1469,1469,1469,1469,1469,1470,1470,1470,1470,1470,1470,1470,1470,
-	1471,1471,1471,1471,1471,1471,1471,1471,1472,1473,1474,1475,1476,0,0,0,
-	1477,1477,1477,1477,1477,1477,1477,1477,1519,1519,1519,1519,1519,1519,1519,1520,
-	1480,1480,1480,1480,1480,1480,1480,1480,1481,1481,1481,1481,1481,1481,1481,1482,
-	1483,1483,1483,1483,1483,1483,1483,1484,1485,1485,1485,1485,1485,1485,1485,1485,
-	1486,1486,1486,1486,1486,1486,1486,1486,1487,1488,0,0,0,0,0,0,
-	1489,1489,1489,1489,1489,1489,1489,1489,1490,1490,1490,1490,1490,1490,1490,1490,
-	1491,1491,1491,1491,1491,1491,1491,1491,1492,1492,1492,1492,1492,1492,1492,1492,
-	1493,1493,1493,1493,1493,1493,1493,1493,1494,1494,1494,1494,1494,1494,1494,1494,
-	1495,1495,1495,1495,1495,1495,1495,1495,1496,1497,0,0,0,0,0,0,
-	1498,1498,1498,1498,1498,1498,1498,1498,1499,1499,1499,1499,1499,1499,1499,1499,
-	1500,1500,1500,1500,1500,1500,1500,1500,1501,1501,1501,1501,1501,1501,1501,1501,
-	1502,1502,1502,1502,1502,1502,1502,1502,1503,1503,1503,1503,1503,1503,1503,1503,
-	1504,1504,1504,1504,1504,1504,1504,1504,1505,1506,0,0,0,0,0,0,
-	1507,1507,1507,1507,1507,1507,1507,1507,1508,1508,1508,1508,1508,1508,1508,1508,
-	1509,1509,1509,1509,1509,1509,1509,1509,1510,1510,1510,1510,1510,1510,1510,1510,
-	1511,1511,1511,1511,1511,1511,1511,1511,1512,1512,1512,1512,1512,1512,1512,1512,
-	1513,1513,1513,1513,1513,1513,1513,1513,1514,1515,1516,1517,1518,0,0,0,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,1521,
-	1522,1522,1522,1522,1522,1522,1522,1522,0,0,0,0,0,0,0,0,
-	1523,1523,1523,1523,1523,1523,1523,1523,1524,1524,1524,1524,1524,1524,1524,1525,
-	1526,1526,1526,1526,1526,1526,1526,1527,1528,1528,1528,1528,1528,1528,1528,1528,
-	1529,1529,1529,1529,1529,1529,1529,1529,1530,1531,1532,1533,1534,0,0,0,
-	1535,1535,1535,1535,1535,1535,1535,1535,1536,1536,1536,1536,1536,1536,1536,1536,
-	1537,1537,1537,1537,1537,1537,1537,1537,1538,1538,1538,1538,1538,1538,1538,1538,
-	1539,1539,1539,1539,1539,1539,1539,1539,1540,1540,1540,1540,1540,1540,1540,1540,
-	1541,1541,1541,1541,1541,1541,1541,1541,1542,1543,1544,1545,1546,0,0,0,
-	1547,1547,1547,1547,1547,1547,1547,1547,1548,1548,1548,1548,1548,1548,1548,1548,
-	1549,1549,1549,1549,1549,1549,1549,1549,1550,1550,1550,1550,1550,1550,1550,1550,
-	1551,1551,1551,1551,1551,1551,1551,1551,1552,1552,1552,1552,1552,1552,1552,1552,
-	1553,1553,1553,1553,1553,1553,1553,1553,1554,1555,1556,1557,1558,0,0,0,
-	1559,1559,1559,1559,1559,1559,1559,1559,1560,1560,1560,1560,1560,1560,1560,1560,
-	1561,1561,1561,1561,1561,1561,1561,1561,1562,1562,1562,1562,1562,1562,1562,1562,
-	1563,1563,1563,1563,1563,1563,1563,1563,1564,1564,1564,1564,1564,1564,1564,1564,
-	1565,1565,1565,1565,1565,1565,1565,1565,1566,1567,1568,1569,1570,0,0,0,
-	1571,1571,1571,1571,1571,1571,1571,1571,1572,1572,1572,1572,1572,1572,1572,1573,
-	1574,1574,1574,1574,1574,1574,1574,1574,1575,1575,1575,1575,1575,1575,1575,1576,
-	1577,1577,1577,1577,1577,1577,1577,1578,1579,1579,1579,1579,1579,1579,1579,1579,
-	1580,1580,1580,1580,1580,1580,1580,1580,1581,1582,0,0,0,0,0,0,
-	1583,1583,1583,1583,1583,1583,1583,1583,1584,1584,1584,1584,1584,1584,1584,1584,
-	1585,1585,1585,1585,1585,1585,1585,1585,1586,1586,1586,1586,1586,1586,1586,1586,
-	1587,1587,1587,1587,1587,1587,1587,1587,1588,1588,1588,1588,1588,1588,1588,1588,
-	1589,1589,1589,1589,1589,1589,1589,1589,1590,1591,0,0,0,0,0,0,
-	1592,1592,1592,1592,1592,1592,1592,1592,1593,1593,1593,1593,1593,1593,1593,1593,
-	1594,1594,1594,1594,1594,1594,1594,1594,1595,1595,1595,1595,1595,1595,1595,1595,
-	1596,1596,1596,1596,1596,1596,1596,1596,1597,1597,1597,1597,1597,1597,1597,1597,
-	1598,1598,1598,1598,1598,1598,1598,1598,1599,1600,0,0,0,0,0,0,
-	1601,1601,1601,1601,1601,1601,1601,1601,1602,1602,1602,1602,1602,1602,1602,1602,
-	1603,1603,1603,1603,1603,1603,1603,1603,1604,1604,1604,1604,1604,1604,1604,1604,
-	1605,1605,1605,1605,1605,1605,1605,1605,1606,1606,1606,1606,1606,1606,1606,1606,
-	1607,1607,1607,1607,1607,1607,1607,1607,1608,1609,1610,1611,1612,0,0,0,
-	1522,1522,1522,1522,1522,1522,1522,1522,0,0,0,0,0,0,0,0,
-	1523,1523,1523,1523,1523,1523,1523,1523,1524,1524,1524,1524,1524,1524,1524,1525,
-	1526,1526,1526,1526,1526,1526,1526,1527,1528,1528,1528,1528,1528,1528,1528,1528,
-	1529,1529,1529,1529,1529,1529,1529,1529,1530,1531,1532,1533,1534,0,0,0,
-	1535,1535,1535,1535,1535,1535,1535,1535,1536,1536,1536,1536,1536,1536,1536,1536,
-	1537,1537,1537,1537,1537,1537,1537,1537,1538,1538,1538,1538,1538,1538,1538,1538,
-	1539,1539,1539,1539,1539,1539,1539,1539,1540,1540,1540,1540,1540,1540,1540,1540,
-	1541,1541,1541,1541,1541,1541,1541,1541,1542,1543,1544,1545,1546,0,0,0,
-	1547,1547,1547,1547,1547,1547,1547,1547,1548,1548,1548,1548,1548,1548,1548,1548,
-	1549,1549,1549,1549,1549,1549,1549,1549,1550,1550,1550,1550,1550,1550,1550,1550,
-	1551,1551,1551,1551,1551,1551,1551,1551,1552,1552,1552,1552,1552,1552,1552,1552,
-	1553,1553,1553,1553,1553,1553,1553,1553,1554,1555,1556,1557,1558,0,0,0,
-	1559,1559,1559,1559,1559,1559,1559,1559,1560,1560,1560,1560,1560,1560,1560,1560,
-	1561,1561,1561,1561,1561,1561,1561,1561,1562,1562,1562,1562,1562,1562,1562,1562,
-	1563,1563,1563,1563,1563,1563,1563,1563,1564,1564,1564,1564,1564,1564,1564,1564,
-	1565,1565,1565,1565,1565,1565,1565,1565,1566,1567,1568,1569,1570,0,0,0,
-	1571,1571,1571,1571,1571,1571,1571,1571,1572,1572,1572,1572,1572,1572,1572,1573,
-	1574,1574,1574,1574,1574,1574,1574,1574,1575,1575,1575,1575,1575,1575,1575,1576,
-	1577,1577,1577,1577,1577,1577,1577,1578,1579,1579,1579,1579,1579,1579,1579,1579,
-	1580,1580,1580,1580,1580,1580,1580,1580,1581,1582,0,0,0,0,0,0,
-	1583,1583,1583,1583,1583,1583,1583,1583,1584,1584,1584,1584,1584,1584,1584,1584,
-	1585,1585,1585,1585,1585,1585,1585,1585,1586,1586,1586,1586,1586,1586,1586,1586,
-	1587,1587,1587,1587,1587,1587,1587,1587,1588,1588,1588,1588,1588,1588,1588,1588,
-	1589,1589,1589,1589,1589,1589,1589,1589,1590,1591,0,0,0,0,0,0,
-	1592,1592,1592,1592,1592,1592,1592,1592,1593,1593,1593,1593,1593,1593,1593,1593,
-	1594,1594,1594,1594,1594,1594,1594,1594,1595,1595,1595,1595,1595,1595,1595,1595,
-	1596,1596,1596,1596,1596,1596,1596,1596,1597,1597,1597,1597,1597,1597,1597,1597,
-	1598,1598,1598,1598,1598,1598,1598,1598,1599,1600,0,0,0,0,0,0,
-	1601,1601,1601,1601,1601,1601,1601,1601,1602,1602,1602,1602,1602,1602,1602,1602,
-	1603,1603,1603,1603,1603,1603,1603,1603,1604,1604,1604,1604,1604,1604,1604,1604,
-	1605,1605,1605,1605,1605,1605,1605,1605,1606,1606,1606,1606,1606,1606,1606,1606,
-	1607,1607,1607,1607,1607,1607,1607,1607,1608,1609,1610,1611,1612,0,0,0,
-	1522,1522,1522,1522,1522,1522,1522,1522,0,0,0,0,0,0,0,0,
-	1523,1523,1523,1523,1523,1523,1523,1523,1524,1524,1524,1524,1524,1524,1524,1525,
-	1526,1526,1526,1526,1526,1526,1526,1527,1528,1528,1528,1528,1528,1528,1528,1528,
-	1529,1529,1529,1529,1529,1529,1529,1529,1530,1531,1532,1533,1534,0,0,0,
-	1535,1535,1535,1535,1535,1535,1535,1535,1536,1536,1536,1536,1536,1536,1536,1536,
-	1537,1537,1537,1537,1537,1537,1537,1537,1538,1538,1538,1538,1538,1538,1538,1538,
-	1539,1539,1539,1539,1539,1539,1539,1539,1540,1540,1540,1540,1540,1540,1540,1540,
-	1541,1541,1541,1541,1541,1541,1541,1541,1542,1543,1544,1545,1546,0,0,0,
-	1547,1547,1547,1547,1547,1547,1547,1547,1548,1548,1548,1548,1548,1548,1548,1548,
-	1549,1549,1549,1549,1549,1549,1549,1549,1550,1550,1550,1550,1550,1550,1550,1550,
-	1551,1551,1551,1551,1551,1551,1551,1551,1552,1552,1552,1552,1552,1552,1552,1552,
-	1553,1553,1553,1553,1553,1553,1553,1553,1554,1555,1556,1557,1558,0,0,0,
-	1559,1559,1559,1559,1559,1559,1559,1559,1560,1560,1560,1560,1560,1560,1560,1560,
-	1561,1561,1561,1561,1561,1561,1561,1561,1562,1562,1562,1562,1562,1562,1562,1562,
-	1563,1563,1563,1563,1563,1563,1563,1563,1564,1564,1564,1564,1564,1564,1564,1564,
-	1565,1565,1565,1565,1565,1565,1565,1565,1566,1567,1568,1569,1570,0,0,0,
-	1571,1571,1571,1571,1571,1571,1571,1571,1572,1572,1572,1572,1572,1572,1572,1573,
-	1574,1574,1574,1574,1574,1574,1574,1574,1575,1575,1575,1575,1575,1575,1575,1576,
-	1577,1577,1577,1577,1577,1577,1577,1578,1579,1579,1579,1579,1579,1579,1579,1579,
-	1580,1580,1580,1580,1580,1580,1580,1580,1581,1582,0,0,0,0,0,0,
-	1583,1583,1583,1583,1583,1583,1583,1583,1584,1584,1584,1584,1584,1584,1584,1584,
-	1585,1585,1585,1585,1585,1585,1585,1585,1586,1586,1586,1586,1586,1586,1586,1586,
-	1587,1587,1587,1587,1587,1587,1587,1587,1588,1588,1588,1588,1588,1588,1588,1588,
-	1589,1589,1589,1589,1589,1589,1589,1589,1590,1591,0,0,0,0,0,0,
-	1592,1592,1592,1592,1592,1592,1592,1592,1593,1593,1593,1593,1593,1593,1593,1593,
-	1594,1594,1594,1594,1594,1594,1594,1594,1595,1595,1595,1595,1595,1595,1595,1595,
-	1596,1596,1596,1596,1596,1596,1596,1596,1597,1597,1597,1597,1597,1597,1597,1597,
-	1598,1598,1598,1598,1598,1598,1598,1598,1599,1600,0,0,0,0,0,0,
-	1601,1601,1601,1601,1601,1601,1601,1601,1602,1602,1602,1602,1602,1602,1602,1602,
-	1603,1603,1603,1603,1603,1603,1603,1603,1604,1604,1604,1604,1604,1604,1604,1604,
-	1605,1605,1605,1605,1605,1605,1605,1605,1606,1606,1606,1606,1606,1606,1606,1606,
-	1607,1607,1607,1607,1607,1607,1607,1607,1608,1609,1610,1611,1612,0,0,0,
-	1522,1522,1522,1522,1522,1522,1522,1522,0,0,0,0,0,0,0,0,
-	1523,1523,1523,1523,1523,1523,1523,1523,1524,1524,1524,1524,1524,1524,1524,1525,
-	1526,1526,1526,1526,1526,1526,1526,1527,1528,1528,1528,1528,1528,1528,1528,1528,
-	1529,1529,1529,1529,1529,1529,1529,1529,1530,1531,1532,1533,1534,0,0,0,
-	1535,1535,1535,1535,1535,1535,1535,1535,1536,1536,1536,1536,1536,1536,1536,1536,
-	1537,1537,1537,1537,1537,1537,1537,1537,1538,1538,1538,1538,1538,1538,1538,1538,
-	1539,1539,1539,1539,1539,1539,1539,1539,1540,1540,1540,1540,1540,1540,1540,1540,
-	1541,1541,1541,1541,1541,1541,1541,1541,1542,1543,1544,1545,1546,0,0,0,
-	1547,1547,1547,1547,1547,1547,1547,1547,1548,1548,1548,1548,1548,1548,1548,1548,
-	1549,1549,1549,1549,1549,1549,1549,1549,1550,1550,1550,1550,1550,1550,1550,1550,
-	1551,1551,1551,1551,1551,1551,1551,1551,1552,1552,1552,1552,1552,1552,1552,1552,
-	1553,1553,1553,1553,1553,1553,1553,1553,1554,1555,1556,1557,1558,0,0,0,
-	1559,1559,1559,1559,1559,1559,1559,1559,1560,1560,1560,1560,1560,1560,1560,1560,
-	1561,1561,1561,1561,1561,1561,1561,1561,1562,1562,1562,1562,1562,1562,1562,1562,
-	1563,1563,1563,1563,1563,1563,1563,1563,1564,1564,1564,1564,1564,1564,1564,1564,
-	1565,1565,1565,1565,1565,1565,1565,1565,1566,1567,1568,1569,1570,0,0,0,
-	1571,1571,1571,1571,1571,1571,1571,1571,1572,1572,1572,1572,1572,1572,1572,1573,
-	1574,1574,1574,1574,1574,1574,1574,1574,1575,1575,1575,1575,1575,1575,1575,1576,
-	1577,1577,1577,1577,1577,1577,1577,1578,1579,1579,1579,1579,1579,1579,1579,1579,
-	1580,1580,1580,1580,1580,1580,1580,1580,1581,1582,0,0,0,0,0,0,
-	1583,1583,1583,1583,1583,1583,1583,1583,1584,1584,1584,1584,1584,1584,1584,1584,
-	1585,1585,1585,1585,1585,1585,1585,1585,1586,1586,1586,1586,1586,1586,1586,1586,
-	1587,1587,1587,1587,1587,1587,1587,1587,1588,1588,1588,1588,1588,1588,1588,1588,
-	1589,1589,1589,1589,1589,1589,1589,1589,1590,1591,0,0,0,0,0,0,
-	1592,1592,1592,1592,1592,1592,1592,1592,1593,1593,1593,1593,1593,1593,1593,1593,
-	1594,1594,1594,1594,1594,1594,1594,1594,1595,1595,1595,1595,1595,1595,1595,1595,
-	1596,1596,1596,1596,1596,1596,1596,1596,1597,1597,1597,1597,1597,1597,1597,1597,
-	1598,1598,1598,1598,1598,1598,1598,1598,1599,1600,0,0,0,0,0,0,
-	1601,1601,1601,1601,1601,1601,1601,1601,1602,1602,1602,1602,1602,1602,1602,1602,
-	1603,1603,1603,1603,1603,1603,1603,1603,1604,1604,1604,1604,1604,1604,1604,1604,
-	1605,1605,1605,1605,1605,1605,1605,1605,1606,1606,1606,1606,1606,1606,1606,1606,
-	1607,1607,1607,1607,1607,1607,1607,1607,1608,1609,1610,1611,1612,0,0,0,
-	1522,1522,1522,1522,1522,1522,1522,1522,0,0,0,0,0,0,0,0,
-	1523,1523,1523,1523,1523,1523,1523,1523,1524,1524,1524,1524,1524,1524,1524,1525,
-	1526,1526,1526,1526,1526,1526,1526,1527,1528,1528,1528,1528,1528,1528,1528,1528,
-	1529,1529,1529,1529,1529,1529,1529,1529,1530,1531,1532,1533,1534,0,0,0,
-	1535,1535,1535,1535,1535,1535,1535,1535,1536,1536,1536,1536,1536,1536,1536,1536,
-	1537,1537,1537,1537,1537,1537,1537,1537,1538,1538,1538,1538,1538,1538,1538,1538,
-	1539,1539,1539,1539,1539,1539,1539,1539,1540,1540,1540,1540,1540,1540,1540,1540,
-	1541,1541,1541,1541,1541,1541,1541,1541,1542,1543,1544,1545,1546,0,0,0,
-	1547,1547,1547,1547,1547,1547,1547,1547,1548,1548,1548,1548,1548,1548,1548,1548,
-	1549,1549,1549,1549,1549,1549,1549,1549,1550,1550,1550,1550,1550,1550,1550,1550,
-	1551,1551,1551,1551,1551,1551,1551,1551,1552,1552,1552,1552,1552,1552,1552,1552,
-	1553,1553,1553,1553,1553,1553,1553,1553,1554,1555,1556,1557,1558,0,0,0,
-	1559,1559,1559,1559,1559,1559,1559,1559,1560,1560,1560,1560,1560,1560,1560,1560,
-	1561,1561,1561,1561,1561,1561,1561,1561,1562,1562,1562,1562,1562,1562,1562,1562,
-	1563,1563,1563,1563,1563,1563,1563,1563,1564,1564,1564,1564,1564,1564,1564,1564,
-	1565,1565,1565,1565,1565,1565,1565,1565,1566,1567,1568,1569,1570,0,0,0,
-	1571,1571,1571,1571,1571,1571,1571,1571,1572,1572,1572,1572,1572,1572,1572,1573,
-	1574,1574,1574,1574,1574,1574,1574,1574,1575,1575,1575,1575,1575,1575,1575,1576,
-	1577,1577,1577,1577,1577,1577,1577,1578,1579,1579,1579,1579,1579,1579,1579,1579,
-	1580,1580,1580,1580,1580,1580,1580,1580,1581,1582,0,0,0,0,0,0,
-	1583,1583,1583,1583,1583,1583,1583,1583,1584,1584,1584,1584,1584,1584,1584,1584,
-	1585,1585,1585,1585,1585,1585,1585,1585,1586,1586,1586,1586,1586,1586,1586,1586,
-	1587,1587,1587,1587,1587,1587,1587,1587,1588,1588,1588,1588,1588,1588,1588,1588,
-	1589,1589,1589,1589,1589,1589,1589,1589,1590,1591,0,0,0,0,0,0,
-	1592,1592,1592,1592,1592,1592,1592,1592,1593,1593,1593,1593,1593,1593,1593,1593,
-	1594,1594,1594,1594,1594,1594,1594,1594,1595,1595,1595,1595,1595,1595,1595,1595,
-	1596,1596,1596,1596,1596,1596,1596,1596,1597,1597,1597,1597,1597,1597,1597,1597,
-	1598,1598,1598,1598,1598,1598,1598,1598,1599,1600,0,0,0,0,0,0,
-	1601,1601,1601,1601,1601,1601,1601,1601,1602,1602,1602,1602,1602,1602,1602,1602,
-	1603,1603,1603,1603,1603,1603,1603,1603,1604,1604,1604,1604,1604,1604,1604,1604,
-	1605,1605,1605,1605,1605,1605,1605,1605,1606,1606,1606,1606,1606,1606,1606,1606,
-	1607,1607,1607,1607,1607,1607,1607,1607,1608,1609,1610,1611,1612,0,0,0,
-	1522,1522,1522,1522,1522,1522,1522,1522,0,0,0,0,0,0,0,0,
-	1523,1523,1523,1523,1523,1523,1523,1523,1524,1524,1524,1524,1524,1524,1524,1525,
-	1526,1526,1526,1526,1526,1526,1526,1527,1528,1528,1528,1528,1528,1528,1528,1528,
-	1529,1529,1529,1529,1529,1529,1529,1529,1530,1531,1532,1533,1534,0,0,0,
-	1535,1535,1535,1535,1535,1535,1535,1535,1536,1536,1536,1536,1536,1536,1536,1536,
-	1537,1537,1537,1537,1537,1537,1537,1537,1538,1538,1538,1538,1538,1538,1538,1538,
-	1539,1539,1539,1539,1539,1539,1539,1539,1540,1540,1540,1540,1540,1540,1540,1540,
-	1541,1541,1541,1541,1541,1541,1541,1541,1542,1543,1544,1545,1546,0,0,0,
-	1547,1547,1547,1547,1547,1547,1547,1547,1548,1548,1548,1548,1548,1548,1548,1548,
-	1549,1549,1549,1549,1549,1549,1549,1549,1550,1550,1550,1550,1550,1550,1550,1550,
-	1551,1551,1551,1551,1551,1551,1551,1551,1552,1552,1552,1552,1552,1552,1552,1552,
-	1553,1553,1553,1553,1553,1553,1553,1553,1554,1555,1556,1557,1558,0,0,0,
-	1559,1559,1559,1559,1559,1559,1559,1559,1560,1560,1560,1560,1560,1560,1560,1560,
-	1561,1561,1561,1561,1561,1561,1561,1561,1562,1562,1562,1562,1562,1562,1562,1562,
-	1563,1563,1563,1563,1563,1563,1563,1563,1564,1564,1564,1564,1564,1564,1564,1564,
-	1565,1565,1565,1565,1565,1565,1565,1565,1566,1567,1568,1569,1570,0,0,0,
-	1571,1571,1571,1571,1571,1571,1571,1571,1572,1572,1572,1572,1572,1572,1572,1573,
-	1574,1574,1574,1574,1574,1574,1574,1574,1575,1575,1575,1575,1575,1575,1575,1576,
-	1577,1577,1577,1577,1577,1577,1577,1578,1579,1579,1579,1579,1579,1579,1579,1579,
-	1580,1580,1580,1580,1580,1580,1580,1580,1581,1582,0,0,0,0,0,0,
-	1583,1583,1583,1583,1583,1583,1583,1583,1584,1584,1584,1584,1584,1584,1584,1584,
-	1585,1585,1585,1585,1585,1585,1585,1585,1586,1586,1586,1586,1586,1586,1586,1586,
-	1587,1587,1587,1587,1587,1587,1587,1587,1588,1588,1588,1588,1588,1588,1588,1588,
-	1589,1589,1589,1589,1589,1589,1589,1589,1590,1591,0,0,0,0,0,0,
-	1592,1592,1592,1592,1592,1592,1592,1592,1593,1593,1593,1593,1593,1593,1593,1593,
-	1594,1594,1594,1594,1594,1594,1594,1594,1595,1595,1595,1595,1595,1595,1595,1595,
-	1596,1596,1596,1596,1596,1596,1596,1596,1597,1597,1597,1597,1597,1597,1597,1597,
-	1598,1598,1598,1598,1598,1598,1598,1598,1599,1600,0,0,0,0,0,0,
-	1601,1601,1601,1601,1601,1601,1601,1601,1602,1602,1602,1602,1602,1602,1602,1602,
-	1603,1603,1603,1603,1603,1603,1603,1603,1604,1604,1604,1604,1604,1604,1604,1604,
-	1605,1605,1605,1605,1605,1605,1605,1605,1606,1606,1606,1606,1606,1606,1606,1606,
-	1607,1607,1607,1607,1607,1607,1607,1607,1608,1609,1610,1611,1612,0,0,0,
-	1522,1522,1522,1522,1522,1522,1522,1522,0,0,0,0,0,0,0,0,
-	1523,1523,1523,1523,1523,1523,1523,1523,1524,1524,1524,1524,1524,1524,1524,1525,
-	1526,1526,1526,1526,1526,1526,1526,1527,1528,1528,1528,1528,1528,1528,1528,1528,
-	1529,1529,1529,1529,1529,1529,1529,1529,1530,1531,1532,1533,1534,0,0,0,
-	1535,1535,1535,1535,1535,1535,1535,1535,1536,1536,1536,1536,1536,1536,1536,1536,
-	1537,1537,1537,1537,1537,1537,1537,1537,1538,1538,1538,1538,1538,1538,1538,1538,
-	1539,1539,1539,1539,1539,1539,1539,1539,1540,1540,1540,1540,1540,1540,1540,1540,
-	1541,1541,1541,1541,1541,1541,1541,1541,1542,1543,1544,1545,1546,0,0,0,
-	1547,1547,1547,1547,1547,1547,1547,1547,1548,1548,1548,1548,1548,1548,1548,1548,
-	1549,1549,1549,1549,1549,1549,1549,1549,1550,1550,1550,1550,1550,1550,1550,1550,
-	1551,1551,1551,1551,1551,1551,1551,1551,1552,1552,1552,1552,1552,1552,1552,1552,
-	1553,1553,1553,1553,1553,1553,1553,1553,1554,1555,1556,1557,1558,0,0,0,
-	1559,1559,1559,1559,1559,1559,1559,1559,1560,1560,1560,1560,1560,1560,1560,1560,
-	1561,1561,1561,1561,1561,1561,1561,1561,1562,1562,1562,1562,1562,1562,1562,1562,
-	1563,1563,1563,1563,1563,1563,1563,1563,1564,1564,1564,1564,1564,1564,1564,1564,
-	1565,1565,1565,1565,1565,1565,1565,1565,1566,1567,1568,1569,1570,0,0,0,
-	1571,1571,1571,1571,1571,1571,1571,1571,1572,1572,1572,1572,1572,1572,1572,1573,
-	1574,1574,1574,1574,1574,1574,1574,1574,1575,1575,1575,1575,1575,1575,1575,1576,
-	1577,1577,1577,1577,1577,1577,1577,1578,1579,1579,1579,1579,1579,1579,1579,1579,
-	1580,1580,1580,1580,1580,1580,1580,1580,1581,1582,0,0,0,0,0,0,
-	1583,1583,1583,1583,1583,1583,1583,1583,1584,1584,1584,1584,1584,1584,1584,1584,
-	1585,1585,1585,1585,1585,1585,1585,1585,1586,1586,1586,1586,1586,1586,1586,1586,
-	1587,1587,1587,1587,1587,1587,1587,1587,1588,1588,1588,1588,1588,1588,1588,1588,
-	1589,1589,1589,1589,1589,1589,1589,1589,1590,1591,0,0,0,0,0,0,
-	1592,1592,1592,1592,1592,1592,1592,1592,1593,1593,1593,1593,1593,1593,1593,1593,
-	1594,1594,1594,1594,1594,1594,1594,1594,1595,1595,1595,1595,1595,1595,1595,1595,
-	1596,1596,1596,1596,1596,1596,1596,1596,1597,1597,1597,1597,1597,1597,1597,1597,
-	1598,1598,1598,1598,1598,1598,1598,1598,1599,1600,0,0,0,0,0,0,
-	1601,1601,1601,1601,1601,1601,1601,1601,1602,1602,1602,1602,1602,1602,1602,1602,
-	1603,1603,1603,1603,1603,1603,1603,1603,1604,1604,1604,1604,1604,1604,1604,1604,
-	1605,1605,1605,1605,1605,1605,1605,1605,1606,1606,1606,1606,1606,1606,1606,1606,
-	1607,1607,1607,1607,1607,1607,1607,1607,1608,1609,1610,1611,1612,0,0,0,
-	1522,1522,1522,1522,1522,1522,1522,1522,0,0,0,0,0,0,0,0,
-	1523,1523,1523,1523,1523,1523,1523,1523,1524,1524,1524,1524,1524,1524,1524,1525,
-	1526,1526,1526,1526,1526,1526,1526,1527,1528,1528,1528,1528,1528,1528,1528,1528,
-	1529,1529,1529,1529,1529,1529,1529,1529,1530,1531,1532,1533,1534,0,0,0,
-	1535,1535,1535,1535,1535,1535,1535,1535,1536,1536,1536,1536,1536,1536,1536,1536,
-	1537,1537,1537,1537,1537,1537,1537,1537,1538,1538,1538,1538,1538,1538,1538,1538,
-	1539,1539,1539,1539,1539,1539,1539,1539,1540,1540,1540,1540,1540,1540,1540,1540,
-	1541,1541,1541,1541,1541,1541,1541,1541,1542,1543,1544,1545,1546,0,0,0,
-	1547,1547,1547,1547,1547,1547,1547,1547,1548,1548,1548,1548,1548,1548,1548,1548,
-	1549,1549,1549,1549,1549,1549,1549,1549,1550,1550,1550,1550,1550,1550,1550,1550,
-	1551,1551,1551,1551,1551,1551,1551,1551,1552,1552,1552,1552,1552,1552,1552,1552,
-	1553,1553,1553,1553,1553,1553,1553,1553,1554,1555,1556,1557,1558,0,0,0,
-	1559,1559,1559,1559,1559,1559,1559,1559,1560,1560,1560,1560,1560,1560,1560,1560,
-	1561,1561,1561,1561,1561,1561,1561,1561,1562,1562,1562,1562,1562,1562,1562,1562,
-	1563,1563,1563,1563,1563,1563,1563,1563,1564,1564,1564,1564,1564,1564,1564,1564,
-	1565,1565,1565,1565,1565,1565,1565,1565,1566,1567,1568,1569,1570,0,0,0,
-	1571,1571,1571,1571,1571,1571,1571,1571,1613,1613,1613,1613,1613,1613,1613,1614,
-	1574,1574,1574,1574,1574,1574,1574,1574,1575,1575,1575,1575,1575,1575,1575,1576,
-	1577,1577,1577,1577,1577,1577,1577,1578,1579,1579,1579,1579,1579,1579,1579,1579,
-	1580,1580,1580,1580,1580,1580,1580,1580,1581,1582,0,0,0,0,0,0,
-	1583,1583,1583,1583,1583,1583,1583,1583,1584,1584,1584,1584,1584,1584,1584,1584,
-	1585,1585,1585,1585,1585,1585,1585,1585,1586,1586,1586,1586,1586,1586,1586,1586,
-	1587,1587,1587,1587,1587,1587,1587,1587,1588,1588,1588,1588,1588,1588,1588,1588,
-	1589,1589,1589,1589,1589,1589,1589,1589,1590,1591,0,0,0,0,0,0,
-	1592,1592,1592,1592,1592,1592,1592,1592,1593,1593,1593,1593,1593,1593,1593,1593,
-	1594,1594,1594,1594,1594,1594,1594,1594,1595,1595,1595,1595,1595,1595,1595,1595,
-	1596,1596,1596,1596,1596,1596,1596,1596,1597,1597,1597,1597,1597,1597,1597,1597,
-	1598,1598,1598,1598,1598,1598,1598,1598,1599,1600,0,0,0,0,0,0,
-	1601,1601,1601,1601,1601,1601,1601,1601,1602,1602,1602,1602,1602,1602,1602,1602,
-	1603,1603,1603,1603,1603,1603,1603,1603,1604,1604,1604,1604,1604,1604,1604,1604,
-	1605,1605,1605,1605,1605,1605,1605,1605,1606,1606,1606,1606,1606,1606,1606,1606,
-	1607,1607,1607,1607,1607,1607,1607,1607,1608,1609,1610,1611,1612,0,0,0,
-	1615,1615,1615,1615,1615,1615,1615,1615,0,0,0,0,0,0,0,0,
-	1616,1616,1616,1616,1616,1616,1616,1616,1617,1617,1617,1617,1617,1617,1617,1618,
-	1619,1619,1619,1619,1619,1619,1619,1620,1621,1621,1621,1621,1621,1621,1621,1621,
-	1622,1622,1622,1622,1622,1622,1622,1622,1623,1624,1625,1626,1627,0,0,0,
-	1628,1628,1628,1628,1628,1628,1628,1628,0,0,0,0,0,0,0,0,
-	1629,1629,1629,1629,1629,1629,1629,1629,1630,1630,1630,1630,1630,1630,1630,1630,
-	1631,1631,1631,1631,1631,1631,1631,1631,1632,1632,1632,1632,1632,1632,1632,1632,
-	1633,1633,1633,1633,1633,1633,1633,1633,1634,1635,1636,1637,1638,0,0,0,
-	1639,1639,1639,1639,1639,1639,1639,1639,0,0,0,0,0,0,0,0,
-	1640,1640,1640,1640,1640,1640,1640,1640,1641,1641,1641,1641,1641,1641,1641,1641,
-	1642,1642,1642,1642,1642,1642,1642,1642,1643,1643,1643,1643,1643,1643,1643,1643,
-	1644,1644,1644,1644,1644,1644,1644,1644,1645,1646,1647,1648,1649,0,0,0,
-	1650,1650,1650,1650,1650,1650,1650,1650,0,0,0,0,0,0,0,0,
-	1651,1651,1651,1651,1651,1651,1651,1651,1652,1652,1652,1652,1652,1652,1652,1652,
-	1653,1653,1653,1653,1653,1653,1653,1653,1654,1654,1654,1654,1654,1654,1654,1654,
+	1351,1351,1351,1351,1351,1351,1351,1351,1352,1352,1352,1352,1352,1352,1352,1353,
+	1354,1354,1354,1354,1354,1354,1354,1355,1356,1356,1356,1356,1356,1356,1356,1356,
+	1357,1357,1357,1357,1357,1357,1357,1357,1358,1359,1360,1361,1362,0,0,0,
+	1148,1148,1148,1148,1148,1148,1148,1148,0,0,0,0,0,0,0,0,
+	1149,1149,1149,1149,1149,1149,1149,1149,1150,1150,1150,1150,1150,1150,1150,1151,
+	1152,1152,1152,1152,1152,1152,1152,1153,144,144,144,144,144,144,144,144,
+	1154,1154,1154,1154,1154,1154,1154,1154,1155,1156,0,0,0,0,0,0,
+	189,189,189,189,189,189,189,189,1157,1157,1157,1157,1157,1157,1157,1157,
+	1158,1158,1158,1158,1158,1158,1158,1158,1159,1159,1159,1159,1159,1159,1159,1159,
+	1160,1160,1160,1160,1160,1160,1160,1160,250,250,250,250,250,250,250,250,
+	1161,1161,1161,1161,1161,1161,1161,1161,1162,1163,0,0,0,0,0,0,
+	25,25,25,25,25,25,25,25,44,44,44,44,44,44,44,44,
+	150,150,150,150,150,150,150,150,1164,1164,1164,1164,1164,1164,1164,1164,
+	1165,1165,1165,1165,1165,1165,1165,1165,173,173,173,173,173,173,173,173,
+	1166,1166,1166,1166,1166,1166,1166,1166,1167,1168,0,0,0,0,0,0,
+	1363,1363,1363,1363,1363,1363,1363,1363,1364,1364,1364,1364,1364,1364,1364,1364,
+	1365,1365,1365,1365,1365,1365,1365,1365,1366,1366,1366,1366,1366,1366,1366,1367,
+	1368,1368,1368,1368,1368,1368,1368,1369,1370,1370,1370,1370,1370,1370,1370,1370,
+	1371,1371,1371,1371,1371,1371,1371,1371,1372,1373,1374,1375,1376,0,0,0,
+	77,63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,
+	63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,
+	63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,
+	63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,
+	63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,
+	63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,
+	63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,
+	63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,
+	63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,
+	63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,
+	63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,
+	63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,
+	63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,
+	63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,
+	63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,
+	63,63,63,63,63,63,63,63,63,63,63,63,63,63,63,1377,
+	62,181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,
+	181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,
+	181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,
+	181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,
+	181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,
+	181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,
+	181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,
+	181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,
+	181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,
+	181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,
+	181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,
+	181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,
+	181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,
+	181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,
+	181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,
+	181,181,181,181,181,181,181,181,181,181,181,181,181,181,181,1378,
+	12,118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,
+	118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,
+	118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,
+	118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,
+	118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,
+	118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,
+	118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,
+	118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,
+	118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,
+	118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,
+	118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,
+	118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,
+	118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,
+	118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,
+	118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,
+	118,118,118,118,118,118,118,118,118,118,118,118,118,118,118,1379,
+	1380,140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,
+	140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,
+	140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,
+	140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,
+	140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,
+	140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,
+	140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,
+	140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,
+	140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,
+	140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,
+	140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,
+	140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,
+	140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,
+	140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,
+	140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,
+	140,140,140,140,140,140,140,140,140,140,140,140,140,140,140,1381,
+	1382,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,
+	27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,
+	27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,
+	27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,
+	27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,
+	27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,
+	27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,
+	27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,
+	27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,
+	27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,
+	27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,
+	27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,
+	27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,
+	27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,
+	27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,
+	27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,1383,
+	136,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
+	64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
+	64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
+	64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
+	64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
+	64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
+	64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
+	64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
+	64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
+	64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
+	64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
+	64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
+	64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
+	64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
+	64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,
+	64,64,64,64,64,64,64,64,64,64,64,64,64,64,64,1384,
+	6,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+	1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1385,
+	79,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+	16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+	16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+	16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+	16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+	16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+	16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+	16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+	16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+	16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+	16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+	16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+	16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+	16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+	16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,
+	16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,1386,
+	1387,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,
+	1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,
+	1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,
+	1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,
+	1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,
+	1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,
+	1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,
+	1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,
+	1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,
+	1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,
+	1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,
+	1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,
+	1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,
+	1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,
+	1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,
+	1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1388,1389,
+	1390,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,
+	1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,
+	1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,
+	1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,
+	1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,
+	1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,
+	1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,
+	1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,
+	1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,
+	1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,
+	1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,
+	1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,
+	1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,
+	1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,
+	1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,
+	1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1391,1392,
+	1393,171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,
+	171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,
+	171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,
+	171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,
+	171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,
+	171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,
+	171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,
+	171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,
+	171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,
+	171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,
+	171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,
+	171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,
+	171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,
+	171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,
+	171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,
+	171,171,171,171,171,171,171,171,171,171,171,171,171,171,171,1394,
+	1395,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+	3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,1396,
+	107,115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,
+	115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,
+	115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,
+	115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,
+	115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,
+	115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,
+	115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,
+	115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,
+	115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,
+	115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,
+	115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,
+	115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,
+	115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,
+	115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,
+	115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,
+	115,115,115,115,115,115,115,115,115,115,115,115,115,115,115,1397,
+	104,132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,
+	132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,
+	132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,
+	132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,
+	132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,
+	132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,
+	132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,
+	132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,
+	132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,
+	132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,
+	132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,
+	132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,
+	132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,
+	132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,
+	132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,
+	132,132,132,132,132,132,132,132,132,132,132,132,132,132,132,1398,
+	1399,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,
+	60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,
+	60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,
+	60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,
+	60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,
+	60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,
+	60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,
+	60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,
+	60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,
+	60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,
+	60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,
+	60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,
+	60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,
+	60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,
+	60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,
+	60,60,60,60,60,60,60,60,60,60,60,60,60,60,60,1400,
+	1401,96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,
+	96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,
+	96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,
+	96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,
+	96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,
+	96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,
+	96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,
+	96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,
+	96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,
+	96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,
+	96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,
+	96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,
+	96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,
+	96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,
+	96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,
+	96,96,96,96,96,96,96,96,96,96,96,96,96,96,96,1402,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,11,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+	1403,1403,1403,1403,1403,1403,1403,1403,0,0,0,0,0,0,0,0,
+	1404,1404,1404,1404,1404,1404,1404,1404,1405,1405,1405,1405,1405,1405,1405,1406,
+	1407,1407,1407,1407,1407,1407,1407,1408,1409,1409,1409,1409,1409,1409,1409,1409,
+	1410,1410,1410,1410,1410,1410,1410,1410,1411,1412,1413,1414,1415,0,0,0,
+	1416,1416,1416,1416,1416,1416,1416,1416,0,0,0,0,0,0,0,0,
+	1417,1417,1417,1417,1417,1417,1417,1417,1418,1418,1418,1418,1418,1418,1418,1418,
+	1419,1419,1419,1419,1419,1419,1419,1419,1420,1420,1420,1420,1420,1420,1420,1420,
+	1421,1421,1421,1421,1421,1421,1421,1421,1422,1423,1424,1425,1426,0,0,0,
+	191,191,191,191,191,191,191,191,0,0,0,0,0,0,0,0,
+	1427,1427,1427,1427,1427,1427,1427,1427,1428,1428,1428,1428,1428,1428,1428,1428,
+	1429,1429,1429,1429,1429,1429,1429,1429,1430,1430,1430,1430,1430,1430,1430,1430,
+	1431,1431,1431,1431,1431,1431,1431,1431,1432,1433,1434,1435,1436,0,0,0,
+	208,208,208,208,208,208,208,208,0,0,0,0,0,0,0,0,
+	1437,1437,1437,1437,1437,1437,1437,1437,1438,1438,1438,1438,1438,1438,1438,1438,
+	1439,1439,1439,1439,1439,1439,1439,1439,1440,1440,1440,1440,1440,1440,1440,1440,
+	1441,1441,1441,1441,1441,1441,1441,1441,1442,1443,1444,1445,1446,0,0,0,
+	1447,1447,1447,1447,1447,1447,1447,1447,1448,1448,1448,1448,1448,1448,1448,1449,
+	1450,1450,1450,1450,1450,1450,1450,1450,1451,1451,1451,1451,1451,1451,1451,1452,
+	1453,1453,1453,1453,1453,1453,1453,1454,227,227,227,227,227,227,227,227,
+	1455,1455,1455,1455,1455,1455,1455,1455,1456,1457,0,0,0,0,0,0,
+	1458,1458,1458,1458,1458,1458,1458,1458,1459,1459,1459,1459,1459,1459,1459,1460,
+	1461,1461,1461,1461,1461,1461,1461,1461,1462,1462,1462,1462,1462,1462,1462,1462,
+	1463,1463,1463,1463,1463,1463,1463,1463,1464,1464,1464,1464,1464,1464,1464,1464,
+	1465,1465,1465,1465,1465,1465,1465,1465,1466,1467,0,0,0,0,0,0,
+	1468,1468,1468,1468,1468,1468,1468,1468,1469,1469,1469,1469,1469,1469,1469,1470,
+	1471,1471,1471,1471,1471,1471,1471,1471,1472,1472,1472,1472,1472,1472,1472,1472,
+	1473,1473,1473,1473,1473,1473,1473,1473,1474,1474,1474,1474,1474,1474,1474,1474,
+	1475,1475,1475,1475,1475,1475,1475,1475,1476,1477,0,0,0,0,0,0,
+	1478,1478,1478,1478,1478,1478,1478,1478,0,0,0,0,0,0,0,0,
+	1479,1479,1479,1479,1479,1479,1479,1479,1480,1480,1480,1480,1480,1480,1480,1480,
+	1481,1481,1481,1481,1481,1481,1481,1481,1482,1482,1482,1482,1482,1482,1482,1482,
+	1483,1483,1483,1483,1483,1483,1483,1483,1484,1485,1486,1487,1488,0,0,0,
+	1403,1403,1403,1403,1403,1403,1403,1403,0,0,0,0,0,0,0,0,
+	1404,1404,1404,1404,1404,1404,1404,1404,1405,1405,1405,1405,1405,1405,1405,1406,
+	1407,1407,1407,1407,1407,1407,1407,1408,1409,1409,1409,1409,1409,1409,1409,1409,
+	1410,1410,1410,1410,1410,1410,1410,1410,1411,1412,1413,1414,1415,0,0,0,
+	1416,1416,1416,1416,1416,1416,1416,1416,0,0,0,0,0,0,0,0,
+	1417,1417,1417,1417,1417,1417,1417,1417,1418,1418,1418,1418,1418,1418,1418,1418,
+	1419,1419,1419,1419,1419,1419,1419,1419,1420,1420,1420,1420,1420,1420,1420,1420,
+	1421,1421,1421,1421,1421,1421,1421,1421,1422,1423,1424,1425,1426,0,0,0,
+	191,191,191,191,191,191,191,191,0,0,0,0,0,0,0,0,
+	1427,1427,1427,1427,1427,1427,1427,1427,1428,1428,1428,1428,1428,1428,1428,1428,
+	1429,1429,1429,1429,1429,1429,1429,1429,1430,1430,1430,1430,1430,1430,1430,1430,
+	1431,1431,1431,1431,1431,1431,1431,1431,1432,1433,1434,1435,1436,0,0,0,
+	208,208,208,208,208,208,208,208,0,0,0,0,0,0,0,0,
+	1437,1437,1437,1437,1437,1437,1437,1437,1438,1438,1438,1438,1438,1438,1438,1438,
+	1439,1439,1439,1439,1439,1439,1439,1439,1440,1440,1440,1440,1440,1440,1440,1440,
+	1441,1441,1441,1441,1441,1441,1441,1441,1442,1443,1444,1445,1446,0,0,0,
+	1447,1447,1447,1447,1447,1447,1447,1447,1448,1448,1448,1448,1448,1448,1448,1449,
+	1450,1450,1450,1450,1450,1450,1450,1450,1451,1451,1451,1451,1451,1451,1451,1452,
+	1453,1453,1453,1453,1453,1453,1453,1454,227,227,227,227,227,227,227,227,
+	1455,1455,1455,1455,1455,1455,1455,1455,1456,1457,0,0,0,0,0,0,
+	1458,1458,1458,1458,1458,1458,1458,1458,1459,1459,1459,1459,1459,1459,1459,1460,
+	1461,1461,1461,1461,1461,1461,1461,1461,1462,1462,1462,1462,1462,1462,1462,1462,
+	1463,1463,1463,1463,1463,1463,1463,1463,1464,1464,1464,1464,1464,1464,1464,1464,
+	1465,1465,1465,1465,1465,1465,1465,1465,1466,1467,0,0,0,0,0,0,
+	1468,1468,1468,1468,1468,1468,1468,1468,1469,1469,1469,1469,1469,1469,1469,1470,
+	1471,1471,1471,1471,1471,1471,1471,1471,1472,1472,1472,1472,1472,1472,1472,1472,
+	1473,1473,1473,1473,1473,1473,1473,1473,1474,1474,1474,1474,1474,1474,1474,1474,
+	1475,1475,1475,1475,1475,1475,1475,1475,1476,1477,0,0,0,0,0,0,
+	1478,1478,1478,1478,1478,1478,1478,1478,0,0,0,0,0,0,0,0,
+	1479,1479,1479,1479,1479,1479,1479,1479,1480,1480,1480,1480,1480,1480,1480,1480,
+	1481,1481,1481,1481,1481,1481,1481,1481,1482,1482,1482,1482,1482,1482,1482,1482,
+	1483,1483,1483,1483,1483,1483,1483,1483,1484,1485,1486,1487,1488,0,0,0,
+	1403,1403,1403,1403,1403,1403,1403,1403,0,0,0,0,0,0,0,0,
+	1404,1404,1404,1404,1404,1404,1404,1404,1405,1405,1405,1405,1405,1405,1405,1406,
+	1407,1407,1407,1407,1407,1407,1407,1408,1409,1409,1409,1409,1409,1409,1409,1409,
+	1410,1410,1410,1410,1410,1410,1410,1410,1411,1412,1413,1414,1415,0,0,0,
+	1416,1416,1416,1416,1416,1416,1416,1416,0,0,0,0,0,0,0,0,
+	1417,1417,1417,1417,1417,1417,1417,1417,1418,1418,1418,1418,1418,1418,1418,1418,
+	1419,1419,1419,1419,1419,1419,1419,1419,1420,1420,1420,1420,1420,1420,1420,1420,
+	1421,1421,1421,1421,1421,1421,1421,1421,1422,1423,1424,1425,1426,0,0,0,
+	191,191,191,191,191,191,191,191,0,0,0,0,0,0,0,0,
+	1427,1427,1427,1427,1427,1427,1427,1427,1428,1428,1428,1428,1428,1428,1428,1428,
+	1429,1429,1429,1429,1429,1429,1429,1429,1430,1430,1430,1430,1430,1430,1430,1430,
+	1431,1431,1431,1431,1431,1431,1431,1431,1432,1433,1434,1435,1436,0,0,0,
+	208,208,208,208,208,208,208,208,0,0,0,0,0,0,0,0,
+	1437,1437,1437,1437,1437,1437,1437,1437,1438,1438,1438,1438,1438,1438,1438,1438,
+	1439,1439,1439,1439,1439,1439,1439,1439,1440,1440,1440,1440,1440,1440,1440,1440,
+	1441,1441,1441,1441,1441,1441,1441,1441,1442,1443,1444,1445,1446,0,0,0,
+	1447,1447,1447,1447,1447,1447,1447,1447,1448,1448,1448,1448,1448,1448,1448,1449,
+	1450,1450,1450,1450,1450,1450,1450,1450,1451,1451,1451,1451,1451,1451,1451,1452,
+	1453,1453,1453,1453,1453,1453,1453,1454,227,227,227,227,227,227,227,227,
+	1455,1455,1455,1455,1455,1455,1455,1455,1456,1457,0,0,0,0,0,0,
+	1458,1458,1458,1458,1458,1458,1458,1458,1459,1459,1459,1459,1459,1459,1459,1460,
+	1461,1461,1461,1461,1461,1461,1461,1461,1462,1462,1462,1462,1462,1462,1462,1462,
+	1463,1463,1463,1463,1463,1463,1463,1463,1464,1464,1464,1464,1464,1464,1464,1464,
+	1465,1465,1465,1465,1465,1465,1465,1465,1466,1467,0,0,0,0,0,0,
+	1468,1468,1468,1468,1468,1468,1468,1468,1469,1469,1469,1469,1469,1469,1469,1470,
+	1471,1471,1471,1471,1471,1471,1471,1471,1472,1472,1472,1472,1472,1472,1472,1472,
+	1473,1473,1473,1473,1473,1473,1473,1473,1474,1474,1474,1474,1474,1474,1474,1474,
+	1475,1475,1475,1475,1475,1475,1475,1475,1476,1477,0,0,0,0,0,0,
+	1478,1478,1478,1478,1478,1478,1478,1478,0,0,0,0,0,0,0,0,
+	1479,1479,1479,1479,1479,1479,1479,1479,1480,1480,1480,1480,1480,1480,1480,1480,
+	1481,1481,1481,1481,1481,1481,1481,1481,1482,1482,1482,1482,1482,1482,1482,1482,
+	1483,1483,1483,1483,1483,1483,1483,1483,1484,1485,1486,1487,1488,0,0,0,
+	1403,1403,1403,1403,1403,1403,1403,1403,0,0,0,0,0,0,0,0,
+	1404,1404,1404,1404,1404,1404,1404,1404,1405,1405,1405,1405,1405,1405,1405,1406,
+	1407,1407,1407,1407,1407,1407,1407,1408,1409,1409,1409,1409,1409,1409,1409,1409,
+	1410,1410,1410,1410,1410,1410,1410,1410,1411,1412,1413,1414,1415,0,0,0,
+	1416,1416,1416,1416,1416,1416,1416,1416,0,0,0,0,0,0,0,0,
+	1417,1417,1417,1417,1417,1417,1417,1417,1418,1418,1418,1418,1418,1418,1418,1418,
+	1419,1419,1419,1419,1419,1419,1419,1419,1420,1420,1420,1420,1420,1420,1420,1420,
+	1421,1421,1421,1421,1421,1421,1421,1421,1422,1423,1424,1425,1426,0,0,0,
+	191,191,191,191,191,191,191,191,0,0,0,0,0,0,0,0,
+	1427,1427,1427,1427,1427,1427,1427,1427,1428,1428,1428,1428,1428,1428,1428,1428,
+	1429,1429,1429,1429,1429,1429,1429,1429,1430,1430,1430,1430,1430,1430,1430,1430,
+	1431,1431,1431,1431,1431,1431,1431,1431,1432,1433,1434,1435,1436,0,0,0,
+	208,208,208,208,208,208,208,208,0,0,0,0,0,0,0,0,
+	1437,1437,1437,1437,1437,1437,1437,1437,1438,1438,1438,1438,1438,1438,1438,1438,
+	1439,1439,1439,1439,1439,1439,1439,1439,1440,1440,1440,1440,1440,1440,1440,1440,
+	1441,1441,1441,1441,1441,1441,1441,1441,1442,1443,1444,1445,1446,0,0,0,
+	1447,1447,1447,1447,1447,1447,1447,1447,1448,1448,1448,1448,1448,1448,1448,1449,
+	1450,1450,1450,1450,1450,1450,1450,1450,1451,1451,1451,1451,1451,1451,1451,1452,
+	1453,1453,1453,1453,1453,1453,1453,1454,227,227,227,227,227,227,227,227,
+	1455,1455,1455,1455,1455,1455,1455,1455,1456,1457,0,0,0,0,0,0,
+	1458,1458,1458,1458,1458,1458,1458,1458,1459,1459,1459,1459,1459,1459,1459,1460,
+	1461,1461,1461,1461,1461,1461,1461,1461,1462,1462,1462,1462,1462,1462,1462,1462,
+	1463,1463,1463,1463,1463,1463,1463,1463,1464,1464,1464,1464,1464,1464,1464,1464,
+	1465,1465,1465,1465,1465,1465,1465,1465,1466,1467,0,0,0,0,0,0,
+	1468,1468,1468,1468,1468,1468,1468,1468,1469,1469,1469,1469,1469,1469,1469,1470,
+	1471,1471,1471,1471,1471,1471,1471,1471,1472,1472,1472,1472,1472,1472,1472,1472,
+	1473,1473,1473,1473,1473,1473,1473,1473,1474,1474,1474,1474,1474,1474,1474,1474,
+	1475,1475,1475,1475,1475,1475,1475,1475,1476,1477,0,0,0,0,0,0,
+	1478,1478,1478,1478,1478,1478,1478,1478,0,0,0,0,0,0,0,0,
+	1479,1479,1479,1479,1479,1479,1479,1479,1480,1480,1480,1480,1480,1480,1480,1480,
+	1481,1481,1481,1481,1481,1481,1481,1481,1482,1482,1482,1482,1482,1482,1482,1482,
+	1483,1483,1483,1483,1483,1483,1483,1483,1484,1485,1486,1487,1488,0,0,0,
+	1403,1403,1403,1403,1403,1403,1403,1403,0,0,0,0,0,0,0,0,
+	1404,1404,1404,1404,1404,1404,1404,1404,1405,1405,1405,1405,1405,1405,1405,1406,
+	1407,1407,1407,1407,1407,1407,1407,1408,1409,1409,1409,1409,1409,1409,1409,1409,
+	1410,1410,1410,1410,1410,1410,1410,1410,1411,1412,1413,1414,1415,0,0,0,
+	1416,1416,1416,1416,1416,1416,1416,1416,0,0,0,0,0,0,0,0,
+	1417,1417,1417,1417,1417,1417,1417,1417,1418,1418,1418,1418,1418,1418,1418,1418,
+	1419,1419,1419,1419,1419,1419,1419,1419,1420,1420,1420,1420,1420,1420,1420,1420,
+	1421,1421,1421,1421,1421,1421,1421,1421,1422,1423,1424,1425,1426,0,0,0,
+	191,191,191,191,191,191,191,191,0,0,0,0,0,0,0,0,
+	1427,1427,1427,1427,1427,1427,1427,1427,1428,1428,1428,1428,1428,1428,1428,1428,
+	1429,1429,1429,1429,1429,1429,1429,1429,1430,1430,1430,1430,1430,1430,1430,1430,
+	1431,1431,1431,1431,1431,1431,1431,1431,1432,1433,1434,1435,1436,0,0,0,
+	208,208,208,208,208,208,208,208,0,0,0,0,0,0,0,0,
+	1437,1437,1437,1437,1437,1437,1437,1437,1438,1438,1438,1438,1438,1438,1438,1438,
+	1439,1439,1439,1439,1439,1439,1439,1439,1440,1440,1440,1440,1440,1440,1440,1440,
+	1441,1441,1441,1441,1441,1441,1441,1441,1442,1443,1444,1445,1446,0,0,0,
+	1447,1447,1447,1447,1447,1447,1447,1447,1448,1448,1448,1448,1448,1448,1448,1449,
+	1450,1450,1450,1450,1450,1450,1450,1450,1451,1451,1451,1451,1451,1451,1451,1452,
+	1453,1453,1453,1453,1453,1453,1453,1454,227,227,227,227,227,227,227,227,
+	1455,1455,1455,1455,1455,1455,1455,1455,1456,1457,0,0,0,0,0,0,
+	1458,1458,1458,1458,1458,1458,1458,1458,1459,1459,1459,1459,1459,1459,1459,1460,
+	1461,1461,1461,1461,1461,1461,1461,1461,1462,1462,1462,1462,1462,1462,1462,1462,
+	1463,1463,1463,1463,1463,1463,1463,1463,1464,1464,1464,1464,1464,1464,1464,1464,
+	1465,1465,1465,1465,1465,1465,1465,1465,1466,1467,0,0,0,0,0,0,
+	1468,1468,1468,1468,1468,1468,1468,1468,1469,1469,1469,1469,1469,1469,1469,1470,
+	1471,1471,1471,1471,1471,1471,1471,1471,1472,1472,1472,1472,1472,1472,1472,1472,
+	1473,1473,1473,1473,1473,1473,1473,1473,1474,1474,1474,1474,1474,1474,1474,1474,
+	1475,1475,1475,1475,1475,1475,1475,1475,1476,1477,0,0,0,0,0,0,
+	1478,1478,1478,1478,1478,1478,1478,1478,0,0,0,0,0,0,0,0,
+	1479,1479,1479,1479,1479,1479,1479,1479,1480,1480,1480,1480,1480,1480,1480,1480,
+	1481,1481,1481,1481,1481,1481,1481,1481,1482,1482,1482,1482,1482,1482,1482,1482,
+	1483,1483,1483,1483,1483,1483,1483,1483,1484,1485,1486,1487,1488,0,0,0,
+	1403,1403,1403,1403,1403,1403,1403,1403,0,0,0,0,0,0,0,0,
+	1404,1404,1404,1404,1404,1404,1404,1404,1405,1405,1405,1405,1405,1405,1405,1406,
+	1407,1407,1407,1407,1407,1407,1407,1408,1409,1409,1409,1409,1409,1409,1409,1409,
+	1410,1410,1410,1410,1410,1410,1410,1410,1411,1412,1413,1414,1415,0,0,0,
+	1416,1416,1416,1416,1416,1416,1416,1416,0,0,0,0,0,0,0,0,
+	1417,1417,1417,1417,1417,1417,1417,1417,1418,1418,1418,1418,1418,1418,1418,1418,
+	1419,1419,1419,1419,1419,1419,1419,1419,1420,1420,1420,1420,1420,1420,1420,1420,
+	1421,1421,1421,1421,1421,1421,1421,1421,1422,1423,1424,1425,1426,0,0,0,
+	191,191,191,191,191,191,191,191,0,0,0,0,0,0,0,0,
+	1427,1427,1427,1427,1427,1427,1427,1427,1428,1428,1428,1428,1428,1428,1428,1428,
+	1429,1429,1429,1429,1429,1429,1429,1429,1430,1430,1430,1430,1430,1430,1430,1430,
+	1431,1431,1431,1431,1431,1431,1431,1431,1432,1433,1434,1435,1436,0,0,0,
+	208,208,208,208,208,208,208,208,0,0,0,0,0,0,0,0,
+	1437,1437,1437,1437,1437,1437,1437,1437,1438,1438,1438,1438,1438,1438,1438,1438,
+	1439,1439,1439,1439,1439,1439,1439,1439,1440,1440,1440,1440,1440,1440,1440,1440,
+	1441,1441,1441,1441,1441,1441,1441,1441,1442,1443,1444,1445,1446,0,0,0,
+	1447,1447,1447,1447,1447,1447,1447,1447,1448,1448,1448,1448,1448,1448,1448,1449,
+	1450,1450,1450,1450,1450,1450,1450,1450,1451,1451,1451,1451,1451,1451,1451,1452,
+	1453,1453,1453,1453,1453,1453,1453,1454,227,227,227,227,227,227,227,227,
+	1455,1455,1455,1455,1455,1455,1455,1455,1456,1457,0,0,0,0,0,0,
+	1458,1458,1458,1458,1458,1458,1458,1458,1459,1459,1459,1459,1459,1459,1459,1460,
+	1461,1461,1461,1461,1461,1461,1461,1461,1462,1462,1462,1462,1462,1462,1462,1462,
+	1463,1463,1463,1463,1463,1463,1463,1463,1464,1464,1464,1464,1464,1464,1464,1464,
+	1465,1465,1465,1465,1465,1465,1465,1465,1466,1467,0,0,0,0,0,0,
+	1468,1468,1468,1468,1468,1468,1468,1468,1469,1469,1469,1469,1469,1469,1469,1470,
+	1471,1471,1471,1471,1471,1471,1471,1471,1472,1472,1472,1472,1472,1472,1472,1472,
+	1473,1473,1473,1473,1473,1473,1473,1473,1474,1474,1474,1474,1474,1474,1474,1474,
+	1475,1475,1475,1475,1475,1475,1475,1475,1476,1477,0,0,0,0,0,0,
+	1478,1478,1478,1478,1478,1478,1478,1478,0,0,0,0,0,0,0,0,
+	1479,1479,1479,1479,1479,1479,1479,1479,1480,1480,1480,1480,1480,1480,1480,1480,
+	1481,1481,1481,1481,1481,1481,1481,1481,1482,1482,1482,1482,1482,1482,1482,1482,
+	1483,1483,1483,1483,1483,1483,1483,1483,1484,1485,1486,1487,1488,0,0,0,
+	1403,1403,1403,1403,1403,1403,1403,1403,0,0,0,0,0,0,0,0,
+	1404,1404,1404,1404,1404,1404,1404,1404,1405,1405,1405,1405,1405,1405,1405,1406,
+	1407,1407,1407,1407,1407,1407,1407,1408,1409,1409,1409,1409,1409,1409,1409,1409,
+	1410,1410,1410,1410,1410,1410,1410,1410,1411,1412,1413,1414,1415,0,0,0,
+	1416,1416,1416,1416,1416,1416,1416,1416,0,0,0,0,0,0,0,0,
+	1417,1417,1417,1417,1417,1417,1417,1417,1418,1418,1418,1418,1418,1418,1418,1418,
+	1419,1419,1419,1419,1419,1419,1419,1419,1420,1420,1420,1420,1420,1420,1420,1420,
+	1421,1421,1421,1421,1421,1421,1421,1421,1422,1423,1424,1425,1426,0,0,0,
+	191,191,191,191,191,191,191,191,0,0,0,0,0,0,0,0,
+	1427,1427,1427,1427,1427,1427,1427,1427,1428,1428,1428,1428,1428,1428,1428,1428,
+	1429,1429,1429,1429,1429,1429,1429,1429,1430,1430,1430,1430,1430,1430,1430,1430,
+	1431,1431,1431,1431,1431,1431,1431,1431,1432,1433,1434,1435,1436,0,0,0,
+	208,208,208,208,208,208,208,208,0,0,0,0,0,0,0,0,
+	1437,1437,1437,1437,1437,1437,1437,1437,1438,1438,1438,1438,1438,1438,1438,1438,
+	1439,1439,1439,1439,1439,1439,1439,1439,1440,1440,1440,1440,1440,1440,1440,1440,
+	1441,1441,1441,1441,1441,1441,1441,1441,1442,1443,1444,1445,1446,0,0,0,
+	1447,1447,1447,1447,1447,1447,1447,1447,1448,1448,1448,1448,1448,1448,1448,1449,
+	1450,1450,1450,1450,1450,1450,1450,1450,1451,1451,1451,1451,1451,1451,1451,1452,
+	1453,1453,1453,1453,1453,1453,1453,1454,227,227,227,227,227,227,227,227,
+	1455,1455,1455,1455,1455,1455,1455,1455,1456,1457,0,0,0,0,0,0,
+	1458,1458,1458,1458,1458,1458,1458,1458,1459,1459,1459,1459,1459,1459,1459,1460,
+	1461,1461,1461,1461,1461,1461,1461,1461,1462,1462,1462,1462,1462,1462,1462,1462,
+	1463,1463,1463,1463,1463,1463,1463,1463,1464,1464,1464,1464,1464,1464,1464,1464,
+	1465,1465,1465,1465,1465,1465,1465,1465,1466,1467,0,0,0,0,0,0,
+	1468,1468,1468,1468,1468,1468,1468,1468,1469,1469,1469,1469,1469,1469,1469,1470,
+	1471,1471,1471,1471,1471,1471,1471,1471,1472,1472,1472,1472,1472,1472,1472,1472,
+	1473,1473,1473,1473,1473,1473,1473,1473,1474,1474,1474,1474,1474,1474,1474,1474,
+	1475,1475,1475,1475,1475,1475,1475,1475,1476,1477,0,0,0,0,0,0,
+	1478,1478,1478,1478,1478,1478,1478,1478,0,0,0,0,0,0,0,0,
+	1479,1479,1479,1479,1479,1479,1479,1479,1480,1480,1480,1480,1480,1480,1480,1480,
+	1481,1481,1481,1481,1481,1481,1481,1481,1482,1482,1482,1482,1482,1482,1482,1482,
+	1483,1483,1483,1483,1483,1483,1483,1483,1484,1485,1486,1487,1488,0,0,0,
+	1403,1403,1403,1403,1403,1403,1403,1403,0,0,0,0,0,0,0,0,
+	1404,1404,1404,1404,1404,1404,1404,1404,1405,1405,1405,1405,1405,1405,1405,1406,
+	1407,1407,1407,1407,1407,1407,1407,1408,1409,1409,1409,1409,1409,1409,1409,1409,
+	1410,1410,1410,1410,1410,1410,1410,1410,1411,1412,1413,1414,1415,0,0,0,
+	1416,1416,1416,1416,1416,1416,1416,1416,0,0,0,0,0,0,0,0,
+	1417,1417,1417,1417,1417,1417,1417,1417,1418,1418,1418,1418,1418,1418,1418,1418,
+	1419,1419,1419,1419,1419,1419,1419,1419,1420,1420,1420,1420,1420,1420,1420,1420,
+	1421,1421,1421,1421,1421,1421,1421,1421,1422,1423,1424,1425,1426,0,0,0,
+	191,191,191,191,191,191,191,191,0,0,0,0,0,0,0,0,
+	1427,1427,1427,1427,1427,1427,1427,1427,1428,1428,1428,1428,1428,1428,1428,1428,
+	1429,1429,1429,1429,1429,1429,1429,1429,1430,1430,1430,1430,1430,1430,1430,1430,
+	1431,1431,1431,1431,1431,1431,1431,1431,1432,1433,1434,1435,1436,0,0,0,
+	208,208,208,208,208,208,208,208,0,0,0,0,0,0,0,0,
+	1437,1437,1437,1437,1437,1437,1437,1437,1438,1438,1438,1438,1438,1438,1438,1438,
+	1439,1439,1439,1439,1439,1439,1439,1439,1440,1440,1440,1440,1440,1440,1440,1440,
+	1441,1441,1441,1441,1441,1441,1441,1441,1442,1443,1444,1445,1446,0,0,0,
+	1447,1447,1447,1447,1447,1447,1447,1447,1489,1489,1489,1489,1489,1489,1489,1490,
+	1450,1450,1450,1450,1450,1450,1450,1450,1451,1451,1451,1451,1451,1451,1451,1452,
+	1453,1453,1453,1453,1453,1453,1453,1454,227,227,227,227,227,227,227,227,
+	1455,1455,1455,1455,1455,1455,1455,1455,1456,1457,0,0,0,0,0,0,
+	1458,1458,1458,1458,1458,1458,1458,1458,1491,1491,1491,1491,1491,1491,1491,1492,
+	1461,1461,1461,1461,1461,1461,1461,1461,1462,1462,1462,1462,1462,1462,1462,1462,
+	1463,1463,1463,1463,1463,1463,1463,1463,1464,1464,1464,1464,1464,1464,1464,1464,
+	1465,1465,1465,1465,1465,1465,1465,1465,1466,1467,0,0,0,0,0,0,
+	1468,1468,1468,1468,1468,1468,1468,1468,1493,1493,1493,1493,1493,1493,1493,1494,
+	1471,1471,1471,1471,1471,1471,1471,1471,1472,1472,1472,1472,1472,1472,1472,1472,
+	1473,1473,1473,1473,1473,1473,1473,1473,1474,1474,1474,1474,1474,1474,1474,1474,
+	1475,1475,1475,1475,1475,1475,1475,1475,1476,1477,0,0,0,0,0,0,
+	1478,1478,1478,1478,1478,1478,1478,1478,0,0,0,0,0,0,0,0,
+	1479,1479,1479,1479,1479,1479,1479,1479,1480,1480,1480,1480,1480,1480,1480,1480,
+	1481,1481,1481,1481,1481,1481,1481,1481,1482,1482,1482,1482,1482,1482,1482,1482,
+	1483,1483,1483,1483,1483,1483,1483,1483,1484,1485,1486,1487,1488,0,0,0,
+	232,232,232,232,232,232,232,232,0,0,0,0,0,0,0,0,
+	1495,1495,1495,1495,1495,1495,1495,1495,1496,1496,1496,1496,1496,1496,1496,1497,
+	1498,1498,1498,1498,1498,1498,1498,1499,238,238,238,238,238,238,238,238,
+	1500,1500,1500,1500,1500,1500,1500,1500,1501,1502,1503,1504,1505,0,0,0,
+	218,218,218,218,218,218,218,218,1506,1506,1506,1506,1506,1506,1506,1506,
+	1507,1507,1507,1507,1507,1507,1507,1507,210,210,210,210,210,210,210,210,
+	1508,1508,1508,1508,1508,1508,1508,1508,226,226,226,226,226,226,226,226,
+	1509,1509,1509,1509,1509,1509,1509,1509,1510,1511,1512,1513,1514,0,0,0,
+	130,130,130,130,130,130,130,130,1515,1515,1515,1515,1515,1515,1515,1515,
+	1516,1516,1516,1516,1516,1516,1516,1516,1517,1517,1517,1517,1517,1517,1517,1517,
+	1518,1518,1518,1518,1518,1518,1518,1518,215,215,215,215,215,215,215,215,
+	1519,1519,1519,1519,1519,1519,1519,1519,1520,1521,1522,1523,116,0,0,0,
+	1524,1524,1524,1524,1524,1524,1524,1524,1525,1525,1525,1525,1525,1525,1525,1525,
+	1526,1526,1526,1526,1526,1526,1526,1526,1527,1527,1527,1527,1527,1527,1527,1527,
+	1528,1528,1528,1528,1528,1528,1528,1528,1529,1529,1529,1529,1529,1529,1529,1529,
+	1530,1530,1530,1530,1530,1530,1530,1530,1531,1532,1533,1534,1535,0,0,0,
+	1536,1536,1536,1536,1536,1536,1536,1536,1537,1537,1537,1537,1537,1537,1537,1538,
+	1539,1539,1539,1539,1539,1539,1539,1539,1540,1540,1540,1540,1540,1540,1540,1541,
+	1542,1542,1542,1542,1542,1542,1542,1543,1544,1544,1544,1544,1544,1544,1544,1544,
+	1545,1545,1545,1545,1545,1545,1545,1545,1546,1547,0,0,0,0,0,0,
+	1548,1548,1548,1548,1548,1548,1548,1548,1549,1549,1549,1549,1549,1549,1549,1549,
+	1550,1550,1550,1550,1550,1550,1550,1550,1551,1551,1551,1551,1551,1551,1551,1551,
+	1552,1552,1552,1552,1552,1552,1552,1552,197,197,197,197,197,197,197,197,
+	1553,1553,1553,1553,1553,1553,1553,1553,1554,1555,0,0,0,0,0,0,
+	1556,1556,1556,1556,1556,1556,1556,1556,1557,1557,1557,1557,1557,1557,1557,1557,
+	1558,1558,1558,1558,1558,1558,1558,1558,1559,1559,1559,1559,1559,1559,1559,1559,
+	1560,1560,1560,1560,1560,1560,1560,1560,1561,1561,1561,1561,1561,1561,1561,1561,
+	1562,1562,1562,1562,1562,1562,1562,1562,1563,1564,0,0,0,0,0,0,
+	1565,1565,1565,1565,1565,1565,1565,1565,195,195,195,195,195,195,195,195,
+	1566,1566,1566,1566,1566,1566,1566,1566,1567,1567,1567,1567,1567,1567,1567,1567,
+	1568,1568,1568,1568,1568,1568,1568,1568,237,237,237,237,237,237,237,237,
+	1569,1569,1569,1569,1569,1569,1569,1569,1570,1571,1572,1573,108,0,0,0,
+	232,232,232,232,232,232,232,232,0,0,0,0,0,0,0,0,
+	1495,1495,1495,1495,1495,1495,1495,1495,1496,1496,1496,1496,1496,1496,1496,1497,
+	1498,1498,1498,1498,1498,1498,1498,1499,238,238,238,238,238,238,238,238,
+	1500,1500,1500,1500,1500,1500,1500,1500,1501,1502,1503,1504,1505,0,0,0,
+	218,218,218,218,218,218,218,218,1506,1506,1506,1506,1506,1506,1506,1506,
+	1507,1507,1507,1507,1507,1507,1507,1507,210,210,210,210,210,210,210,210,
+	1508,1508,1508,1508,1508,1508,1508,1508,226,226,226,226,226,226,226,226,
+	1509,1509,1509,1509,1509,1509,1509,1509,1510,1511,1512,1513,1514,0,0,0,
+	130,130,130,130,130,130,130,130,1515,1515,1515,1515,1515,1515,1515,1515,
+	1516,1516,1516,1516,1516,1516,1516,1516,1517,1517,1517,1517,1517,1517,1517,1517,
+	1518,1518,1518,1518,1518,1518,1518,1518,215,215,215,215,215,215,215,215,
+	1519,1519,1519,1519,1519,1519,1519,1519,1520,1521,1522,1523,116,0,0,0,
+	1524,1524,1524,1524,1524,1524,1524,1524,1525,1525,1525,1525,1525,1525,1525,1525,
+	1526,1526,1526,1526,1526,1526,1526,1526,1527,1527,1527,1527,1527,1527,1527,1527,
+	1528,1528,1528,1528,1528,1528,1528,1528,1529,1529,1529,1529,1529,1529,1529,1529,
+	1530,1530,1530,1530,1530,1530,1530,1530,1531,1532,1533,1534,1535,0,0,0,
+	1536,1536,1536,1536,1536,1536,1536,1536,1537,1537,1537,1537,1537,1537,1537,1538,
+	1539,1539,1539,1539,1539,1539,1539,1539,1540,1540,1540,1540,1540,1540,1540,1541,
+	1542,1542,1542,1542,1542,1542,1542,1543,1544,1544,1544,1544,1544,1544,1544,1544,
+	1545,1545,1545,1545,1545,1545,1545,1545,1546,1547,0,0,0,0,0,0,
+	1548,1548,1548,1548,1548,1548,1548,1548,1549,1549,1549,1549,1549,1549,1549,1549,
+	1550,1550,1550,1550,1550,1550,1550,1550,1551,1551,1551,1551,1551,1551,1551,1551,
+	1552,1552,1552,1552,1552,1552,1552,1552,197,197,197,197,197,197,197,197,
+	1553,1553,1553,1553,1553,1553,1553,1553,1554,1555,0,0,0,0,0,0,
+	1556,1556,1556,1556,1556,1556,1556,1556,1557,1557,1557,1557,1557,1557,1557,1557,
+	1558,1558,1558,1558,1558,1558,1558,1558,1559,1559,1559,1559,1559,1559,1559,1559,
+	1560,1560,1560,1560,1560,1560,1560,1560,1561,1561,1561,1561,1561,1561,1561,1561,
+	1562,1562,1562,1562,1562,1562,1562,1562,1563,1564,0,0,0,0,0,0,
+	1565,1565,1565,1565,1565,1565,1565,1565,195,195,195,195,195,195,195,195,
+	1566,1566,1566,1566,1566,1566,1566,1566,1567,1567,1567,1567,1567,1567,1567,1567,
+	1568,1568,1568,1568,1568,1568,1568,1568,237,237,237,237,237,237,237,237,
+	1569,1569,1569,1569,1569,1569,1569,1569,1570,1571,1572,1573,108,0,0,0,
+	232,232,232,232,232,232,232,232,0,0,0,0,0,0,0,0,
+	1495,1495,1495,1495,1495,1495,1495,1495,1496,1496,1496,1496,1496,1496,1496,1497,
+	1498,1498,1498,1498,1498,1498,1498,1499,238,238,238,238,238,238,238,238,
+	1500,1500,1500,1500,1500,1500,1500,1500,1501,1502,1503,1504,1505,0,0,0,
+	218,218,218,218,218,218,218,218,1506,1506,1506,1506,1506,1506,1506,1506,
+	1507,1507,1507,1507,1507,1507,1507,1507,210,210,210,210,210,210,210,210,
+	1508,1508,1508,1508,1508,1508,1508,1508,226,226,226,226,226,226,226,226,
+	1509,1509,1509,1509,1509,1509,1509,1509,1510,1511,1512,1513,1514,0,0,0,
+	130,130,130,130,130,130,130,130,1515,1515,1515,1515,1515,1515,1515,1515,
+	1516,1516,1516,1516,1516,1516,1516,1516,1517,1517,1517,1517,1517,1517,1517,1517,
+	1518,1518,1518,1518,1518,1518,1518,1518,215,215,215,215,215,215,215,215,
+	1519,1519,1519,1519,1519,1519,1519,1519,1520,1521,1522,1523,116,0,0,0,
+	1524,1524,1524,1524,1524,1524,1524,1524,1525,1525,1525,1525,1525,1525,1525,1525,
+	1526,1526,1526,1526,1526,1526,1526,1526,1527,1527,1527,1527,1527,1527,1527,1527,
+	1528,1528,1528,1528,1528,1528,1528,1528,1529,1529,1529,1529,1529,1529,1529,1529,
+	1530,1530,1530,1530,1530,1530,1530,1530,1531,1532,1533,1534,1535,0,0,0,
+	1536,1536,1536,1536,1536,1536,1536,1536,1537,1537,1537,1537,1537,1537,1537,1538,
+	1539,1539,1539,1539,1539,1539,1539,1539,1540,1540,1540,1540,1540,1540,1540,1541,
+	1542,1542,1542,1542,1542,1542,1542,1543,1544,1544,1544,1544,1544,1544,1544,1544,
+	1545,1545,1545,1545,1545,1545,1545,1545,1546,1547,0,0,0,0,0,0,
+	1548,1548,1548,1548,1548,1548,1548,1548,1549,1549,1549,1549,1549,1549,1549,1549,
+	1550,1550,1550,1550,1550,1550,1550,1550,1551,1551,1551,1551,1551,1551,1551,1551,
+	1552,1552,1552,1552,1552,1552,1552,1552,197,197,197,197,197,197,197,197,
+	1553,1553,1553,1553,1553,1553,1553,1553,1554,1555,0,0,0,0,0,0,
+	1556,1556,1556,1556,1556,1556,1556,1556,1557,1557,1557,1557,1557,1557,1557,1557,
+	1558,1558,1558,1558,1558,1558,1558,1558,1559,1559,1559,1559,1559,1559,1559,1559,
+	1560,1560,1560,1560,1560,1560,1560,1560,1561,1561,1561,1561,1561,1561,1561,1561,
+	1562,1562,1562,1562,1562,1562,1562,1562,1563,1564,0,0,0,0,0,0,
+	1565,1565,1565,1565,1565,1565,1565,1565,195,195,195,195,195,195,195,195,
+	1566,1566,1566,1566,1566,1566,1566,1566,1567,1567,1567,1567,1567,1567,1567,1567,
+	1568,1568,1568,1568,1568,1568,1568,1568,237,237,237,237,237,237,237,237,
+	1569,1569,1569,1569,1569,1569,1569,1569,1570,1571,1572,1573,108,0,0,0,
+	232,232,232,232,232,232,232,232,0,0,0,0,0,0,0,0,
+	1495,1495,1495,1495,1495,1495,1495,1495,1496,1496,1496,1496,1496,1496,1496,1497,
+	1498,1498,1498,1498,1498,1498,1498,1499,238,238,238,238,238,238,238,238,
+	1500,1500,1500,1500,1500,1500,1500,1500,1501,1502,1503,1504,1505,0,0,0,
+	218,218,218,218,218,218,218,218,1506,1506,1506,1506,1506,1506,1506,1506,
+	1507,1507,1507,1507,1507,1507,1507,1507,210,210,210,210,210,210,210,210,
+	1508,1508,1508,1508,1508,1508,1508,1508,226,226,226,226,226,226,226,226,
+	1509,1509,1509,1509,1509,1509,1509,1509,1510,1511,1512,1513,1514,0,0,0,
+	130,130,130,130,130,130,130,130,1515,1515,1515,1515,1515,1515,1515,1515,
+	1516,1516,1516,1516,1516,1516,1516,1516,1517,1517,1517,1517,1517,1517,1517,1517,
+	1518,1518,1518,1518,1518,1518,1518,1518,215,215,215,215,215,215,215,215,
+	1519,1519,1519,1519,1519,1519,1519,1519,1520,1521,1522,1523,116,0,0,0,
+	1524,1524,1524,1524,1524,1524,1524,1524,1525,1525,1525,1525,1525,1525,1525,1525,
+	1526,1526,1526,1526,1526,1526,1526,1526,1527,1527,1527,1527,1527,1527,1527,1527,
+	1528,1528,1528,1528,1528,1528,1528,1528,1529,1529,1529,1529,1529,1529,1529,1529,
+	1530,1530,1530,1530,1530,1530,1530,1530,1531,1532,1533,1534,1535,0,0,0,
+	1536,1536,1536,1536,1536,1536,1536,1536,1537,1537,1537,1537,1537,1537,1537,1538,
+	1539,1539,1539,1539,1539,1539,1539,1539,1540,1540,1540,1540,1540,1540,1540,1541,
+	1542,1542,1542,1542,1542,1542,1542,1543,1544,1544,1544,1544,1544,1544,1544,1544,
+	1545,1545,1545,1545,1545,1545,1545,1545,1546,1547,0,0,0,0,0,0,
+	1548,1548,1548,1548,1548,1548,1548,1548,1549,1549,1549,1549,1549,1549,1549,1549,
+	1550,1550,1550,1550,1550,1550,1550,1550,1551,1551,1551,1551,1551,1551,1551,1551,
+	1552,1552,1552,1552,1552,1552,1552,1552,197,197,197,197,197,197,197,197,
+	1553,1553,1553,1553,1553,1553,1553,1553,1554,1555,0,0,0,0,0,0,
+	1556,1556,1556,1556,1556,1556,1556,1556,1557,1557,1557,1557,1557,1557,1557,1557,
+	1558,1558,1558,1558,1558,1558,1558,1558,1559,1559,1559,1559,1559,1559,1559,1559,
+	1560,1560,1560,1560,1560,1560,1560,1560,1561,1561,1561,1561,1561,1561,1561,1561,
+	1562,1562,1562,1562,1562,1562,1562,1562,1563,1564,0,0,0,0,0,0,
+	1565,1565,1565,1565,1565,1565,1565,1565,195,195,195,195,195,195,195,195,
+	1566,1566,1566,1566,1566,1566,1566,1566,1567,1567,1567,1567,1567,1567,1567,1567,
+	1568,1568,1568,1568,1568,1568,1568,1568,237,237,237,237,237,237,237,237,
+	1569,1569,1569,1569,1569,1569,1569,1569,1570,1571,1572,1573,108,0,0,0,
+	232,232,232,232,232,232,232,232,0,0,0,0,0,0,0,0,
+	1495,1495,1495,1495,1495,1495,1495,1495,1496,1496,1496,1496,1496,1496,1496,1497,
+	1498,1498,1498,1498,1498,1498,1498,1499,238,238,238,238,238,238,238,238,
+	1500,1500,1500,1500,1500,1500,1500,1500,1501,1502,1503,1504,1505,0,0,0,
+	218,218,218,218,218,218,218,218,1506,1506,1506,1506,1506,1506,1506,1506,
+	1507,1507,1507,1507,1507,1507,1507,1507,210,210,210,210,210,210,210,210,
+	1508,1508,1508,1508,1508,1508,1508,1508,226,226,226,226,226,226,226,226,
+	1509,1509,1509,1509,1509,1509,1509,1509,1510,1511,1512,1513,1514,0,0,0,
+	130,130,130,130,130,130,130,130,1515,1515,1515,1515,1515,1515,1515,1515,
+	1516,1516,1516,1516,1516,1516,1516,1516,1517,1517,1517,1517,1517,1517,1517,1517,
+	1518,1518,1518,1518,1518,1518,1518,1518,215,215,215,215,215,215,215,215,
+	1519,1519,1519,1519,1519,1519,1519,1519,1520,1521,1522,1523,116,0,0,0,
+	1524,1524,1524,1524,1524,1524,1524,1524,1525,1525,1525,1525,1525,1525,1525,1525,
+	1526,1526,1526,1526,1526,1526,1526,1526,1527,1527,1527,1527,1527,1527,1527,1527,
+	1528,1528,1528,1528,1528,1528,1528,1528,1529,1529,1529,1529,1529,1529,1529,1529,
+	1530,1530,1530,1530,1530,1530,1530,1530,1531,1532,1533,1534,1535,0,0,0,
+	1536,1536,1536,1536,1536,1536,1536,1536,1537,1537,1537,1537,1537,1537,1537,1538,
+	1539,1539,1539,1539,1539,1539,1539,1539,1540,1540,1540,1540,1540,1540,1540,1541,
+	1542,1542,1542,1542,1542,1542,1542,1543,1544,1544,1544,1544,1544,1544,1544,1544,
+	1545,1545,1545,1545,1545,1545,1545,1545,1546,1547,0,0,0,0,0,0,
+	1548,1548,1548,1548,1548,1548,1548,1548,1549,1549,1549,1549,1549,1549,1549,1549,
+	1550,1550,1550,1550,1550,1550,1550,1550,1551,1551,1551,1551,1551,1551,1551,1551,
+	1552,1552,1552,1552,1552,1552,1552,1552,197,197,197,197,197,197,197,197,
+	1553,1553,1553,1553,1553,1553,1553,1553,1554,1555,0,0,0,0,0,0,
+	1556,1556,1556,1556,1556,1556,1556,1556,1557,1557,1557,1557,1557,1557,1557,1557,
+	1558,1558,1558,1558,1558,1558,1558,1558,1559,1559,1559,1559,1559,1559,1559,1559,
+	1560,1560,1560,1560,1560,1560,1560,1560,1561,1561,1561,1561,1561,1561,1561,1561,
+	1562,1562,1562,1562,1562,1562,1562,1562,1563,1564,0,0,0,0,0,0,
+	1565,1565,1565,1565,1565,1565,1565,1565,195,195,195,195,195,195,195,195,
+	1566,1566,1566,1566,1566,1566,1566,1566,1567,1567,1567,1567,1567,1567,1567,1567,
+	1568,1568,1568,1568,1568,1568,1568,1568,237,237,237,237,237,237,237,237,
+	1569,1569,1569,1569,1569,1569,1569,1569,1570,1571,1572,1573,108,0,0,0,
+	232,232,232,232,232,232,232,232,0,0,0,0,0,0,0,0,
+	1495,1495,1495,1495,1495,1495,1495,1495,1496,1496,1496,1496,1496,1496,1496,1497,
+	1498,1498,1498,1498,1498,1498,1498,1499,238,238,238,238,238,238,238,238,
+	1500,1500,1500,1500,1500,1500,1500,1500,1501,1502,1503,1504,1505,0,0,0,
+	218,218,218,218,218,218,218,218,1506,1506,1506,1506,1506,1506,1506,1506,
+	1507,1507,1507,1507,1507,1507,1507,1507,210,210,210,210,210,210,210,210,
+	1508,1508,1508,1508,1508,1508,1508,1508,226,226,226,226,226,226,226,226,
+	1509,1509,1509,1509,1509,1509,1509,1509,1510,1511,1512,1513,1514,0,0,0,
+	130,130,130,130,130,130,130,130,1515,1515,1515,1515,1515,1515,1515,1515,
+	1516,1516,1516,1516,1516,1516,1516,1516,1517,1517,1517,1517,1517,1517,1517,1517,
+	1518,1518,1518,1518,1518,1518,1518,1518,215,215,215,215,215,215,215,215,
+	1519,1519,1519,1519,1519,1519,1519,1519,1520,1521,1522,1523,116,0,0,0,
+	1524,1524,1524,1524,1524,1524,1524,1524,1525,1525,1525,1525,1525,1525,1525,1525,
+	1526,1526,1526,1526,1526,1526,1526,1526,1527,1527,1527,1527,1527,1527,1527,1527,
+	1528,1528,1528,1528,1528,1528,1528,1528,1529,1529,1529,1529,1529,1529,1529,1529,
+	1530,1530,1530,1530,1530,1530,1530,1530,1531,1532,1533,1534,1535,0,0,0,
+	1536,1536,1536,1536,1536,1536,1536,1536,1537,1537,1537,1537,1537,1537,1537,1538,
+	1539,1539,1539,1539,1539,1539,1539,1539,1540,1540,1540,1540,1540,1540,1540,1541,
+	1542,1542,1542,1542,1542,1542,1542,1543,1544,1544,1544,1544,1544,1544,1544,1544,
+	1545,1545,1545,1545,1545,1545,1545,1545,1546,1547,0,0,0,0,0,0,
+	1548,1548,1548,1548,1548,1548,1548,1548,1549,1549,1549,1549,1549,1549,1549,1549,
+	1550,1550,1550,1550,1550,1550,1550,1550,1551,1551,1551,1551,1551,1551,1551,1551,
+	1552,1552,1552,1552,1552,1552,1552,1552,197,197,197,197,197,197,197,197,
+	1553,1553,1553,1553,1553,1553,1553,1553,1554,1555,0,0,0,0,0,0,
+	1556,1556,1556,1556,1556,1556,1556,1556,1557,1557,1557,1557,1557,1557,1557,1557,
+	1558,1558,1558,1558,1558,1558,1558,1558,1559,1559,1559,1559,1559,1559,1559,1559,
+	1560,1560,1560,1560,1560,1560,1560,1560,1561,1561,1561,1561,1561,1561,1561,1561,
+	1562,1562,1562,1562,1562,1562,1562,1562,1563,1564,0,0,0,0,0,0,
+	1565,1565,1565,1565,1565,1565,1565,1565,195,195,195,195,195,195,195,195,
+	1566,1566,1566,1566,1566,1566,1566,1566,1567,1567,1567,1567,1567,1567,1567,1567,
+	1568,1568,1568,1568,1568,1568,1568,1568,237,237,237,237,237,237,237,237,
+	1569,1569,1569,1569,1569,1569,1569,1569,1570,1571,1572,1573,108,0,0,0,
+	232,232,232,232,232,232,232,232,0,0,0,0,0,0,0,0,
+	1495,1495,1495,1495,1495,1495,1495,1495,1496,1496,1496,1496,1496,1496,1496,1497,
+	1498,1498,1498,1498,1498,1498,1498,1499,238,238,238,238,238,238,238,238,
+	1500,1500,1500,1500,1500,1500,1500,1500,1501,1502,1503,1504,1505,0,0,0,
+	218,218,218,218,218,218,218,218,1506,1506,1506,1506,1506,1506,1506,1506,
+	1507,1507,1507,1507,1507,1507,1507,1507,210,210,210,210,210,210,210,210,
+	1508,1508,1508,1508,1508,1508,1508,1508,226,226,226,226,226,226,226,226,
+	1509,1509,1509,1509,1509,1509,1509,1509,1510,1511,1512,1513,1514,0,0,0,
+	130,130,130,130,130,130,130,130,1515,1515,1515,1515,1515,1515,1515,1515,
+	1516,1516,1516,1516,1516,1516,1516,1516,1517,1517,1517,1517,1517,1517,1517,1517,
+	1518,1518,1518,1518,1518,1518,1518,1518,215,215,215,215,215,215,215,215,
+	1519,1519,1519,1519,1519,1519,1519,1519,1520,1521,1522,1523,116,0,0,0,
+	1524,1524,1524,1524,1524,1524,1524,1524,1525,1525,1525,1525,1525,1525,1525,1525,
+	1526,1526,1526,1526,1526,1526,1526,1526,1527,1527,1527,1527,1527,1527,1527,1527,
+	1528,1528,1528,1528,1528,1528,1528,1528,1529,1529,1529,1529,1529,1529,1529,1529,
+	1530,1530,1530,1530,1530,1530,1530,1530,1531,1532,1533,1534,1535,0,0,0,
+	1536,1536,1536,1536,1536,1536,1536,1536,1537,1537,1537,1537,1537,1537,1537,1538,
+	1539,1539,1539,1539,1539,1539,1539,1539,1540,1540,1540,1540,1540,1540,1540,1541,
+	1542,1542,1542,1542,1542,1542,1542,1543,1544,1544,1544,1544,1544,1544,1544,1544,
+	1545,1545,1545,1545,1545,1545,1545,1545,1546,1547,0,0,0,0,0,0,
+	1548,1548,1548,1548,1548,1548,1548,1548,1549,1549,1549,1549,1549,1549,1549,1549,
+	1550,1550,1550,1550,1550,1550,1550,1550,1551,1551,1551,1551,1551,1551,1551,1551,
+	1552,1552,1552,1552,1552,1552,1552,1552,197,197,197,197,197,197,197,197,
+	1553,1553,1553,1553,1553,1553,1553,1553,1554,1555,0,0,0,0,0,0,
+	1556,1556,1556,1556,1556,1556,1556,1556,1557,1557,1557,1557,1557,1557,1557,1557,
+	1558,1558,1558,1558,1558,1558,1558,1558,1559,1559,1559,1559,1559,1559,1559,1559,
+	1560,1560,1560,1560,1560,1560,1560,1560,1561,1561,1561,1561,1561,1561,1561,1561,
+	1562,1562,1562,1562,1562,1562,1562,1562,1563,1564,0,0,0,0,0,0,
+	1565,1565,1565,1565,1565,1565,1565,1565,195,195,195,195,195,195,195,195,
+	1566,1566,1566,1566,1566,1566,1566,1566,1567,1567,1567,1567,1567,1567,1567,1567,
+	1568,1568,1568,1568,1568,1568,1568,1568,237,237,237,237,237,237,237,237,
+	1569,1569,1569,1569,1569,1569,1569,1569,1570,1571,1572,1573,108,0,0,0,
+	232,232,232,232,232,232,232,232,0,0,0,0,0,0,0,0,
+	1495,1495,1495,1495,1495,1495,1495,1495,1496,1496,1496,1496,1496,1496,1496,1497,
+	1498,1498,1498,1498,1498,1498,1498,1499,238,238,238,238,238,238,238,238,
+	1500,1500,1500,1500,1500,1500,1500,1500,1501,1502,1503,1504,1505,0,0,0,
+	218,218,218,218,218,218,218,218,1506,1506,1506,1506,1506,1506,1506,1506,
+	1507,1507,1507,1507,1507,1507,1507,1507,210,210,210,210,210,210,210,210,
+	1508,1508,1508,1508,1508,1508,1508,1508,226,226,226,226,226,226,226,226,
+	1509,1509,1509,1509,1509,1509,1509,1509,1510,1511,1512,1513,1514,0,0,0,
+	130,130,130,130,130,130,130,130,1515,1515,1515,1515,1515,1515,1515,1515,
+	1516,1516,1516,1516,1516,1516,1516,1516,1517,1517,1517,1517,1517,1517,1517,1517,
+	1518,1518,1518,1518,1518,1518,1518,1518,215,215,215,215,215,215,215,215,
+	1519,1519,1519,1519,1519,1519,1519,1519,1520,1521,1522,1523,116,0,0,0,
+	1524,1524,1524,1524,1524,1524,1524,1524,1525,1525,1525,1525,1525,1525,1525,1525,
+	1526,1526,1526,1526,1526,1526,1526,1526,1527,1527,1527,1527,1527,1527,1527,1527,
+	1528,1528,1528,1528,1528,1528,1528,1528,1529,1529,1529,1529,1529,1529,1529,1529,
+	1530,1530,1530,1530,1530,1530,1530,1530,1531,1532,1533,1534,1535,0,0,0,
+	1536,1536,1536,1536,1536,1536,1536,1536,1574,1574,1574,1574,1574,1574,1574,1575,
+	1539,1539,1539,1539,1539,1539,1539,1539,1540,1540,1540,1540,1540,1540,1540,1541,
+	1542,1542,1542,1542,1542,1542,1542,1543,1544,1544,1544,1544,1544,1544,1544,1544,
+	1545,1545,1545,1545,1545,1545,1545,1545,1546,1547,0,0,0,0,0,0,
+	1548,1548,1548,1548,1548,1548,1548,1548,1549,1549,1549,1549,1549,1549,1549,1549,
+	1550,1550,1550,1550,1550,1550,1550,1550,1551,1551,1551,1551,1551,1551,1551,1551,
+	1552,1552,1552,1552,1552,1552,1552,1552,197,197,197,197,197,197,197,197,
+	1553,1553,1553,1553,1553,1553,1553,1553,1554,1555,0,0,0,0,0,0,
+	1556,1556,1556,1556,1556,1556,1556,1556,1557,1557,1557,1557,1557,1557,1557,1557,
+	1558,1558,1558,1558,1558,1558,1558,1558,1559,1559,1559,1559,1559,1559,1559,1559,
+	1560,1560,1560,1560,1560,1560,1560,1560,1561,1561,1561,1561,1561,1561,1561,1561,
+	1562,1562,1562,1562,1562,1562,1562,1562,1563,1564,0,0,0,0,0,0,
+	1565,1565,1565,1565,1565,1565,1565,1565,195,195,195,195,195,195,195,195,
+	1566,1566,1566,1566,1566,1566,1566,1566,1567,1567,1567,1567,1567,1567,1567,1567,
+	1568,1568,1568,1568,1568,1568,1568,1568,237,237,237,237,237,237,237,237,
+	1569,1569,1569,1569,1569,1569,1569,1569,1570,1571,1572,1573,108,0,0,0,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,1576,
+	122,122,122,122,122,122,122,122,0,0,0,0,0,0,0,0,
+	1577,1577,1577,1577,1577,1577,1577,1577,214,214,214,214,214,214,214,1578,
+	1579,1579,1579,1579,1579,1579,1579,1580,35,35,35,35,35,35,35,35,
+	1581,1581,1581,1581,1581,1581,1581,1581,1582,1583,1584,1585,1586,0,0,0,
+	163,163,163,163,163,163,163,163,1587,1587,1587,1587,1587,1587,1587,1587,
+	1588,1588,1588,1588,1588,1588,1588,1588,23,23,23,23,23,23,23,23,
+	1589,1589,1589,1589,1589,1589,1589,1589,121,121,121,121,121,121,121,121,
+	1590,1590,1590,1590,1590,1590,1590,1590,1591,1592,1593,1594,1595,0,0,0,
+	53,53,53,53,53,53,53,53,7,7,7,7,7,7,7,7,
+	133,133,133,133,133,133,133,133,243,243,243,243,243,243,243,243,
+	1596,1596,1596,1596,1596,1596,1596,1596,59,59,59,59,59,59,59,59,
+	1597,1597,1597,1597,1597,1597,1597,1597,1598,1599,1600,1601,112,0,0,0,
+	1602,1602,1602,1602,1602,1602,1602,1602,1603,1603,1603,1603,1603,1603,1603,1603,
+	1604,1604,1604,1604,1604,1604,1604,1604,1605,1605,1605,1605,1605,1605,1605,1605,
+	1606,1606,1606,1606,1606,1606,1606,1606,1607,1607,1607,1607,1607,1607,1607,1607,
+	1608,1608,1608,1608,1608,1608,1608,1608,1609,1610,1611,1612,91,0,0,0,
+	193,193,193,193,193,193,193,193,248,248,248,248,248,248,248,1613,
+	1614,1614,1614,1614,1614,1614,1614,1614,1615,1615,1615,1615,1615,1615,1615,1616,
+	1617,1617,1617,1617,1617,1617,1617,1618,1619,1619,1619,1619,1619,1619,1619,1619,
+	1620,1620,1620,1620,1620,1620,1620,1620,1621,1622,0,0,0,0,0,0,
+	1623,1623,1623,1623,1623,1623,1623,1623,1624,1624,1624,1624,1624,1624,1624,1624,
+	1625,1625,1625,1625,1625,1625,1625,1625,1626,1626,1626,1626,1626,1626,1626,1626,
+	1627,1627,1627,1627,1627,1627,1627,1627,1628,1628,1628,1628,1628,1628,1628,1628,
+	1629,1629,1629,1629,1629,1629,1629,1629,1630,1631,0,0,0,0,0,0,
+	103,103,103,103,103,103,103,103,1632,1632,1632,1632,1632,1632,1632,1632,
+	1633,1633,1633,1633,1633,1633,1633,1633,1634,1634,1634,1634,1634,1634,1634,1634,
+	1635,1635,1635,1635,1635,1635,1635,1635,1636,1636,1636,1636,1636,1636,1636,1636,
+	1637,1637,1637,1637,1637,1637,1637,1637,1638,1639,0,0,0,0,0,0,
+	100,100,100,100,100,100,100,100,83,83,83,83,83,83,83,83,
+	198,198,198,198,198,198,198,198,1640,1640,1640,1640,1640,1640,1640,1640,
+	1641,1641,1641,1641,1641,1641,1641,1641,209,209,209,209,209,209,209,209,
+	1642,1642,1642,1642,1642,1642,1642,1642,1643,1644,1645,1646,102,0,0,0,
+	122,122,122,122,122,122,122,122,0,0,0,0,0,0,0,0,
+	1577,1577,1577,1577,1577,1577,1577,1577,214,214,214,214,214,214,214,1578,
+	1579,1579,1579,1579,1579,1579,1579,1580,35,35,35,35,35,35,35,35,
+	1581,1581,1581,1581,1581,1581,1581,1581,1582,1583,1584,1585,1586,0,0,0,
+	163,163,163,163,163,163,163,163,1587,1587,1587,1587,1587,1587,1587,1587,
+	1588,1588,1588,1588,1588,1588,1588,1588,23,23,23,23,23,23,23,23,
+	1589,1589,1589,1589,1589,1589,1589,1589,121,121,121,121,121,121,121,121,
+	1590,1590,1590,1590,1590,1590,1590,1590,1591,1592,1593,1594,1595,0,0,0,
+	53,53,53,53,53,53,53,53,7,7,7,7,7,7,7,7,
+	133,133,133,133,133,133,133,133,243,243,243,243,243,243,243,243,
+	1596,1596,1596,1596,1596,1596,1596,1596,59,59,59,59,59,59,59,59,
+	1597,1597,1597,1597,1597,1597,1597,1597,1598,1599,1600,1601,112,0,0,0,
+	1602,1602,1602,1602,1602,1602,1602,1602,1603,1603,1603,1603,1603,1603,1603,1603,
+	1604,1604,1604,1604,1604,1604,1604,1604,1605,1605,1605,1605,1605,1605,1605,1605,
+	1606,1606,1606,1606,1606,1606,1606,1606,1607,1607,1607,1607,1607,1607,1607,1607,
+	1608,1608,1608,1608,1608,1608,1608,1608,1609,1610,1611,1612,91,0,0,0,
+	193,193,193,193,193,193,193,193,248,248,248,248,248,248,248,1613,
+	1614,1614,1614,1614,1614,1614,1614,1614,1615,1615,1615,1615,1615,1615,1615,1616,
+	1617,1617,1617,1617,1617,1617,1617,1618,1619,1619,1619,1619,1619,1619,1619,1619,
+	1620,1620,1620,1620,1620,1620,1620,1620,1621,1622,0,0,0,0,0,0,
+	1623,1623,1623,1623,1623,1623,1623,1623,1624,1624,1624,1624,1624,1624,1624,1624,
+	1625,1625,1625,1625,1625,1625,1625,1625,1626,1626,1626,1626,1626,1626,1626,1626,
+	1627,1627,1627,1627,1627,1627,1627,1627,1628,1628,1628,1628,1628,1628,1628,1628,
+	1629,1629,1629,1629,1629,1629,1629,1629,1630,1631,0,0,0,0,0,0,
+	103,103,103,103,103,103,103,103,1632,1632,1632,1632,1632,1632,1632,1632,
+	1633,1633,1633,1633,1633,1633,1633,1633,1634,1634,1634,1634,1634,1634,1634,1634,
+	1635,1635,1635,1635,1635,1635,1635,1635,1636,1636,1636,1636,1636,1636,1636,1636,
+	1637,1637,1637,1637,1637,1637,1637,1637,1638,1639,0,0,0,0,0,0,
+	100,100,100,100,100,100,100,100,83,83,83,83,83,83,83,83,
+	198,198,198,198,198,198,198,198,1640,1640,1640,1640,1640,1640,1640,1640,
+	1641,1641,1641,1641,1641,1641,1641,1641,209,209,209,209,209,209,209,209,
+	1642,1642,1642,1642,1642,1642,1642,1642,1643,1644,1645,1646,102,0,0,0,
+	122,122,122,122,122,122,122,122,0,0,0,0,0,0,0,0,
+	1577,1577,1577,1577,1577,1577,1577,1577,214,214,214,214,214,214,214,1578,
+	1579,1579,1579,1579,1579,1579,1579,1580,35,35,35,35,35,35,35,35,
+	1581,1581,1581,1581,1581,1581,1581,1581,1582,1583,1584,1585,1586,0,0,0,
+	163,163,163,163,163,163,163,163,1587,1587,1587,1587,1587,1587,1587,1587,
+	1588,1588,1588,1588,1588,1588,1588,1588,23,23,23,23,23,23,23,23,
+	1589,1589,1589,1589,1589,1589,1589,1589,121,121,121,121,121,121,121,121,
+	1590,1590,1590,1590,1590,1590,1590,1590,1591,1592,1593,1594,1595,0,0,0,
+	53,53,53,53,53,53,53,53,7,7,7,7,7,7,7,7,
+	133,133,133,133,133,133,133,133,243,243,243,243,243,243,243,243,
+	1596,1596,1596,1596,1596,1596,1596,1596,59,59,59,59,59,59,59,59,
+	1597,1597,1597,1597,1597,1597,1597,1597,1598,1599,1600,1601,112,0,0,0,
+	1602,1602,1602,1602,1602,1602,1602,1602,1603,1603,1603,1603,1603,1603,1603,1603,
+	1604,1604,1604,1604,1604,1604,1604,1604,1605,1605,1605,1605,1605,1605,1605,1605,
+	1606,1606,1606,1606,1606,1606,1606,1606,1607,1607,1607,1607,1607,1607,1607,1607,
+	1608,1608,1608,1608,1608,1608,1608,1608,1609,1610,1611,1612,91,0,0,0,
+	193,193,193,193,193,193,193,193,248,248,248,248,248,248,248,1613,
+	1614,1614,1614,1614,1614,1614,1614,1614,1615,1615,1615,1615,1615,1615,1615,1616,
+	1617,1617,1617,1617,1617,1617,1617,1618,1619,1619,1619,1619,1619,1619,1619,1619,
+	1620,1620,1620,1620,1620,1620,1620,1620,1621,1622,0,0,0,0,0,0,
+	1623,1623,1623,1623,1623,1623,1623,1623,1624,1624,1624,1624,1624,1624,1624,1624,
+	1625,1625,1625,1625,1625,1625,1625,1625,1626,1626,1626,1626,1626,1626,1626,1626,
+	1627,1627,1627,1627,1627,1627,1627,1627,1628,1628,1628,1628,1628,1628,1628,1628,
+	1629,1629,1629,1629,1629,1629,1629,1629,1630,1631,0,0,0,0,0,0,
+	103,103,103,103,103,103,103,103,1632,1632,1632,1632,1632,1632,1632,1632,
+	1633,1633,1633,1633,1633,1633,1633,1633,1634,1634,1634,1634,1634,1634,1634,1634,
+	1635,1635,1635,1635,1635,1635,1635,1635,1636,1636,1636,1636,1636,1636,1636,1636,
+	1637,1637,1637,1637,1637,1637,1637,1637,1638,1639,0,0,0,0,0,0,
+	100,100,100,100,100,100,100,100,83,83,83,83,83,83,83,83,
+	198,198,198,198,198,198,198,198,1640,1640,1640,1640,1640,1640,1640,1640,
+	1641,1641,1641,1641,1641,1641,1641,1641,209,209,209,209,209,209,209,209,
+	1642,1642,1642,1642,1642,1642,1642,1642,1643,1644,1645,1646,102,0,0,0,
+	122,122,122,122,122,122,122,122,0,0,0,0,0,0,0,0,
+	1577,1577,1577,1577,1577,1577,1577,1577,214,214,214,214,214,214,214,1578,
+	1579,1579,1579,1579,1579,1579,1579,1580,35,35,35,35,35,35,35,35,
+	1581,1581,1581,1581,1581,1581,1581,1581,1582,1583,1584,1585,1586,0,0,0,
+	163,163,163,163,163,163,163,163,1587,1587,1587,1587,1587,1587,1587,1587,
+	1588,1588,1588,1588,1588,1588,1588,1588,23,23,23,23,23,23,23,23,
+	1589,1589,1589,1589,1589,1589,1589,1589,121,121,121,121,121,121,121,121,
+	1590,1590,1590,1590,1590,1590,1590,1590,1591,1592,1593,1594,1595,0,0,0,
+	53,53,53,53,53,53,53,53,7,7,7,7,7,7,7,7,
+	133,133,133,133,133,133,133,133,243,243,243,243,243,243,243,243,
+	1596,1596,1596,1596,1596,1596,1596,1596,59,59,59,59,59,59,59,59,
+	1597,1597,1597,1597,1597,1597,1597,1597,1598,1599,1600,1601,112,0,0,0,
+	1602,1602,1602,1602,1602,1602,1602,1602,1603,1603,1603,1603,1603,1603,1603,1603,
+	1604,1604,1604,1604,1604,1604,1604,1604,1605,1605,1605,1605,1605,1605,1605,1605,
+	1606,1606,1606,1606,1606,1606,1606,1606,1607,1607,1607,1607,1607,1607,1607,1607,
+	1608,1608,1608,1608,1608,1608,1608,1608,1609,1610,1611,1612,91,0,0,0,
+	193,193,193,193,193,193,193,193,248,248,248,248,248,248,248,1613,
+	1614,1614,1614,1614,1614,1614,1614,1614,1615,1615,1615,1615,1615,1615,1615,1616,
+	1617,1617,1617,1617,1617,1617,1617,1618,1619,1619,1619,1619,1619,1619,1619,1619,
+	1620,1620,1620,1620,1620,1620,1620,1620,1621,1622,0,0,0,0,0,0,
+	1623,1623,1623,1623,1623,1623,1623,1623,1624,1624,1624,1624,1624,1624,1624,1624,
+	1625,1625,1625,1625,1625,1625,1625,1625,1626,1626,1626,1626,1626,1626,1626,1626,
+	1627,1627,1627,1627,1627,1627,1627,1627,1628,1628,1628,1628,1628,1628,1628,1628,
+	1629,1629,1629,1629,1629,1629,1629,1629,1630,1631,0,0,0,0,0,0,
+	103,103,103,103,103,103,103,103,1632,1632,1632,1632,1632,1632,1632,1632,
+	1633,1633,1633,1633,1633,1633,1633,1633,1634,1634,1634,1634,1634,1634,1634,1634,
+	1635,1635,1635,1635,1635,1635,1635,1635,1636,1636,1636,1636,1636,1636,1636,1636,
+	1637,1637,1637,1637,1637,1637,1637,1637,1638,1639,0,0,0,0,0,0,
+	100,100,100,100,100,100,100,100,83,83,83,83,83,83,83,83,
+	198,198,198,198,198,198,198,198,1640,1640,1640,1640,1640,1640,1640,1640,
+	1641,1641,1641,1641,1641,1641,1641,1641,209,209,209,209,209,209,209,209,
+	1642,1642,1642,1642,1642,1642,1642,1642,1643,1644,1645,1646,102,0,0,0,
+	122,122,122,122,122,122,122,122,0,0,0,0,0,0,0,0,
+	1577,1577,1577,1577,1577,1577,1577,1577,214,214,214,214,214,214,214,1578,
+	1579,1579,1579,1579,1579,1579,1579,1580,35,35,35,35,35,35,35,35,
+	1581,1581,1581,1581,1581,1581,1581,1581,1582,1583,1584,1585,1586,0,0,0,
+	163,163,163,163,163,163,163,163,1587,1587,1587,1587,1587,1587,1587,1587,
+	1588,1588,1588,1588,1588,1588,1588,1588,23,23,23,23,23,23,23,23,
+	1589,1589,1589,1589,1589,1589,1589,1589,121,121,121,121,121,121,121,121,
+	1590,1590,1590,1590,1590,1590,1590,1590,1591,1592,1593,1594,1595,0,0,0,
+	53,53,53,53,53,53,53,53,7,7,7,7,7,7,7,7,
+	133,133,133,133,133,133,133,133,243,243,243,243,243,243,243,243,
+	1596,1596,1596,1596,1596,1596,1596,1596,59,59,59,59,59,59,59,59,
+	1597,1597,1597,1597,1597,1597,1597,1597,1598,1599,1600,1601,112,0,0,0,
+	1602,1602,1602,1602,1602,1602,1602,1602,1603,1603,1603,1603,1603,1603,1603,1603,
+	1604,1604,1604,1604,1604,1604,1604,1604,1605,1605,1605,1605,1605,1605,1605,1605,
+	1606,1606,1606,1606,1606,1606,1606,1606,1607,1607,1607,1607,1607,1607,1607,1607,
+	1608,1608,1608,1608,1608,1608,1608,1608,1609,1610,1611,1612,91,0,0,0,
+	193,193,193,193,193,193,193,193,248,248,248,248,248,248,248,1613,
+	1614,1614,1614,1614,1614,1614,1614,1614,1615,1615,1615,1615,1615,1615,1615,1616,
+	1617,1617,1617,1617,1617,1617,1617,1618,1619,1619,1619,1619,1619,1619,1619,1619,
+	1620,1620,1620,1620,1620,1620,1620,1620,1621,1622,0,0,0,0,0,0,
+	1623,1623,1623,1623,1623,1623,1623,1623,1624,1624,1624,1624,1624,1624,1624,1624,
+	1625,1625,1625,1625,1625,1625,1625,1625,1626,1626,1626,1626,1626,1626,1626,1626,
+	1627,1627,1627,1627,1627,1627,1627,1627,1628,1628,1628,1628,1628,1628,1628,1628,
+	1629,1629,1629,1629,1629,1629,1629,1629,1630,1631,0,0,0,0,0,0,
+	103,103,103,103,103,103,103,103,1632,1632,1632,1632,1632,1632,1632,1632,
+	1633,1633,1633,1633,1633,1633,1633,1633,1634,1634,1634,1634,1634,1634,1634,1634,
+	1635,1635,1635,1635,1635,1635,1635,1635,1636,1636,1636,1636,1636,1636,1636,1636,
+	1637,1637,1637,1637,1637,1637,1637,1637,1638,1639,0,0,0,0,0,0,
+	100,100,100,100,100,100,100,100,83,83,83,83,83,83,83,83,
+	198,198,198,198,198,198,198,198,1640,1640,1640,1640,1640,1640,1640,1640,
+	1641,1641,1641,1641,1641,1641,1641,1641,209,209,209,209,209,209,209,209,
+	1642,1642,1642,1642,1642,1642,1642,1642,1643,1644,1645,1646,102,0,0,0,
+	122,122,122,122,122,122,122,122,0,0,0,0,0,0,0,0,
+	1577,1577,1577,1577,1577,1577,1577,1577,214,214,214,214,214,214,214,1578,
+	1579,1579,1579,1579,1579,1579,1579,1580,35,35,35,35,35,35,35,35,
+	1581,1581,1581,1581,1581,1581,1581,1581,1582,1583,1584,1585,1586,0,0,0,
+	163,163,163,163,163,163,163,163,1587,1587,1587,1587,1587,1587,1587,1587,
+	1588,1588,1588,1588,1588,1588,1588,1588,23,23,23,23,23,23,23,23,
+	1589,1589,1589,1589,1589,1589,1589,1589,121,121,121,121,121,121,121,121,
+	1590,1590,1590,1590,1590,1590,1590,1590,1591,1592,1593,1594,1595,0,0,0,
+	53,53,53,53,53,53,53,53,7,7,7,7,7,7,7,7,
+	133,133,133,133,133,133,133,133,243,243,243,243,243,243,243,243,
+	1596,1596,1596,1596,1596,1596,1596,1596,59,59,59,59,59,59,59,59,
+	1597,1597,1597,1597,1597,1597,1597,1597,1598,1599,1600,1601,112,0,0,0,
+	1602,1602,1602,1602,1602,1602,1602,1602,1603,1603,1603,1603,1603,1603,1603,1603,
+	1604,1604,1604,1604,1604,1604,1604,1604,1605,1605,1605,1605,1605,1605,1605,1605,
+	1606,1606,1606,1606,1606,1606,1606,1606,1607,1607,1607,1607,1607,1607,1607,1607,
+	1608,1608,1608,1608,1608,1608,1608,1608,1609,1610,1611,1612,91,0,0,0,
+	193,193,193,193,193,193,193,193,248,248,248,248,248,248,248,1613,
+	1614,1614,1614,1614,1614,1614,1614,1614,1615,1615,1615,1615,1615,1615,1615,1616,
+	1617,1617,1617,1617,1617,1617,1617,1618,1619,1619,1619,1619,1619,1619,1619,1619,
+	1620,1620,1620,1620,1620,1620,1620,1620,1621,1622,0,0,0,0,0,0,
+	1623,1623,1623,1623,1623,1623,1623,1623,1624,1624,1624,1624,1624,1624,1624,1624,
+	1625,1625,1625,1625,1625,1625,1625,1625,1626,1626,1626,1626,1626,1626,1626,1626,
+	1627,1627,1627,1627,1627,1627,1627,1627,1628,1628,1628,1628,1628,1628,1628,1628,
+	1629,1629,1629,1629,1629,1629,1629,1629,1630,1631,0,0,0,0,0,0,
+	103,103,103,103,103,103,103,103,1632,1632,1632,1632,1632,1632,1632,1632,
+	1633,1633,1633,1633,1633,1633,1633,1633,1634,1634,1634,1634,1634,1634,1634,1634,
+	1635,1635,1635,1635,1635,1635,1635,1635,1636,1636,1636,1636,1636,1636,1636,1636,
+	1637,1637,1637,1637,1637,1637,1637,1637,1638,1639,0,0,0,0,0,0,
+	100,100,100,100,100,100,100,100,83,83,83,83,83,83,83,83,
+	198,198,198,198,198,198,198,198,1640,1640,1640,1640,1640,1640,1640,1640,
+	1641,1641,1641,1641,1641,1641,1641,1641,209,209,209,209,209,209,209,209,
+	1642,1642,1642,1642,1642,1642,1642,1642,1643,1644,1645,1646,102,0,0,0,
+	122,122,122,122,122,122,122,122,0,0,0,0,0,0,0,0,
+	1577,1577,1577,1577,1577,1577,1577,1577,214,214,214,214,214,214,214,1578,
+	1579,1579,1579,1579,1579,1579,1579,1580,35,35,35,35,35,35,35,35,
+	1581,1581,1581,1581,1581,1581,1581,1581,1582,1583,1584,1585,1586,0,0,0,
+	163,163,163,163,163,163,163,163,1587,1587,1587,1587,1587,1587,1587,1587,
+	1588,1588,1588,1588,1588,1588,1588,1588,23,23,23,23,23,23,23,23,
+	1589,1589,1589,1589,1589,1589,1589,1589,121,121,121,121,121,121,121,121,
+	1590,1590,1590,1590,1590,1590,1590,1590,1591,1592,1593,1594,1595,0,0,0,
+	53,53,53,53,53,53,53,53,7,7,7,7,7,7,7,7,
+	133,133,133,133,133,133,133,133,243,243,243,243,243,243,243,243,
+	1596,1596,1596,1596,1596,1596,1596,1596,59,59,59,59,59,59,59,59,
+	1597,1597,1597,1597,1597,1597,1597,1597,1598,1599,1600,1601,112,0,0,0,
+	1602,1602,1602,1602,1602,1602,1602,1602,1603,1603,1603,1603,1603,1603,1603,1603,
+	1604,1604,1604,1604,1604,1604,1604,1604,1605,1605,1605,1605,1605,1605,1605,1605,
+	1606,1606,1606,1606,1606,1606,1606,1606,1607,1607,1607,1607,1607,1607,1607,1607,
+	1608,1608,1608,1608,1608,1608,1608,1608,1609,1610,1611,1612,91,0,0,0,
+	193,193,193,193,193,193,193,193,248,248,248,248,248,248,248,1613,
+	1614,1614,1614,1614,1614,1614,1614,1614,1615,1615,1615,1615,1615,1615,1615,1616,
+	1617,1617,1617,1617,1617,1617,1617,1618,1619,1619,1619,1619,1619,1619,1619,1619,
+	1620,1620,1620,1620,1620,1620,1620,1620,1621,1622,0,0,0,0,0,0,
+	1623,1623,1623,1623,1623,1623,1623,1623,1624,1624,1624,1624,1624,1624,1624,1624,
+	1625,1625,1625,1625,1625,1625,1625,1625,1626,1626,1626,1626,1626,1626,1626,1626,
+	1627,1627,1627,1627,1627,1627,1627,1627,1628,1628,1628,1628,1628,1628,1628,1628,
+	1629,1629,1629,1629,1629,1629,1629,1629,1630,1631,0,0,0,0,0,0,
+	103,103,103,103,103,103,103,103,1632,1632,1632,1632,1632,1632,1632,1632,
+	1633,1633,1633,1633,1633,1633,1633,1633,1634,1634,1634,1634,1634,1634,1634,1634,
+	1635,1635,1635,1635,1635,1635,1635,1635,1636,1636,1636,1636,1636,1636,1636,1636,
+	1637,1637,1637,1637,1637,1637,1637,1637,1638,1639,0,0,0,0,0,0,
+	100,100,100,100,100,100,100,100,83,83,83,83,83,83,83,83,
+	198,198,198,198,198,198,198,198,1640,1640,1640,1640,1640,1640,1640,1640,
+	1641,1641,1641,1641,1641,1641,1641,1641,209,209,209,209,209,209,209,209,
+	1642,1642,1642,1642,1642,1642,1642,1642,1643,1644,1645,1646,102,0,0,0,
+	122,122,122,122,122,122,122,122,0,0,0,0,0,0,0,0,
+	1577,1577,1577,1577,1577,1577,1577,1577,214,214,214,214,214,214,214,1578,
+	1579,1579,1579,1579,1579,1579,1579,1580,35,35,35,35,35,35,35,35,
+	1581,1581,1581,1581,1581,1581,1581,1581,1582,1583,1584,1585,1586,0,0,0,
+	163,163,163,163,163,163,163,163,1587,1587,1587,1587,1587,1587,1587,1587,
+	1588,1588,1588,1588,1588,1588,1588,1588,23,23,23,23,23,23,23,23,
+	1589,1589,1589,1589,1589,1589,1589,1589,121,121,121,121,121,121,121,121,
+	1590,1590,1590,1590,1590,1590,1590,1590,1591,1592,1593,1594,1595,0,0,0,
+	53,53,53,53,53,53,53,53,7,7,7,7,7,7,7,7,
+	133,133,133,133,133,133,133,133,243,243,243,243,243,243,243,243,
+	1596,1596,1596,1596,1596,1596,1596,1596,59,59,59,59,59,59,59,59,
+	1597,1597,1597,1597,1597,1597,1597,1597,1598,1599,1600,1601,112,0,0,0,
+	1602,1602,1602,1602,1602,1602,1602,1602,1603,1603,1603,1603,1603,1603,1603,1603,
+	1604,1604,1604,1604,1604,1604,1604,1604,1605,1605,1605,1605,1605,1605,1605,1605,
+	1606,1606,1606,1606,1606,1606,1606,1606,1607,1607,1607,1607,1607,1607,1607,1607,
+	1608,1608,1608,1608,1608,1608,1608,1608,1609,1610,1611,1612,91,0,0,0,
+	193,193,193,193,193,193,193,193,1647,1647,1647,1647,1647,1647,1647,1648,
+	1614,1614,1614,1614,1614,1614,1614,1614,1615,1615,1615,1615,1615,1615,1615,1616,
+	1617,1617,1617,1617,1617,1617,1617,1618,1619,1619,1619,1619,1619,1619,1619,1619,
+	1620,1620,1620,1620,1620,1620,1620,1620,1621,1622,0,0,0,0,0,0,
+	1623,1623,1623,1623,1623,1623,1623,1623,1624,1624,1624,1624,1624,1624,1624,1624,
+	1625,1625,1625,1625,1625,1625,1625,1625,1626,1626,1626,1626,1626,1626,1626,1626,
+	1627,1627,1627,1627,1627,1627,1627,1627,1628,1628,1628,1628,1628,1628,1628,1628,
+	1629,1629,1629,1629,1629,1629,1629,1629,1630,1631,0,0,0,0,0,0,
+	103,103,103,103,103,103,103,103,1632,1632,1632,1632,1632,1632,1632,1632,
+	1633,1633,1633,1633,1633,1633,1633,1633,1634,1634,1634,1634,1634,1634,1634,1634,
+	1635,1635,1635,1635,1635,1635,1635,1635,1636,1636,1636,1636,1636,1636,1636,1636,
+	1637,1637,1637,1637,1637,1637,1637,1637,1638,1639,0,0,0,0,0,0,
+	100,100,100,100,100,100,100,100,83,83,83,83,83,83,83,83,
+	198,198,198,198,198,198,198,198,1640,1640,1640,1640,1640,1640,1640,1640,
+	1641,1641,1641,1641,1641,1641,1641,1641,209,209,209,209,209,209,209,209,
+	1642,1642,1642,1642,1642,1642,1642,1642,1643,1644,1645,1646,102,0,0,0,
+	1649,1649,1649,1649,1649,1649,1649,1649,0,0,0,0,0,0,0,0,
+	1650,1650,1650,1650,1650,1650,1650,1650,1651,1651,1651,1651,1651,1651,1651,1652,
+	1653,1653,1653,1653,1653,1653,1653,1654,145,145,145,145,145,145,145,145,
 	1655,1655,1655,1655,1655,1655,1655,1655,1656,1657,1658,1659,1660,0,0,0,
-	1661,1661,1661,1661,1661,1661,1661,1661,1662,1662,1662,1662,1662,1662,1662,1663,
-	1664,1664,1664,1664,1664,1664,1664,1664,1665,1665,1665,1665,1665,1665,1665,1666,
-	1667,1667,1667,1667,1667,1667,1667,1668,1669,1669,1669,1669,1669,1669,1669,1669,
-	1670,1670,1670,1670,1670,1670,1670,1670,1671,1672,0,0,0,0,0,0,
-	1673,1673,1673,1673,1673,1673,1673,1673,1674,1674,1674,1674,1674,1674,1674,1674,
-	1675,1675,1675,1675,1675,1675,1675,1675,1676,1676,1676,1676,1676,1676,1676,1676,
-	1677,1677,1677,1677,1677,1677,1677,1677,1678,1678,1678,1678,1678,1678,1678,1678,
-	1679,1679,1679,1679,1679,1679,1679,1679,1680,1681,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,1682,1682,1682,1682,1682,1682,1682,1682,
-	1683,1683,1683,1683,1683,1683,1683,1683,1684,1684,1684,1684,1684,1684,1684,1684,
-	1685,1685,1685,1685,1685,1685,1685,1685,1686,1686,1686,1686,1686,1686,1686,1686,
-	1687,1687,1687,1687,1687,1687,1687,1687,1688,1689,0,0,0,0,0,0,
-	1690,1690,1690,1690,1690,1690,1690,1690,0,0,0,0,0,0,0,0,
-	1691,1691,1691,1691,1691,1691,1691,1691,1692,1692,1692,1692,1692,1692,1692,1692,
-	1693,1693,1693,1693,1693,1693,1693,1693,1694,1694,1694,1694,1694,1694,1694,1694,
-	1695,1695,1695,1695,1695,1695,1695,1695,1696,1697,1698,1699,1700,0,0,0,
-	1615,1615,1615,1615,1615,1615,1615,1615,0,0,0,0,0,0,0,0,
-	1616,1616,1616,1616,1616,1616,1616,1616,1617,1617,1617,1617,1617,1617,1617,1618,
-	1619,1619,1619,1619,1619,1619,1619,1620,1621,1621,1621,1621,1621,1621,1621,1621,
-	1622,1622,1622,1622,1622,1622,1622,1622,1623,1624,1625,1626,1627,0,0,0,
-	1628,1628,1628,1628,1628,1628,1628,1628,0,0,0,0,0,0,0,0,
-	1629,1629,1629,1629,1629,1629,1629,1629,1630,1630,1630,1630,1630,1630,1630,1630,
-	1631,1631,1631,1631,1631,1631,1631,1631,1632,1632,1632,1632,1632,1632,1632,1632,
-	1633,1633,1633,1633,1633,1633,1633,1633,1634,1635,1636,1637,1638,0,0,0,
-	1639,1639,1639,1639,1639,1639,1639,1639,0,0,0,0,0,0,0,0,
-	1640,1640,1640,1640,1640,1640,1640,1640,1641,1641,1641,1641,1641,1641,1641,1641,
-	1642,1642,1642,1642,1642,1642,1642,1642,1643,1643,1643,1643,1643,1643,1643,1643,
-	1644,1644,1644,1644,1644,1644,1644,1644,1645,1646,1647,1648,1649,0,0,0,
-	1650,1650,1650,1650,1650,1650,1650,1650,0,0,0,0,0,0,0,0,
-	1651,1651,1651,1651,1651,1651,1651,1651,1652,1652,1652,1652,1652,1652,1652,1652,
-	1653,1653,1653,1653,1653,1653,1653,1653,1654,1654,1654,1654,1654,1654,1654,1654,
+	177,177,177,177,177,177,177,177,0,0,0,0,0,0,0,0,
+	1661,1661,1661,1661,1661,1661,1661,1661,1662,1662,1662,1662,1662,1662,1662,1662,
+	1663,1663,1663,1663,1663,1663,1663,1663,1664,1664,1664,1664,1664,1664,1664,1664,
+	1665,1665,1665,1665,1665,1665,1665,1665,1666,1667,1668,1669,1670,0,0,0,
+	94,94,94,94,94,94,94,94,0,0,0,0,0,0,0,0,
+	1671,1671,1671,1671,1671,1671,1671,1671,1672,1672,1672,1672,1672,1672,1672,1672,
+	1673,1673,1673,1673,1673,1673,1673,1673,244,244,244,244,244,244,244,244,
+	1674,1674,1674,1674,1674,1674,1674,1674,1675,1676,1677,1678,1679,0,0,0,
+	1680,1680,1680,1680,1680,1680,1680,1680,0,0,0,0,0,0,0,0,
+	1681,1681,1681,1681,1681,1681,1681,1681,1682,1682,1682,1682,1682,1682,1682,1682,
+	1683,1683,1683,1683,1683,1683,1683,1683,167,167,167,167,167,167,167,167,
+	1684,1684,1684,1684,1684,1684,1684,1684,1685,1686,1687,1688,156,0,0,0,
+	1689,1689,1689,1689,1689,1689,1689,1689,1690,1690,1690,1690,1690,1690,1690,1691,
+	1692,1692,1692,1692,1692,1692,1692,1692,1693,1693,1693,1693,1693,1693,1693,1694,
+	1695,1695,1695,1695,1695,1695,1695,1696,1697,1697,1697,1697,1697,1697,1697,1697,
+	1698,1698,1698,1698,1698,1698,1698,1698,1699,1700,0,0,0,0,0,0,
+	1701,1701,1701,1701,1701,1701,1701,1701,1702,1702,1702,1702,1702,1702,1702,1702,
+	1703,1703,1703,1703,1703,1703,1703,1703,1704,1704,1704,1704,1704,1704,1704,1704,
+	1705,1705,1705,1705,1705,1705,1705,1705,1706,1706,1706,1706,1706,1706,1706,1706,
+	1707,1707,1707,1707,1707,1707,1707,1707,1708,1709,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,1710,1710,1710,1710,1710,1710,1710,1710,
+	1711,1711,1711,1711,1711,1711,1711,1711,1712,1712,1712,1712,1712,1712,1712,1712,
+	1713,1713,1713,1713,1713,1713,1713,1713,1714,1714,1714,1714,1714,1714,1714,1714,
+	1715,1715,1715,1715,1715,1715,1715,1715,1716,1717,0,0,0,0,0,0,
+	1718,1718,1718,1718,1718,1718,1718,1718,0,0,0,0,0,0,0,0,
+	1719,1719,1719,1719,1719,1719,1719,1719,1720,1720,1720,1720,1720,1720,1720,1720,
+	1721,1721,1721,1721,1721,1721,1721,1721,1722,1722,1722,1722,1722,1722,1722,1722,
+	1723,1723,1723,1723,1723,1723,1723,1723,1724,1725,1726,1727,1728,0,0,0,
+	1649,1649,1649,1649,1649,1649,1649,1649,0,0,0,0,0,0,0,0,
+	1650,1650,1650,1650,1650,1650,1650,1650,1651,1651,1651,1651,1651,1651,1651,1652,
+	1653,1653,1653,1653,1653,1653,1653,1654,145,145,145,145,145,145,145,145,
 	1655,1655,1655,1655,1655,1655,1655,1655,1656,1657,1658,1659,1660,0,0,0,
-	1661,1661,1661,1661,1661,1661,1661,1661,1662,1662,1662,1662,1662,1662,1662,1663,
-	1664,1664,1664,1664,1664,1664,1664,1664,1665,1665,1665,1665,1665,1665,1665,1666,
-	1667,1667,1667,1667,1667,1667,1667,1668,1669,1669,1669,1669,1669,1669,1669,1669,
-	1670,1670,1670,1670,1670,1670,1670,1670,1671,1672,0,0,0,0,0,0,
-	1673,1673,1673,1673,1673,1673,1673,1673,1674,1674,1674,1674,1674,1674,1674,1674,
-	1675,1675,1675,1675,1675,1675,1675,1675,1676,1676,1676,1676,1676,1676,1676,1676,
-	1677,1677,1677,1677,1677,1677,1677,1677,1678,1678,1678,1678,1678,1678,1678,1678,
-	1679,1679,1679,1679,1679,1679,1679,1679,1680,1681,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,1682,1682,1682,1682,1682,1682,1682,1682,
-	1683,1683,1683,1683,1683,1683,1683,1683,1684,1684,1684,1684,1684,1684,1684,1684,
-	1685,1685,1685,1685,1685,1685,1685,1685,1686,1686,1686,1686,1686,1686,1686,1686,
-	1687,1687,1687,1687,1687,1687,1687,1687,1688,1689,0,0,0,0,0,0,
-	1690,1690,1690,1690,1690,1690,1690,1690,0,0,0,0,0,0,0,0,
-	1691,1691,1691,1691,1691,1691,1691,1691,1692,1692,1692,1692,1692,1692,1692,1692,
-	1693,1693,1693,1693,1693,1693,1693,1693,1694,1694,1694,1694,1694,1694,1694,1694,
-	1695,1695,1695,1695,1695,1695,1695,1695,1696,1697,1698,1699,1700,0,0,0,
-	1615,1615,1615,1615,1615,1615,1615,1615,0,0,0,0,0,0,0,0,
-	1616,1616,1616,1616,1616,1616,1616,1616,1617,1617,1617,1617,1617,1617,1617,1618,
-	1619,1619,1619,1619,1619,1619,1619,1620,1621,1621,1621,1621,1621,1621,1621,1621,
-	1622,1622,1622,1622,1622,1622,1622,1622,1623,1624,1625,1626,1627,0,0,0,
-	1628,1628,1628,1628,1628,1628,1628,1628,0,0,0,0,0,0,0,0,
-	1629,1629,1629,1629,1629,1629,1629,1629,1630,1630,1630,1630,1630,1630,1630,1630,
-	1631,1631,1631,1631,1631,1631,1631,1631,1632,1632,1632,1632,1632,1632,1632,1632,
-	1633,1633,1633,1633,1633,1633,1633,1633,1634,1635,1636,1637,1638,0,0,0,
-	1639,1639,1639,1639,1639,1639,1639,1639,0,0,0,0,0,0,0,0,
-	1640,1640,1640,1640,1640,1640,1640,1640,1641,1641,1641,1641,1641,1641,1641,1641,
-	1642,1642,1642,1642,1642,1642,1642,1642,1643,1643,1643,1643,1643,1643,1643,1643,
-	1644,1644,1644,1644,1644,1644,1644,1644,1645,1646,1647,1648,1649,0,0,0,
-	1650,1650,1650,1650,1650,1650,1650,1650,0,0,0,0,0,0,0,0,
-	1651,1651,1651,1651,1651,1651,1651,1651,1652,1652,1652,1652,1652,1652,1652,1652,
-	1653,1653,1653,1653,1653,1653,1653,1653,1654,1654,1654,1654,1654,1654,1654,1654,
+	177,177,177,177,177,177,177,177,0,0,0,0,0,0,0,0,
+	1661,1661,1661,1661,1661,1661,1661,1661,1662,1662,1662,1662,1662,1662,1662,1662,
+	1663,1663,1663,1663,1663,1663,1663,1663,1664,1664,1664,1664,1664,1664,1664,1664,
+	1665,1665,1665,1665,1665,1665,1665,1665,1666,1667,1668,1669,1670,0,0,0,
+	94,94,94,94,94,94,94,94,0,0,0,0,0,0,0,0,
+	1671,1671,1671,1671,1671,1671,1671,1671,1672,1672,1672,1672,1672,1672,1672,1672,
+	1673,1673,1673,1673,1673,1673,1673,1673,244,244,244,244,244,244,244,244,
+	1674,1674,1674,1674,1674,1674,1674,1674,1675,1676,1677,1678,1679,0,0,0,
+	1680,1680,1680,1680,1680,1680,1680,1680,0,0,0,0,0,0,0,0,
+	1681,1681,1681,1681,1681,1681,1681,1681,1682,1682,1682,1682,1682,1682,1682,1682,
+	1683,1683,1683,1683,1683,1683,1683,1683,167,167,167,167,167,167,167,167,
+	1684,1684,1684,1684,1684,1684,1684,1684,1685,1686,1687,1688,156,0,0,0,
+	1689,1689,1689,1689,1689,1689,1689,1689,1690,1690,1690,1690,1690,1690,1690,1691,
+	1692,1692,1692,1692,1692,1692,1692,1692,1693,1693,1693,1693,1693,1693,1693,1694,
+	1695,1695,1695,1695,1695,1695,1695,1696,1697,1697,1697,1697,1697,1697,1697,1697,
+	1698,1698,1698,1698,1698,1698,1698,1698,1699,1700,0,0,0,0,0,0,
+	1701,1701,1701,1701,1701,1701,1701,1701,1702,1702,1702,1702,1702,1702,1702,1702,
+	1703,1703,1703,1703,1703,1703,1703,1703,1704,1704,1704,1704,1704,1704,1704,1704,
+	1705,1705,1705,1705,1705,1705,1705,1705,1706,1706,1706,1706,1706,1706,1706,1706,
+	1707,1707,1707,1707,1707,1707,1707,1707,1708,1709,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,1710,1710,1710,1710,1710,1710,1710,1710,
+	1711,1711,1711,1711,1711,1711,1711,1711,1712,1712,1712,1712,1712,1712,1712,1712,
+	1713,1713,1713,1713,1713,1713,1713,1713,1714,1714,1714,1714,1714,1714,1714,1714,
+	1715,1715,1715,1715,1715,1715,1715,1715,1716,1717,0,0,0,0,0,0,
+	1718,1718,1718,1718,1718,1718,1718,1718,0,0,0,0,0,0,0,0,
+	1719,1719,1719,1719,1719,1719,1719,1719,1720,1720,1720,1720,1720,1720,1720,1720,
+	1721,1721,1721,1721,1721,1721,1721,1721,1722,1722,1722,1722,1722,1722,1722,1722,
+	1723,1723,1723,1723,1723,1723,1723,1723,1724,1725,1726,1727,1728,0,0,0,
+	1649,1649,1649,1649,1649,1649,1649,1649,0,0,0,0,0,0,0,0,
+	1650,1650,1650,1650,1650,1650,1650,1650,1651,1651,1651,1651,1651,1651,1651,1652,
+	1653,1653,1653,1653,1653,1653,1653,1654,145,145,145,145,145,145,145,145,
 	1655,1655,1655,1655,1655,1655,1655,1655,1656,1657,1658,1659,1660,0,0,0,
-	1661,1661,1661,1661,1661,1661,1661,1661,1662,1662,1662,1662,1662,1662,1662,1663,
-	1664,1664,1664,1664,1664,1664,1664,1664,1665,1665,1665,1665,1665,1665,1665,1666,
-	1667,1667,1667,1667,1667,1667,1667,1668,1669,1669,1669,1669,1669,1669,1669,1669,
-	1670,1670,1670,1670,1670,1670,1670,1670,1671,1672,0,0,0,0,0,0,
-	1673,1673,1673,1673,1673,1673,1673,1673,1674,1674,1674,1674,1674,1674,1674,1674,
-	1675,1675,1675,1675,1675,1675,1675,1675,1676,1676,1676,1676,1676,1676,1676,1676,
-	1677,1677,1677,1677,1677,1677,1677,1677,1678,1678,1678,1678,1678,1678,1678,1678,
-	1679,1679,1679,1679,1679,1679,1679,1679,1680,1681,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,1682,1682,1682,1682,1682,1682,1682,1682,
-	1683,1683,1683,1683,1683,1683,1683,1683,1684,1684,1684,1684,1684,1684,1684,1684,
-	1685,1685,1685,1685,1685,1685,1685,1685,1686,1686,1686,1686,1686,1686,1686,1686,
-	1687,1687,1687,1687,1687,1687,1687,1687,1688,1689,0,0,0,0,0,0,
-	1690,1690,1690,1690,1690,1690,1690,1690,0,0,0,0,0,0,0,0,
-	1691,1691,1691,1691,1691,1691,1691,1691,1692,1692,1692,1692,1692,1692,1692,1692,
-	1693,1693,1693,1693,1693,1693,1693,1693,1694,1694,1694,1694,1694,1694,1694,1694,
-	1695,1695,1695,1695,1695,1695,1695,1695,1696,1697,1698,1699,1700,0,0,0,
-	1615,1615,1615,1615,1615,1615,1615,1615,0,0,0,0,0,0,0,0,
-	1616,1616,1616,1616,1616,1616,1616,1616,1617,1617,1617,1617,1617,1617,1617,1618,
-	1619,1619,1619,1619,1619,1619,1619,1620,1621,1621,1621,1621,1621,1621,1621,1621,
-	1622,1622,1622,1622,1622,1622,1622,1622,1623,1624,1625,1626,1627,0,0,0,
-	1628,1628,1628,1628,1628,1628,1628,1628,0,0,0,0,0,0,0,0,
-	1629,1629,1629,1629,1629,1629,1629,1629,1630,1630,1630,1630,1630,1630,1630,1630,
-	1631,1631,1631,1631,1631,1631,1631,1631,1632,1632,1632,1632,1632,1632,1632,1632,
-	1633,1633,1633,1633,1633,1633,1633,1633,1634,1635,1636,1637,1638,0,0,0,
-	1639,1639,1639,1639,1639,1639,1639,1639,0,0,0,0,0,0,0,0,
-	1640,1640,1640,1640,1640,1640,1640,1640,1641,1641,1641,1641,1641,1641,1641,1641,
-	1642,1642,1642,1642,1642,1642,1642,1642,1643,1643,1643,1643,1643,1643,1643,1643,
-	1644,1644,1644,1644,1644,1644,1644,1644,1645,1646,1647,1648,1649,0,0,0,
-	1650,1650,1650,1650,1650,1650,1650,1650,0,0,0,0,0,0,0,0,
-	1651,1651,1651,1651,1651,1651,1651,1651,1652,1652,1652,1652,1652,1652,1652,1652,
-	1653,1653,1653,1653,1653,1653,1653,1653,1654,1654,1654,1654,1654,1654,1654,1654,
+	177,177,177,177,177,177,177,177,0,0,0,0,0,0,0,0,
+	1661,1661,1661,1661,1661,1661,1661,1661,1662,1662,1662,1662,1662,1662,1662,1662,
+	1663,1663,1663,1663,1663,1663,1663,1663,1664,1664,1664,1664,1664,1664,1664,1664,
+	1665,1665,1665,1665,1665,1665,1665,1665,1666,1667,1668,1669,1670,0,0,0,
+	94,94,94,94,94,94,94,94,0,0,0,0,0,0,0,0,
+	1671,1671,1671,1671,1671,1671,1671,1671,1672,1672,1672,1672,1672,1672,1672,1672,
+	1673,1673,1673,1673,1673,1673,1673,1673,244,244,244,244,244,244,244,244,
+	1674,1674,1674,1674,1674,1674,1674,1674,1675,1676,1677,1678,1679,0,0,0,
+	1680,1680,1680,1680,1680,1680,1680,1680,0,0,0,0,0,0,0,0,
+	1681,1681,1681,1681,1681,1681,1681,1681,1682,1682,1682,1682,1682,1682,1682,1682,
+	1683,1683,1683,1683,1683,1683,1683,1683,167,167,167,167,167,167,167,167,
+	1684,1684,1684,1684,1684,1684,1684,1684,1685,1686,1687,1688,156,0,0,0,
+	1689,1689,1689,1689,1689,1689,1689,1689,1690,1690,1690,1690,1690,1690,1690,1691,
+	1692,1692,1692,1692,1692,1692,1692,1692,1693,1693,1693,1693,1693,1693,1693,1694,
+	1695,1695,1695,1695,1695,1695,1695,1696,1697,1697,1697,1697,1697,1697,1697,1697,
+	1698,1698,1698,1698,1698,1698,1698,1698,1699,1700,0,0,0,0,0,0,
+	1701,1701,1701,1701,1701,1701,1701,1701,1702,1702,1702,1702,1702,1702,1702,1702,
+	1703,1703,1703,1703,1703,1703,1703,1703,1704,1704,1704,1704,1704,1704,1704,1704,
+	1705,1705,1705,1705,1705,1705,1705,1705,1706,1706,1706,1706,1706,1706,1706,1706,
+	1707,1707,1707,1707,1707,1707,1707,1707,1708,1709,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,1710,1710,1710,1710,1710,1710,1710,1710,
+	1711,1711,1711,1711,1711,1711,1711,1711,1712,1712,1712,1712,1712,1712,1712,1712,
+	1713,1713,1713,1713,1713,1713,1713,1713,1714,1714,1714,1714,1714,1714,1714,1714,
+	1715,1715,1715,1715,1715,1715,1715,1715,1716,1717,0,0,0,0,0,0,
+	1718,1718,1718,1718,1718,1718,1718,1718,0,0,0,0,0,0,0,0,
+	1719,1719,1719,1719,1719,1719,1719,1719,1720,1720,1720,1720,1720,1720,1720,1720,
+	1721,1721,1721,1721,1721,1721,1721,1721,1722,1722,1722,1722,1722,1722,1722,1722,
+	1723,1723,1723,1723,1723,1723,1723,1723,1724,1725,1726,1727,1728,0,0,0,
+	1649,1649,1649,1649,1649,1649,1649,1649,0,0,0,0,0,0,0,0,
+	1650,1650,1650,1650,1650,1650,1650,1650,1651,1651,1651,1651,1651,1651,1651,1652,
+	1653,1653,1653,1653,1653,1653,1653,1654,145,145,145,145,145,145,145,145,
 	1655,1655,1655,1655,1655,1655,1655,1655,1656,1657,1658,1659,1660,0,0,0,
-	1661,1661,1661,1661,1661,1661,1661,1661,1662,1662,1662,1662,1662,1662,1662,1663,
-	1664,1664,1664,1664,1664,1664,1664,1664,1665,1665,1665,1665,1665,1665,1665,1666,
-	1667,1667,1667,1667,1667,1667,1667,1668,1669,1669,1669,1669,1669,1669,1669,1669,
-	1670,1670,1670,1670,1670,1670,1670,1670,1671,1672,0,0,0,0,0,0,
-	1673,1673,1673,1673,1673,1673,1673,1673,1674,1674,1674,1674,1674,1674,1674,1674,
-	1675,1675,1675,1675,1675,1675,1675,1675,1676,1676,1676,1676,1676,1676,1676,1676,
-	1677,1677,1677,1677,1677,1677,1677,1677,1678,1678,1678,1678,1678,1678,1678,1678,
-	1679,1679,1679,1679,1679,1679,1679,1679,1680,1681,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,1682,1682,1682,1682,1682,1682,1682,1682,
-	1683,1683,1683,1683,1683,1683,1683,1683,1684,1684,1684,1684,1684,1684,1684,1684,
-	1685,1685,1685,1685,1685,1685,1685,1685,1686,1686,1686,1686,1686,1686,1686,1686,
-	1687,1687,1687,1687,1687,1687,1687,1687,1688,1689,0,0,0,0,0,0,
-	1690,1690,1690,1690,1690,1690,1690,1690,0,0,0,0,0,0,0,0,
-	1691,1691,1691,1691,1691,1691,1691,1691,1692,1692,1692,1692,1692,1692,1692,1692,
-	1693,1693,1693,1693,1693,1693,1693,1693,1694,1694,1694,1694,1694,1694,1694,1694,
-	1695,1695,1695,1695,1695,1695,1695,1695,1696,1697,1698,1699,1700,0,0,0,
-	1615,1615,1615,1615,1615,1615,1615,1615,0,0,0,0,0,0,0,0,
-	1616,1616,1616,1616,1616,1616,1616,1616,1617,1617,1617,1617,1617,1617,1617,1618,
-	1619,1619,1619,1619,1619,1619,1619,1620,1621,1621,1621,1621,1621,1621,1621,1621,
-	1622,1622,1622,1622,1622,1622,1622,1622,1623,1624,1625,1626,1627,0,0,0,
-	1628,1628,1628,1628,1628,1628,1628,1628,0,0,0,0,0,0,0,0,
-	1629,1629,1629,1629,1629,1629,1629,1629,1630,1630,1630,1630,1630,1630,1630,1630,
-	1631,1631,1631,1631,1631,1631,1631,1631,1632,1632,1632,1632,1632,1632,1632,1632,
-	1633,1633,1633,1633,1633,1633,1633,1633,1634,1635,1636,1637,1638,0,0,0,
-	1639,1639,1639,1639,1639,1639,1639,1639,0,0,0,0,0,0,0,0,
-	1640,1640,1640,1640,1640,1640,1640,1640,1641,1641,1641,1641,1641,1641,1641,1641,
-	1642,1642,1642,1642,1642,1642,1642,1642,1643,1643,1643,1643,1643,1643,1643,1643,
-	1644,1644,1644,1644,1644,1644,1644,1644,1645,1646,1647,1648,1649,0,0,0,
-	1650,1650,1650,1650,1650,1650,1650,1650,0,0,0,0,0,0,0,0,
-	1651,1651,1651,1651,1651,1651,1651,1651,1652,1652,1652,1652,1652,1652,1652,1652,
-	1653,1653,1653,1653,1653,1653,1653,1653,1654,1654,1654,1654,1654,1654,1654,1654,
+	177,177,177,177,177,177,177,177,0,0,0,0,0,0,0,0,
+	1661,1661,1661,1661,1661,1661,1661,1661,1662,1662,1662,1662,1662,1662,1662,1662,
+	1663,1663,1663,1663,1663,1663,1663,1663,1664,1664,1664,1664,1664,1664,1664,1664,
+	1665,1665,1665,1665,1665,1665,1665,1665,1666,1667,1668,1669,1670,0,0,0,
+	94,94,94,94,94,94,94,94,0,0,0,0,0,0,0,0,
+	1671,1671,1671,1671,1671,1671,1671,1671,1672,1672,1672,1672,1672,1672,1672,1672,
+	1673,1673,1673,1673,1673,1673,1673,1673,244,244,244,244,244,244,244,244,
+	1674,1674,1674,1674,1674,1674,1674,1674,1675,1676,1677,1678,1679,0,0,0,
+	1680,1680,1680,1680,1680,1680,1680,1680,0,0,0,0,0,0,0,0,
+	1681,1681,1681,1681,1681,1681,1681,1681,1682,1682,1682,1682,1682,1682,1682,1682,
+	1683,1683,1683,1683,1683,1683,1683,1683,167,167,167,167,167,167,167,167,
+	1684,1684,1684,1684,1684,1684,1684,1684,1685,1686,1687,1688,156,0,0,0,
+	1689,1689,1689,1689,1689,1689,1689,1689,1690,1690,1690,1690,1690,1690,1690,1691,
+	1692,1692,1692,1692,1692,1692,1692,1692,1693,1693,1693,1693,1693,1693,1693,1694,
+	1695,1695,1695,1695,1695,1695,1695,1696,1697,1697,1697,1697,1697,1697,1697,1697,
+	1698,1698,1698,1698,1698,1698,1698,1698,1699,1700,0,0,0,0,0,0,
+	1701,1701,1701,1701,1701,1701,1701,1701,1702,1702,1702,1702,1702,1702,1702,1702,
+	1703,1703,1703,1703,1703,1703,1703,1703,1704,1704,1704,1704,1704,1704,1704,1704,
+	1705,1705,1705,1705,1705,1705,1705,1705,1706,1706,1706,1706,1706,1706,1706,1706,
+	1707,1707,1707,1707,1707,1707,1707,1707,1708,1709,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,1710,1710,1710,1710,1710,1710,1710,1710,
+	1711,1711,1711,1711,1711,1711,1711,1711,1712,1712,1712,1712,1712,1712,1712,1712,
+	1713,1713,1713,1713,1713,1713,1713,1713,1714,1714,1714,1714,1714,1714,1714,1714,
+	1715,1715,1715,1715,1715,1715,1715,1715,1716,1717,0,0,0,0,0,0,
+	1718,1718,1718,1718,1718,1718,1718,1718,0,0,0,0,0,0,0,0,
+	1719,1719,1719,1719,1719,1719,1719,1719,1720,1720,1720,1720,1720,1720,1720,1720,
+	1721,1721,1721,1721,1721,1721,1721,1721,1722,1722,1722,1722,1722,1722,1722,1722,
+	1723,1723,1723,1723,1723,1723,1723,1723,1724,1725,1726,1727,1728,0,0,0,
+	1649,1649,1649,1649,1649,1649,1649,1649,0,0,0,0,0,0,0,0,
+	1650,1650,1650,1650,1650,1650,1650,1650,1651,1651,1651,1651,1651,1651,1651,1652,
+	1653,1653,1653,1653,1653,1653,1653,1654,145,145,145,145,145,145,145,145,
 	1655,1655,1655,1655,1655,1655,1655,1655,1656,1657,1658,1659,1660,0,0,0,
-	1661,1661,1661,1661,1661,1661,1661,1661,1662,1662,1662,1662,1662,1662,1662,1663,
-	1664,1664,1664,1664,1664,1664,1664,1664,1665,1665,1665,1665,1665,1665,1665,1666,
-	1667,1667,1667,1667,1667,1667,1667,1668,1669,1669,1669,1669,1669,1669,1669,1669,
-	1670,1670,1670,1670,1670,1670,1670,1670,1671,1672,0,0,0,0,0,0,
-	1673,1673,1673,1673,1673,1673,1673,1673,1674,1674,1674,1674,1674,1674,1674,1674,
-	1675,1675,1675,1675,1675,1675,1675,1675,1676,1676,1676,1676,1676,1676,1676,1676,
-	1677,1677,1677,1677,1677,1677,1677,1677,1678,1678,1678,1678,1678,1678,1678,1678,
-	1679,1679,1679,1679,1679,1679,1679,1679,1680,1681,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,1682,1682,1682,1682,1682,1682,1682,1682,
-	1683,1683,1683,1683,1683,1683,1683,1683,1684,1684,1684,1684,1684,1684,1684,1684,
-	1685,1685,1685,1685,1685,1685,1685,1685,1686,1686,1686,1686,1686,1686,1686,1686,
-	1687,1687,1687,1687,1687,1687,1687,1687,1688,1689,0,0,0,0,0,0,
-	1690,1690,1690,1690,1690,1690,1690,1690,0,0,0,0,0,0,0,0,
-	1691,1691,1691,1691,1691,1691,1691,1691,1692,1692,1692,1692,1692,1692,1692,1692,
-	1693,1693,1693,1693,1693,1693,1693,1693,1694,1694,1694,1694,1694,1694,1694,1694,
-	1695,1695,1695,1695,1695,1695,1695,1695,1696,1697,1698,1699,1700,0,0,0,
-	1615,1615,1615,1615,1615,1615,1615,1615,0,0,0,0,0,0,0,0,
-	1616,1616,1616,1616,1616,1616,1616,1616,1617,1617,1617,1617,1617,1617,1617,1618,
-	1619,1619,1619,1619,1619,1619,1619,1620,1621,1621,1621,1621,1621,1621,1621,1621,
-	1622,1622,1622,1622,1622,1622,1622,1622,1623,1624,1625,1626,1627,0,0,0,
-	1628,1628,1628,1628,1628,1628,1628,1628,0,0,0,0,0,0,0,0,
-	1629,1629,1629,1629,1629,1629,1629,1629,1630,1630,1630,1630,1630,1630,1630,1630,
-	1631,1631,1631,1631,1631,1631,1631,1631,1632,1632,1632,1632,1632,1632,1632,1632,
-	1633,1633,1633,1633,1633,1633,1633,1633,1634,1635,1636,1637,1638,0,0,0,
-	1639,1639,1639,1639,1639,1639,1639,1639,0,0,0,0,0,0,0,0,
-	1640,1640,1640,1640,1640,1640,1640,1640,1641,1641,1641,1641,1641,1641,1641,1641,
-	1642,1642,1642,1642,1642,1642,1642,1642,1643,1643,1643,1643,1643,1643,1643,1643,
-	1644,1644,1644,1644,1644,1644,1644,1644,1645,1646,1647,1648,1649,0,0,0,
-	1650,1650,1650,1650,1650,1650,1650,1650,0,0,0,0,0,0,0,0,
-	1651,1651,1651,1651,1651,1651,1651,1651,1652,1652,1652,1652,1652,1652,1652,1652,
-	1653,1653,1653,1653,1653,1653,1653,1653,1654,1654,1654,1654,1654,1654,1654,1654,
+	177,177,177,177,177,177,177,177,0,0,0,0,0,0,0,0,
+	1661,1661,1661,1661,1661,1661,1661,1661,1662,1662,1662,1662,1662,1662,1662,1662,
+	1663,1663,1663,1663,1663,1663,1663,1663,1664,1664,1664,1664,1664,1664,1664,1664,
+	1665,1665,1665,1665,1665,1665,1665,1665,1666,1667,1668,1669,1670,0,0,0,
+	94,94,94,94,94,94,94,94,0,0,0,0,0,0,0,0,
+	1671,1671,1671,1671,1671,1671,1671,1671,1672,1672,1672,1672,1672,1672,1672,1672,
+	1673,1673,1673,1673,1673,1673,1673,1673,244,244,244,244,244,244,244,244,
+	1674,1674,1674,1674,1674,1674,1674,1674,1675,1676,1677,1678,1679,0,0,0,
+	1680,1680,1680,1680,1680,1680,1680,1680,0,0,0,0,0,0,0,0,
+	1681,1681,1681,1681,1681,1681,1681,1681,1682,1682,1682,1682,1682,1682,1682,1682,
+	1683,1683,1683,1683,1683,1683,1683,1683,167,167,167,167,167,167,167,167,
+	1684,1684,1684,1684,1684,1684,1684,1684,1685,1686,1687,1688,156,0,0,0,
+	1689,1689,1689,1689,1689,1689,1689,1689,1690,1690,1690,1690,1690,1690,1690,1691,
+	1692,1692,1692,1692,1692,1692,1692,1692,1693,1693,1693,1693,1693,1693,1693,1694,
+	1695,1695,1695,1695,1695,1695,1695,1696,1697,1697,1697,1697,1697,1697,1697,1697,
+	1698,1698,1698,1698,1698,1698,1698,1698,1699,1700,0,0,0,0,0,0,
+	1701,1701,1701,1701,1701,1701,1701,1701,1702,1702,1702,1702,1702,1702,1702,1702,
+	1703,1703,1703,1703,1703,1703,1703,1703,1704,1704,1704,1704,1704,1704,1704,1704,
+	1705,1705,1705,1705,1705,1705,1705,1705,1706,1706,1706,1706,1706,1706,1706,1706,
+	1707,1707,1707,1707,1707,1707,1707,1707,1708,1709,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,1710,1710,1710,1710,1710,1710,1710,1710,
+	1711,1711,1711,1711,1711,1711,1711,1711,1712,1712,1712,1712,1712,1712,1712,1712,
+	1713,1713,1713,1713,1713,1713,1713,1713,1714,1714,1714,1714,1714,1714,1714,1714,
+	1715,1715,1715,1715,1715,1715,1715,1715,1716,1717,0,0,0,0,0,0,
+	1718,1718,1718,1718,1718,1718,1718,1718,0,0,0,0,0,0,0,0,
+	1719,1719,1719,1719,1719,1719,1719,1719,1720,1720,1720,1720,1720,1720,1720,1720,
+	1721,1721,1721,1721,1721,1721,1721,1721,1722,1722,1722,1722,1722,1722,1722,1722,
+	1723,1723,1723,1723,1723,1723,1723,1723,1724,1725,1726,1727,1728,0,0,0,
+	1649,1649,1649,1649,1649,1649,1649,1649,0,0,0,0,0,0,0,0,
+	1650,1650,1650,1650,1650,1650,1650,1650,1651,1651,1651,1651,1651,1651,1651,1652,
+	1653,1653,1653,1653,1653,1653,1653,1654,145,145,145,145,145,145,145,145,
 	1655,1655,1655,1655,1655,1655,1655,1655,1656,1657,1658,1659,1660,0,0,0,
-	1661,1661,1661,1661,1661,1661,1661,1661,1662,1662,1662,1662,1662,1662,1662,1663,
-	1664,1664,1664,1664,1664,1664,1664,1664,1665,1665,1665,1665,1665,1665,1665,1666,
-	1667,1667,1667,1667,1667,1667,1667,1668,1669,1669,1669,1669,1669,1669,1669,1669,
-	1670,1670,1670,1670,1670,1670,1670,1670,1671,1672,0,0,0,0,0,0,
-	1673,1673,1673,1673,1673,1673,1673,1673,1674,1674,1674,1674,1674,1674,1674,1674,
-	1675,1675,1675,1675,1675,1675,1675,1675,1676,1676,1676,1676,1676,1676,1676,1676,
-	1677,1677,1677,1677,1677,1677,1677,1677,1678,1678,1678,1678,1678,1678,1678,1678,
-	1679,1679,1679,1679,1679,1679,1679,1679,1680,1681,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,1682,1682,1682,1682,1682,1682,1682,1682,
-	1683,1683,1683,1683,1683,1683,1683,1683,1684,1684,1684,1684,1684,1684,1684,1684,
-	1685,1685,1685,1685,1685,1685,1685,1685,1686,1686,1686,1686,1686,1686,1686,1686,
-	1687,1687,1687,1687,1687,1687,1687,1687,1688,1689,0,0,0,0,0,0,
-	1690,1690,1690,1690,1690,1690,1690,1690,0,0,0,0,0,0,0,0,
-	1691,1691,1691,1691,1691,1691,1691,1691,1692,1692,1692,1692,1692,1692,1692,1692,
-	1693,1693,1693,1693,1693,1693,1693,1693,1694,1694,1694,1694,1694,1694,1694,1694,
-	1695,1695,1695,1695,1695,1695,1695,1695,1696,1697,1698,1699,1700,0,0,0,
-	1615,1615,1615,1615,1615,1615,1615,1615,0,0,0,0,0,0,0,0,
-	1616,1616,1616,1616,1616,1616,1616,1616,1617,1617,1617,1617,1617,1617,1617,1618,
-	1619,1619,1619,1619,1619,1619,1619,1620,1621,1621,1621,1621,1621,1621,1621,1621,
-	1622,1622,1622,1622,1622,1622,1622,1622,1623,1624,1625,1626,1627,0,0,0,
-	1628,1628,1628,1628,1628,1628,1628,1628,0,0,0,0,0,0,0,0,
-	1629,1629,1629,1629,1629,1629,1629,1629,1630,1630,1630,1630,1630,1630,1630,1630,
-	1631,1631,1631,1631,1631,1631,1631,1631,1632,1632,1632,1632,1632,1632,1632,1632,
-	1633,1633,1633,1633,1633,1633,1633,1633,1634,1635,1636,1637,1638,0,0,0,
-	1639,1639,1639,1639,1639,1639,1639,1639,0,0,0,0,0,0,0,0,
-	1640,1640,1640,1640,1640,1640,1640,1640,1641,1641,1641,1641,1641,1641,1641,1641,
-	1642,1642,1642,1642,1642,1642,1642,1642,1643,1643,1643,1643,1643,1643,1643,1643,
-	1644,1644,1644,1644,1644,1644,1644,1644,1645,1646,1647,1648,1649,0,0,0,
-	1650,1650,1650,1650,1650,1650,1650,1650,0,0,0,0,0,0,0,0,
-	1651,1651,1651,1651,1651,1651,1651,1651,1652,1652,1652,1652,1652,1652,1652,1652,
-	1653,1653,1653,1653,1653,1653,1653,1653,1654,1654,1654,1654,1654,1654,1654,1654,
+	177,177,177,177,177,177,177,177,0,0,0,0,0,0,0,0,
+	1661,1661,1661,1661,1661,1661,1661,1661,1662,1662,1662,1662,1662,1662,1662,1662,
+	1663,1663,1663,1663,1663,1663,1663,1663,1664,1664,1664,1664,1664,1664,1664,1664,
+	1665,1665,1665,1665,1665,1665,1665,1665,1666,1667,1668,1669,1670,0,0,0,
+	94,94,94,94,94,94,94,94,0,0,0,0,0,0,0,0,
+	1671,1671,1671,1671,1671,1671,1671,1671,1672,1672,1672,1672,1672,1672,1672,1672,
+	1673,1673,1673,1673,1673,1673,1673,1673,244,244,244,244,244,244,244,244,
+	1674,1674,1674,1674,1674,1674,1674,1674,1675,1676,1677,1678,1679,0,0,0,
+	1680,1680,1680,1680,1680,1680,1680,1680,0,0,0,0,0,0,0,0,
+	1681,1681,1681,1681,1681,1681,1681,1681,1682,1682,1682,1682,1682,1682,1682,1682,
+	1683,1683,1683,1683,1683,1683,1683,1683,167,167,167,167,167,167,167,167,
+	1684,1684,1684,1684,1684,1684,1684,1684,1685,1686,1687,1688,156,0,0,0,
+	1689,1689,1689,1689,1689,1689,1689,1689,1690,1690,1690,1690,1690,1690,1690,1691,
+	1692,1692,1692,1692,1692,1692,1692,1692,1693,1693,1693,1693,1693,1693,1693,1694,
+	1695,1695,1695,1695,1695,1695,1695,1696,1697,1697,1697,1697,1697,1697,1697,1697,
+	1698,1698,1698,1698,1698,1698,1698,1698,1699,1700,0,0,0,0,0,0,
+	1701,1701,1701,1701,1701,1701,1701,1701,1702,1702,1702,1702,1702,1702,1702,1702,
+	1703,1703,1703,1703,1703,1703,1703,1703,1704,1704,1704,1704,1704,1704,1704,1704,
+	1705,1705,1705,1705,1705,1705,1705,1705,1706,1706,1706,1706,1706,1706,1706,1706,
+	1707,1707,1707,1707,1707,1707,1707,1707,1708,1709,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,1710,1710,1710,1710,1710,1710,1710,1710,
+	1711,1711,1711,1711,1711,1711,1711,1711,1712,1712,1712,1712,1712,1712,1712,1712,
+	1713,1713,1713,1713,1713,1713,1713,1713,1714,1714,1714,1714,1714,1714,1714,1714,
+	1715,1715,1715,1715,1715,1715,1715,1715,1716,1717,0,0,0,0,0,0,
+	1718,1718,1718,1718,1718,1718,1718,1718,0,0,0,0,0,0,0,0,
+	1719,1719,1719,1719,1719,1719,1719,1719,1720,1720,1720,1720,1720,1720,1720,1720,
+	1721,1721,1721,1721,1721,1721,1721,1721,1722,1722,1722,1722,1722,1722,1722,1722,
+	1723,1723,1723,1723,1723,1723,1723,1723,1724,1725,1726,1727,1728,0,0,0,
+	1649,1649,1649,1649,1649,1649,1649,1649,0,0,0,0,0,0,0,0,
+	1650,1650,1650,1650,1650,1650,1650,1650,1651,1651,1651,1651,1651,1651,1651,1652,
+	1653,1653,1653,1653,1653,1653,1653,1654,145,145,145,145,145,145,145,145,
 	1655,1655,1655,1655,1655,1655,1655,1655,1656,1657,1658,1659,1660,0,0,0,
-	1661,1661,1661,1661,1661,1661,1661,1661,1662,1662,1662,1662,1662,1662,1662,1663,
-	1664,1664,1664,1664,1664,1664,1664,1664,1665,1665,1665,1665,1665,1665,1665,1666,
-	1667,1667,1667,1667,1667,1667,1667,1668,1669,1669,1669,1669,1669,1669,1669,1669,
-	1670,1670,1670,1670,1670,1670,1670,1670,1671,1672,0,0,0,0,0,0,
-	1673,1673,1673,1673,1673,1673,1673,1673,1674,1674,1674,1674,1674,1674,1674,1674,
-	1675,1675,1675,1675,1675,1675,1675,1675,1676,1676,1676,1676,1676,1676,1676,1676,
-	1677,1677,1677,1677,1677,1677,1677,1677,1678,1678,1678,1678,1678,1678,1678,1678,
-	1679,1679,1679,1679,1679,1679,1679,1679,1680,1681,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,1682,1682,1682,1682,1682,1682,1682,1682,
-	1683,1683,1683,1683,1683,1683,1683,1683,1684,1684,1684,1684,1684,1684,1684,1684,
-	1685,1685,1685,1685,1685,1685,1685,1685,1686,1686,1686,1686,1686,1686,1686,1686,
-	1687,1687,1687,1687,1687,1687,1687,1687,1688,1689,0,0,0,0,0,0,
-	1690,1690,1690,1690,1690,1690,1690,1690,0,0,0,0,0,0,0,0,
-	1691,1691,1691,1691,1691,1691,1691,1691,1692,1692,1692,1692,1692,1692,1692,1692,
-	1693,1693,1693,1693,1693,1693,1693,1693,1694,1694,1694,1694,1694,1694,1694,1694,
-	1695,1695,1695,1695,1695,1695,1695,1695,1696,1697,1698,1699,1700,0,0,0,
-	1615,1615,1615,1615,1615,1615,1615,1615,0,0,0,0,0,0,0,0,
-	1616,1616,1616,1616,1616,1616,1616,1616,1617,1617,1617,1617,1617,1617,1617,1618,
-	1619,1619,1619,1619,1619,1619,1619,1620,1621,1621,1621,1621,1621,1621,1621,1621,
-	1622,1622,1622,1622,1622,1622,1622,1622,1623,1624,1625,1626,1627,0,0,0,
-	1628,1628,1628,1628,1628,1628,1628,1628,0,0,0,0,0,0,0,0,
-	1629,1629,1629,1629,1629,1629,1629,1629,1630,1630,1630,1630,1630,1630,1630,1630,
-	1631,1631,1631,1631,1631,1631,1631,1631,1632,1632,1632,1632,1632,1632,1632,1632,
-	1633,1633,1633,1633,1633,1633,1633,1633,1634,1635,1636,1637,1638,0,0,0,
-	1639,1639,1639,1639,1639,1639,1639,1639,0,0,0,0,0,0,0,0,
-	1640,1640,1640,1640,1640,1640,1640,1640,1641,1641,1641,1641,1641,1641,1641,1641,
-	1642,1642,1642,1642,1642,1642,1642,1642,1643,1643,1643,1643,1643,1643,1643,1643,
-	1644,1644,1644,1644,1644,1644,1644,1644,1645,1646,1647,1648,1649,0,0,0,
-	1650,1650,1650,1650,1650,1650,1650,1650,0,0,0,0,0,0,0,0,
-	1651,1651,1651,1651,1651,1651,1651,1651,1652,1652,1652,1652,1652,1652,1652,1652,
-	1653,1653,1653,1653,1653,1653,1653,1653,1654,1654,1654,1654,1654,1654,1654,1654,
+	177,177,177,177,177,177,177,177,0,0,0,0,0,0,0,0,
+	1661,1661,1661,1661,1661,1661,1661,1661,1662,1662,1662,1662,1662,1662,1662,1662,
+	1663,1663,1663,1663,1663,1663,1663,1663,1664,1664,1664,1664,1664,1664,1664,1664,
+	1665,1665,1665,1665,1665,1665,1665,1665,1666,1667,1668,1669,1670,0,0,0,
+	94,94,94,94,94,94,94,94,0,0,0,0,0,0,0,0,
+	1671,1671,1671,1671,1671,1671,1671,1671,1672,1672,1672,1672,1672,1672,1672,1672,
+	1673,1673,1673,1673,1673,1673,1673,1673,244,244,244,244,244,244,244,244,
+	1674,1674,1674,1674,1674,1674,1674,1674,1675,1676,1677,1678,1679,0,0,0,
+	1680,1680,1680,1680,1680,1680,1680,1680,0,0,0,0,0,0,0,0,
+	1681,1681,1681,1681,1681,1681,1681,1681,1682,1682,1682,1682,1682,1682,1682,1682,
+	1683,1683,1683,1683,1683,1683,1683,1683,167,167,167,167,167,167,167,167,
+	1684,1684,1684,1684,1684,1684,1684,1684,1685,1686,1687,1688,156,0,0,0,
+	1689,1689,1689,1689,1689,1689,1689,1689,1690,1690,1690,1690,1690,1690,1690,1691,
+	1692,1692,1692,1692,1692,1692,1692,1692,1693,1693,1693,1693,1693,1693,1693,1694,
+	1695,1695,1695,1695,1695,1695,1695,1696,1697,1697,1697,1697,1697,1697,1697,1697,
+	1698,1698,1698,1698,1698,1698,1698,1698,1699,1700,0,0,0,0,0,0,
+	1701,1701,1701,1701,1701,1701,1701,1701,1702,1702,1702,1702,1702,1702,1702,1702,
+	1703,1703,1703,1703,1703,1703,1703,1703,1704,1704,1704,1704,1704,1704,1704,1704,
+	1705,1705,1705,1705,1705,1705,1705,1705,1706,1706,1706,1706,1706,1706,1706,1706,
+	1707,1707,1707,1707,1707,1707,1707,1707,1708,1709,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,1710,1710,1710,1710,1710,1710,1710,1710,
+	1711,1711,1711,1711,1711,1711,1711,1711,1712,1712,1712,1712,1712,1712,1712,1712,
+	1713,1713,1713,1713,1713,1713,1713,1713,1714,1714,1714,1714,1714,1714,1714,1714,
+	1715,1715,1715,1715,1715,1715,1715,1715,1716,1717,0,0,0,0,0,0,
+	1718,1718,1718,1718,1718,1718,1718,1718,0,0,0,0,0,0,0,0,
+	1719,1719,1719,1719,1719,1719,1719,1719,1720,1720,1720,1720,1720,1720,1720,1720,
+	1721,1721,1721,1721,1721,1721,1721,1721,1722,1722,1722,1722,1722,1722,1722,1722,
+	1723,1723,1723,1723,1723,1723,1723,1723,1724,1725,1726,1727,1728,0,0,0,
+	1649,1649,1649,1649,1649,1649,1649,1649,0,0,0,0,0,0,0,0,
+	1650,1650,1650,1650,1650,1650,1650,1650,1651,1651,1651,1651,1651,1651,1651,1652,
+	1653,1653,1653,1653,1653,1653,1653,1654,145,145,145,145,145,145,145,145,
 	1655,1655,1655,1655,1655,1655,1655,1655,1656,1657,1658,1659,1660,0,0,0,
-	1661,1661,1661,1661,1661,1661,1661,1661,1701,1701,1701,1701,1701,1701,1701,1702,
-	1664,1664,1664,1664,1664,1664,1664,1664,1665,1665,1665,1665,1665,1665,1665,1666,
-	1667,1667,1667,1667,1667,1667,1667,1668,1669,1669,1669,1669,1669,1669,1669,1669,
-	1670,1670,1670,1670,1670,1670,1670,1670,1671,1672,0,0,0,0,0,0,
-	1673,1673,1673,1673,1673,1673,1673,1673,1674,1674,1674,1674,1674,1674,1674,1674,
-	1675,1675,1675,1675,1675,1675,1675,1675,1676,1676,1676,1676,1676,1676,1676,1676,
-	1677,1677,1677,1677,1677,1677,1677,1677,1678,1678,1678,1678,1678,1678,1678,1678,
-	1679,1679,1679,1679,1679,1679,1679,1679,1680,1681,0,0,0,0,0,0,
-	0,0,0,0,0,0,0,0,1682,1682,1682,1682,1682,1682,1682,1682,
-	1683,1683,1683,1683,1683,1683,1683,1683,1684,1684,1684,1684,1684,1684,1684,1684,
-	1685,1685,1685,1685,1685,1685,1685,1685,1686,1686,1686,1686,1686,1686,1686,1686,
-	1687,1687,1687,1687,1687,1687,1687,1687,1688,1689,0,0,0,0,0,0,
-	1690,1690,1690,1690,1690,1690,1690,1690,0,0,0,0,0,0,0,0,
-	1691,1691,1691,1691,1691,1691,1691,1691,1692,1692,1692,1692,1692,1692,1692,1692,
-	1693,1693,1693,1693,1693,1693,1693,1693,1694,1694,1694,1694,1694,1694,1694,1694,
-	1695,1695,1695,1695,1695,1695,1695,1695,1696,1697,1698,1699,1700,0,0,0,
-	1703,1703,1703,1703,1703,1703,1703,1703,0,0,0,0,0,0,0,0,
-	1704,1704,1704,1704,1704,1704,1704,1704,1705,1705,1705,1705,1705,1705,1705,1706,
-	1707,1707,1707,1707,1707,1707,1707,1708,1709,1709,1709,1709,1709,1709,1709,1709,
-	1710,1710,1710,1710,1710,1710,1710,1710,1711,1712,1713,1714,1715,0,0,0,
-	1716,1716,1716,1716,1716,1716,1716,1716,1717,1717,1717,1717,1717,1717,1717,1717,
-	1718,1718,1718,1718,1718,1718,1718,1718,1719,1719,1719,1719,1719,1719,1719,1719,
-	1720,1720,1720,1720,1720,1720,1720,1720,1721,1721,1721,1721,1721,1721,1721,1721,
-	1722,1722,1722,1722,1722,1722,1722,1722,1723,1724,1725,1726,1727,0,0,0,
-	1728,1728,1728,1728,1728,1728,1728,1728,1729,1729,1729,1729,1729,1729,1729,1729,
-	1730,1730,1730,1730,1730,1730,1730,1730,1731,1731,1731,1731,1731,1731,1731,1731,
-	1732,1732,1732,1732,1732,1732,1732,1732,1733,1733,1733,1733,1733,1733,1733,1733,
-	1734,1734,1734,1734,1734,1734,1734,1734,1735,1736,1737,1738,1739,0,0,0,
-	1740,1740,1740,1740,1740,1740,1740,1740,1741,1741,1741,1741,1741,1741,1741,1741,
-	1742,1742,1742,1742,1742,1742,1742,1742,1743,1743,1743,1743,1743,1743,1743,1743,
-	1744,1744,1744,1744,1744,1744,1744,1744,1745,1745,1745,1745,1745,1745,1745,1745,
+	177,177,177,177,177,177,177,177,0,0,0,0,0,0,0,0,
+	1661,1661,1661,1661,1661,1661,1661,1661,1662,1662,1662,1662,1662,1662,1662,1662,
+	1663,1663,1663,1663,1663,1663,1663,1663,1664,1664,1664,1664,1664,1664,1664,1664,
+	1665,1665,1665,1665,1665,1665,1665,1665,1666,1667,1668,1669,1670,0,0,0,
+	94,94,94,94,94,94,94,94,0,0,0,0,0,0,0,0,
+	1671,1671,1671,1671,1671,1671,1671,1671,1672,1672,1672,1672,1672,1672,1672,1672,
+	1673,1673,1673,1673,1673,1673,1673,1673,244,244,244,244,244,244,244,244,
+	1674,1674,1674,1674,1674,1674,1674,1674,1675,1676,1677,1678,1679,0,0,0,
+	1680,1680,1680,1680,1680,1680,1680,1680,0,0,0,0,0,0,0,0,
+	1681,1681,1681,1681,1681,1681,1681,1681,1682,1682,1682,1682,1682,1682,1682,1682,
+	1683,1683,1683,1683,1683,1683,1683,1683,167,167,167,167,167,167,167,167,
+	1684,1684,1684,1684,1684,1684,1684,1684,1685,1686,1687,1688,156,0,0,0,
+	1689,1689,1689,1689,1689,1689,1689,1689,1729,1729,1729,1729,1729,1729,1729,1730,
+	1692,1692,1692,1692,1692,1692,1692,1692,1693,1693,1693,1693,1693,1693,1693,1694,
+	1695,1695,1695,1695,1695,1695,1695,1696,1697,1697,1697,1697,1697,1697,1697,1697,
+	1698,1698,1698,1698,1698,1698,1698,1698,1699,1700,0,0,0,0,0,0,
+	1701,1701,1701,1701,1701,1701,1701,1701,1702,1702,1702,1702,1702,1702,1702,1702,
+	1703,1703,1703,1703,1703,1703,1703,1703,1704,1704,1704,1704,1704,1704,1704,1704,
+	1705,1705,1705,1705,1705,1705,1705,1705,1706,1706,1706,1706,1706,1706,1706,1706,
+	1707,1707,1707,1707,1707,1707,1707,1707,1708,1709,0,0,0,0,0,0,
+	0,0,0,0,0,0,0,0,1710,1710,1710,1710,1710,1710,1710,1710,
+	1711,1711,1711,1711,1711,1711,1711,1711,1712,1712,1712,1712,1712,1712,1712,1712,
+	1713,1713,1713,1713,1713,1713,1713,1713,1714,1714,1714,1714,1714,1714,1714,1714,
+	1715,1715,1715,1715,1715,1715,1715,1715,1716,1717,0,0,0,0,0,0,
+	1718,1718,1718,1718,1718,1718,1718,1718,0,0,0,0,0,0,0,0,
+	1719,1719,1719,1719,1719,1719,1719,1719,1720,1720,1720,1720,1720,1720,1720,1720,
+	1721,1721,1721,1721,1721,1721,1721,1721,1722,1722,1722,1722,1722,1722,1722,1722,
+	1723,1723,1723,1723,1723,1723,1723,1723,1724,1725,1726,1727,1728,0,0,0,
+	1731,1731,1731,1731,1731,1731,1731,1731,0,0,0,0,0,0,0,0,
+	1732,1732,1732,1732,1732,1732,1732,1732,1733,1733,1733,1733,1733,1733,1733,1734,
+	1735,1735,1735,1735,1735,1735,1735,1736,190,190,190,190,190,190,190,190,
+	1737,1737,1737,1737,1737,1737,1737,1737,1738,1739,1740,1741,1742,0,0,0,
+	40,40,40,40,40,40,40,40,1743,1743,1743,1743,1743,1743,1743,1743,
+	1744,1744,1744,1744,1744,1744,1744,1744,46,46,46,46,46,46,46,46,
+	1745,1745,1745,1745,1745,1745,1745,1745,183,183,183,183,183,183,183,183,
 	1746,1746,1746,1746,1746,1746,1746,1746,1747,1748,1749,1750,1751,0,0,0,
-	1752,1752,1752,1752,1752,1752,1752,1752,1753,1753,1753,1753,1753,1753,1753,1754,
-	1755,1755,1755,1755,1755,1755,1755,1755,1756,1756,1756,1756,1756,1756,1756,1757,
-	1758,1758,1758,1758,1758,1758,1758,1759,1760,1760,1760,1760,1760,1760,1760,1760,
-	1761,1761,1761,1761,1761,1761,1761,1761,1762,1763,0,0,0,0,0,0,
-	1764,1764,1764,1764,1764,1764,1764,1764,1765,1765,1765,1765,1765,1765,1765,1765,
-	1766,1766,1766,1766,1766,1766,1766,1766,1767,1767,1767,1767,1767,1767,1767,1767,
-	1768,1768,1768,1768,1768,1768,1768,1768,1769,1769,1769,1769,1769,1769,1769,1769,
-	1770,1770,1770,1770,1770,1770,1770,1770,1771,1772,0,0,0,0,0,0,
-	1773,1773,1773,1773,1773,1773,1773,1773,1774,1774,1774,1774,1774,1774,1774,1774,
-	1775,1775,1775,1775,1775,1775,1775,1775,1776,1776,1776,1776,1776,1776,1776,1776,
-	1777,1777,1777,1777,1777,1777,1777,1777,1778,1778,1778,1778,1778,1778,1778,1778,
+	113,113,113,113,113,113,113,113,184,184,184,184,184,184,184,184,
+	1752,1752,1752,1752,1752,1752,1752,1752,38,38,38,38,38,38,38,38,
+	1753,1753,1753,1753,1753,1753,1753,1753,30,30,30,30,30,30,30,30,
+	1754,1754,1754,1754,1754,1754,1754,1754,1755,1756,1757,1758,81,0,0,0,
+	152,152,152,152,152,152,152,152,1759,1759,1759,1759,1759,1759,1759,1759,
+	1760,1760,1760,1760,1760,1760,1760,1760,1761,1761,1761,1761,1761,1761,1761,1761,
+	1762,1762,1762,1762,1762,1762,1762,1762,1763,1763,1763,1763,1763,1763,1763,1763,
+	1764,1764,1764,1764,1764,1764,1764,1764,1765,1766,1767,1768,1769,0,0,0,
+	1770,1770,1770,1770,1770,1770,1770,1770,1771,1771,1771,1771,1771,1771,1771,1772,
+	1773,1773,1773,1773,1773,1773,1773,1773,1774,1774,1774,1774,1774,1774,1774,1775,
+	1776,1776,1776,1776,1776,1776,1776,1777,1778,1778,1778,1778,1778,1778,1778,1778,
 	1779,1779,1779,1779,1779,1779,1779,1779,1780,1781,0,0,0,0,0,0,
 	1782,1782,1782,1782,1782,1782,1782,1782,1783,1783,1783,1783,1783,1783,1783,1783,
 	1784,1784,1784,1784,1784,1784,1784,1784,1785,1785,1785,1785,1785,1785,1785,1785,
-	1786,1786,1786,1786,1786,1786,1786,1786,1787,1787,1787,1787,1787,1787,1787,1787,
-	1788,1788,1788,1788,1788,1788,1788,1788,1789,1790,1791,1792,1793,0,0,0,
-	1703,1703,1703,1703,1703,1703,1703,1703,0,0,0,0,0,0,0,0,
-	1704,1704,1704,1704,1704,1704,1704,1704,1705,1705,1705,1705,1705,1705,1705,1706,
-	1707,1707,1707,1707,1707,1707,1707,1708,1709,1709,1709,1709,1709,1709,1709,1709,
-	1710,1710,1710,1710,1710,1710,1710,1710,1711,1712,1713,1714,1715,0,0,0,
-	1716,1716,1716,1716,1716,1716,1716,1716,1717,1717,1717,1717,1717,1717,1717,1717,
-	1718,1718,1718,1718,1718,1718,1718,1718,1719,1719,1719,1719,1719,1719,1719,1719,
-	1720,1720,1720,1720,1720,1720,1720,1720,1721,1721,1721,1721,1721,1721,1721,1721,
-	1722,1722,1722,1722,1722,1722,1722,1722,1723,1724,1725,1726,1727,0,0,0,
-	1728,1728,1728,1728,1728,1728,1728,1728,1729,1729,1729,1729,1729,1729,1729,1729,
-	1730,1730,1730,1730,1730,1730,1730,1730,1731,1731,1731,1731,1731,1731,1731,1731,
-	1732,1732,1732,1732,1732,1732,1732,1732,1733,1733,1733,1733,1733,1733,1733,1733,
-	1734,1734,1734,1734,1734,1734,1734,1734,1735,1736,1737,1738,1739,0,0,0,
-	1740,1740,1740,1740,1740,1740,1740,1740,1741,1741,1741,1741,1741,1741,1741,1741,
-	1742,1742,1742,1742,1742,1742,1742,1742,1743,1743,1743,1743,1743,1743,1743,1743,
-	1744,1744,1744,1744,1744,1744,1744,1744,1745,1745,1745,1745,1745,1745,1745,1745,
-	1746,1746,1746,1746,1746,1746,1746,1746,1747,1748,1749,1750,1751,0,0,0,
-	1752,1752,1752,1752,1752,1752,1752,1752,1753,1753,1753,1753,1753,1753,1753,1754,
-	1755,1755,1755,1755,1755,1755,1755,1755,1756,1756,1756,1756,1756,1756,1756,1757,
-	1758,1758,1758,1758,1758,1758,1758,1759,1760,1760,1760,1760,1760,1760,1760,1760,
-	1761,1761,1761,1761,1761,1761,1761,1761,1762,1763,0,0,0,0,0,0,
-	1764,1764,1764,1764,1764,1764,1764,1764,1765,1765,1765,1765,1765,1765,1765,1765,
-	1766,1766,1766,1766,1766,1766,1766,1766,1767,1767,1767,1767,1767,1767,1767,1767,
-	1768,1768,1768,1768,1768,1768,1768,1768,1769,1769,1769,1769,1769,1769,1769,1769,
-	1770,1770,1770,1770,1770,1770,1770,1770,1771,1772,0,0,0,0,0,0,
-	1773,1773,1773,1773,1773,1773,1773,1773,1774,1774,1774,1774,1774,1774,1774,1774,
-	1775,1775,1775,1775,1775,1775,1775,1775,1776,1776,1776,1776,1776,1776,1776,1776,
-	1777,1777,1777,1777,1777,1777,1777,1777,1778,1778,1778,1778,1778,1778,1778,1778,
-	1779,1779,1779,1779,1779,1779,1779,1779,1780,1781,0,0,0,0,0,0,
-	1782,1782,1782,1782,1782,1782,1782,1782,1783,1783,1783,1783,1783,1783,1783,1783,
-	1784,1784,1784,1784,1784,1784,1784,1784,1785,1785,1785,1785,1785,1785,1785,1785,
-	1786,1786,1786,1786,1786,1786,1786,1786,1787,1787,1787,1787,1787,1787,1787,1787,
-	1788,1788,1788,1788,1788,1788,1788,1788,1789,1790,1791,1792,1793,0,0,0,
-	1703,1703,1703,1703,1703,1703,1703,1703,0,0,0,0,0,0,0,0,
-	1704,1704,1704,1704,1704,1704,1704,1704,1705,1705,1705,1705,1705,1705,1705,1706,
-	1707,1707,1707,1707,1707,1707,1707,1708,1709,1709,1709,1709,1709,1709,1709,1709,
-	1710,1710,1710,1710,1710,1710,1710,1710,1711,1712,1713,1714,1715,0,0,0,
-	1716,1716,1716,1716,1716,1716,1716,1716,1717,1717,1717,1717,1717,1717,1717,1717,
-	1718,1718,1718,1718,1718,1718,1718,1718,1719,1719,1719,1719,1719,1719,1719,1719,
-	1720,1720,1720,1720,1720,1720,1720,1720,1721,1721,1721,1721,1721,1721,1721,1721,
-	1722,1722,1722,1722,1722,1722,1722,1722,1723,1724,1725,1726,1727,0,0,0,
-	1728,1728,1728,1728,1728,1728,1728,1728,1729,1729,1729,1729,1729,1729,1729,1729,
-	1730,1730,1730,1730,1730,1730,1730,1730,1731,1731,1731,1731,1731,1731,1731,1731,
-	1732,1732,1732,1732,1732,1732,1732,1732,1733,1733,1733,1733,1733,1733,1733,1733,
-	1734,1734,1734,1734,1734,1734,1734,1734,1735,1736,1737,1738,1739,0,0,0,
-	1740,1740,1740,1740,1740,1740,1740,1740,1741,1741,1741,1741,1741,1741,1741,1741,
-	1742,1742,1742,1742,1742,1742,1742,1742,1743,1743,1743,1743,1743,1743,1743,1743,
-	1744,1744,1744,1744,1744,1744,1744,1744,1745,1745,1745,1745,1745,1745,1745,1745,
-	1746,1746,1746,1746,1746,1746,1746,1746,1747,1748,1749,1750,1751,0,0,0,
-	1752,1752,1752,1752,1752,1752,1752,1752,1753,1753,1753,1753,1753,1753,1753,1754,
-	1755,1755,1755,1755,1755,1755,1755,1755,1756,1756,1756,1756,1756,1756,1756,1757,
-	1758,1758,1758,1758,1758,1758,1758,1759,1760,1760,1760,1760,1760,1760,1760,1760,
-	1761,1761,1761,1761,1761,1761,1761,1761,1762,1763,0,0,0,0,0,0,
-	1764,1764,1764,1764,1764,1764,1764,1764,1765,1765,1765,1765,1765,1765,1765,1765,
-	1766,1766,1766,1766,1766,1766,1766,1766,1767,1767,1767,1767,1767,1767,1767,1767,
-	1768,1768,1768,1768,1768,1768,1768,1768,1769,1769,1769,1769,1769,1769,1769,1769,
-	1770,1770,1770,1770,1770,1770,1770,1770,1771,1772,0,0,0,0,0,0,
-	1773,1773,1773,1773,1773,1773,1773,1773,1774,1774,1774,1774,1774,1774,1774,1774,
-	1775,1775,1775,1775,1775,1775,1775,1775,1776,1776,1776,1776,1776,1776,1776,1776,
-	1777,1777,1777,1777,1777,1777,1777,1777,1778,1778,1778,1778,1778,1778,1778,1778,
-	1779,1779,1779,1779,1779,1779,1779,1779,1780,1781,0,0,0,0,0,0,
-	1782,1782,1782,1782,1782,1782,1782,1782,1783,1783,1783,1783,1783,1783,1783,1783,
-	1784,1784,1784,1784,1784,1784,1784,1784,1785,1785,1785,1785,1785,1785,1785,1785,
-	1786,1786,1786,1786,1786,1786,1786,1786,1787,1787,1787,1787,1787,1787,1787,1787,
-	1788,1788,1788,1788,1788,1788,1788,1788,1789,1790,1791,1792,1793,0,0,0,
-	1703,1703,1703,1703,1703,1703,1703,1703,0,0,0,0,0,0,0,0,
-	1704,1704,1704,1704,1704,1704,1704,1704,1705,1705,1705,1705,1705,1705,1705,1706,
-	1707,1707,1707,1707,1707,1707,1707,1708,1709,1709,1709,1709,1709,1709,1709,1709,
-	1710,1710,1710,1710,1710,1710,1710,1710,1711,1712,1713,1714,1715,0,0,0,
-	1716,1716,1716,1716,1716,1716,1716,1716,1717,1717,1717,1717,1717,1717,1717,1717,
-	1718,1718,1718,1718,1718,1718,1718,1718,1719,1719,1719,1719,1719,1719,1719,1719,
-	1720,1720,1720,1720,1720,1720,1720,1720,1721,1721,1721,1721,1721,1721,1721,1721,
-	1722,1722,1722,1722,1722,1722,1722,1722,1723,1724,1725,1726,1727,0,0,0,
-	1728,1728,1728,1728,1728,1728,1728,1728,1729,1729,1729,1729,1729,1729,1729,1729,
-	1730,1730,1730,1730,1730,1730,1730,1730,1731,1731,1731,1731,1731,1731,1731,1731,
-	1732,1732,1732,1732,1732,1732,1732,1732,1733,1733,1733,1733,1733,1733,1733,1733,
-	1734,1734,1734,1734,1734,1734,1734,1734,1735,1736,1737,1738,1739,0,0,0,
-	1740,1740,1740,1740,1740,1740,1740,1740,1741,1741,1741,1741,1741,1741,1741,1741,
-	1742,1742,1742,1742,1742,1742,1742,1742,1743,1743,1743,1743,1743,1743,1743,1743,
-	1744,1744,1744,1744,1744,1744,1744,1744,1745,1745,1745,1745,1745,1745,1745,1745,
-	1746,1746,1746,1746,1746,1746,1746,1746,1747,1748,1749,1750,1751,0,0,0,
-	1752,1752,1752,1752,1752,1752,1752,1752,1753,1753,1753,1753,1753,1753,1753,1754,
-	1755,1755,1755,1755,1755,1755,1755,1755,1756,1756,1756,1756,1756,1756,1756,1757,
-	1758,1758,1758,1758,1758,1758,1758,1759,1760,1760,1760,1760,1760,1760,1760,1760,
-	1761,1761,1761,1761,1761,1761,1761,1761,1762,1763,0,0,0,0,0,0,
-	1764,1764,1764,1764,1764,1764,1764,1764,1765,1765,1765,1765,1765,1765,1765,1765,
-	1766,1766,1766,1766,1766,1766,1766,1766,1767,1767,1767,1767,1767,1767,1767,1767,
-	1768,1768,1768,1768,1768,1768,1768,1768,1769,1769,1769,1769,1769,1769,1769,1769,
-	1770,1770,1770,1770,1770,1770,1770,1770,1771,1772,0,0,0,0,0,0,
-	1773,1773,1773,1773,1773,1773,1773,1773,1774,1774,1774,1774,1774,1774,1774,1774,
-	1775,1775,1775,1775,1775,1775,1775,1775,1776,1776,1776,1776,1776,1776,1776,1776,
-	1777,1777,1777,1777,1777,1777,1777,1777,1778,1778,1778,1778,1778,1778,1778,1778,
-	1779,1779,1779,1779,1779,1779,1779,1779,1780,1781,0,0,0,0,0,0,
-	1782,1782,1782,1782,1782,1782,1782,1782,1783,1783,1783,1783,1783,1783,1783,1783,
-	1784,1784,1784,1784,1784,1784,1784,1784,1785,1785,1785,1785,1785,1785,1785,1785,
-	1786,1786,1786,1786,1786,1786,1786,1786,1787,1787,1787,1787,1787,1787,1787,1787,
-	1788,1788,1788,1788,1788,1788,1788,1788,1789,1790,1791,1792,1793,0,0,0,
-	1703,1703,1703,1703,1703,1703,1703,1703,0,0,0,0,0,0,0,0,
-	1704,1704,1704,1704,1704,1704,1704,1704,1705,1705,1705,1705,1705,1705,1705,1706,
-	1707,1707,1707,1707,1707,1707,1707,1708,1709,1709,1709,1709,1709,1709,1709,1709,
-	1710,1710,1710,1710,1710,1710,1710,1710,1711,1712,1713,1714,1715,0,0,0,
-	1716,1716,1716,1716,1716,1716,1716,1716,1717,1717,1717,1717,1717,1717,1717,1717,
-	1718,1718,1718,1718,1718,1718,1718,1718,1719,1719,1719,1719,1719,1719,1719,1719,
-	1720,1720,1720,1720,1720,1720,1720,1720,1721,1721,1721,1721,1721,1721,1721,1721,
-	1722,1722,1722,1722,1722,1722,1722,1722,1723,1724,1725,1726,1727,0,0,0,
-	1728,1728,1728,1728,1728,1728,1728,1728,1729,1729,1729,1729,1729,1729,1729,1729,
-	1730,1730,1730,1730,1730,1730,1730,1730,1731,1731,1731,1731,1731,1731,1731,1731,
-	1732,1732,1732,1732,1732,1732,1732,1732,1733,1733,1733,1733,1733,1733,1733,1733,
-	1734,1734,1734,1734,1734,1734,1734,1734,1735,1736,1737,1738,1739,0,0,0,
-	1740,1740,1740,1740,1740,1740,1740,1740,1741,1741,1741,1741,1741,1741,1741,1741,
-	1742,1742,1742,1742,1742,1742,1742,1742,1743,1743,1743,1743,1743,1743,1743,1743,
-	1744,1744,1744,1744,1744,1744,1744,1744,1745,1745,1745,1745,1745,1745,1745,1745,
-	1746,1746,1746,1746,1746,1746,1746,1746,1747,1748,1749,1750,1751,0,0,0,
-	1752,1752,1752,1752,1752,1752,1752,1752,1753,1753,1753,1753,1753,1753,1753,1754,
-	1755,1755,1755,1755,1755,1755,1755,1755,1756,1756,1756,1756,1756,1756,1756,1757,
-	1758,1758,1758,1758,1758,1758,1758,1759,1760,1760,1760,1760,1760,1760,1760,1760,
-	1761,1761,1761,1761,1761,1761,1761,1761,1762,1763,0,0,0,0,0,0,
-	1764,1764,1764,1764,1764,1764,1764,1764,1765,1765,1765,1765,1765,1765,1765,1765,
-	1766,1766,1766,1766,1766,1766,1766,1766,1767,1767,1767,1767,1767,1767,1767,1767,
-	1768,1768,1768,1768,1768,1768,1768,1768,1769,1769,1769,1769,1769,1769,1769,1769,
-	1770,1770,1770,1770,1770,1770,1770,1770,1771,1772,0,0,0,0,0,0,
-	1773,1773,1773,1773,1773,1773,1773,1773,1774,1774,1774,1774,1774,1774,1774,1774,
-	1775,1775,1775,1775,1775,1775,1775,1775,1776,1776,1776,1776,1776,1776,1776,1776,
-	1777,1777,1777,1777,1777,1777,1777,1777,1778,1778,1778,1778,1778,1778,1778,1778,
-	1779,1779,1779,1779,1779,1779,1779,1779,1780,1781,0,0,0,0,0,0,
-	1782,1782,1782,1782,1782,1782,1782,1782,1783,1783,1783,1783,1783,1783,1783,1783,
-	1784,1784,1784,1784,1784,1784,1784,1784,1785,1785,1785,1785,1785,1785,1785,1785,
-	1786,1786,1786,1786,1786,1786,1786,1786,1787,1787,1787,1787,1787,1787,1787,1787,
-	1788,1788,1788,1788,1788,1788,1788,1788,1789,1790,1791,1792,1793,0,0,0,
-	1703,1703,1703,1703,1703,1703,1703,1703,0,0,0,0,0,0,0,0,
-	1704,1704,1704,1704,1704,1704,1704,1704,1705,1705,1705,1705,1705,1705,1705,1706,
-	1707,1707,1707,1707,1707,1707,1707,1708,1709,1709,1709,1709,1709,1709,1709,1709,
-	1710,1710,1710,1710,1710,1710,1710,1710,1711,1712,1713,1714,1715,0,0,0,
-	1716,1716,1716,1716,1716,1716,1716,1716,1717,1717,1717,1717,1717,1717,1717,1717,
-	1718,1718,1718,1718,1718,1718,1718,1718,1719,1719,1719,1719,1719,1719,1719,1719,
-	1720,1720,1720,1720,1720,1720,1720,1720,1721,1721,1721,1721,1721,1721,1721,1721,
-	1722,1722,1722,1722,1722,1722,1722,1722,1723,1724,1725,1726,1727,0,0,0,
-	1728,1728,1728,1728,1728,1728,1728,1728,1729,1729,1729,1729,1729,1729,1729,1729,
-	1730,1730,1730,1730,1730,1730,1730,1730,1731,1731,1731,1731,1731,1731,1731,1731,
-	1732,1732,1732,1732,1732,1732,1732,1732,1733,1733,1733,1733,1733,1733,1733,1733,
-	1734,1734,1734,1734,1734,1734,1734,1734,1735,1736,1737,1738,1739,0,0,0,
-	1740,1740,1740,1740,1740,1740,1740,1740,1741,1741,1741,1741,1741,1741,1741,1741,
-	1742,1742,1742,1742,1742,1742,1742,1742,1743,1743,1743,1743,1743,1743,1743,1743,
-	1744,1744,1744,1744,1744,1744,1744,1744,1745,1745,1745,1745,1745,1745,1745,1745,
-	1746,1746,1746,1746,1746,1746,1746,1746,1747,1748,1749,1750,1751,0,0,0,
-	1752,1752,1752,1752,1752,1752,1752,1752,1753,1753,1753,1753,1753,1753,1753,1754,
-	1755,1755,1755,1755,1755,1755,1755,1755,1756,1756,1756,1756,1756,1756,1756,1757,
-	1758,1758,1758,1758,1758,1758,1758,1759,1760,1760,1760,1760,1760,1760,1760,1760,
-	1761,1761,1761,1761,1761,1761,1761,1761,1762,1763,0,0,0,0,0,0,
-	1764,1764,1764,1764,1764,1764,1764,1764,1765,1765,1765,1765,1765,1765,1765,1765,
-	1766,1766,1766,1766,1766,1766,1766,1766,1767,1767,1767,1767,1767,1767,1767,1767,
-	1768,1768,1768,1768,1768,1768,1768,1768,1769,1769,1769,1769,1769,1769,1769,1769,
-	1770,1770,1770,1770,1770,1770,1770,1770,1771,1772,0,0,0,0,0,0,
-	1773,1773,1773,1773,1773,1773,1773,1773,1774,1774,1774,1774,1774,1774,1774,1774,
-	1775,1775,1775,1775,1775,1775,1775,1775,1776,1776,1776,1776,1776,1776,1776,1776,
-	1777,1777,1777,1777,1777,1777,1777,1777,1778,1778,1778,1778,1778,1778,1778,1778,
-	1779,1779,1779,1779,1779,1779,1779,1779,1780,1781,0,0,0,0,0,0,
-	1782,1782,1782,1782,1782,1782,1782,1782,1783,1783,1783,1783,1783,1783,1783,1783,
-	1784,1784,1784,1784,1784,1784,1784,1784,1785,1785,1785,1785,1785,1785,1785,1785,
-	1786,1786,1786,1786,1786,1786,1786,1786,1787,1787,1787,1787,1787,1787,1787,1787,
-	1788,1788,1788,1788,1788,1788,1788,1788,1789,1790,1791,1792,1793,0,0,0,
-	1703,1703,1703,1703,1703,1703,1703,1703,0,0,0,0,0,0,0,0,
-	1704,1704,1704,1704,1704,1704,1704,1704,1705,1705,1705,1705,1705,1705,1705,1706,
-	1707,1707,1707,1707,1707,1707,1707,1708,1709,1709,1709,1709,1709,1709,1709,1709,
-	1710,1710,1710,1710,1710,1710,1710,1710,1711,1712,1713,1714,1715,0,0,0,
-	1716,1716,1716,1716,1716,1716,1716,1716,1717,1717,1717,1717,1717,1717,1717,1717,
-	1718,1718,1718,1718,1718,1718,1718,1718,1719,1719,1719,1719,1719,1719,1719,1719,
-	1720,1720,1720,1720,1720,1720,1720,1720,1721,1721,1721,1721,1721,1721,1721,1721,
-	1722,1722,1722,1722,1722,1722,1722,1722,1723,1724,1725,1726,1727,0,0,0,
-	1728,1728,1728,1728,1728,1728,1728,1728,1729,1729,1729,1729,1729,1729,1729,1729,
-	1730,1730,1730,1730,1730,1730,1730,1730,1731,1731,1731,1731,1731,1731,1731,1731,
-	1732,1732,1732,1732,1732,1732,1732,1732,1733,1733,1733,1733,1733,1733,1733,1733,
-	1734,1734,1734,1734,1734,1734,1734,1734,1735,1736,1737,1738,1739,0,0,0,
-	1740,1740,1740,1740,1740,1740,1740,1740,1741,1741,1741,1741,1741,1741,1741,1741,
-	1742,1742,1742,1742,1742,1742,1742,1742,1743,1743,1743,1743,1743,1743,1743,1743,
-	1744,1744,1744,1744,1744,1744,1744,1744,1745,1745,1745,1745,1745,1745,1745,1745,
-	1746,1746,1746,1746,1746,1746,1746,1746,1747,1748,1749,1750,1751,0,0,0,
-	1752,1752,1752,1752,1752,1752,1752,1752,1753,1753,1753,1753,1753,1753,1753,1754,
-	1755,1755,1755,1755,1755,1755,1755,1755,1756,1756,1756,1756,1756,1756,1756,1757,
-	1758,1758,1758,1758,1758,1758,1758,1759,1760,1760,1760,1760,1760,1760,1760,1760,
-	1761,1761,1761,1761,1761,1761,1761,1761,1762,1763,0,0,0,0,0,0,
-	1764,1764,1764,1764,1764,1764,1764,1764,1765,1765,1765,1765,1765,1765,1765,1765,
-	1766,1766,1766,1766,1766,1766,1766,1766,1767,1767,1767,1767,1767,1767,1767,1767,
-	1768,1768,1768,1768,1768,1768,1768,1768,1769,1769,1769,1769,1769,1769,1769,1769,
-	1770,1770,1770,1770,1770,1770,1770,1770,1771,1772,0,0,0,0,0,0,
-	1773,1773,1773,1773,1773,1773,1773,1773,1774,1774,1774,1774,1774,1774,1774,1774,
-	1775,1775,1775,1775,1775,1775,1775,1775,1776,1776,1776,1776,1776,1776,1776,1776,
-	1777,1777,1777,1777,1777,1777,1777,1777,1778,1778,1778,1778,1778,1778,1778,1778,
-	1779,1779,1779,1779,1779,1779,1779,1779,1780,1781,0,0,0,0,0,0,
-	1782,1782,1782,1782,1782,1782,1782,1782,1783,1783,1783,1783,1783,1783,1783,1783,
-	1784,1784,1784,1784,1784,1784,1784,1784,1785,1785,1785,1785,1785,1785,1785,1785,
-	1786,1786,1786,1786,1786,1786,1786,1786,1787,1787,1787,1787,1787,1787,1787,1787,
-	1788,1788,1788,1788,1788,1788,1788,1788,1789,1790,1791,1792,1793,0,0,0,
-	1703,1703,1703,1703,1703,1703,1703,1703,0,0,0,0,0,0,0,0,
-	1704,1704,1704,1704,1704,1704,1704,1704,1705,1705,1705,1705,1705,1705,1705,1706,
-	1707,1707,1707,1707,1707,1707,1707,1708,1709,1709,1709,1709,1709,1709,1709,1709,
-	1710,1710,1710,1710,1710,1710,1710,1710,1711,1712,1713,1714,1715,0,0,0,
-	1716,1716,1716,1716,1716,1716,1716,1716,1717,1717,1717,1717,1717,1717,1717,1717,
-	1718,1718,1718,1718,1718,1718,1718,1718,1719,1719,1719,1719,1719,1719,1719,1719,
-	1720,1720,1720,1720,1720,1720,1720,1720,1721,1721,1721,1721,1721,1721,1721,1721,
-	1722,1722,1722,1722,1722,1722,1722,1722,1723,1724,1725,1726,1727,0,0,0,
-	1728,1728,1728,1728,1728,1728,1728,1728,1729,1729,1729,1729,1729,1729,1729,1729,
-	1730,1730,1730,1730,1730,1730,1730,1730,1731,1731,1731,1731,1731,1731,1731,1731,
-	1732,1732,1732,1732,1732,1732,1732,1732,1733,1733,1733,1733,1733,1733,1733,1733,
-	1734,1734,1734,1734,1734,1734,1734,1734,1735,1736,1737,1738,1739,0,0,0,
-	1740,1740,1740,1740,1740,1740,1740,1740,1741,1741,1741,1741,1741,1741,1741,1741,
-	1742,1742,1742,1742,1742,1742,1742,1742,1743,1743,1743,1743,1743,1743,1743,1743,
-	1744,1744,1744,1744,1744,1744,1744,1744,1745,1745,1745,1745,1745,1745,1745,1745,
-	1746,1746,1746,1746,1746,1746,1746,1746,1747,1748,1749,1750,1751,0,0,0,
-	1752,1752,1752,1752,1752,1752,1752,1752,1794,1794,1794,1794,1794,1794,1794,1795,
-	1755,1755,1755,1755,1755,1755,1755,1755,1756,1756,1756,1756,1756,1756,1756,1757,
-	1758,1758,1758,1758,1758,1758,1758,1759,1760,1760,1760,1760,1760,1760,1760,1760,
-	1761,1761,1761,1761,1761,1761,1761,1761,1762,1763,0,0,0,0,0,0,
-	1764,1764,1764,1764,1764,1764,1764,1764,1765,1765,1765,1765,1765,1765,1765,1765,
-	1766,1766,1766,1766,1766,1766,1766,1766,1767,1767,1767,1767,1767,1767,1767,1767,
-	1768,1768,1768,1768,1768,1768,1768,1768,1769,1769,1769,1769,1769,1769,1769,1769,
-	1770,1770,1770,1770,1770,1770,1770,1770,1771,1772,0,0,0,0,0,0,
-	1773,1773,1773,1773,1773,1773,1773,1773,1774,1774,1774,1774,1774,1774,1774,1774,
-	1775,1775,1775,1775,1775,1775,1775,1775,1776,1776,1776,1776,1776,1776,1776,1776,
-	1777,1777,1777,1777,1777,1777,1777,1777,1778,1778,1778,1778,1778,1778,1778,1778,
-	1779,1779,1779,1779,1779,1779,1779,1779,1780,1781,0,0,0,0,0,0,
-	1782,1782,1782,1782,1782,1782,1782,1782,1783,1783,1783,1783,1783,1783,1783,1783,
-	1784,1784,1784,1784,1784,1784,1784,1784,1785,1785,1785,1785,1785,1785,1785,1785,
-	1786,1786,1786,1786,1786,1786,1786,1786,1787,1787,1787,1787,1787,1787,1787,1787,
-	1788,1788,1788,1788,1788,1788,1788,1788,1789,1790,1791,1792,1793,0,0,0,
-	1796,1796,1796,1796,1796,1796,1796,1796,1797,1797,1797,1797,1797,1797,1797,1797,
+	1786,1786,1786,1786,1786,1786,1786,1786,239,239,239,239,239,239,239,239,
+	1787,1787,1787,1787,1787,1787,1787,1787,1788,1789,0,0,0,0,0,0,
+	1790,1790,1790,1790,1790,1790,1790,1790,1791,1791,1791,1791,1791,1791,1791,1791,
+	1792,1792,1792,1792,1792,1792,1792,1792,1793,1793,1793,1793,1793,1793,1793,1793,
+	1794,1794,1794,1794,1794,1794,1794,1794,93,93,93,93,93,93,93,93,
+	1795,1795,1795,1795,1795,1795,1795,1795,1796,1797,0,0,0,0,0,0,
+	114,114,114,114,114,114,114,114,137,137,137,137,137,137,137,137,
 	1798,1798,1798,1798,1798,1798,1798,1798,1799,1799,1799,1799,1799,1799,1799,1799,
-	1800,1800,1800,1800,1800,1800,1800,1800,1801,1801,1801,1801,1801,1801,1801,1801,
-	1802,1802,1802,1802,1802,1802,1802,1802,1803,1803,1803,1803,1803,1803,1803,1803,
-	1804,1804,1804,1804,1804,1804,1804,1804,1805,1805,1805,1805,1805,1805,1805,1805,
-	1806,1806,1806,1806,1806,1806,1806,1806,1807,1807,1807,1807,1807,1807,1807,1807,
+	1800,1800,1800,1800,1800,1800,1800,1800,202,202,202,202,202,202,202,202,
+	1801,1801,1801,1801,1801,1801,1801,1801,1802,1803,1804,1805,87,0,0,0,
+	1731,1731,1731,1731,1731,1731,1731,1731,0,0,0,0,0,0,0,0,
+	1732,1732,1732,1732,1732,1732,1732,1732,1733,1733,1733,1733,1733,1733,1733,1734,
+	1735,1735,1735,1735,1735,1735,1735,1736,190,190,190,190,190,190,190,190,
+	1737,1737,1737,1737,1737,1737,1737,1737,1738,1739,1740,1741,1742,0,0,0,
+	40,40,40,40,40,40,40,40,1743,1743,1743,1743,1743,1743,1743,1743,
+	1744,1744,1744,1744,1744,1744,1744,1744,46,46,46,46,46,46,46,46,
+	1745,1745,1745,1745,1745,1745,1745,1745,183,183,183,183,183,183,183,183,
+	1746,1746,1746,1746,1746,1746,1746,1746,1747,1748,1749,1750,1751,0,0,0,
+	113,113,113,113,113,113,113,113,184,184,184,184,184,184,184,184,
+	1752,1752,1752,1752,1752,1752,1752,1752,38,38,38,38,38,38,38,38,
+	1753,1753,1753,1753,1753,1753,1753,1753,30,30,30,30,30,30,30,30,
+	1754,1754,1754,1754,1754,1754,1754,1754,1755,1756,1757,1758,81,0,0,0,
+	152,152,152,152,152,152,152,152,1759,1759,1759,1759,1759,1759,1759,1759,
+	1760,1760,1760,1760,1760,1760,1760,1760,1761,1761,1761,1761,1761,1761,1761,1761,
+	1762,1762,1762,1762,1762,1762,1762,1762,1763,1763,1763,1763,1763,1763,1763,1763,
+	1764,1764,1764,1764,1764,1764,1764,1764,1765,1766,1767,1768,1769,0,0,0,
+	1770,1770,1770,1770,1770,1770,1770,1770,1771,1771,1771,1771,1771,1771,1771,1772,
+	1773,1773,1773,1773,1773,1773,1773,1773,1774,1774,1774,1774,1774,1774,1774,1775,
+	1776,1776,1776,1776,1776,1776,1776,1777,1778,1778,1778,1778,1778,1778,1778,1778,
+	1779,1779,1779,1779,1779,1779,1779,1779,1780,1781,0,0,0,0,0,0,
+	1782,1782,1782,1782,1782,1782,1782,1782,1783,1783,1783,1783,1783,1783,1783,1783,
+	1784,1784,1784,1784,1784,1784,1784,1784,1785,1785,1785,1785,1785,1785,1785,1785,
+	1786,1786,1786,1786,1786,1786,1786,1786,239,239,239,239,239,239,239,239,
+	1787,1787,1787,1787,1787,1787,1787,1787,1788,1789,0,0,0,0,0,0,
+	1790,1790,1790,1790,1790,1790,1790,1790,1791,1791,1791,1791,1791,1791,1791,1791,
+	1792,1792,1792,1792,1792,1792,1792,1792,1793,1793,1793,1793,1793,1793,1793,1793,
+	1794,1794,1794,1794,1794,1794,1794,1794,93,93,93,93,93,93,93,93,
+	1795,1795,1795,1795,1795,1795,1795,1795,1796,1797,0,0,0,0,0,0,
+	114,114,114,114,114,114,114,114,137,137,137,137,137,137,137,137,
+	1798,1798,1798,1798,1798,1798,1798,1798,1799,1799,1799,1799,1799,1799,1799,1799,
+	1800,1800,1800,1800,1800,1800,1800,1800,202,202,202,202,202,202,202,202,
+	1801,1801,1801,1801,1801,1801,1801,1801,1802,1803,1804,1805,87,0,0,0,
+	1731,1731,1731,1731,1731,1731,1731,1731,0,0,0,0,0,0,0,0,
+	1732,1732,1732,1732,1732,1732,1732,1732,1733,1733,1733,1733,1733,1733,1733,1734,
+	1735,1735,1735,1735,1735,1735,1735,1736,190,190,190,190,190,190,190,190,
+	1737,1737,1737,1737,1737,1737,1737,1737,1738,1739,1740,1741,1742,0,0,0,
+	40,40,40,40,40,40,40,40,1743,1743,1743,1743,1743,1743,1743,1743,
+	1744,1744,1744,1744,1744,1744,1744,1744,46,46,46,46,46,46,46,46,
+	1745,1745,1745,1745,1745,1745,1745,1745,183,183,183,183,183,183,183,183,
+	1746,1746,1746,1746,1746,1746,1746,1746,1747,1748,1749,1750,1751,0,0,0,
+	113,113,113,113,113,113,113,113,184,184,184,184,184,184,184,184,
+	1752,1752,1752,1752,1752,1752,1752,1752,38,38,38,38,38,38,38,38,
+	1753,1753,1753,1753,1753,1753,1753,1753,30,30,30,30,30,30,30,30,
+	1754,1754,1754,1754,1754,1754,1754,1754,1755,1756,1757,1758,81,0,0,0,
+	152,152,152,152,152,152,152,152,1759,1759,1759,1759,1759,1759,1759,1759,
+	1760,1760,1760,1760,1760,1760,1760,1760,1761,1761,1761,1761,1761,1761,1761,1761,
+	1762,1762,1762,1762,1762,1762,1762,1762,1763,1763,1763,1763,1763,1763,1763,1763,
+	1764,1764,1764,1764,1764,1764,1764,1764,1765,1766,1767,1768,1769,0,0,0,
+	1770,1770,1770,1770,1770,1770,1770,1770,1771,1771,1771,1771,1771,1771,1771,1772,
+	1773,1773,1773,1773,1773,1773,1773,1773,1774,1774,1774,1774,1774,1774,1774,1775,
+	1776,1776,1776,1776,1776,1776,1776,1777,1778,1778,1778,1778,1778,1778,1778,1778,
+	1779,1779,1779,1779,1779,1779,1779,1779,1780,1781,0,0,0,0,0,0,
+	1782,1782,1782,1782,1782,1782,1782,1782,1783,1783,1783,1783,1783,1783,1783,1783,
+	1784,1784,1784,1784,1784,1784,1784,1784,1785,1785,1785,1785,1785,1785,1785,1785,
+	1786,1786,1786,1786,1786,1786,1786,1786,239,239,239,239,239,239,239,239,
+	1787,1787,1787,1787,1787,1787,1787,1787,1788,1789,0,0,0,0,0,0,
+	1790,1790,1790,1790,1790,1790,1790,1790,1791,1791,1791,1791,1791,1791,1791,1791,
+	1792,1792,1792,1792,1792,1792,1792,1792,1793,1793,1793,1793,1793,1793,1793,1793,
+	1794,1794,1794,1794,1794,1794,1794,1794,93,93,93,93,93,93,93,93,
+	1795,1795,1795,1795,1795,1795,1795,1795,1796,1797,0,0,0,0,0,0,
+	114,114,114,114,114,114,114,114,137,137,137,137,137,137,137,137,
+	1798,1798,1798,1798,1798,1798,1798,1798,1799,1799,1799,1799,1799,1799,1799,1799,
+	1800,1800,1800,1800,1800,1800,1800,1800,202,202,202,202,202,202,202,202,
+	1801,1801,1801,1801,1801,1801,1801,1801,1802,1803,1804,1805,87,0,0,0,
+	1731,1731,1731,1731,1731,1731,1731,1731,0,0,0,0,0,0,0,0,
+	1732,1732,1732,1732,1732,1732,1732,1732,1733,1733,1733,1733,1733,1733,1733,1734,
+	1735,1735,1735,1735,1735,1735,1735,1736,190,190,190,190,190,190,190,190,
+	1737,1737,1737,1737,1737,1737,1737,1737,1738,1739,1740,1741,1742,0,0,0,
+	40,40,40,40,40,40,40,40,1743,1743,1743,1743,1743,1743,1743,1743,
+	1744,1744,1744,1744,1744,1744,1744,1744,46,46,46,46,46,46,46,46,
+	1745,1745,1745,1745,1745,1745,1745,1745,183,183,183,183,183,183,183,183,
+	1746,1746,1746,1746,1746,1746,1746,1746,1747,1748,1749,1750,1751,0,0,0,
+	113,113,113,113,113,113,113,113,184,184,184,184,184,184,184,184,
+	1752,1752,1752,1752,1752,1752,1752,1752,38,38,38,38,38,38,38,38,
+	1753,1753,1753,1753,1753,1753,1753,1753,30,30,30,30,30,30,30,30,
+	1754,1754,1754,1754,1754,1754,1754,1754,1755,1756,1757,1758,81,0,0,0,
+	152,152,152,152,152,152,152,152,1759,1759,1759,1759,1759,1759,1759,1759,
+	1760,1760,1760,1760,1760,1760,1760,1760,1761,1761,1761,1761,1761,1761,1761,1761,
+	1762,1762,1762,1762,1762,1762,1762,1762,1763,1763,1763,1763,1763,1763,1763,1763,
+	1764,1764,1764,1764,1764,1764,1764,1764,1765,1766,1767,1768,1769,0,0,0,
+	1770,1770,1770,1770,1770,1770,1770,1770,1771,1771,1771,1771,1771,1771,1771,1772,
+	1773,1773,1773,1773,1773,1773,1773,1773,1774,1774,1774,1774,1774,1774,1774,1775,
+	1776,1776,1776,1776,1776,1776,1776,1777,1778,1778,1778,1778,1778,1778,1778,1778,
+	1779,1779,1779,1779,1779,1779,1779,1779,1780,1781,0,0,0,0,0,0,
+	1782,1782,1782,1782,1782,1782,1782,1782,1783,1783,1783,1783,1783,1783,1783,1783,
+	1784,1784,1784,1784,1784,1784,1784,1784,1785,1785,1785,1785,1785,1785,1785,1785,
+	1786,1786,1786,1786,1786,1786,1786,1786,239,239,239,239,239,239,239,239,
+	1787,1787,1787,1787,1787,1787,1787,1787,1788,1789,0,0,0,0,0,0,
+	1790,1790,1790,1790,1790,1790,1790,1790,1791,1791,1791,1791,1791,1791,1791,1791,
+	1792,1792,1792,1792,1792,1792,1792,1792,1793,1793,1793,1793,1793,1793,1793,1793,
+	1794,1794,1794,1794,1794,1794,1794,1794,93,93,93,93,93,93,93,93,
+	1795,1795,1795,1795,1795,1795,1795,1795,1796,1797,0,0,0,0,0,0,
+	114,114,114,114,114,114,114,114,137,137,137,137,137,137,137,137,
+	1798,1798,1798,1798,1798,1798,1798,1798,1799,1799,1799,1799,1799,1799,1799,1799,
+	1800,1800,1800,1800,1800,1800,1800,1800,202,202,202,202,202,202,202,202,
+	1801,1801,1801,1801,1801,1801,1801,1801,1802,1803,1804,1805,87,0,0,0,
+	1731,1731,1731,1731,1731,1731,1731,1731,0,0,0,0,0,0,0,0,
+	1732,1732,1732,1732,1732,1732,1732,1732,1733,1733,1733,1733,1733,1733,1733,1734,
+	1735,1735,1735,1735,1735,1735,1735,1736,190,190,190,190,190,190,190,190,
+	1737,1737,1737,1737,1737,1737,1737,1737,1738,1739,1740,1741,1742,0,0,0,
+	40,40,40,40,40,40,40,40,1743,1743,1743,1743,1743,1743,1743,1743,
+	1744,1744,1744,1744,1744,1744,1744,1744,46,46,46,46,46,46,46,46,
+	1745,1745,1745,1745,1745,1745,1745,1745,183,183,183,183,183,183,183,183,
+	1746,1746,1746,1746,1746,1746,1746,1746,1747,1748,1749,1750,1751,0,0,0,
+	113,113,113,113,113,113,113,113,184,184,184,184,184,184,184,184,
+	1752,1752,1752,1752,1752,1752,1752,1752,38,38,38,38,38,38,38,38,
+	1753,1753,1753,1753,1753,1753,1753,1753,30,30,30,30,30,30,30,30,
+	1754,1754,1754,1754,1754,1754,1754,1754,1755,1756,1757,1758,81,0,0,0,
+	152,152,152,152,152,152,152,152,1759,1759,1759,1759,1759,1759,1759,1759,
+	1760,1760,1760,1760,1760,1760,1760,1760,1761,1761,1761,1761,1761,1761,1761,1761,
+	1762,1762,1762,1762,1762,1762,1762,1762,1763,1763,1763,1763,1763,1763,1763,1763,
+	1764,1764,1764,1764,1764,1764,1764,1764,1765,1766,1767,1768,1769,0,0,0,
+	1770,1770,1770,1770,1770,1770,1770,1770,1771,1771,1771,1771,1771,1771,1771,1772,
+	1773,1773,1773,1773,1773,1773,1773,1773,1774,1774,1774,1774,1774,1774,1774,1775,
+	1776,1776,1776,1776,1776,1776,1776,1777,1778,1778,1778,1778,1778,1778,1778,1778,
+	1779,1779,1779,1779,1779,1779,1779,1779,1780,1781,0,0,0,0,0,0,
+	1782,1782,1782,1782,1782,1782,1782,1782,1783,1783,1783,1783,1783,1783,1783,1783,
+	1784,1784,1784,1784,1784,1784,1784,1784,1785,1785,1785,1785,1785,1785,1785,1785,
+	1786,1786,1786,1786,1786,1786,1786,1786,239,239,239,239,239,239,239,239,
+	1787,1787,1787,1787,1787,1787,1787,1787,1788,1789,0,0,0,0,0,0,
+	1790,1790,1790,1790,1790,1790,1790,1790,1791,1791,1791,1791,1791,1791,1791,1791,
+	1792,1792,1792,1792,1792,1792,1792,1792,1793,1793,1793,1793,1793,1793,1793,1793,
+	1794,1794,1794,1794,1794,1794,1794,1794,93,93,93,93,93,93,93,93,
+	1795,1795,1795,1795,1795,1795,1795,1795,1796,1797,0,0,0,0,0,0,
+	114,114,114,114,114,114,114,114,137,137,137,137,137,137,137,137,
+	1798,1798,1798,1798,1798,1798,1798,1798,1799,1799,1799,1799,1799,1799,1799,1799,
+	1800,1800,1800,1800,1800,1800,1800,1800,202,202,202,202,202,202,202,202,
+	1801,1801,1801,1801,1801,1801,1801,1801,1802,1803,1804,1805,87,0,0,0,
+	1731,1731,1731,1731,1731,1731,1731,1731,0,0,0,0,0,0,0,0,
+	1732,1732,1732,1732,1732,1732,1732,1732,1733,1733,1733,1733,1733,1733,1733,1734,
+	1735,1735,1735,1735,1735,1735,1735,1736,190,190,190,190,190,190,190,190,
+	1737,1737,1737,1737,1737,1737,1737,1737,1738,1739,1740,1741,1742,0,0,0,
+	40,40,40,40,40,40,40,40,1743,1743,1743,1743,1743,1743,1743,1743,
+	1744,1744,1744,1744,1744,1744,1744,1744,46,46,46,46,46,46,46,46,
+	1745,1745,1745,1745,1745,1745,1745,1745,183,183,183,183,183,183,183,183,
+	1746,1746,1746,1746,1746,1746,1746,1746,1747,1748,1749,1750,1751,0,0,0,
+	113,113,113,113,113,113,113,113,184,184,184,184,184,184,184,184,
+	1752,1752,1752,1752,1752,1752,1752,1752,38,38,38,38,38,38,38,38,
+	1753,1753,1753,1753,1753,1753,1753,1753,30,30,30,30,30,30,30,30,
+	1754,1754,1754,1754,1754,1754,1754,1754,1755,1756,1757,1758,81,0,0,0,
+	152,152,152,152,152,152,152,152,1759,1759,1759,1759,1759,1759,1759,1759,
+	1760,1760,1760,1760,1760,1760,1760,1760,1761,1761,1761,1761,1761,1761,1761,1761,
+	1762,1762,1762,1762,1762,1762,1762,1762,1763,1763,1763,1763,1763,1763,1763,1763,
+	1764,1764,1764,1764,1764,1764,1764,1764,1765,1766,1767,1768,1769,0,0,0,
+	1770,1770,1770,1770,1770,1770,1770,1770,1771,1771,1771,1771,1771,1771,1771,1772,
+	1773,1773,1773,1773,1773,1773,1773,1773,1774,1774,1774,1774,1774,1774,1774,1775,
+	1776,1776,1776,1776,1776,1776,1776,1777,1778,1778,1778,1778,1778,1778,1778,1778,
+	1779,1779,1779,1779,1779,1779,1779,1779,1780,1781,0,0,0,0,0,0,
+	1782,1782,1782,1782,1782,1782,1782,1782,1783,1783,1783,1783,1783,1783,1783,1783,
+	1784,1784,1784,1784,1784,1784,1784,1784,1785,1785,1785,1785,1785,1785,1785,1785,
+	1786,1786,1786,1786,1786,1786,1786,1786,239,239,239,239,239,239,239,239,
+	1787,1787,1787,1787,1787,1787,1787,1787,1788,1789,0,0,0,0,0,0,
+	1790,1790,1790,1790,1790,1790,1790,1790,1791,1791,1791,1791,1791,1791,1791,1791,
+	1792,1792,1792,1792,1792,1792,1792,1792,1793,1793,1793,1793,1793,1793,1793,1793,
+	1794,1794,1794,1794,1794,1794,1794,1794,93,93,93,93,93,93,93,93,
+	1795,1795,1795,1795,1795,1795,1795,1795,1796,1797,0,0,0,0,0,0,
+	114,114,114,114,114,114,114,114,137,137,137,137,137,137,137,137,
+	1798,1798,1798,1798,1798,1798,1798,1798,1799,1799,1799,1799,1799,1799,1799,1799,
+	1800,1800,1800,1800,1800,1800,1800,1800,202,202,202,202,202,202,202,202,
+	1801,1801,1801,1801,1801,1801,1801,1801,1802,1803,1804,1805,87,0,0,0,
+	1731,1731,1731,1731,1731,1731,1731,1731,0,0,0,0,0,0,0,0,
+	1732,1732,1732,1732,1732,1732,1732,1732,1733,1733,1733,1733,1733,1733,1733,1734,
+	1735,1735,1735,1735,1735,1735,1735,1736,190,190,190,190,190,190,190,190,
+	1737,1737,1737,1737,1737,1737,1737,1737,1738,1739,1740,1741,1742,0,0,0,
+	40,40,40,40,40,40,40,40,1743,1743,1743,1743,1743,1743,1743,1743,
+	1744,1744,1744,1744,1744,1744,1744,1744,46,46,46,46,46,46,46,46,
+	1745,1745,1745,1745,1745,1745,1745,1745,183,183,183,183,183,183,183,183,
+	1746,1746,1746,1746,1746,1746,1746,1746,1747,1748,1749,1750,1751,0,0,0,
+	113,113,113,113,113,113,113,113,184,184,184,184,184,184,184,184,
+	1752,1752,1752,1752,1752,1752,1752,1752,38,38,38,38,38,38,38,38,
+	1753,1753,1753,1753,1753,1753,1753,1753,30,30,30,30,30,30,30,30,
+	1754,1754,1754,1754,1754,1754,1754,1754,1755,1756,1757,1758,81,0,0,0,
+	152,152,152,152,152,152,152,152,1759,1759,1759,1759,1759,1759,1759,1759,
+	1760,1760,1760,1760,1760,1760,1760,1760,1761,1761,1761,1761,1761,1761,1761,1761,
+	1762,1762,1762,1762,1762,1762,1762,1762,1763,1763,1763,1763,1763,1763,1763,1763,
+	1764,1764,1764,1764,1764,1764,1764,1764,1765,1766,1767,1768,1769,0,0,0,
+	1770,1770,1770,1770,1770,1770,1770,1770,1771,1771,1771,1771,1771,1771,1771,1772,
+	1773,1773,1773,1773,1773,1773,1773,1773,1774,1774,1774,1774,1774,1774,1774,1775,
+	1776,1776,1776,1776,1776,1776,1776,1777,1778,1778,1778,1778,1778,1778,1778,1778,
+	1779,1779,1779,1779,1779,1779,1779,1779,1780,1781,0,0,0,0,0,0,
+	1782,1782,1782,1782,1782,1782,1782,1782,1783,1783,1783,1783,1783,1783,1783,1783,
+	1784,1784,1784,1784,1784,1784,1784,1784,1785,1785,1785,1785,1785,1785,1785,1785,
+	1786,1786,1786,1786,1786,1786,1786,1786,239,239,239,239,239,239,239,239,
+	1787,1787,1787,1787,1787,1787,1787,1787,1788,1789,0,0,0,0,0,0,
+	1790,1790,1790,1790,1790,1790,1790,1790,1791,1791,1791,1791,1791,1791,1791,1791,
+	1792,1792,1792,1792,1792,1792,1792,1792,1793,1793,1793,1793,1793,1793,1793,1793,
+	1794,1794,1794,1794,1794,1794,1794,1794,93,93,93,93,93,93,93,93,
+	1795,1795,1795,1795,1795,1795,1795,1795,1796,1797,0,0,0,0,0,0,
+	114,114,114,114,114,114,114,114,137,137,137,137,137,137,137,137,
+	1798,1798,1798,1798,1798,1798,1798,1798,1799,1799,1799,1799,1799,1799,1799,1799,
+	1800,1800,1800,1800,1800,1800,1800,1800,202,202,202,202,202,202,202,202,
+	1801,1801,1801,1801,1801,1801,1801,1801,1802,1803,1804,1805,87,0,0,0,
+	1731,1731,1731,1731,1731,1731,1731,1731,0,0,0,0,0,0,0,0,
+	1732,1732,1732,1732,1732,1732,1732,1732,1733,1733,1733,1733,1733,1733,1733,1734,
+	1735,1735,1735,1735,1735,1735,1735,1736,190,190,190,190,190,190,190,190,
+	1737,1737,1737,1737,1737,1737,1737,1737,1738,1739,1740,1741,1742,0,0,0,
+	40,40,40,40,40,40,40,40,1743,1743,1743,1743,1743,1743,1743,1743,
+	1744,1744,1744,1744,1744,1744,1744,1744,46,46,46,46,46,46,46,46,
+	1745,1745,1745,1745,1745,1745,1745,1745,183,183,183,183,183,183,183,183,
+	1746,1746,1746,1746,1746,1746,1746,1746,1747,1748,1749,1750,1751,0,0,0,
+	113,113,113,113,113,113,113,113,184,184,184,184,184,184,184,184,
+	1752,1752,1752,1752,1752,1752,1752,1752,38,38,38,38,38,38,38,38,
+	1753,1753,1753,1753,1753,1753,1753,1753,30,30,30,30,30,30,30,30,
+	1754,1754,1754,1754,1754,1754,1754,1754,1755,1756,1757,1758,81,0,0,0,
+	152,152,152,152,152,152,152,152,1759,1759,1759,1759,1759,1759,1759,1759,
+	1760,1760,1760,1760,1760,1760,1760,1760,1761,1761,1761,1761,1761,1761,1761,1761,
+	1762,1762,1762,1762,1762,1762,1762,1762,1763,1763,1763,1763,1763,1763,1763,1763,
+	1764,1764,1764,1764,1764,1764,1764,1764,1765,1766,1767,1768,1769,0,0,0,
+	1770,1770,1770,1770,1770,1770,1770,1770,1806,1806,1806,1806,1806,1806,1806,1807,
+	1773,1773,1773,1773,1773,1773,1773,1773,1774,1774,1774,1774,1774,1774,1774,1775,
+	1776,1776,1776,1776,1776,1776,1776,1777,1778,1778,1778,1778,1778,1778,1778,1778,
+	1779,1779,1779,1779,1779,1779,1779,1779,1780,1781,0,0,0,0,0,0,
+	1782,1782,1782,1782,1782,1782,1782,1782,1783,1783,1783,1783,1783,1783,1783,1783,
+	1784,1784,1784,1784,1784,1784,1784,1784,1785,1785,1785,1785,1785,1785,1785,1785,
+	1786,1786,1786,1786,1786,1786,1786,1786,239,239,239,239,239,239,239,239,
+	1787,1787,1787,1787,1787,1787,1787,1787,1788,1789,0,0,0,0,0,0,
+	1790,1790,1790,1790,1790,1790,1790,1790,1791,1791,1791,1791,1791,1791,1791,1791,
+	1792,1792,1792,1792,1792,1792,1792,1792,1793,1793,1793,1793,1793,1793,1793,1793,
+	1794,1794,1794,1794,1794,1794,1794,1794,93,93,93,93,93,93,93,93,
+	1795,1795,1795,1795,1795,1795,1795,1795,1796,1797,0,0,0,0,0,0,
+	114,114,114,114,114,114,114,114,137,137,137,137,137,137,137,137,
+	1798,1798,1798,1798,1798,1798,1798,1798,1799,1799,1799,1799,1799,1799,1799,1799,
+	1800,1800,1800,1800,1800,1800,1800,1800,202,202,202,202,202,202,202,202,
+	1801,1801,1801,1801,1801,1801,1801,1801,1802,1803,1804,1805,87,0,0,0,
 	1808,1808,1808,1808,1808,1808,1808,1808,1809,1809,1809,1809,1809,1809,1809,1809,
 	1810,1810,1810,1810,1810,1810,1810,1810,1811,1811,1811,1811,1811,1811,1811,1811,
 	1812,1812,1812,1812,1812,1812,1812,1812,1813,1813,1813,1813,1813,1813,1813,1813,
 	1814,1814,1814,1814,1814,1814,1814,1814,1815,1815,1815,1815,1815,1815,1815,1815,
-	1816,1816,1816,1816,1816,1816,1816,1816,1817,1817,1817,1817,1817,1817,1817,1817,
-	1818,1818,1818,1818,1818,1818,1818,1818,1819,1819,1819,1819,1819,1819,1819,1819,
+	220,220,220,220,220,220,220,220,42,42,42,42,42,42,42,42,
+	1816,1816,1816,1816,1816,1816,1816,1816,185,185,185,185,185,185,185,185,
+	1817,1817,1817,1817,1817,1817,1817,1817,1818,1818,1818,1818,1818,1818,1818,1818,
+	1819,1819,1819,1819,1819,1819,1819,1819,1820,1820,1820,1820,1820,1820,1820,1820,
+	206,206,206,206,206,206,206,206,192,192,192,192,192,192,192,192,
+	1821,1821,1821,1821,1821,1821,1821,1821,1822,1822,1822,1822,1822,1822,1822,1822,
+	228,228,228,228,228,228,228,228,201,201,201,201,201,201,201,201,
+	1823,1823,1823,1823,1823,1823,1823,1823,1824,1824,1824,1824,1824,1824,1824,1824,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-	1820,1820,1820,1820,1820,1820,1820,1820,1821,1821,1821,1821,1821,1821,1821,1821,
-	1822,1822,1822,1822,1822,1822,1822,1822,1823,1823,1823,1823,1823,1823,1823,1823,
-	1824,1824,1824,1824,1824,1824,1824,1824,1825,1826,0,0,0,0,0,0,
+	1825,1825,1825,1825,1825,1825,1825,1825,1826,1826,1826,1826,1826,1826,1826,1826,
 	1827,1827,1827,1827,1827,1827,1827,1827,1828,1828,1828,1828,1828,1828,1828,1828,
-	1829,1829,1829,1829,1829,1829,1829,1829,1830,1830,1830,1830,1830,1830,1830,1830,
-	1831,1831,1831,1831,1831,1831,1831,1831,1832,1832,1832,1832,1832,1832,1832,1832,
-	1833,1833,1833,1833,1833,1833,1833,1833,1834,1834,1834,1834,1834,1834,1834,1834,
-	1835,1835,1835,1835,1835,1835,1835,1835,1836,1836,1836,1836,1836,1836,1836,1836,
-	1837,1837,1837,1837,1837,1837,1837,1837,1838,1838,1838,1838,1838,1838,1838,1838,
-	1839,1839,1839,1839,1839,1839,1839,1839,1840,1840,1840,1840,1840,1840,1840,1840,
+	1829,1829,1829,1829,1829,1829,1829,1829,1830,1831,0,0,0,0,0,0,
+	1832,1832,1832,1832,1832,1832,1832,1832,1833,1833,1833,1833,1833,1833,1833,1833,
+	1834,1834,1834,1834,1834,1834,1834,1834,1835,1835,1835,1835,1835,1835,1835,1835,
+	1836,1836,1836,1836,1836,1836,1836,1836,1837,1837,1837,1837,1837,1837,1837,1837,
+	1838,1838,1838,1838,1838,1838,1838,1838,1839,1839,1839,1839,1839,1839,1839,1839,
+	1840,1840,1840,1840,1840,1840,1840,1840,69,69,69,69,69,69,69,69,
 	1841,1841,1841,1841,1841,1841,1841,1841,1842,1842,1842,1842,1842,1842,1842,1842,
 	1843,1843,1843,1843,1843,1843,1843,1843,1844,1844,1844,1844,1844,1844,1844,1844,
 	1845,1845,1845,1845,1845,1845,1845,1845,1846,1846,1846,1846,1846,1846,1846,1846,
-	1847,1847,1847,1847,1847,1847,1847,1847,1848,1848,1848,1848,1848,1848,1848,1848,
+	233,233,233,233,233,233,233,233,90,90,90,90,90,90,90,90,
+	1847,1847,1847,1847,1847,1847,1847,1847,169,169,169,169,169,169,169,169,
+	1848,1848,1848,1848,1848,1848,1848,1848,219,219,219,219,219,219,219,219,
 	1849,1849,1849,1849,1849,1849,1849,1849,1850,1850,1850,1850,1850,1850,1850,1850,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	1851,1851,1851,1851,1851,1851,1851,1851,1852,1852,1852,1852,1852,1852,1852,1852,
 	1853,1853,1853,1853,1853,1853,1853,1853,1854,1854,1854,1854,1854,1854,1854,1854,
 	1855,1855,1855,1855,1855,1855,1855,1855,1856,1857,0,0,0,0,0,0,
-	1796,1796,1796,1796,1796,1796,1796,1796,1797,1797,1797,1797,1797,1797,1797,1797,
-	1798,1798,1798,1798,1798,1798,1798,1798,1799,1799,1799,1799,1799,1799,1799,1799,
-	1800,1800,1800,1800,1800,1800,1800,1800,1801,1801,1801,1801,1801,1801,1801,1801,
-	1802,1802,1802,1802,1802,1802,1802,1802,1803,1803,1803,1803,1803,1803,1803,1803,
-	1804,1804,1804,1804,1804,1804,1804,1804,1805,1805,1805,1805,1805,1805,1805,1805,
-	1806,1806,1806,1806,1806,1806,1806,1806,1807,1807,1807,1807,1807,1807,1807,1807,
 	1808,1808,1808,1808,1808,1808,1808,1808,1809,1809,1809,1809,1809,1809,1809,1809,
 	1810,1810,1810,1810,1810,1810,1810,1810,1811,1811,1811,1811,1811,1811,1811,1811,
 	1812,1812,1812,1812,1812,1812,1812,1812,1813,1813,1813,1813,1813,1813,1813,1813,
 	1814,1814,1814,1814,1814,1814,1814,1814,1815,1815,1815,1815,1815,1815,1815,1815,
-	1816,1816,1816,1816,1816,1816,1816,1816,1817,1817,1817,1817,1817,1817,1817,1817,
-	1818,1818,1818,1818,1818,1818,1818,1818,1819,1819,1819,1819,1819,1819,1819,1819,
+	220,220,220,220,220,220,220,220,42,42,42,42,42,42,42,42,
+	1816,1816,1816,1816,1816,1816,1816,1816,185,185,185,185,185,185,185,185,
+	1817,1817,1817,1817,1817,1817,1817,1817,1818,1818,1818,1818,1818,1818,1818,1818,
+	1819,1819,1819,1819,1819,1819,1819,1819,1820,1820,1820,1820,1820,1820,1820,1820,
+	206,206,206,206,206,206,206,206,192,192,192,192,192,192,192,192,
+	1821,1821,1821,1821,1821,1821,1821,1821,1822,1822,1822,1822,1822,1822,1822,1822,
+	228,228,228,228,228,228,228,228,201,201,201,201,201,201,201,201,
+	1823,1823,1823,1823,1823,1823,1823,1823,1824,1824,1824,1824,1824,1824,1824,1824,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	1858,1858,1858,1858,1858,1858,1858,1858,1859,1859,1859,1859,1859,1859,1859,1859,
 	1860,1860,1860,1860,1860,1860,1860,1860,1861,1861,1861,1861,1861,1861,1861,1861,
 	1862,1862,1862,1862,1862,1862,1862,1862,1863,1864,0,0,0,0,0,0,
-	1827,1827,1827,1827,1827,1827,1827,1827,1828,1828,1828,1828,1828,1828,1828,1828,
-	1829,1829,1829,1829,1829,1829,1829,1829,1830,1830,1830,1830,1830,1830,1830,1830,
-	1831,1831,1831,1831,1831,1831,1831,1831,1832,1832,1832,1832,1832,1832,1832,1832,
-	1833,1833,1833,1833,1833,1833,1833,1833,1834,1834,1834,1834,1834,1834,1834,1834,
-	1835,1835,1835,1835,1835,1835,1835,1835,1836,1836,1836,1836,1836,1836,1836,1836,
-	1837,1837,1837,1837,1837,1837,1837,1837,1838,1838,1838,1838,1838,1838,1838,1838,
-	1839,1839,1839,1839,1839,1839,1839,1839,1840,1840,1840,1840,1840,1840,1840,1840,
+	1832,1832,1832,1832,1832,1832,1832,1832,1833,1833,1833,1833,1833,1833,1833,1833,
+	1834,1834,1834,1834,1834,1834,1834,1834,1835,1835,1835,1835,1835,1835,1835,1835,
+	1836,1836,1836,1836,1836,1836,1836,1836,1837,1837,1837,1837,1837,1837,1837,1837,
+	1838,1838,1838,1838,1838,1838,1838,1838,1839,1839,1839,1839,1839,1839,1839,1839,
+	1840,1840,1840,1840,1840,1840,1840,1840,69,69,69,69,69,69,69,69,
 	1841,1841,1841,1841,1841,1841,1841,1841,1842,1842,1842,1842,1842,1842,1842,1842,
 	1843,1843,1843,1843,1843,1843,1843,1843,1844,1844,1844,1844,1844,1844,1844,1844,
 	1845,1845,1845,1845,1845,1845,1845,1845,1846,1846,1846,1846,1846,1846,1846,1846,
-	1847,1847,1847,1847,1847,1847,1847,1847,1848,1848,1848,1848,1848,1848,1848,1848,
+	233,233,233,233,233,233,233,233,90,90,90,90,90,90,90,90,
+	1847,1847,1847,1847,1847,1847,1847,1847,169,169,169,169,169,169,169,169,
+	1848,1848,1848,1848,1848,1848,1848,1848,219,219,219,219,219,219,219,219,
 	1849,1849,1849,1849,1849,1849,1849,1849,1850,1850,1850,1850,1850,1850,1850,1850,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	1865,1865,1865,1865,1865,1865,1865,1865,1866,1866,1866,1866,1866,1866,1866,1866,
 	1867,1867,1867,1867,1867,1867,1867,1867,1868,1868,1868,1868,1868,1868,1868,1868,
 	1869,1869,1869,1869,1869,1869,1869,1869,1870,1871,0,0,0,0,0,0,
-	1796,1796,1796,1796,1796,1796,1796,1796,1797,1797,1797,1797,1797,1797,1797,1797,
-	1798,1798,1798,1798,1798,1798,1798,1798,1799,1799,1799,1799,1799,1799,1799,1799,
-	1800,1800,1800,1800,1800,1800,1800,1800,1801,1801,1801,1801,1801,1801,1801,1801,
-	1802,1802,1802,1802,1802,1802,1802,1802,1803,1803,1803,1803,1803,1803,1803,1803,
-	1804,1804,1804,1804,1804,1804,1804,1804,1805,1805,1805,1805,1805,1805,1805,1805,
-	1806,1806,1806,1806,1806,1806,1806,1806,1807,1807,1807,1807,1807,1807,1807,1807,
 	1808,1808,1808,1808,1808,1808,1808,1808,1809,1809,1809,1809,1809,1809,1809,1809,
 	1810,1810,1810,1810,1810,1810,1810,1810,1811,1811,1811,1811,1811,1811,1811,1811,
 	1812,1812,1812,1812,1812,1812,1812,1812,1813,1813,1813,1813,1813,1813,1813,1813,
 	1814,1814,1814,1814,1814,1814,1814,1814,1815,1815,1815,1815,1815,1815,1815,1815,
-	1816,1816,1816,1816,1816,1816,1816,1816,1817,1817,1817,1817,1817,1817,1817,1817,
-	1818,1818,1818,1818,1818,1818,1818,1818,1819,1819,1819,1819,1819,1819,1819,1819,
+	220,220,220,220,220,220,220,220,42,42,42,42,42,42,42,42,
+	1816,1816,1816,1816,1816,1816,1816,1816,185,185,185,185,185,185,185,185,
+	1817,1817,1817,1817,1817,1817,1817,1817,1818,1818,1818,1818,1818,1818,1818,1818,
+	1819,1819,1819,1819,1819,1819,1819,1819,1820,1820,1820,1820,1820,1820,1820,1820,
+	206,206,206,206,206,206,206,206,192,192,192,192,192,192,192,192,
+	1821,1821,1821,1821,1821,1821,1821,1821,1822,1822,1822,1822,1822,1822,1822,1822,
+	228,228,228,228,228,228,228,228,201,201,201,201,201,201,201,201,
+	1823,1823,1823,1823,1823,1823,1823,1823,1824,1824,1824,1824,1824,1824,1824,1824,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	1872,1872,1872,1872,1872,1872,1872,1872,1873,1873,1873,1873,1873,1873,1873,1873,
 	1874,1874,1874,1874,1874,1874,1874,1874,1875,1875,1875,1875,1875,1875,1875,1875,
 	1876,1876,1876,1876,1876,1876,1876,1876,1877,1878,0,0,0,0,0,0,
-	1827,1827,1827,1827,1827,1827,1827,1827,1828,1828,1828,1828,1828,1828,1828,1828,
-	1829,1829,1829,1829,1829,1829,1829,1829,1830,1830,1830,1830,1830,1830,1830,1830,
-	1831,1831,1831,1831,1831,1831,1831,1831,1832,1832,1832,1832,1832,1832,1832,1832,
-	1833,1833,1833,1833,1833,1833,1833,1833,1834,1834,1834,1834,1834,1834,1834,1834,
-	1835,1835,1835,1835,1835,1835,1835,1835,1836,1836,1836,1836,1836,1836,1836,1836,
-	1837,1837,1837,1837,1837,1837,1837,1837,1838,1838,1838,1838,1838,1838,1838,1838,
-	1839,1839,1839,1839,1839,1839,1839,1839,1840,1840,1840,1840,1840,1840,1840,1840,
+	1832,1832,1832,1832,1832,1832,1832,1832,1833,1833,1833,1833,1833,1833,1833,1833,
+	1834,1834,1834,1834,1834,1834,1834,1834,1835,1835,1835,1835,1835,1835,1835,1835,
+	1836,1836,1836,1836,1836,1836,1836,1836,1837,1837,1837,1837,1837,1837,1837,1837,
+	1838,1838,1838,1838,1838,1838,1838,1838,1839,1839,1839,1839,1839,1839,1839,1839,
+	1840,1840,1840,1840,1840,1840,1840,1840,69,69,69,69,69,69,69,69,
 	1841,1841,1841,1841,1841,1841,1841,1841,1842,1842,1842,1842,1842,1842,1842,1842,
 	1843,1843,1843,1843,1843,1843,1843,1843,1844,1844,1844,1844,1844,1844,1844,1844,
 	1845,1845,1845,1845,1845,1845,1845,1845,1846,1846,1846,1846,1846,1846,1846,1846,
-	1847,1847,1847,1847,1847,1847,1847,1847,1848,1848,1848,1848,1848,1848,1848,1848,
+	233,233,233,233,233,233,233,233,90,90,90,90,90,90,90,90,
+	1847,1847,1847,1847,1847,1847,1847,1847,169,169,169,169,169,169,169,169,
+	1848,1848,1848,1848,1848,1848,1848,1848,219,219,219,219,219,219,219,219,
 	1849,1849,1849,1849,1849,1849,1849,1849,1850,1850,1850,1850,1850,1850,1850,1850,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	1879,1879,1879,1879,1879,1879,1879,1879,1880,1880,1880,1880,1880,1880,1880,1880,
 	1881,1881,1881,1881,1881,1881,1881,1881,1882,1882,1882,1882,1882,1882,1882,1882,
 	1883,1883,1883,1883,1883,1883,1883,1883,1884,1885,0,0,0,0,0,0,
-	1796,1796,1796,1796,1796,1796,1796,1796,1797,1797,1797,1797,1797,1797,1797,1797,
-	1798,1798,1798,1798,1798,1798,1798,1798,1799,1799,1799,1799,1799,1799,1799,1799,
-	1800,1800,1800,1800,1800,1800,1800,1800,1801,1801,1801,1801,1801,1801,1801,1801,
-	1802,1802,1802,1802,1802,1802,1802,1802,1803,1803,1803,1803,1803,1803,1803,1803,
-	1804,1804,1804,1804,1804,1804,1804,1804,1805,1805,1805,1805,1805,1805,1805,1805,
-	1806,1806,1806,1806,1806,1806,1806,1806,1807,1807,1807,1807,1807,1807,1807,1807,
 	1808,1808,1808,1808,1808,1808,1808,1808,1809,1809,1809,1809,1809,1809,1809,1809,
 	1810,1810,1810,1810,1810,1810,1810,1810,1811,1811,1811,1811,1811,1811,1811,1811,
 	1812,1812,1812,1812,1812,1812,1812,1812,1813,1813,1813,1813,1813,1813,1813,1813,
 	1814,1814,1814,1814,1814,1814,1814,1814,1815,1815,1815,1815,1815,1815,1815,1815,
-	1816,1816,1816,1816,1816,1816,1816,1816,1817,1817,1817,1817,1817,1817,1817,1817,
-	1818,1818,1818,1818,1818,1818,1818,1818,1819,1819,1819,1819,1819,1819,1819,1819,
+	220,220,220,220,220,220,220,220,42,42,42,42,42,42,42,42,
+	1816,1816,1816,1816,1816,1816,1816,1816,185,185,185,185,185,185,185,185,
+	1817,1817,1817,1817,1817,1817,1817,1817,1818,1818,1818,1818,1818,1818,1818,1818,
+	1819,1819,1819,1819,1819,1819,1819,1819,1820,1820,1820,1820,1820,1820,1820,1820,
+	206,206,206,206,206,206,206,206,192,192,192,192,192,192,192,192,
+	1821,1821,1821,1821,1821,1821,1821,1821,1822,1822,1822,1822,1822,1822,1822,1822,
+	228,228,228,228,228,228,228,228,201,201,201,201,201,201,201,201,
+	1823,1823,1823,1823,1823,1823,1823,1823,1824,1824,1824,1824,1824,1824,1824,1824,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	1886,1886,1886,1886,1886,1886,1886,1886,1887,1887,1887,1887,1887,1887,1887,1887,
 	1888,1888,1888,1888,1888,1888,1888,1888,1889,1889,1889,1889,1889,1889,1889,1889,
 	1890,1890,1890,1890,1890,1890,1890,1890,1891,1892,0,0,0,0,0,0,
-	1827,1827,1827,1827,1827,1827,1827,1827,1828,1828,1828,1828,1828,1828,1828,1828,
-	1829,1829,1829,1829,1829,1829,1829,1829,1830,1830,1830,1830,1830,1830,1830,1830,
-	1831,1831,1831,1831,1831,1831,1831,1831,1832,1832,1832,1832,1832,1832,1832,1832,
-	1833,1833,1833,1833,1833,1833,1833,1833,1834,1834,1834,1834,1834,1834,1834,1834,
-	1835,1835,1835,1835,1835,1835,1835,1835,1836,1836,1836,1836,1836,1836,1836,1836,
-	1837,1837,1837,1837,1837,1837,1837,1837,1838,1838,1838,1838,1838,1838,1838,1838,
-	1839,1839,1839,1839,1839,1839,1839,1839,1840,1840,1840,1840,1840,1840,1840,1840,
+	1832,1832,1832,1832,1832,1832,1832,1832,1833,1833,1833,1833,1833,1833,1833,1833,
+	1834,1834,1834,1834,1834,1834,1834,1834,1835,1835,1835,1835,1835,1835,1835,1835,
+	1836,1836,1836,1836,1836,1836,1836,1836,1837,1837,1837,1837,1837,1837,1837,1837,
+	1838,1838,1838,1838,1838,1838,1838,1838,1839,1839,1839,1839,1839,1839,1839,1839,
+	1840,1840,1840,1840,1840,1840,1840,1840,69,69,69,69,69,69,69,69,
 	1841,1841,1841,1841,1841,1841,1841,1841,1842,1842,1842,1842,1842,1842,1842,1842,
 	1843,1843,1843,1843,1843,1843,1843,1843,1844,1844,1844,1844,1844,1844,1844,1844,
 	1845,1845,1845,1845,1845,1845,1845,1845,1846,1846,1846,1846,1846,1846,1846,1846,
-	1847,1847,1847,1847,1847,1847,1847,1847,1848,1848,1848,1848,1848,1848,1848,1848,
+	233,233,233,233,233,233,233,233,90,90,90,90,90,90,90,90,
+	1847,1847,1847,1847,1847,1847,1847,1847,169,169,169,169,169,169,169,169,
+	1848,1848,1848,1848,1848,1848,1848,1848,219,219,219,219,219,219,219,219,
 	1849,1849,1849,1849,1849,1849,1849,1849,1850,1850,1850,1850,1850,1850,1850,1850,
 	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 	1893,1893,1893,1893,1893,1893,1893,1893,1894,1894,1894,1894,1894,1894,1894,1894,
 	1895,1895,1895,1895,1895,1895,1895,1895,1896,1896,1896,1896,1896,1896,1896,1896,
 	1897,1897,1897,1897,1897,1897,1897,1897,1898,1899,0,0,0,0,0,0,
-	1796,1796,1796,1796,1796,1796,1796,1796,1797,1797,1797,1797,1797,1797,1797,1797,
-	1798,1798,1798,1798,1798,1798,1798,1798,1799,1799,1799,1799,1799,1799,1799,1799,
-	1800,1800,1800,1800,1800,1800,1800,1800,1801,1801,1801,1801,1801,1801,1801,1801,
-	1802,1802,1802,1802,1802,1802,1802,1802,1803,1803,1803,1803,1803,1803,1803,1803,
-	1804,1804,1804,1804,1804,1804,1804,1804,1805,1805,1805,1805,1805,1805,1805,1805,
-	1806,1806,1806,1806,1806,1806,1806,1806,1807,1807,1807,1807,1807,1807,1807,1807,
 	1808,1808,1808,1808,1808,1808,1808,1808,1809,1809,1809,1809,1809,1809,1809,1809,
 	1810,1810,1810,1810,1810,1810,1810,1810,1811,1811,1811,1811,1811,1811,1811,1811,
 	1812,1812,1812,1812,1812,1812,1812,1812,1813,1813,1813,1813,1813,1813,1813,1813,
 	1814,1814,1814,1814,1814,1814,1814,1814,1815,1815,1815,1815,1815,1815,1815,1815,
-	1816,1816,1816,1816,1816,1816,1816,1816,1817,1817,1817,1817,1817,1817,1817,1817,
-	1818,1818,1818,1818,1818,1818,1818,1818,1819,1819,1819,1819,1819,1819,1819,1819,
+	220,220,220,220,220,220,220,220,42,42,42,42,42,42,42,42,
+	1816,1816,1816,1816,1816,1816,1816,1816,185,185,185,185,185,185,185,185,
+	1817,1817,1817,1817,1817,1817,1817,1817,1818,1818,1818,1818,1818,1818,1818,1818,
+	1819,1819,1819,1819,1819,1819,1819,1819,1820,1820,1820,1820,1820,1820,1820,1820,
+	206,206,206,206,206,206,206,206,192,192,192,192,192,192,192,192,
+	1821,1821,1821,1821,1821,1821,1821,1821,1822,1822,1822,1822,1822,1822,1822,1822,
+	228,228,228,228,228,228,228,228,201,201,201,201,201,201,201,201,
+	1823,1823,1823,1823,1823,1823,1823,1823,1824,1824,1824,1824,1824,1824,1824,1824,
 	1900,1900,1900,1900,1900,1900,1900,1900,0,0,0,0,0,0,0,0,
 	1901,1901,1901,1901,1901,1901,1901,1901,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,1902,1902,1902,1902,1902,1902,1902,1902,
 	1903,1903,1903,1903,1903,1903,1903,1903,1904,1905,1906,1907,0,0,0,0,
-	1827,1827,1827,1827,1827,1827,1827,1827,1828,1828,1828,1828,1828,1828,1828,1828,
-	1829,1829,1829,1829,1829,1829,1829,1829,1830,1830,1830,1830,1830,1830,1830,1830,
-	1831,1831,1831,1831,1831,1831,1831,1831,1832,1832,1832,1832,1832,1832,1832,1832,
-	1833,1833,1833,1833,1833,1833,1833,1833,1834,1834,1834,1834,1834,1834,1834,1834,
-	1835,1835,1835,1835,1835,1835,1835,1835,1836,1836,1836,1836,1836,1836,1836,1836,
-	1837,1837,1837,1837,1837,1837,1837,1837,1838,1838,1838,1838,1838,1838,1838,1838,
-	1839,1839,1839,1839,1839,1839,1839,1839,1840,1840,1840,1840,1840,1840,1840,1840,
+	1832,1832,1832,1832,1832,1832,1832,1832,1833,1833,1833,1833,1833,1833,1833,1833,
+	1834,1834,1834,1834,1834,1834,1834,1834,1835,1835,1835,1835,1835,1835,1835,1835,
+	1836,1836,1836,1836,1836,1836,1836,1836,1837,1837,1837,1837,1837,1837,1837,1837,
+	1838,1838,1838,1838,1838,1838,1838,1838,1839,1839,1839,1839,1839,1839,1839,1839,
+	1840,1840,1840,1840,1840,1840,1840,1840,69,69,69,69,69,69,69,69,
 	1841,1841,1841,1841,1841,1841,1841,1841,1842,1842,1842,1842,1842,1842,1842,1842,
 	1843,1843,1843,1843,1843,1843,1843,1843,1844,1844,1844,1844,1844,1844,1844,1844,
 	1845,1845,1845,1845,1845,1845,1845,1845,1846,1846,1846,1846,1846,1846,1846,1846,
-	1847,1847,1847,1847,1847,1847,1847,1847,1848,1848,1848,1848,1848,1848,1848,1848,
+	233,233,233,233,233,233,233,233,90,90,90,90,90,90,90,90,
+	1847,1847,1847,1847,1847,1847,1847,1847,169,169,169,169,169,169,169,169,
+	1848,1848,1848,1848,1848,1848,1848,1848,219,219,219,219,219,219,219,219,
 	1849,1849,1849,1849,1849,1849,1849,1849,1850,1850,1850,1850,1850,1850,1850,1850,
 	1908,1908,1908,1908,1908,1908,1908,1908,0,0,0,0,0,0,0,0,
 	1909,1909,1909,1909,1909,1909,1909,1909,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,1910,1910,1910,1910,1910,1910,1910,1910,
 	1911,1911,1911,1911,1911,1911,1911,1911,1912,1913,1914,1915,0,0,0,0,
-	1796,1796,1796,1796,1796,1796,1796,1796,1797,1797,1797,1797,1797,1797,1797,1797,
-	1798,1798,1798,1798,1798,1798,1798,1798,1799,1799,1799,1799,1799,1799,1799,1799,
-	1800,1800,1800,1800,1800,1800,1800,1800,1801,1801,1801,1801,1801,1801,1801,1801,
-	1802,1802,1802,1802,1802,1802,1802,1802,1803,1803,1803,1803,1803,1803,1803,1803,
-	1804,1804,1804,1804,1804,1804,1804,1804,1805,1805,1805,1805,1805,1805,1805,1805,
-	1806,1806,1806,1806,1806,1806,1806,1806,1807,1807,1807,1807,1807,1807,1807,1807,
 	1808,1808,1808,1808,1808,1808,1808,1808,1809,1809,1809,1809,1809,1809,1809,1809,
 	1810,1810,1810,1810,1810,1810,1810,1810,1811,1811,1811,1811,1811,1811,1811,1811,
 	1812,1812,1812,1812,1812,1812,1812,1812,1813,1813,1813,1813,1813,1813,1813,1813,
 	1814,1814,1814,1814,1814,1814,1814,1814,1815,1815,1815,1815,1815,1815,1815,1815,
-	1816,1816,1816,1816,1816,1816,1816,1816,1817,1817,1817,1817,1817,1817,1817,1817,
-	1818,1818,1818,1818,1818,1818,1818,1818,1819,1819,1819,1819,1819,1819,1819,1819,
+	220,220,220,220,220,220,220,220,42,42,42,42,42,42,42,42,
+	1816,1816,1816,1816,1816,1816,1816,1816,185,185,185,185,185,185,185,185,
+	1817,1817,1817,1817,1817,1817,1817,1817,1818,1818,1818,1818,1818,1818,1818,1818,
+	1819,1819,1819,1819,1819,1819,1819,1819,1820,1820,1820,1820,1820,1820,1820,1820,
+	206,206,206,206,206,206,206,206,192,192,192,192,192,192,192,192,
+	1821,1821,1821,1821,1821,1821,1821,1821,1822,1822,1822,1822,1822,1822,1822,1822,
+	228,228,228,228,228,228,228,228,201,201,201,201,201,201,201,201,
+	1823,1823,1823,1823,1823,1823,1823,1823,1824,1824,1824,1824,1824,1824,1824,1824,
 	1916,1916,1916,1916,1916,1916,1916,1916,0,0,0,0,0,0,0,0,
 	1917,1917,1917,1917,1917,1917,1917,1917,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,1918,1918,1918,1918,1918,1918,1918,1918,
 	1919,1919,1919,1919,1919,1919,1919,1919,1920,1921,0,0,0,0,0,0,
-	1827,1827,1827,1827,1827,1827,1827,1827,1828,1828,1828,1828,1828,1828,1828,1828,
-	1829,1829,1829,1829,1829,1829,1829,1829,1830,1830,1830,1830,1830,1830,1830,1830,
-	1831,1831,1831,1831,1831,1831,1831,1831,1832,1832,1832,1832,1832,1832,1832,1832,
-	1833,1833,1833,1833,1833,1833,1833,1833,1834,1834,1834,1834,1834,1834,1834,1834,
-	1835,1835,1835,1835,1835,1835,1835,1835,1836,1836,1836,1836,1836,1836,1836,1836,
-	1837,1837,1837,1837,1837,1837,1837,1837,1838,1838,1838,1838,1838,1838,1838,1838,
-	1839,1839,1839,1839,1839,1839,1839,1839,1840,1840,1840,1840,1840,1840,1840,1840,
+	1832,1832,1832,1832,1832,1832,1832,1832,1833,1833,1833,1833,1833,1833,1833,1833,
+	1834,1834,1834,1834,1834,1834,1834,1834,1835,1835,1835,1835,1835,1835,1835,1835,
+	1836,1836,1836,1836,1836,1836,1836,1836,1837,1837,1837,1837,1837,1837,1837,1837,
+	1838,1838,1838,1838,1838,1838,1838,1838,1839,1839,1839,1839,1839,1839,1839,1839,
+	1840,1840,1840,1840,1840,1840,1840,1840,69,69,69,69,69,69,69,69,
 	1841,1841,1841,1841,1841,1841,1841,1841,1842,1842,1842,1842,1842,1842,1842,1842,
 	1843,1843,1843,1843,1843,1843,1843,1843,1844,1844,1844,1844,1844,1844,1844,1844,
 	1845,1845,1845,1845,1845,1845,1845,1845,1846,1846,1846,1846,1846,1846,1846,1846,
-	1847,1847,1847,1847,1847,1847,1847,1847,1848,1848,1848,1848,1848,1848,1848,1848,
+	233,233,233,233,233,233,233,233,90,90,90,90,90,90,90,90,
+	1847,1847,1847,1847,1847,1847,1847,1847,169,169,169,169,169,169,169,169,
+	1848,1848,1848,1848,1848,1848,1848,1848,219,219,219,219,219,219,219,219,
 	1849,1849,1849,1849,1849,1849,1849,1849,1850,1850,1850,1850,1850,1850,1850,1850,
 	1922,1922,1922,1922,1922,1922,1922,1922,0,0,0,0,0,0,0,0,
 	1923,1923,1923,1923,1923,1923,1923,1923,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,1924,1924,1924,1924,1924,1924,1924,1924,
 	1925,1925,1925,1925,1925,1925,1925,1925,1926,1927,1928,1929,0,0,0,0,
-	1796,1796,1796,1796,1796,1796,1796,1796,1797,1797,1797,1797,1797,1797,1797,1797,
-	1798,1798,1798,1798,1798,1798,1798,1798,1799,1799,1799,1799,1799,1799,1799,1799,
-	1800,1800,1800,1800,1800,1800,1800,1800,1801,1801,1801,1801,1801,1801,1801,1801,
-	1802,1802,1802,1802,1802,1802,1802,1802,1803,1803,1803,1803,1803,1803,1803,1803,
-	1804,1804,1804,1804,1804,1804,1804,1804,1805,1805,1805,1805,1805,1805,1805,1805,
-	1806,1806,1806,1806,1806,1806,1806,1806,1807,1807,1807,1807,1807,1807,1807,1807,
 	1808,1808,1808,1808,1808,1808,1808,1808,1809,1809,1809,1809,1809,1809,1809,1809,
 	1810,1810,1810,1810,1810,1810,1810,1810,1811,1811,1811,1811,1811,1811,1811,1811,
 	1812,1812,1812,1812,1812,1812,1812,1812,1813,1813,1813,1813,1813,1813,1813,1813,
 	1814,1814,1814,1814,1814,1814,1814,1814,1815,1815,1815,1815,1815,1815,1815,1815,
-	1816,1816,1816,1816,1816,1816,1816,1816,1817,1817,1817,1817,1817,1817,1817,1817,
-	1818,1818,1818,1818,1818,1818,1818,1818,1819,1819,1819,1819,1819,1819,1819,1819,
+	220,220,220,220,220,220,220,220,42,42,42,42,42,42,42,42,
+	1816,1816,1816,1816,1816,1816,1816,1816,185,185,185,185,185,185,185,185,
+	1817,1817,1817,1817,1817,1817,1817,1817,1818,1818,1818,1818,1818,1818,1818,1818,
+	1819,1819,1819,1819,1819,1819,1819,1819,1820,1820,1820,1820,1820,1820,1820,1820,
+	206,206,206,206,206,206,206,206,192,192,192,192,192,192,192,192,
+	1821,1821,1821,1821,1821,1821,1821,1821,1822,1822,1822,1822,1822,1822,1822,1822,
+	228,228,228,228,228,228,228,228,201,201,201,201,201,201,201,201,
+	1823,1823,1823,1823,1823,1823,1823,1823,1824,1824,1824,1824,1824,1824,1824,1824,
 	1930,1930,1930,1930,1930,1930,1930,1930,0,0,0,0,0,0,0,0,
 	1931,1931,1931,1931,1931,1931,1931,1931,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,1932,1932,1932,1932,1932,1932,1932,1932,
 	1933,1933,1933,1933,1933,1933,1933,1933,1934,1935,0,0,0,0,0,0,
-	1827,1827,1827,1827,1827,1827,1827,1827,1828,1828,1828,1828,1828,1828,1828,1828,
-	1829,1829,1829,1829,1829,1829,1829,1829,1830,1830,1830,1830,1830,1830,1830,1830,
-	1831,1831,1831,1831,1831,1831,1831,1831,1832,1832,1832,1832,1832,1832,1832,1832,
-	1833,1833,1833,1833,1833,1833,1833,1833,1834,1834,1834,1834,1834,1834,1834,1834,
-	1835,1835,1835,1835,1835,1835,1835,1835,1836,1836,1836,1836,1836,1836,1836,1836,
-	1837,1837,1837,1837,1837,1837,1837,1837,1838,1838,1838,1838,1838,1838,1838,1838,
-	1839,1839,1839,1839,1839,1839,1839,1839,1840,1840,1840,1840,1840,1840,1840,1840,
+	1832,1832,1832,1832,1832,1832,1832,1832,1833,1833,1833,1833,1833,1833,1833,1833,
+	1834,1834,1834,1834,1834,1834,1834,1834,1835,1835,1835,1835,1835,1835,1835,1835,
+	1836,1836,1836,1836,1836,1836,1836,1836,1837,1837,1837,1837,1837,1837,1837,1837,
+	1838,1838,1838,1838,1838,1838,1838,1838,1839,1839,1839,1839,1839,1839,1839,1839,
+	1840,1840,1840,1840,1840,1840,1840,1840,69,69,69,69,69,69,69,69,
 	1841,1841,1841,1841,1841,1841,1841,1841,1842,1842,1842,1842,1842,1842,1842,1842,
 	1843,1843,1843,1843,1843,1843,1843,1843,1844,1844,1844,1844,1844,1844,1844,1844,
 	1845,1845,1845,1845,1845,1845,1845,1845,1846,1846,1846,1846,1846,1846,1846,1846,
-	1847,1847,1847,1847,1847,1847,1847,1847,1848,1848,1848,1848,1848,1848,1848,1848,
+	233,233,233,233,233,233,233,233,90,90,90,90,90,90,90,90,
+	1847,1847,1847,1847,1847,1847,1847,1847,169,169,169,169,169,169,169,169,
+	1848,1848,1848,1848,1848,1848,1848,1848,219,219,219,219,219,219,219,219,
 	1849,1849,1849,1849,1849,1849,1849,1849,1850,1850,1850,1850,1850,1850,1850,1850,
 	1936,1936,1936,1936,1936,1936,1936,1936,0,0,0,0,0,0,0,0,
 	1937,1937,1937,1937,1937,1937,1937,1937,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,1938,1938,1938,1938,1938,1938,1938,1938,
 	1939,1939,1939,1939,1939,1939,1939,1939,1940,1941,1942,1943,0,0,0,0,
-	1796,1796,1796,1796,1796,1796,1796,1796,1797,1797,1797,1797,1797,1797,1797,1797,
-	1798,1798,1798,1798,1798,1798,1798,1798,1799,1799,1799,1799,1799,1799,1799,1799,
-	1800,1800,1800,1800,1800,1800,1800,1800,1801,1801,1801,1801,1801,1801,1801,1801,
-	1802,1802,1802,1802,1802,1802,1802,1802,1803,1803,1803,1803,1803,1803,1803,1803,
-	1804,1804,1804,1804,1804,1804,1804,1804,1805,1805,1805,1805,1805,1805,1805,1805,
-	1806,1806,1806,1806,1806,1806,1806,1806,1807,1807,1807,1807,1807,1807,1807,1807,
 	1808,1808,1808,1808,1808,1808,1808,1808,1809,1809,1809,1809,1809,1809,1809,1809,
 	1810,1810,1810,1810,1810,1810,1810,1810,1811,1811,1811,1811,1811,1811,1811,1811,
 	1812,1812,1812,1812,1812,1812,1812,1812,1813,1813,1813,1813,1813,1813,1813,1813,
 	1814,1814,1814,1814,1814,1814,1814,1814,1815,1815,1815,1815,1815,1815,1815,1815,
-	1816,1816,1816,1816,1816,1816,1816,1816,1817,1817,1817,1817,1817,1817,1817,1817,
-	1818,1818,1818,1818,1818,1818,1818,1818,1819,1819,1819,1819,1819,1819,1819,1819,
+	220,220,220,220,220,220,220,220,42,42,42,42,42,42,42,42,
+	1816,1816,1816,1816,1816,1816,1816,1816,185,185,185,185,185,185,185,185,
+	1817,1817,1817,1817,1817,1817,1817,1817,1818,1818,1818,1818,1818,1818,1818,1818,
+	1819,1819,1819,1819,1819,1819,1819,1819,1820,1820,1820,1820,1820,1820,1820,1820,
+	206,206,206,206,206,206,206,206,192,192,192,192,192,192,192,192,
+	1821,1821,1821,1821,1821,1821,1821,1821,1822,1822,1822,1822,1822,1822,1822,1822,
+	228,228,228,228,228,228,228,228,201,201,201,201,201,201,201,201,
+	1823,1823,1823,1823,1823,1823,1823,1823,1824,1824,1824,1824,1824,1824,1824,1824,
 	1944,1944,1944,1944,1944,1944,1944,1944,0,0,0,0,0,0,0,0,
 	1945,1945,1945,1945,1945,1945,1945,1945,0,0,0,0,0,0,0,0,
 	0,0,0,0,0,0,0,0,1946,1946,1946,1946,1946,1946,1946,1946,
 	1947,1947,1947,1947,1947,1947,1947,1947,1948,1949,0,0,0,0,0,0,
-	1827,1827,1827,1827,1827,1827,1827,1827,1828,1828,1828,1828,1828,1828,1828,1828,
-	1829,1829,1829,1829,1829,1829,1829,1829,1830,1830,1830,1830,1830,1830,1830,1830,
-	1831,1831,1831,1831,1831,1831,1831,1831,1832,1832,1832,1832,1832,1832,1832,1832,
-	1833,1833,1833,1833,1833,1833,1833,1833,1834,1834,1834,1834,1834,1834,1834,1834,
-	1835,1835,1835,1835,1835,1835,1835,1835,1836,1836,1836,1836,1836,1836,1836,1836,
-	1837,1837,1837,1837,1837,1837,1837,1837,1838,1838,1838,1838,1838,1838,1838,1838,
-	1839,1839,1839,1839,1839,1839,1839,1839,1840,1840,1840,1840,1840,1840,1840,1840,
+	1832,1832,1832,1832,1832,1832,1832,1832,1833,1833,1833,1833,1833,1833,1833,1833,
+	1834,1834,1834,1834,1834,1834,1834,1834,1835,1835,1835,1835,1835,1835,1835,1835,
+	1836,1836,1836,1836,1836,1836,1836,1836,1837,1837,1837,1837,1837,1837,1837,1837,
+	1838,1838,1838,1838,1838,1838,1838,1838,1839,1839,1839,1839,1839,1839,1839,1839,
+	1840,1840,1840,1840,1840,1840,1840,1840,69,69,69,69,69,69,69,69,
 	1841,1841,1841,1841,1841,1841,1841,1841,1842,1842,1842,1842,1842,1842,1842,1842,
 	1843,1843,1843,1843,1843,1843,1843,1843,1844,1844,1844,1844,1844,1844,1844,1844,
 	1845,1845,1845,1845,1845,1845,1845,1845,1846,1846,1846,1846,1846,1846,1846,1846,
-	1847,1847,1847,1847,1847,1847,1847,1847,1848,1848,1848,1848,1848,1848,1848,1848,
+	233,233,233,233,233,233,233,233,90,90,90,90,90,90,90,90,
+	1847,1847,1847,1847,1847,1847,1847,1847,169,169,169,169,169,169,169,169,
+	1848,1848,1848,1848,1848,1848,1848,1848,219,219,219,219,219,219,219,219,
 	1849,1849,1849,1849,1849,1849,1849,1849,1850,1850,1850,1850,1850,1850,1850,1850,
 	1950,1950,1950,1950,1950,1950,1950,1950,0,0,0,0,0,0,0,0,
 	1951,1951,1951,1951,1951,1951,1951,1951,0,0,0,0,0,0,0,0,

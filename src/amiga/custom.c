@@ -6,14 +6,14 @@
 
 static uint16_t clxcon;
 
-static bool display_reg(uint32_t reg) {
+AMIGA_HOT static bool display_reg(uint32_t reg) {
     return (reg >= R_DIWSTRT && reg <= R_DDFSTOP) ||
            (reg >= R_BPL1PTH && reg < R_BPL1PTH + 24) ||
            (reg >= R_BPLCON0 && reg <= R_BPL2MOD) ||
            (reg >= R_SPR0PTH && reg < R_COLOR00 + 64);
 }
 
-uint16_t custom_read(uint32_t reg) {
+AMIGA_HOT uint16_t custom_read(uint32_t reg) {
     switch (reg) {
     case R_DMACONR:
         return (uint16_t)((A.dmacon & 0x07FF) |
@@ -45,7 +45,7 @@ uint16_t custom_read(uint32_t reg) {
     }
 }
 
-void custom_write(uint32_t reg, uint16_t v, int hpos, bool from_copper) {
+AMIGA_HOT void custom_write(uint32_t reg, uint16_t v, int hpos, bool from_copper) {
     (void)from_copper;
     if (display_reg(reg)) { denise_write(reg, v, hpos); return; }
     if (reg >= R_BLTCON0 && reg <= R_BLTADAT) { blitter_write(reg, v); return; }
@@ -102,13 +102,13 @@ void custom_reset(void) {
     amiga_update_ipl();
 }
 
-void amiga_set_intreq(uint16_t bits) {
+AMIGA_HOT void amiga_set_intreq(uint16_t bits) {
     if ((A.intreq & bits) == bits) return;
     A.intreq |= bits;
     amiga_update_ipl();
 }
 
-void amiga_update_ipl(void) {
+AMIGA_HOT void amiga_update_ipl(void) {
     uint16_t act = A.intena & A.intreq & 0x3FFF;
     int level = 0;
     if ((A.intena & INTF_INTEN) && act) {

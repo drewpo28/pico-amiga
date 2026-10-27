@@ -36,7 +36,7 @@ static inline bool cmp_h(int h) {
 }
 
 // First colour clock in [from, to) at which the current WAIT is satisfied, or -1.
-static int wait_until(int from, int to) {
+AMIGA_HOT static int wait_until(int from, int to) {
     int cv = cmp_v();
     if (cv < 0) return -1;
     int h = from;
@@ -53,7 +53,7 @@ static int wait_until(int from, int to) {
     return h;
 }
 
-void copper_run(int until) {
+AMIGA_HOT void copper_run(int until) {
     if (!copper_on() || state == COP_STOP) {
         if (cop_h < until) cop_h = until;
         return;
@@ -87,7 +87,7 @@ void copper_run(int until) {
     }
 }
 
-void copper_line_start(void) {
+AMIGA_HOT void copper_line_start(void) {
     cop_h = cop_h >= AMIGA_CC_PER_LINE ? cop_h - AMIGA_CC_PER_LINE : 0;
 }
 

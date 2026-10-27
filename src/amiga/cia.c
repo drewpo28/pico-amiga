@@ -103,7 +103,7 @@ static uint8_t pra_inputs(int w) {
     return v;
 }
 
-uint8_t cia_read(int w, int reg) {
+AMIGA_HOT uint8_t cia_read(int w, int reg) {
     cia_t *c = &cia[w];
     cia_sync(w);
     switch (reg) {
@@ -147,7 +147,7 @@ static void port_outputs(int w) {
     }
 }
 
-void cia_write(int w, int reg, uint8_t v) {
+AMIGA_HOT void cia_write(int w, int reg, uint8_t v) {
     cia_t *c = &cia[w];
     cia_sync(w);
     switch (reg) {
@@ -197,7 +197,7 @@ void cia_write(int w, int reg, uint8_t v) {
     }
 }
 
-void cia_line(void) {
+AMIGA_HOT void cia_line(void) {
     cia_sync(0); cia_sync(1);
     tod_tick(1);                    // CIA-B TOD counts HSYNC
     cia_irq(0); cia_irq(1);
