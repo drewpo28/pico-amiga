@@ -139,7 +139,8 @@ enum { AMIGA_PROF_OTHER, AMIGA_PROF_CPU, AMIGA_PROF_COPPER, AMIGA_PROF_RENDER,
        AMIGA_PROF_PAULA,    // the audio channels, twice a line
        AMIGA_PROF_LINE,     // Denise's line start: sprite DMA and composition
        AMIGA_PROF_DISK,     // floppy DMA, track encoding (the ADF reads included)
-       AMIGA_PROF_BPL,      // of the render: the bitplane fetch (chip RAM reads + spread)
+       AMIGA_PROF_BPL,      // of the render: the bitplane fetch (spreading the words)
+       AMIGA_PROF_BPLRD,    // of the fetch: reading the plane words from chip RAM
        AMIGA_PROF_COUNT };
 typedef struct { uint32_t ticks[AMIGA_PROF_COUNT]; uint32_t frames; } amiga_profile_t;
 void amiga_get_profile(amiga_profile_t *p, bool reset);

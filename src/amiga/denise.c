@@ -116,19 +116,26 @@ AMIGA_HOT static void fetch_unit(int k) {
     int np = planes();
     int x = hires ? 2 * (2 * t + 9) : 2 * (2 * t + 17);       // hires-pixel coordinate
     int d1 = 2 * (bplcon1 & 15), d2 = 2 * ((bplcon1 >> 4) & 15);
+    // The chip RAM reads first, as a bucket of their own (PSRAM latency).
+    uint16_t wd[6][2];
+    const int prof = prof_switch(AMIGA_PROF_BPLRD);
+    for (int p = 0; p < np; p++) {
+        wd[p][0] = chip_rw(bplpt[p]);
+        if (hires) wd[p][1] = chip_rw(bplpt[p] + 2);
+        bplpt[p] += hires ? 4 : 2;
+    }
+    prof_switch(prof);
     for (int p = 0; p < np; p++) {
         int pos = x + ((p & 1) ? d2 : d1);
         if (hires) {
             for (int j = 0; j < 2; j++, pos += 16) {
-                uint16_t w = chip_rw(bplpt[p]);
-                bplpt[p] += 2;
+                uint16_t w = wd[p][j];
                 if (pos < 0 || pos + 16 > PF_SIZE) continue;
                 for (int n = 0; n < 4; n++)
                     or32(pf + pos + 4 * n, spread4[(w >> (12 - 4 * n)) & 15] << p);
             }
         } else {
-            uint16_t w = chip_rw(bplpt[p]);
-            bplpt[p] += 2;
+            uint16_t w = wd[p][0];
             if (pos < 0 || pos + 32 > PF_SIZE) continue;
             for (int n = 0; n < 4; n++)
                 or64(pf + pos + 8 * n, spread4x2[(w >> (12 - 4 * n)) & 15] << p);
@@ -272,23 +279,50 @@ AMIGA_HOT static inline void w_put(int fx, uint16_t c0, uint16_t c1) {
     row->px.rgb[fx] = c0 == c1 ? c0 : avg(c0, c1);
 }
 
+// Framebuffer columns [a, b) in one colour (the border).
+AMIGA_HOT static void w_fill(int a, int b, uint16_t c) {
+    amiga_row_t *row = fbrow;
+    if (a >= b) return;
+    if (w_mode != AMIGA_ROW_DIRECT) {
+        const int i = w_index(row, c);
+        if (i >= 0) {
+            if (w_mode == AMIGA_ROW_IDX8) fill_bytes(row->px.idx + 2 * a, (uint8_t)i, 2 * (b - a));
+            else fill_bytes(row->px.nib[w_field] + a, (uint8_t)((i << 4) | i), b - a);
+            return;
+        }
+        w_to_direct(row);
+    }
+    for (int x = a; x < b; x++) row->px.rgb[x] = c;
+}
+
 // Window pixels [x0, x1) without sprites (DIW coordinates, already clipped to
 // the framebuffer): the common case, kept free of per-pixel colour lookups.
 AMIGA_HOT static void w_plain(int x0, int x1, bool hires) {
     amiga_row_t *row = fbrow;
     const int f0 = AMIGA_FB_X0;
+    if (w_mode == AMIGA_ROW_DIRECT) {
+        uint16_t *d = row->px.rgb - f0;
+        if (!hires) {
+            for (int x = x0; x < x1; x++) d[x] = lut[pf[2 * x]];
+        } else {
+            for (int x = x0; x < x1; x++) {
+                const uint16_t c0 = lut[pf[2 * x]], c1 = lut[pf[2 * x + 1]];
+                d[x] = c0 == c1 ? c0 : avg(c0, c1);
+            }
+        }
+        return;
+    }
     for (int x = x0; x < x1; x++) {
         uint8_t v0 = pf[2 * x], v1 = hires ? pf[2 * x + 1] : v0;
-        if (w_mode == AMIGA_ROW_DIRECT) {
-            uint16_t c0 = lut[v0], c1 = lut[v1];
-            row->px.rgb[x - f0] = c0 == c1 ? c0 : avg(c0, c1);
-            continue;
-        }
         uint8_t i0 = ilut[v0], i1 = ilut[v1];
         if ((i0 | i1) & 0x80) {                 // first use on this line: allocate
             int a = w_index(row, lut[v0]);
             int b = a >= 0 ? w_index(row, lut[v1]) : -1;
-            if (b < 0) { w_put(x - f0, lut[v0], lut[v1]); continue; }   // overflow -> DIRECT
+            if (b < 0) {                        // overflow -> DIRECT, for the rest too
+                w_put(x - f0, lut[v0], lut[v1]);
+                w_plain(x + 1, x1, hires);
+                return;
+            }
             ilut[v0] = (uint8_t)a; ilut[v1] = (uint8_t)b;
             i0 = (uint8_t)a; i1 = (uint8_t)b;
         }
@@ -341,8 +375,8 @@ AMIGA_HOT static void output(int x0, int x1) {
     const uint16_t bg = color[0];
     int wa = w0 < a ? a : w0, wb = w1 > b ? b : w1;
     if (wb < wa) wb = wa;
-    for (int x = a; x < wa; x++) w_put(x - f0, bg, bg);
-    for (int x = wb; x < b; x++) w_put(x - f0, bg, bg);
+    w_fill(a - f0, wa - f0, bg);
+    w_fill(wb - f0, b - f0, bg);
     if (ham || wa >= wb) return;
 
     const bool sprites = spl_hi > wa && spl_lo < wb;
@@ -491,8 +525,8 @@ AMIGA_HOT void denise_line_end(void) {
     render_to(AMIGA_CC_PER_LINE);
     // The framebuffer reaches a few pixels past the end of the line: border.
     if (fbrow) {
-        int x = 2 * AMIGA_CC_PER_LINE - AMIGA_FB_X0;
-        for (; x < AMIGA_FB_W; x++) if (x >= 0) w_put(x, color[0], color[0]);
+        const int x = 2 * AMIGA_CC_PER_LINE - AMIGA_FB_X0;
+        w_fill(x < 0 ? 0 : x, AMIGA_FB_W, color[0]);
     }
 }
 
