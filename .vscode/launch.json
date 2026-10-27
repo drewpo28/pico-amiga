@@ -4,7 +4,7 @@
         {
             "name": "Pico Debug (Cortex-Debug)",
             "cwd": "${userHome}/.pico-sdk/openocd/0.12.0+dev/scripts",
-            "executable": "${workspaceFolder}/build/${input:pickELF}",
+            "executable": "${workspaceFolder}/${input:pickELF}",
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "openocd",
@@ -28,7 +28,7 @@
         {
             "name": "Pico Debug (external OpenOCD)",
             "cwd": "${workspaceRoot}",
-            "executable": "${workspaceFolder}/build/${input:pickELF}",
+            "executable": "${workspaceFolder}/${input:pickELF}",
             "request": "launch",
             "type": "cortex-debug",
             "servertype": "external",
@@ -45,7 +45,7 @@
         {
             "name": "Pico Attach (no flash)",
             "cwd": "${userHome}/.pico-sdk/openocd/0.12.0+dev/scripts",
-            "executable": "${workspaceFolder}/build/${input:pickELF}",
+            "executable": "${workspaceFolder}/${input:pickELF}",
             "request": "attach",
             "type": "cortex-debug",
             "servertype": "openocd",
@@ -99,8 +99,8 @@
             "type": "command",
             "command": "shellCommand.execute",
             "args": {
-                "command": "find ${workspaceFolder}/build -maxdepth 1 -name '*.elf' -printf '%T@\\t%f\\n' | sort -rn | cut -f2-",
-                "description": "Select ELF file to debug (most recent first)",
+                "command": "cd ${workspaceFolder} && find build debug -maxdepth 1 -name '*.elf' -printf '%T@\\t%p\\n' 2>/dev/null | sort -rn | cut -f2-",
+                "description": "Select ELF file to debug: build/ and debug/ (test builds), most recent first",
                 "useFirstResult": false
             }
         },

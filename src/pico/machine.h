@@ -29,8 +29,19 @@ const char *machine_rom_name(void);
 bool machine_insert(int drive, const char *path, bool write_protect);
 void machine_eject(int drive);
 const char *machine_disk(int drive);   // card path, "" when empty
-// At boot: put Config::df0 back (or the legacy /amiga/df0.adf).
+// At boot: put Config::df0 back (or the legacy /amiga/df0.adf); an .m3u there
+// brings its disk set back with disk Config::df0_disk in the drive.
 void machine_restore_disks(void);
+
+// Disk sets, as RetroArch's .m3u playlists: one ADF per line (relative to the
+// list's folder), '#' lines ignored. Loading one puts disk `index` in DF0; the
+// others wait to be swapped in (machine_set_select), like RetroArch's Disk
+// Control. Inserting a single ADF with machine_insert() ends the set.
+bool machine_load_set(const char *m3u_path, int index);
+int  machine_set_count(void);           // 0 = no set loaded
+int  machine_set_index(void);           // the disk now in DF0
+const char *machine_set_disk(int i);    // its card path
+bool machine_set_select(int i);         // swap disk i into DF0
 
 #ifdef __cplusplus
 }

@@ -56,7 +56,7 @@ struct BrowseTypeState {
 };
 static BrowseTypeState s_types[BROWSE_COUNT] = {
     { "" },                                      // BROWSE_ALL
-    { ".adf" },                                  // BROWSE_ADF
+    { ".adf,.m3u" },                             // BROWSE_ADF (an .m3u is a disk set)
     { ".rom,.bin" },                             // BROWSE_ROM
     { "" },                                      // BROWSE_CFG
 };

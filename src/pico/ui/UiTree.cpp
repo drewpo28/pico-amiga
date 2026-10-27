@@ -76,12 +76,51 @@ static const Option* kickOpts(uint8_t& cnt) {
 
 // ── actions and pages ──────────────────────────────────────────────────────────
 
+static const char* baseName(const char* p) {
+    const char* s = strrchr(p, '/');
+    return s ? s + 1 : p;
+}
+
 // Disks > DF0: the file name of what is in the drive.
 static const char* df0Label() {
     const char* p = machine_disk(0);
-    if (!*p) return "empty";
-    const char* s = strrchr(p, '/');
-    return s ? s + 1 : p;
+    return *p ? baseName(p) : "empty";
+}
+
+// Disks > Swap disk: "2 of 3" while an .m3u disk set is loaded.
+static bool p_diskSet() { return machine_set_count() > 1; }
+static const char* setLabel() {
+    static char b[16];
+    snprintf(b, sizeof b, "%d of %d", machine_set_index() + 1, machine_set_count());
+    return b;
+}
+
+// The set's disks, then "Other disk..." (the file browser) on the last row.
+static void setRow(int i, char* out, size_t n) {
+    if (i < machine_set_count())
+        snprintf(out, n, "%c %d  %s", i == machine_set_index() ? '>' : ' ', i + 1,
+                 baseName(machine_set_disk(i)));
+    else
+        snprintf(out, n, "  Other disk...");
+}
+
+static bool df0PickAndInsert();
+
+// Pick a disk of the set for DF0 (RetroArch's Disk Control); true when the
+// drive changed.
+static bool df0SwapPick() {
+    const int i = uiPickListCb("Swap DF0", machine_set_count() + 1, setRow,
+                               machine_set_index(), 40);
+    if (i < 0) return false;
+    if (i == machine_set_count()) return df0PickAndInsert();
+    if (i == machine_set_index()) return false;
+    if (!machine_set_select(i)) {
+        uiToast("That disk cannot be opened", true, 2000);
+        return false;
+    }
+    Config::df0_disk = (uint8_t)i;
+    Config::save();
+    return true;
 }
 
 // Browse for an ADF and put it in DF0; true when a disk went in. Shared by the
@@ -98,13 +137,21 @@ static bool df0PickAndInsert() {
     const std::string r = browseFile(dir, "Insert into DF0", BROWSE_ADF);
     if (r.size() < 2 || r[0] != 'R') return false;
     const std::string path = dir + r.substr(1);
-    if (!machine_insert(0, path.c_str(), Config::df0_wp)) {
+    const size_t dot = path.find_last_of('.');
+    std::string ext = dot == std::string::npos ? "" : path.substr(dot);
+    for (char& c : ext) c = (char)(c | 0x20);
+    // An .m3u is a disk set (RetroArch's playlist): disk 1 goes in, the rest
+    // wait for Disks > Swap disk / Ctrl+F12.
+    const bool set = ext == ".m3u";
+    if (set ? !machine_load_set(path.c_str(), 0) : !machine_insert(0, path.c_str(), Config::df0_wp)) {
         gfxBegin();
-        uiToast("Not an 880 KB ADF, or it cannot be opened", true, 2000);
+        uiToast(set ? "The disk set's first disk cannot be opened"
+                    : "Not an 880 KB ADF, or it cannot be opened", true, 2000);
         gfxEnd();
         return false;
     }
     Config::df0 = path;
+    Config::df0_disk = 0;
     Config::save();
     return true;
 }
@@ -113,8 +160,18 @@ static void act_df0_insert() {
     if (df0PickAndInsert()) requestClose();   // back to the Amiga with the disk in
 }
 
+static void act_df0_swap() {
+    if (df0SwapPick()) requestClose();
+}
+
+// Ctrl+F12: with a disk set loaded, its disks (one key press to swap, as
+// RetroArch's Disk Control); otherwise the file browser.
 void runDiskInsert(int drive) {
-    if (drive == 0) df0PickAndInsert();
+    if (drive != 0) return;
+    if (!p_diskSet()) { df0PickAndInsert(); return; }
+    gfxBegin();
+    df0SwapPick();
+    gfxEnd();
 }
 
 static void act_df0_eject() {
@@ -138,7 +195,7 @@ static void act_reboot() {
 static void page_hotkeys() {
     uiTextPage("Hotkeys",
         "F12         This menu (Esc goes back, F12 closes)\n"
-        "Ctrl+F12    Insert a disk into DF0\n"
+        "Ctrl+F12    Insert a disk into DF0 (an .m3u set: swap disks)\n"
         "Shift+F12   Reset the Amiga\n"
         "Alt+F12     Performance band: summary, breakdown, off\n"
         "Ctrl+J      Cursor keys as joystick on/off\n"
@@ -174,6 +231,7 @@ static const Node kMachine[] = {
 
 static const Node kDisks[] = {
     NM_ACTIONV("DF0", act_df0_insert, df0Label, nullptr),
+    NM_ACTIONV("Swap disk", act_df0_swap, setLabel, p_diskSet),
     NM_ACTION ("Eject DF0", act_df0_eject, nullptr),
     NM_BOOL   ("DF0 write protect", SET_DF0_WP, nullptr),
 };

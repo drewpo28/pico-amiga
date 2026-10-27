@@ -83,7 +83,7 @@ static int adf_write(void *ctx, uint32_t off, const void *src, uint32_t len) {
     return 0;
 }
 
-void machine_eject(int drive) {
+static void eject_adf(int drive) {
     if (drive < 0 || drive > 3) return;
     Drive &d = s_drv[drive];
     amiga_eject_disk(drive);
@@ -92,9 +92,26 @@ void machine_eject(int drive) {
     d.path.clear();
 }
 
+// The disk set (machine_load_set); s_set_index is the disk in DF0.
+static std::string s_set[16];
+static int s_set_count, s_set_index;
+
+static bool insert_adf(int drive, const char *path, bool write_protect);
+
+void machine_eject(int drive) {
+    if (drive == 0) s_set_count = 0;      // ejecting ends a disk set
+    eject_adf(drive);
+}
+
 bool machine_insert(int drive, const char *path, bool write_protect) {
+    if (drive == 0) s_set_count = 0;
+    return insert_adf(drive, path, write_protect);
+}
+
+
+static bool insert_adf(int drive, const char *path, bool write_protect) {
     if (drive != 0 || !path || !*path) return false;      // the core wires DF0 only
-    machine_eject(drive);
+    eject_adf(drive);
     Drive &d = s_drv[drive];
     bool rw = !write_protect && f_open(&d.f, path, FA_READ | FA_WRITE) == FR_OK;
     if (!rw && f_open(&d.f, path, FA_READ) != FR_OK) return false;
@@ -113,9 +130,66 @@ const char *machine_disk(int drive) {
     return (drive >= 0 && drive <= 3) ? s_drv[drive].path.c_str() : "";
 }
 
+static bool is_m3u(const std::string &p) {
+    if (p.size() < 4) return false;
+    std::string e = p.substr(p.size() - 4);
+    for (char &c : e) c = (char)(c | 0x20);
+    return e == ".m3u";
+}
+
+bool machine_load_set(const char *m3u_path, int index) {
+    FIL f;
+    if (f_open(&f, m3u_path, FA_READ) != FR_OK) return false;
+    const std::string list = m3u_path;
+    const std::string dir = list.substr(0, list.find_last_of('/') + 1);
+    char buf[2048];
+    UINT got = 0;
+    f_read(&f, buf, sizeof buf - 1, &got);
+    f_close(&f);
+    buf[got] = 0;
+    std::string set[16];
+    int n = 0;
+    for (char *line = buf, *next; line && *line && n < 16; line = next) {
+        next = strchr(line, '\n');
+        if (next) *next++ = 0;
+        std::string l = line;
+        while (!l.empty() && (l.back() == '\n' || l.back() == '\r' || l.back() == ' ' || l.back() == '\t'))
+            l.pop_back();
+        size_t s = l.find_first_not_of(" \t");
+        if (s == std::string::npos || l[s] == '#') continue;   // blank, or #SAVEDISK: etc.
+        l = l.substr(s);
+        if (l.compare(0, 3, "\xEF\xBB\xBF") == 0) l = l.substr(3);   // UTF-8 BOM
+        // RetroArch's "file|label" form: the label is not a path.
+        const size_t bar = l.find('|');
+        if (bar != std::string::npos) l = l.substr(0, bar);
+        set[n++] = l[0] == '/' ? l : dir + l;
+    }
+    if (!n) return false;
+    if (index < 0 || index >= n) index = 0;
+    if (!insert_adf(0, set[index].c_str(), Config::df0_wp)) return false;
+    for (int i = 0; i < n; i++) s_set[i] = set[i];
+    s_set_count = n;
+    s_set_index = index;
+    return true;
+}
+
+int machine_set_count(void) { return s_set_count; }
+int machine_set_index(void) { return s_set_index; }
+const char *machine_set_disk(int i) { return (i >= 0 && i < s_set_count) ? s_set[i].c_str() : ""; }
+
+bool machine_set_select(int i) {
+    if (i < 0 || i >= s_set_count) return false;
+    if (!insert_adf(0, s_set[i].c_str(), Config::df0_wp)) return false;
+    s_set_index = i;
+    return true;
+}
+
 void machine_restore_disks(void) {
     if (!Config::df0.empty()) {
-        if (!machine_insert(0, Config::df0.c_str(), Config::df0_wp)) Config::df0.clear();
+        const bool ok = is_m3u(Config::df0)
+            ? machine_load_set(Config::df0.c_str(), Config::df0_disk)
+            : machine_insert(0, Config::df0.c_str(), Config::df0_wp);
+        if (!ok) Config::df0.clear();
         return;
     }
     // The card layout before the menu existed: /amiga/df0.adf goes in by itself.

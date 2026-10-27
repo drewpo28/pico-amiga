@@ -34,6 +34,7 @@ bool     Config::hdmi_audio   = true;
 std::string Config::kick      = "ks13";
 std::string Config::df0       = "";
 bool     Config::df0_wp       = false;
+uint8_t  Config::df0_disk     = 0;
 bool     Config::loaded       = false;
 
 // ---- reading -------------------------------------------------------------------------
@@ -118,6 +119,7 @@ void Config::load() {
     nvs_get_str("kick",          kick,         sts);
     if (!nvs_get_str("df0",      df0,          sts)) df0.clear();
     nvs_get_b  ("df0_wp",        df0_wp,       sts);
+    nvs_get_u8 ("df0_disk",      df0_disk,     sts);
 }
 
 // ---- writing -------------------------------------------------------------------------
@@ -190,6 +192,7 @@ bool Config::save() {
     nvs_set_str(buf, "kick",        kick.c_str());
     nvs_set_str(buf, "df0",         df0.c_str());
     nvs_set_b(buf, "df0_wp",        df0_wp);
+    nvs_set_i(buf, "df0_disk",      df0_disk);
     // f_sync before the rename, so a stalled card cannot leave a half-written file
     // under the real name.
     const FRESULT sy = buf.ok ? f_sync(&f) : FR_DISK_ERR;
