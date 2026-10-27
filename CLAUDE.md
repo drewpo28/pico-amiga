@@ -23,8 +23,8 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
 - `src/pico/ui/` is pico-speccy's nm:: menu (F12, WinUAE's key: F1..F10 are the
   Amiga's; Ctrl+F12 = DF0 browser, Shift+F12 = reset). The engine (UiNav, UiRender,
   UiDialog, UiFont, UiModel, the Stage mechanism) is kept close to pico-speccy, with
-  `PICO-AMIGA:` notes; `UiGfx.cpp` draws 0x0RGB straight into the Amiga framebuffer
-  (the scanout keeps showing it; the emulator is stopped while the menu runs, and its
+  `PICO-AMIGA:` notes; `UiGfx.cpp` draws 0x0RGB straight into the Amiga framebuffer,
+  turning each row it touches into a DIRECT one (the scanout keeps showing it; the emulator is stopped while the menu runs, and its
   next frame repaints everything). The content is ours: `UiTree.cpp` (the tree),
   `UiStage.h` (the SettingId X-table, append only), `UiPlatform.*` (keys, reset,
   reboot), `app/Config.*` (settings in pico-speccy's storage.nvs format, at
@@ -72,8 +72,18 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   forever and the "insert disk" hand never appears.
 - CIA-A /IRQ is level-like: `cia_line()` re-raises INTREQ PORTS while an
   enabled ICR flag is pending.
-- PIO TMDS (video_pio.c): core 1 encodes each FB row one row ahead of the
-  beam from tables of balanced character pairs (tmds_pio.h, tmds_pair.h). The
+- **Framebuffer rows pick their format at line start** (amiga.h): DIRECT
+  (lowres/HAM, 360 colours), IDX8 (hires, 720 indices, 64-colour row palette),
+  LACE4 (interlace: long field = upper output line, short = lower, 16 colours
+  each). Overflow converts the row to DIRECT mid-line (w_to_direct). Field
+  order was checked by line smoothness on the AROS screen. The sprite-free
+  window path (w_plain) caches pf value -> index in ilut[]; keep it that way,
+  the generic per-pixel w_put cost +50% host time.
+- LOF toggles every frame while BPLCON0 LACE is set (amiga.c), 313/312 lines.
+- PIO TMDS (video_pio.c): core 1 encodes one output line ahead of the beam
+  from tables of balanced character pairs (tmds_pio.h, tmds_pair.h); hires
+  pairs of different colours use per-lane [16][16] tables whose second
+  character may be off by up to 4 levels to keep each pair DC-balanced. The
   word format was checked bit-for-bit against pico-speccy's hdmi_pack3_pio /
   hdmi_pins_pio for the PICO_DV pin map; build-host/tmds_test decodes all 4096
   colours like a receiver. Re-run it after touching either header.
@@ -85,5 +95,9 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
 - Host profile with AROS idling at its boot screen (hires, 4 planes): bitplane
   fetch/c2p ~50%, output ~20%, CPU ~10%. The renderer is the first thing to move
   to core 1 / optimize on the RP2350 (docs/PLAN.md, section 2).
-- Firmware RAM: ~264 KB static (framebuffer 207 KB, track buffer 12.4 KB,
-  audio ring 16 KB) of 520 KB.
+- Firmware RAM: ~349 KB static on MURM2, ~390 KB on PICO_DV (framebuffer
+  245 KB, colour map 12 KB, track buffer 12.4 KB, audio ring 16 KB; DV adds
+  TMDS tables/line buffers) of 520 KB.
+- PIO encode budget (estimate, not measured): an interlaced line is a full
+  encode per output line (~24 us of the 33 us at 378 MHz); other rows encode
+  once per two lines.

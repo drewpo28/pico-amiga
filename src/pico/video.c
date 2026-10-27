@@ -21,7 +21,7 @@ void video_select(void) {
 
 bool video_is_vga(void) { return vga; }
 
-void video_start(const uint16_t *framebuffer) {
+void video_start(const amiga_row_t *framebuffer) {
     if (vga) vga_start(framebuffer);
     else     hdmi_start(framebuffer);
 }

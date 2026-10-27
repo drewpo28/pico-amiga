@@ -6,9 +6,11 @@
 // runs its PIO HDMI from the same half-integer dividers).
 //
 // Every output pixel is two 32-bit words of pin patterns (tmds_pio.h), i.e.
-// 1664 words per line and ~200 MB/s of DMA.  Each FB row is TMDS-encoded once
-// by core 1's main loop, one row ahead of the beam (it is shown on two output
-// lines, 66 us), from lookup tables of balanced character pairs; the DMA
+// 1664 words per line and ~200 MB/s of DMA.  Core 1's main loop TMDS-encodes
+// one output line ahead of the beam (33 us) from lookup tables of balanced
+// character pairs - doubled lowres pixels, or hires pairs of two different
+// colours - copying instead of encoding the second line of a row that is not
+// interlaced; the DMA
 // ping-pong + IRQ structure is the one in video_hstx.c, each line being two
 // transfers: blanking (fp + sync + bp) and the active part.
 #include "video.h"
@@ -48,12 +50,13 @@
 #define DMACH_PING 0
 #define DMACH_PONG 1
 
-static const uint16_t *fb;
+static const amiga_row_t *fb;
 static uint32_t tab_r[16][4];
 static uint32_t tab_gb[256][4];
+static uint32_t tab_mix[3][16][16][4];             // hires pairs of different colours
 static uint32_t blank_line[2][H_BLANK * 2];        // [vsync active?]
 static uint32_t blank_active[2][H_ACTIVE * 2];     // the active part of a vblank line
-static uint32_t rowbuf[2][AMIGA_FB_W * 4];
+static uint32_t linebuf[2][AMIGA_FB_W * 4];       // by output line parity
 // The blanking part of each line, by line parity: blank_line plus the line's data
 // island in the sync pulse and, before an active line, the video preamble/guard band.
 static uint32_t blankbuf[2][H_BLANK * 2];
@@ -62,7 +65,7 @@ static uint32_t isl_pre_w[2][10][2], isl_post_w[2][2][2];   // [vsync]
 static uint32_t lead_w[HDMI_VLEAD_PX][2];
 
 static volatile uint32_t frames;
-static volatile int      shown_row = -1;           // row whose pixels were last posted
+static volatile int      shown_line = -1;          // output line whose pixels were last posted
 static bool     dma_pong, part_b;
 static uint32_t v_line;
 
@@ -94,6 +97,7 @@ static void build_static(void) {
         for (int i = 0; i < 2; i++) char_words(post[i], isl_post_w[vs][i]);
     }
     for (int i = 0; i < HDMI_VLEAD_PX; i++) char_words(hdmi_video_lead[i], lead_w[i]);
+    tmds_build_mixed(tab_mix);
     for (int vs = 0; vs < 2; vs++) {
         int vlev = vs ? 0 : 1;                         // negative polarity: active = 0
         fill_ctrl(blank_line[vs], H_FP, vlev, 1);
@@ -137,26 +141,57 @@ static void __not_in_flash_func(dma_irq)(void) {
         part_b = true;
     } else {
         if (active) {
-            int row = (int)(v_line - (V_TOTAL - V_ACTIVE)) >> 1;
-            c->read_addr = (uintptr_t)rowbuf[row & 1];
-            shown_row = row;
+            int out = (int)(v_line - (V_TOTAL - V_ACTIVE));
+            c->read_addr = (uintptr_t)linebuf[out & 1];
+            shown_line = out;
         } else {
             c->read_addr = (uintptr_t)blank_active[vsync];
         }
         c->transfer_count = H_ACTIVE * 2;
         part_b = false;
-        if (++v_line == V_TOTAL) { v_line = 0; frames++; shown_row = -1; }
+        if (++v_line == V_TOTAL) { v_line = 0; frames++; shown_line = -1; }
     }
 }
 
+// Encode output line `out` (0..575) into linebuf[out & 1].
+static void __not_in_flash_func(encode_line)(int out) {
+    static uint16_t left[AMIGA_FB_W], right[AMIGA_FB_W];
+    const amiga_row_t *row = &fb[out >> 1];
+    const int sub = out & 1;
+    uint32_t *dst = linebuf[out & 1];
+    switch (row->mode) {
+    case AMIGA_ROW_IDX8:
+        if (sub) { memcpy(dst, linebuf[0], sizeof linebuf[0]); return; }   // same as line 2r
+        for (int x = 0; x < AMIGA_FB_W; x++) {
+            left[x] = row->pal[row->px.idx[2 * x] & 63];
+            right[x] = row->pal[row->px.idx[2 * x + 1] & 63];
+        }
+        tmds_encode_pairs(dst, left, right, AMIGA_FB_W, tab_r, tab_gb, tab_mix);
+        break;
+    case AMIGA_ROW_LACE4: {
+        const uint16_t *pal = row->pal + 16 * sub;
+        const uint8_t *n = row->px.nib[sub];
+        for (int x = 0; x < AMIGA_FB_W; x++) { left[x] = pal[n[x] >> 4]; right[x] = pal[n[x] & 15]; }
+        tmds_encode_pairs(dst, left, right, AMIGA_FB_W, tab_r, tab_gb, tab_mix);
+        break;
+    }
+    default:
+        if (sub) { memcpy(dst, linebuf[0], sizeof linebuf[0]); return; }
+        tmds_encode_row(dst, row->px.rgb, AMIGA_FB_W, tab_r, tab_gb);
+        break;
+    }
+}
+
+// Core 1, forever: keep one output line ahead of the beam (line 0 during the
+// vertical blank).  The second line of a non-interlaced row is a copy of the
+// first, so those rows cost one encode per two lines.
 static void __no_inline_not_in_flash_func(encode_loop)(void) {
     int done = -2;
     for (;;) {
-        // Keep one row ahead of the beam; in the vertical blank prepare row 0.
-        int want = shown_row + 1;
-        if (want >= AMIGA_FB_H) want = 0;
+        int want = shown_line + 1;
+        if (want >= 2 * AMIGA_FB_H) want = 0;
         if (want != done) {
-            tmds_encode_row(rowbuf[want & 1], fb + want * AMIGA_FB_W, AMIGA_FB_W, tab_r, tab_gb);
+            encode_line(want);
             done = want;
         } else {
             __wfi();
@@ -164,11 +199,11 @@ static void __no_inline_not_in_flash_func(encode_loop)(void) {
     }
 }
 
-void hdmi_start(const uint16_t *framebuffer) {
+void hdmi_start(const amiga_row_t *framebuffer) {
     fb = framebuffer;
     hdmi_audio_init(25200000u, H_BLANK + H_ACTIVE, V_TOTAL);
     build_static();
-    tmds_encode_row(rowbuf[0], fb, AMIGA_FB_W, tab_r, tab_gb);
+    encode_line(0);
 
 #if HDMI_BASE_PIN >= 32
     pio_set_gpio_base(VPIO, 16);     // ZERO2: display on GPIO 32-39

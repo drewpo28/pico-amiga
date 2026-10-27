@@ -40,7 +40,7 @@ void uiAmigaReset() { input_request_reset(); }
 
 extern "C" void ui_load_settings(void) { Config::load(); }
 
-extern "C" void ui_init(uint16_t *framebuffer) { nm::gfxSetFramebuffer(framebuffer); }
+extern "C" void ui_init(amiga_row_t *framebuffer) { nm::gfxSetFramebuffer(framebuffer); }
 
 extern "C" int settings_cpu_mhz(void)   { return Config::cpu_mhz; }
 extern "C" int settings_audio_out(void) { return Config::audio_out; }

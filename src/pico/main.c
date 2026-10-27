@@ -52,7 +52,7 @@
 #define KB (1024u)
 #define MB (1024u * 1024u)
 
-static uint16_t fb[AMIGA_FB_W * AMIGA_FB_H];
+static amiga_row_t fb[AMIGA_FB_H];
 #define AUDIO_FRAMES 4096
 static int16_t audio_ring[AUDIO_FRAMES * 2];
 
@@ -85,7 +85,7 @@ static void led(bool on) {
 }
 
 static void __attribute__((noreturn)) fail(uint16_t colour) {
-    for (int i = 0; i < AMIGA_FB_W * AMIGA_FB_H; i++) fb[i] = colour;
+    amiga_fb_fill(fb, colour);
     for (;;) {
         led(true);  sleep_ms(150);
         led(false); sleep_ms(850);

@@ -3,11 +3,12 @@
 // Mode: 720x576 @ 50.06 Hz from a 25.2 MHz pixel clock (832 x 605 total) -
 // the hw-proven 576-line timing of pico-speccy's video_mode_table.h [5]/[6],
 // chosen because 25.2 MHz is clk_sys/15 at 378 and /20 at 504, the clocks the
-// rest of the firmware runs at.  The 360x288 Amiga framebuffer is doubled in
-// both directions: each FB row feeds two output lines and each pixel is sent
-// as a 32-bit word p | p << 16 that the expander shifts out twice.
+// rest of the firmware runs at.  The 288 framebuffer rows (amiga.h) become
+// 720x576: each FB row feeds two output lines (two different ones for an
+// interlaced row), and each FIFO word carries two output pixels that the
+// expander shifts out in turn (a doubled lowres pixel or a hires pair).
 //
-// The framebuffer holds Amiga 12-bit colours (0x0RGB).  The TMDS lanes take
+// Colours are the Amiga's 12-bit 0x0RGB (direct, or via the row palette).  The TMDS lanes take
 // their top four bits straight from those nibbles (NBITS = 3), so colour
 // conversion costs nothing; the price is a 240/255 peak level.
 //
@@ -64,7 +65,7 @@ static const uint32_t sync_word[4] = { SYNC_V0_H0, SYNC_V0_H1, SYNC_V1_H0, SYNC_
 #define DMACH_PING 0
 #define DMACH_PONG 1
 
-static const uint16_t *fb;
+static const amiga_row_t *fb;
 static uint32_t linebuf[2][AMIGA_FB_W];
 // Command lists, by line parity: the one for line L is written while line L-1
 // plays from the other.  Longest (active line): 12 FP, the island in the sync
@@ -76,13 +77,35 @@ static bool     dma_pong;
 static uint32_t v_line;              // next output line to post
 static bool     cmd_posted;
 
-static void __not_in_flash_func(expand_row)(uint32_t *dst, const uint16_t *src) {
-    for (int x = 0; x < AMIGA_FB_W; x += 4) {
-        uint32_t a = src[x], b = src[x + 1], c = src[x + 2], d = src[x + 3];
-        dst[x]     = a | (a << 16);
-        dst[x + 1] = b | (b << 16);
-        dst[x + 2] = c | (c << 16);
-        dst[x + 3] = d | (d << 16);
+// One output line of a row (amiga.h formats) as 360 FIFO words, two output
+// pixels each: p | p << 16 doubles a lowres pixel, two indices give a hires pair.
+static void __not_in_flash_func(expand_line)(uint32_t *dst, const amiga_row_t *row, int sub) {
+    switch (row->mode) {
+    case AMIGA_ROW_IDX8: {
+        const uint8_t *ix = row->px.idx;
+        const uint16_t *pal = row->pal;
+        for (int x = 0; x < AMIGA_FB_W; x++)
+            dst[x] = pal[ix[2 * x] & 63] | ((uint32_t)pal[ix[2 * x + 1] & 63] << 16);
+        break;
+    }
+    case AMIGA_ROW_LACE4: {
+        const uint8_t *n = row->px.nib[sub];
+        const uint16_t *pal = row->pal + 16 * sub;
+        for (int x = 0; x < AMIGA_FB_W; x++)
+            dst[x] = pal[n[x] >> 4] | ((uint32_t)pal[n[x] & 15] << 16);
+        break;
+    }
+    default: {
+        const uint16_t *src = row->px.rgb;
+        for (int x = 0; x < AMIGA_FB_W; x += 4) {
+            uint32_t a = src[x], b = src[x + 1], c = src[x + 2], d = src[x + 3];
+            dst[x]     = a | (a << 16);
+            dst[x + 1] = b | (b << 16);
+            dst[x + 2] = c | (c << 16);
+            dst[x + 3] = d | (d << 16);
+        }
+        break;
+    }
     }
 }
 
@@ -124,13 +147,13 @@ static void __not_in_flash_func(dma_irq)(void) {
         c->read_addr = (uintptr_t)d;
         c->transfer_count = build_cmd(d, v_line);
         cmd_posted = true;
-        // Prepare the pixels this command list leads into (one FB row, two lines).
+        // Prepare the pixels this command list leads into.  The previous line's
+        // pixels are being sent from the other buffer meanwhile.
         uint32_t out = v_line - (V_TOTAL - V_ACTIVE);
-        uint32_t row = out >> 1;
-        if (!(out & 1)) expand_row(linebuf[row & 1], fb + row * AMIGA_FB_W);
+        expand_line(linebuf[out & 1], &fb[out >> 1], (int)(out & 1));
     } else {
-        uint32_t row = (v_line - (V_TOTAL - V_ACTIVE)) >> 1;
-        c->read_addr = (uintptr_t)linebuf[row & 1];
+        uint32_t out = v_line - (V_TOTAL - V_ACTIVE);
+        c->read_addr = (uintptr_t)linebuf[out & 1];
         c->transfer_count = AMIGA_FB_W;
         cmd_posted = false;
     }
@@ -188,7 +211,7 @@ static void hstx_setup(void) {
     }
 }
 
-void hdmi_start(const uint16_t *framebuffer) {
+void hdmi_start(const amiga_row_t *framebuffer) {
     fb = framebuffer;
     hdmi_audio_init(25200000u, H_FP + H_SYNC + H_BP + H_ACTIVE, V_TOTAL);
     v_line = 2;                      // the two channels below are pre-loaded with lines 0 and 1

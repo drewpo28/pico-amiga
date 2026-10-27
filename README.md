@@ -23,7 +23,7 @@ Verified on the host (`host/tests/smoke.sh`):
 |---|---|
 | MCU | RP2350 (A or B), clocked at 378 MHz (252/504 also selectable) |
 | PSRAM | QSPI "butter" PSRAM on XIP CS1, **at least 2 MB**: GPIO 8 on RP2350A carriers, GPIO 47 on RP2350B modules (Pimoroni Pico Plus 2) |
-| Video | HDMI/DVI, 720x576 @ 50 Hz, the 360x288 Amiga image pixel-doubled: through HSTX when the display is on GPIO 12-19, through a PIO TMDS serializer otherwise |
+| Video | HDMI/DVI, 720x576 @ 50 Hz: hires at full 640-pixel resolution, interlace with both fields (576 lines), lowres pixel-doubled; through HSTX when the display is on GPIO 12-19, through a PIO TMDS serializer otherwise |
 | Storage | SD card over SPI (FatFs; PIO SPI on PICO_DV) |
 | Input | USB keyboard and mouse (TinyUSB host, boot protocol) |
 | Audio | PWM on two pins (RC filter expected) |
@@ -103,8 +103,12 @@ The main ideas are in the file headers; in short:
 * **Display**: Denise renders the current line incrementally: a register write
   first draws everything the beam has passed with the old value. Copper bars,
   mid-line BPLCON changes and splits come out pixel-exact without an event queue.
+* **Framebuffer** (SRAM, ~245 KB): 288 rows, each stored in the form its line
+  needs - 360 direct 12-bit colours (lowres, HAM), 720 indices into a 64-colour
+  row palette (hires), or two 720 x 4-bit lines with 16 colours each (interlace,
+  both fields). A line that needs more colours falls back to direct colour.
 * **Memory**: chip RAM, slow RAM and the ROMs live in PSRAM, memory-mapped
-  through the XIP cache; the framebuffer (360x288 x 16 bit) is in SRAM.
+  through the XIP cache.
 
 ## Credits and licences
 

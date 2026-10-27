@@ -45,7 +45,8 @@
 
 #define VPIO       pio0
 
-static const uint16_t *fb;
+static const amiga_row_t *fb;
+static uint16_t line_rgb[AMIGA_OUT_W];     // the output line being rendered
 static uint16_t pair[2][4096];             // [line parity][0x0RGB] -> two pin bytes
 static uint8_t  tmpl[4][H_TOTAL] __attribute__((aligned(4)));   // blank, vsync, active x2
 static uint8_t *tmpl_ptr[4];
@@ -90,12 +91,24 @@ static void build_tables(void) {
 
 // Fill template `t` with the picture for output line `l`.
 static void __not_in_flash_func(render)(int t, uint32_t l) {
-    const uint16_t *src = fb + (l >> 1) * AMIGA_FB_W;
+    const amiga_row_t *row = &fb[l >> 1];
     const uint16_t *pal = pair[l & 1];
     uint16_t *dst = (uint16_t *)(tmpl[t] + H_SYNC + H_BP);
-    for (int x = 0; x < AMIGA_FB_W; x += 2) {
-        dst[x]     = pal[src[x] & 0xFFF];
-        dst[x + 1] = pal[src[x + 1] & 0xFFF];
+    if (row->mode == AMIGA_ROW_DIRECT) {
+        const uint16_t *src = row->px.rgb;
+        for (int x = 0; x < AMIGA_FB_W; x += 2) {
+            dst[x]     = pal[src[x] & 0xFFF];
+            dst[x + 1] = pal[src[x + 1] & 0xFFF];
+        }
+        return;
+    }
+    // Hires / interlace: one pin byte per output pixel, from the 2x2 Bayer
+    // pair of that pixel's colour (even columns take its low byte, odd its high).
+    amiga_fb_line(row, (int)(l & 1), line_rgb);
+    uint8_t *d8 = tmpl[t] + H_SYNC + H_BP;
+    for (int x = 0; x < AMIGA_OUT_W; x += 2) {
+        d8[x]     = (uint8_t)pal[line_rgb[x] & 0xFFF];
+        d8[x + 1] = (uint8_t)(pal[line_rgb[x + 1] & 0xFFF] >> 8);
     }
 }
 
@@ -114,7 +127,7 @@ static void __not_in_flash_func(dma_irq)(void) {
     dma_channel_set_read_addr(dma_ctrl, &tmpl_ptr[t], false);
 }
 
-void vga_start(const uint16_t *framebuffer) {
+void vga_start(const amiga_row_t *framebuffer) {
     fb = framebuffer;
     build_tables();
     render(2, 0);

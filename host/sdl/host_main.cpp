@@ -65,15 +65,15 @@ int main(int argc, char **argv) {
     }
     SDL_Window *win = SDL_CreateWindow("pico-amiga - click to capture the mouse, middle button releases it",
                                        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                       AMIGA_FB_W * 2, AMIGA_FB_H * 2, SDL_WINDOW_RESIZABLE);
+                                       AMIGA_OUT_W, AMIGA_FB_H * 2, SDL_WINDOW_RESIZABLE);
     SDL_Renderer *ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if (!win || !ren) {
         fprintf(stderr, "host: SDL window: %s\n", SDL_GetError());
         return 1;
     }
-    SDL_RenderSetLogicalSize(ren, AMIGA_FB_W * 2, AMIGA_FB_H * 2);
+    SDL_RenderSetLogicalSize(ren, AMIGA_OUT_W, AMIGA_FB_H * 2);
     SDL_Texture *tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
-                                         AMIGA_FB_W, AMIGA_FB_H);
+                                         AMIGA_OUT_W, AMIGA_FB_H * 2);
 
     std::thread([] { firmware_main(); }).detach();
 
@@ -162,30 +162,25 @@ int main(int argc, char **argv) {
             k.state = down ? 1 : 2;
         }
 
-        const uint16_t *fb = host_fb;
+        const amiga_row_t *fb = host_fb;
         if (fb) {
-            void *pixels;
-            int pitch;
-            if (SDL_LockTexture(tex, NULL, &pixels, &pitch) == 0) {
-                for (int y = 0; y < AMIGA_FB_H; y++) {
-                    uint32_t *d = (uint32_t *)((uint8_t *)pixels + y * pitch);
-                    const uint16_t *s = fb + y * AMIGA_FB_W;
-                    for (int x = 0; x < AMIGA_FB_W; x++) {
-                        const uint32_t c = s[x];
-                        d[x] = 0xFF000000u | ((c >> 8) & 15) * 0x110000u | ((c >> 4) & 15) * 0x1100u |
-                               (c & 15) * 0x11u;
-                    }
+            // The picture as the HDMI scanout shows it: every row is two 720-pixel lines.
+            static uint32_t argb[AMIGA_FB_H * 2][AMIGA_OUT_W];
+            uint16_t line[AMIGA_OUT_W];
+            for (int y = 0; y < AMIGA_FB_H * 2; y++) {
+                amiga_fb_line(&fb[y >> 1], y & 1, line);
+                for (int x = 0; x < AMIGA_OUT_W; x++) {
+                    const uint32_t c = line[x];
+                    argb[y][x] = 0xFF000000u | ((c >> 8) & 15) * 0x110000u | ((c >> 4) & 15) * 0x1100u |
+                                 (c & 15) * 0x11u;
                 }
-                SDL_UnlockTexture(tex);
             }
+            SDL_UpdateTexture(tex, NULL, argb, (int)sizeof argb[0]);
             for (Shot &sh : shots) {
                 if (sh.frame < 0 || vf < sh.frame) continue;
-                SDL_Surface *sf = SDL_CreateRGBSurfaceWithFormat(0, AMIGA_FB_W, AMIGA_FB_H, 32, SDL_PIXELFORMAT_ARGB8888);
-                for (int i = 0; i < AMIGA_FB_W * AMIGA_FB_H; i++) {
-                    const uint32_t c = fb[i];
-                    ((uint32_t *)sf->pixels)[(i / AMIGA_FB_W) * (sf->pitch / 4) + i % AMIGA_FB_W] =
-                        0xFF000000u | ((c >> 8) & 15) * 0x110000u | ((c >> 4) & 15) * 0x1100u | (c & 15) * 0x11u;
-                }
+                SDL_Surface *sf = SDL_CreateRGBSurfaceWithFormat(0, AMIGA_OUT_W, AMIGA_FB_H * 2, 32, SDL_PIXELFORMAT_ARGB8888);
+                for (int y = 0; y < AMIGA_FB_H * 2; y++)
+                    memcpy((uint8_t *)sf->pixels + y * sf->pitch, argb[y], sizeof argb[y]);
                 SDL_SaveBMP(sf, sh.file.c_str());
                 SDL_FreeSurface(sf);
                 fprintf(stderr, "host: frame %ld saved to %s\n", sh.frame, sh.file.c_str());

@@ -1,6 +1,7 @@
 // The menu and the settings, as the C side of the firmware (main.c) sees them.
 #pragma once
 #include <stdint.h>
+#include "amiga.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -10,7 +11,7 @@ extern "C" {
 // compiled-in defaults stay.
 void ui_load_settings(void);
 // Give the menu the framebuffer it draws into.
-void ui_init(uint16_t *framebuffer);
+void ui_init(amiga_row_t *framebuffer);
 
 // The settings main.c applies while booting (Config, from C).
 int  settings_cpu_mhz(void);

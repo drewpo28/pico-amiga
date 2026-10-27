@@ -17,7 +17,7 @@
 #include <stdint.h>
 #include "amiga.h"
 
-static uint16_t fb[AMIGA_FB_W * AMIGA_FB_H];
+static amiga_row_t fb[AMIGA_FB_H];
 #define AUDIO_FRAMES 65536
 static int16_t audio[AUDIO_FRAMES * 2];
 
@@ -57,15 +57,19 @@ static void chunk(FILE *f, const char *type, const uint8_t *data, uint32_t len) 
     uint8_t t[4]; be32(t, c); fwrite(t, 1, 4, f);
 }
 
+// The picture exactly as the HDMI scanout shows it: 720x576 (times --scale).
 static void write_png(const char *path, int scale) {
-    int w = AMIGA_FB_W * scale, h = AMIGA_FB_H * scale;
+    int w = AMIGA_OUT_W * scale, h = 2 * AMIGA_FB_H * scale;
     size_t row = (size_t)w * 3 + 1, raw_n = row * (size_t)h;
     uint8_t *raw = malloc(raw_n);
+    uint16_t line[AMIGA_OUT_W];
     for (int y = 0; y < h; y++) {
         uint8_t *r = raw + (size_t)y * row;
         *r++ = 0;
+        int oy = y / scale;
+        amiga_fb_line(&fb[oy >> 1], oy & 1, line);
         for (int x = 0; x < w; x++) {
-            uint16_t c = fb[(y / scale) * AMIGA_FB_W + x / scale];
+            uint16_t c = line[x / scale];
             *r++ = (uint8_t)(((c >> 8) & 15) * 17);
             *r++ = (uint8_t)(((c >> 4) & 15) * 17);
             *r++ = (uint8_t)((c & 15) * 17);
@@ -223,8 +227,12 @@ int main(int argc, char **argv) {
         for (int s = 0; s < nshots; s++) if (shots[s].frame == f + 1) write_png(shots[s].path, scale);
         if (status_every && (f + 1) % status_every == 0) {
             amiga_status_t st; amiga_get_status(&st);
-            fprintf(stderr, "frame %u pc=%06X dmacon=%04X intena=%04X intreq=%04X ovl=%d cop=%06X blits=%u\n",
-                    st.frame, st.pc, st.dmacon, st.intena, st.intreq, st.overlay, st.cop_pc, st.blits);
+            int modes[3] = {0, 0, 0};
+            for (int r = 0; r < AMIGA_FB_H; r++) if (fb[r].mode < 3) modes[fb[r].mode]++;
+            fprintf(stderr, "frame %u pc=%06X dmacon=%04X intena=%04X intreq=%04X ovl=%d cop=%06X blits=%u "
+                    "rows direct=%d idx8=%d lace4=%d\n",
+                    st.frame, st.pc, st.dmacon, st.intena, st.intreq, st.overlay, st.cop_pc, st.blits,
+                    modes[0], modes[1], modes[2]);
         }
     }
     if (wav) wav_close();

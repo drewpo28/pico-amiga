@@ -41,12 +41,12 @@ extern "C" int clock_overclock(int mhz, int flash_mhz) { (void)flash_mhz; return
 // ---- video.h ----------------------------------------------------------------------
 // One output frame every 832 x 605 pixels at 25.2 MHz, as the HDMI back-ends run;
 // the main thread presents host_fb whenever it changes.
-const uint16_t *volatile host_fb;
+const amiga_row_t *volatile host_fb;
 static std::atomic<uint32_t> s_frames{0};
 
 extern "C" void video_select(void) {}
 extern "C" bool video_is_vga(void) { return false; }
-extern "C" void video_start(const uint16_t *framebuffer) {
+extern "C" void video_start(const amiga_row_t *framebuffer) {
     host_fb = framebuffer;
     std::thread([] {
         using clk = std::chrono::steady_clock;

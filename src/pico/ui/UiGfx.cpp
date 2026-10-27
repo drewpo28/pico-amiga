@@ -132,10 +132,10 @@ static const uint32_t* uiPaletteActive() {
     return kUiPalette;
 }
 
-static uint16_t* s_fb;              // the framebuffer the menu draws into
+static amiga_row_t* s_fb;            // the framebuffer the menu draws into
 static uint16_t  s_pal[C_COUNT];    // the active theme as 0x0RGB
 
-void gfxSetFramebuffer(uint16_t* fb) { s_fb = fb; }
+void gfxSetFramebuffer(amiga_row_t* fb) { s_fb = fb; }
 
 static inline uint16_t rgb444(uint32_t c) {
     // Nearest 4-bit level per channel: (v * 15 + 127) / 255.
@@ -173,8 +173,19 @@ void gfxEnd() {}
 
 // ── pixels ─────────────────────────────────────────────────────────────────────
 
-static inline uint16_t* fbRow(int y) {
-    return s_fb ? s_fb + (Sf.oy + y) * AMIGA_FB_W + Sf.fbx : nullptr;
+// The menu draws lowres 0x0RGB: a hires or interlaced row is first turned into a
+// DIRECT one showing the same picture (the left pixel of each hires pair, the
+// upper output line).  Denise rewrites every row on its next frame anyway.
+static uint16_t* fbRow(int y) {
+    if (!s_fb) return nullptr;
+    amiga_row_t* r = &s_fb[Sf.oy + y];
+    if (r->mode != AMIGA_ROW_DIRECT) {
+        static uint16_t line[AMIGA_OUT_W];
+        amiga_fb_line(r, 0, line);
+        for (int x = 0; x < AMIGA_FB_W; x++) r->px.rgb[x] = line[2 * x];
+        r->mode = AMIGA_ROW_DIRECT;
+    }
+    return r->px.rgb + Sf.fbx;
 }
 
 void px(int x, int y, UiColor c) {
