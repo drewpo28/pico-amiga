@@ -7,6 +7,7 @@
 #include "board.h"
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
+#include "hardware/clocks.h"
 
 // connection is possible 00->00 (external pull down)
 static int test_0000_case(uint32_t pin0, uint32_t pin1, int res) {
@@ -75,3 +76,20 @@ int board_test_pins(uint32_t pin0, uint32_t pin1) {
     return res;                                // connection impossible
 }
 
+
+// ---- cycle counter -----------------------------------------------------------------
+#define DEMCR      (*(volatile uint32_t *)0xE000EDFCu)
+#define DWT_CTRL   (*(volatile uint32_t *)0xE0001000u)
+#define DWT_CYCCNT (*(volatile uint32_t *)0xE0001004u)
+
+uint32_t board_cycles(void) {
+    static bool on;
+    if (!on) {                       // trace enable, then the counter (per core)
+        DEMCR |= 1u << 24;
+        DWT_CTRL |= 1u;
+        on = true;
+    }
+    return DWT_CYCCNT;
+}
+
+uint32_t board_cycles_per_us(void) { return clock_get_hz(clk_sys) / 1000000u; }

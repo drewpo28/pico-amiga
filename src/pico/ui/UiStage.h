@@ -47,7 +47,9 @@ enum SettingFlags : uint16_t {
     X(SET_VOLUME,      AC_LIVE, F_PREVIEW,                     get_volume,    put_volume,    hook_sound) \
     X(SET_HDMI_AUDIO,  AC_LIVE, F_PREVIEW,                     get_hdmiaudio, put_hdmiaudio, hook_sound) \
     X(SET_AUDIO_OUT,   AC_REBOOT, 0,                           get_audioout,  put_audioout,  nullptr) \
-    X(SET_CPU_MHZ,     AC_REBOOT, 0,                           get_cpumhz,    put_cpumhz,    nullptr)
+    X(SET_CPU_MHZ,     AC_REBOOT, 0,                           get_cpumhz,    put_cpumhz,    nullptr) \
+    X(SET_FLASH_FREQ,  AC_REBOOT, 0,                           get_flashfreq, put_flashfreq, nullptr) \
+    X(SET_PSRAM_FREQ,  AC_REBOOT, 0,                           get_psramfreq, put_psramfreq, nullptr)
 
 #define NM_X_ENUM(id, cls, flags, g, p, h) id,
 enum SettingId : uint16_t {

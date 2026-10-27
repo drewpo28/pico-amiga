@@ -50,6 +50,10 @@ typedef struct {
     // Optional hooks (may be NULL).
     void (*serial_out)(void *ctx, uint8_t byte);   // SERDAT, for DiagROM / debug
     void (*frame_done)(void *ctx);                 // after each completed frame
+    // Profiling clock (any free-running counter, e.g. CPU cycles), or NULL: when
+    // set, the core charges the time between its section switches to
+    // amiga_profile_t's buckets.
+    uint32_t (*prof_clock)(void);
     void *ctx;
 } amiga_config_t;
 
@@ -90,6 +94,15 @@ typedef struct {
     uint32_t blits;
 } amiga_status_t;
 void amiga_get_status(amiga_status_t *st);
+
+// Where the time went (cfg.prof_clock ticks) since the last reset: the 68000
+// (blits excluded), the copper (renders excluded), the Denise render (bitplane
+// fetch + pixel output, wherever it is triggered), the blitter, and the rest of
+// the scheduler (Paula, floppy, CIAs, line bookkeeping).
+enum { AMIGA_PROF_OTHER, AMIGA_PROF_CPU, AMIGA_PROF_COPPER, AMIGA_PROF_RENDER,
+       AMIGA_PROF_BLIT, AMIGA_PROF_COUNT };
+typedef struct { uint32_t ticks[AMIGA_PROF_COUNT]; uint32_t frames; } amiga_profile_t;
+void amiga_get_profile(amiga_profile_t *p, bool reset);
 
 #ifdef __cplusplus
 }

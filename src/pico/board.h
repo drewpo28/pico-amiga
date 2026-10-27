@@ -12,6 +12,11 @@ extern "C" {
 // Takes ~130 ms; the pins are left deinitialised.
 int board_test_pins(uint32_t pin0, uint32_t pin1);
 
+// A free-running cycle counter of the calling core (the M33's DWT CYCCNT; the
+// PC host counts nanoseconds), for the core's profiler, and its rate.
+uint32_t board_cycles(void);
+uint32_t board_cycles_per_us(void);
+
 #ifdef __cplusplus
 }
 #endif

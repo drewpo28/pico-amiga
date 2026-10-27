@@ -44,6 +44,8 @@ extern "C" void ui_init(uint16_t *framebuffer) { nm::gfxSetFramebuffer(framebuff
 
 extern "C" int settings_cpu_mhz(void)   { return Config::cpu_mhz; }
 extern "C" int settings_audio_out(void) { return Config::audio_out; }
+extern "C" int settings_flash_mhz(void) { return Config::max_flash_freq; }
+extern "C" int settings_psram_mhz(void) { return Config::max_psram_freq; }
 
 extern "C" void settings_apply_sound(void) {
     audio_set_volume(Config::volume * 16);

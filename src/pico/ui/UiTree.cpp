@@ -39,6 +39,17 @@ static const Option opt_audio_out[] = {
 static const Option opt_cpu_mhz[] = {
     { "252 MHz", 252 }, { "378 MHz", 378 }, { "504 MHz", 504 },
 };
+// Same steps as pico-speccy's Overclock menu. The QMI divides clk_sys by a whole
+// number, so the SCK is the fastest clk_sys / n at or below the limit (504 MHz:
+// 66 -> 63, 84 -> 84, 100 -> 100.8, 133/166 -> 126); PSRAM never goes past 135.
+static const Option opt_flash_freq[] = {
+    { "33 MHz", 33 }, { "66 MHz", 66 }, { "84 MHz", 84 },
+    { "100 MHz", 100 }, { "133 MHz", 133 }, { "166 MHz", 166 },
+};
+static const Option opt_psram_freq[] = {
+    { "66 MHz", 66 }, { "84 MHz", 84 }, { "100 MHz", 100 },
+    { "133 MHz", 133 }, { "166 MHz", 166 },
+};
 static const Option opt_theme[] = {
     { "Slate", 0 }, { "ZX Spectrum", 1 },
 };
@@ -129,7 +140,7 @@ static void page_hotkeys() {
         "F12         This menu (Esc goes back, F12 closes)\n"
         "Ctrl+F12    Insert a disk into DF0\n"
         "Shift+F12   Reset the Amiga\n"
-        "Alt+F12     Performance band on/off\n"
+        "Alt+F12     Performance band: summary, breakdown, off\n"
         "Ctrl+J      Cursor keys as joystick on/off\n"
         "F1..F10     Amiga function keys\n"
         "\n"
@@ -182,9 +193,15 @@ static const Node kVideo[] = {
     NM_BOOL("HDMI audio", SET_HDMI_AUDIO, nullptr),
 };
 
+static const Node kOverclock[] = {
+    NM_RADIO("CPU frequency",   SET_CPU_MHZ,    opt_cpu_mhz,    nullptr),
+    NM_RADIO("Flash frequency", SET_FLASH_FREQ, opt_flash_freq, nullptr),
+    NM_RADIO("PSRAM frequency", SET_PSRAM_FREQ, opt_psram_freq, nullptr),
+};
+
 static const Node kOptions[] = {
-    NM_RADIO("CPU clock", SET_CPU_MHZ, opt_cpu_mhz, nullptr),
-    NM_SUB  ("Interface", kInterface, nullptr),
+    NM_SUB("Overclock", kOverclock, nullptr),
+    NM_SUB("Interface", kInterface, nullptr),
 };
 
 static const Node kInput[] = {

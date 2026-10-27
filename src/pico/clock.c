@@ -12,12 +12,11 @@
 #include "hardware/vreg.h"
 #include "hardware/structs/qmi.h"
 
-#ifndef FLASH_MAX_MHZ
-#define FLASH_MAX_MHZ 66
-#endif
+// The flash SCK limit (Options > Flash frequency); 66 MHz until clock_overclock().
+static int flash_max_mhz = 66;
 
 static void __not_in_flash_func(flash_timing_for)(int mhz, int *div_out, int *rx_out) {
-    const int max_hz = FLASH_MAX_MHZ * 1000000;
+    const int max_hz = flash_max_mhz * 1000000;
     const int clock_hz = mhz * 1000000;
     int divisor = (clock_hz + max_hz - 1) / max_hz;
     if (divisor == 1 && clock_hz > 100000000) divisor = 2;
@@ -48,7 +47,7 @@ static void __not_in_flash_func(flash_timings_transition)(int from_mhz, int to_m
     flash_timing_write(d, r);
 }
 
-int clock_overclock(int mhz) {
+int clock_overclock(int mhz, int flash_mhz) {
     vreg_disable_voltage_limit();
     vreg_set_voltage(VREG_VOLTAGE_1_60);
     sleep_ms(100);                              // regulator settles first
@@ -60,6 +59,7 @@ int clock_overclock(int mhz) {
         flash_timings_transition(boot_mhz, applied);
         set_sys_clock_khz((uint32_t)applied * 1000, true);
     }
+    if (flash_mhz >= 33 && flash_mhz <= 166) flash_max_mhz = flash_mhz;
     flash_timings(applied);
     return applied;
 }

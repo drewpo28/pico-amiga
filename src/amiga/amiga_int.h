@@ -84,6 +84,22 @@ typedef struct {
 
 extern amiga_t A;
 
+// ---- profiling (amiga_get_profile) ------------------------------------------
+// Charge the time since the last switch to the current bucket and make `cat` the
+// current one; returns the previous, for nested sections to switch back to.
+// Free when cfg.prof_clock is NULL.
+extern uint8_t  prof_cur;
+extern uint32_t prof_t, prof_acc[AMIGA_PROF_COUNT];
+static inline int prof_switch(int cat) {
+    if (!A.cfg.prof_clock) return cat;
+    const uint32_t now = A.cfg.prof_clock();
+    prof_acc[prof_cur] += now - prof_t;
+    prof_t = now;
+    const int old = prof_cur;
+    prof_cur = (uint8_t)cat;
+    return old;
+}
+
 // Current horizontal position in colour clocks (0..226), from the CPU's clock.
 uint16_t amiga_hpos(void);
 uint64_t amiga_now(void);              // absolute CPU cycles "now"

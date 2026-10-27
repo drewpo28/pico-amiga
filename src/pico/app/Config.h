@@ -23,6 +23,8 @@ public:
 
     // Board (read at boot)
     static uint16_t cpu_mhz;        // 252 / 378 / 504
+    static uint16_t max_flash_freq; // flash SCK limit, MHz (default 66)
+    static uint16_t max_psram_freq; // PSRAM SCK limit, MHz (default 166; 135 is the cap)
     static uint8_t  audio_out;      // 0 auto, 1 PWM, 2 I2S (audio_out.c)
     // Sound
     static uint8_t  volume;         // 0..16 (16 = full scale)

@@ -149,7 +149,9 @@ static uint32_t line_blit(void) {
 
 static void start(void) {
     pending = false;
+    const int prof = prof_switch(AMIGA_PROF_BLIT);
     uint32_t cc = (con1 & 1) ? line_blit() : area_blit();
+    prof_switch(prof);
     nblits++;
     busy = true;
     done_cyc = amiga_now() + 2ull * cc;

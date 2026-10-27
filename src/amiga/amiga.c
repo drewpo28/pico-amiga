@@ -17,6 +17,9 @@
 #endif
 
 amiga_t A;
+uint8_t  prof_cur;
+uint32_t prof_t, prof_acc[AMIGA_PROF_COUNT];
+static uint32_t prof_frames;
 
 // ---- time ----------------------------------------------------------------------
 uint64_t amiga_now(void) {
@@ -142,8 +145,11 @@ static void run_line(void) {
     copper_line_start();
     for (int h = SLICE_CC; ; h += SLICE_CC) {
         if (h > AMIGA_CC_PER_LINE) h = AMIGA_CC_PER_LINE;
+        prof_switch(AMIGA_PROF_COPPER);
         copper_run(h);
+        prof_switch(AMIGA_PROF_CPU);
         cpu_until(A.line_cyc + 2u * (uint32_t)h);
+        prof_switch(AMIGA_PROF_OTHER);
         blitter_poll();
         if (h == AMIGA_CC_PER_LINE) break;
     }
@@ -157,10 +163,24 @@ static void run_line(void) {
 }
 
 void amiga_run_frame(void) {
+    // Only the time inside the frame is charged: start the clock here and bring
+    // the buckets up to date at the end (the wait for the next frame is nobody's).
+    if (A.cfg.prof_clock) { prof_t = A.cfg.prof_clock(); prof_cur = AMIGA_PROF_OTHER; }
     for (A.vpos = 0; A.vpos < A.lines; A.vpos++) run_line();
+    prof_switch(AMIGA_PROF_OTHER);
     A.vpos = 0;
     A.frame++;
+    prof_frames++;
     if (A.cfg.frame_done) A.cfg.frame_done(A.cfg.ctx);
+}
+
+void amiga_get_profile(amiga_profile_t *p, bool reset) {
+    for (int i = 0; i < AMIGA_PROF_COUNT; i++) p->ticks[i] = prof_acc[i];
+    p->frames = prof_frames;
+    if (reset) {
+        for (int i = 0; i < AMIGA_PROF_COUNT; i++) prof_acc[i] = 0;
+        prof_frames = 0;
+    }
 }
 
 void amiga_get_status(amiga_status_t *st) {

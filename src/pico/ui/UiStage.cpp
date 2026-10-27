@@ -58,6 +58,8 @@ NM_INT_ACCESS (volume,    volume,     uint8_t)
 NM_BOOL_ACCESS(hdmiaudio, hdmi_audio)
 NM_INT_ACCESS (audioout,  audio_out,  uint8_t)
 NM_INT_ACCESS (cpumhz,    cpu_mhz,    uint16_t)
+NM_INT_ACCESS (flashfreq, max_flash_freq, uint16_t)
+NM_INT_ACCESS (psramfreq, max_psram_freq, uint16_t)
 // Volume and HDMI audio reach the outputs at once (heard while editing).
 static bool hook_sound(int32_t, int32_t) { settings_apply_sound(); return true; }
 

@@ -22,6 +22,8 @@ bool     Config::ui_vga_solid = true;
 #define CPU_MHZ 378
 #endif
 uint16_t Config::cpu_mhz      = CPU_MHZ;
+uint16_t Config::max_flash_freq = 66;
+uint16_t Config::max_psram_freq = 166;
 uint8_t  Config::audio_out    = 0;
 uint8_t  Config::volume       = 16;
 bool     Config::hdmi_audio   = true;
@@ -99,11 +101,15 @@ void Config::load() {
     nvs_get_b  ("ui_rounded",    ui_rounded,   sts);
     nvs_get_b  ("ui_vga_solid",  ui_vga_solid, sts);
     nvs_get_u16("cpu_mhz",       cpu_mhz,      sts);
+    nvs_get_u16("max_flash_freq", max_flash_freq, sts);
+    nvs_get_u16("max_psram_freq", max_psram_freq, sts);
     nvs_get_u8 ("audio_out",     audio_out,    sts);
     nvs_get_u8 ("volume",        volume,       sts);
     nvs_get_b  ("hdmi_audio",    hdmi_audio,   sts);
     if (cpu_mhz != 252 && cpu_mhz != 378 && cpu_mhz != 504) cpu_mhz = CPU_MHZ;
     if (volume > 16) volume = 16;
+    if (max_flash_freq < 33 || max_flash_freq > 166) max_flash_freq = 66;
+    if (max_psram_freq < 66 || max_psram_freq > 166) max_psram_freq = 166;
     nvs_get_str("kick",          kick,         sts);
     if (!nvs_get_str("df0",      df0,          sts)) df0.clear();
     nvs_get_b  ("df0_wp",        df0_wp,       sts);
@@ -170,6 +176,8 @@ bool Config::save() {
     nvs_set_b(buf, "ui_rounded",    ui_rounded);
     nvs_set_b(buf, "ui_vga_solid",  ui_vga_solid);
     nvs_set_i(buf, "cpu_mhz",       cpu_mhz);
+    nvs_set_i(buf, "max_flash_freq", max_flash_freq);
+    nvs_set_i(buf, "max_psram_freq", max_psram_freq);
     nvs_set_i(buf, "audio_out",     audio_out);
     nvs_set_i(buf, "volume",        volume);
     nvs_set_b(buf, "hdmi_audio",    hdmi_audio);

@@ -33,6 +33,7 @@
 #include "video.h"
 #include "ui/ui.h"
 #include "machine.h"
+#include "board.h"
 
 #ifndef CPU_MHZ
 #define CPU_MHZ 378
@@ -99,12 +100,13 @@ int main(void) {
     // The card first, at the boot clock: storage.nvs says which clock to run at.
     const bool card = f_mount(&fs, "", 1) == FR_OK;
     if (card) ui_load_settings();
-    clock_overclock(settings_cpu_mhz());
+    clock_overclock(settings_cpu_mhz(), settings_flash_mhz());
     if (card) sdcard_reclock();
     // PSRAM first: its bring-up runs QMI direct mode, during which nothing on
     // either core may fetch from flash (core 1 is not started yet, USB is off).
     // RP2350A carriers wire CS1 to BUTTER_PSRAM_GPIO, RP2350B modules to 47.
-    uint32_t psram = psram_init(chip_is_rp2350a() ? BUTTER_PSRAM_GPIO : 47);
+    uint32_t psram = psram_init(chip_is_rp2350a() ? BUTTER_PSRAM_GPIO : 47,
+                                settings_psram_mhz());
     dma_channel_claim(0);            // video_hstx.c / video_pio.c scanout ping-pong
     dma_channel_claim(1);
     video_select();                  // VGA or HDMI on the display pins
@@ -128,6 +130,7 @@ int main(void) {
     cfg.framebuffer = fb;
     cfg.audio_ring = audio_ring;
     cfg.audio_frames = AUDIO_FRAMES;
+    cfg.prof_clock = board_cycles;   // where the frame time goes (Alt+F12, second page)
     amiga_init(&cfg);
     if (card) machine_restore_disks();
 

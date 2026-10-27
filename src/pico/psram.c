@@ -14,16 +14,16 @@
 
 #define MB (1u << 20)
 
-// Hard ceiling on the PSRAM SCK: 135 MHz is the highest hw-proven clock
-// (540 / 4); 168 MHz (504 / 3) failed on pico-speccy.
-#ifndef PSRAM_MAX_SCK_MHZ
-#define PSRAM_MAX_SCK_MHZ 133
-#endif
+// Hard ceiling on the PSRAM SCK, whatever the menu says: 135 MHz is the highest
+// hw-proven clock (540 / 4); 168 MHz (504 / 3) failed on pico-speccy.
+#define PSRAM_QMI_SCK_HW_MAX_MHZ 135
 
 static uint32_t psram_bytes;
 
-static void __not_in_flash_func(psram_retiming)(uint32_t clock_hz) {
-    const int max_psram_freq = PSRAM_MAX_SCK_MHZ * 1000000;
+static void __not_in_flash_func(psram_retiming)(uint32_t clock_hz, int max_mhz) {
+    if (max_mhz > PSRAM_QMI_SCK_HW_MAX_MHZ) max_mhz = PSRAM_QMI_SCK_HW_MAX_MHZ;
+    if (max_mhz < 33) max_mhz = 33;
+    const int max_psram_freq = max_mhz * 1000000;
     int divisor = (int)((clock_hz + max_psram_freq - 1) / max_psram_freq);
     if (divisor == 1 && clock_hz > 100000000) divisor = 2;
     int rxdelay = divisor;
@@ -86,7 +86,7 @@ static uint32_t __not_in_flash_func(psram_probe_size)(void) {
     return res * MB;
 }
 
-uint32_t __no_inline_not_in_flash_func(psram_init)(unsigned cs_pin) {
+uint32_t __no_inline_not_in_flash_func(psram_init)(unsigned cs_pin, int max_mhz) {
     gpio_set_function(cs_pin, GPIO_FUNC_XIP_CS1);
 
     // Direct-mode window: IRQs off, RAM code only (USB/flash handlers would stall).
@@ -107,7 +107,7 @@ uint32_t __no_inline_not_in_flash_func(psram_init)(unsigned cs_pin) {
     qmi_hw->direct_csr = 0;
     restore_interrupts(ints);
 
-    psram_retiming(clock_get_hz(clk_sys));
+    psram_retiming(clock_get_hz(clk_sys), max_mhz);
     qmi_hw->m[1].rfmt =
         QMI_M0_RFMT_PREFIX_WIDTH_VALUE_Q << QMI_M0_RFMT_PREFIX_WIDTH_LSB |
         QMI_M0_RFMT_ADDR_WIDTH_VALUE_Q   << QMI_M0_RFMT_ADDR_WIDTH_LSB |

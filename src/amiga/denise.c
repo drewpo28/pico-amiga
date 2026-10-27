@@ -248,6 +248,7 @@ static void output(int x0, int x1) {
 static void render_to(int h) {
     if (h > AMIGA_CC_PER_LINE) h = AMIGA_CC_PER_LINE;
     if (h <= r_h) return;
+    const int prof = prof_switch(AMIGA_PROF_RENDER);
     if (bpl_dma) {
         while (fetch_k < nunits && ds + fetch_k * unit_cc < h) {
             fetch_unit(fetch_k);
@@ -256,6 +257,7 @@ static void render_to(int h) {
     }
     output(2 * r_h, 2 * h);
     r_h = h;
+    prof_switch(prof);
 }
 
 // ---- sprites -----------------------------------------------------------------

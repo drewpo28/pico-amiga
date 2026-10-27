@@ -18,12 +18,19 @@ extern "C" {
 }
 #include "input_devices.h"
 
+// board.h: the profiler's clock (nanoseconds on a PC).
+extern "C" uint32_t board_cycles(void) {
+    return (uint32_t)std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+extern "C" uint32_t board_cycles_per_us(void) { return 1000; }
+
 void __wfi(void) { std::this_thread::sleep_for(std::chrono::milliseconds(1)); }
 
 // ---- psram.h / clock.h: host_main.cpp maps the window at PSRAM_BASE -------------
-extern "C" uint32_t psram_init(unsigned cs_pin) { (void)cs_pin; return HOST_PSRAM_SIZE; }
+extern "C" uint32_t psram_init(unsigned cs_pin, int max_mhz) { (void)cs_pin; (void)max_mhz; return HOST_PSRAM_SIZE; }
 extern "C" uint32_t psram_size(void) { return HOST_PSRAM_SIZE; }
-extern "C" int clock_overclock(int mhz) { return mhz; }
+extern "C" int clock_overclock(int mhz, int flash_mhz) { (void)flash_mhz; return mhz; }
 
 // ---- video.h ----------------------------------------------------------------------
 // One output frame every 832 x 605 pixels at 25.2 MHz, as the HDMI back-ends run;
