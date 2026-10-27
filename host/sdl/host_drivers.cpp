@@ -68,13 +68,18 @@ static void audio_cb(void *, Uint8 *stream, int len) {
             last_r = s_ring[i + 1];
             s_rd++;
         }
-        *out++ = last_l;
-        *out++ = last_r;
+        *out++ = (int16_t)((last_l * audio_volume_q8) >> 8);
+        *out++ = (int16_t)((last_r * audio_volume_q8) >> 8);
     }
 }
 
 extern "C" bool audio_out_pcm5122_present(void) { return false; }
-extern "C" void audio_out_start(const int16_t *ring, uint32_t frames) {
+volatile int16_t audio_volume_q8 = 256;
+extern "C" void audio_set_volume(int q8) { audio_volume_q8 = (int16_t)(q8 < 0 ? 0 : q8 > 256 ? 256 : q8); }
+extern "C" void hdmi_audio_set_enabled(bool) {}
+extern "C" void sdcard_reclock(void) {}
+
+extern "C" void audio_out_start(const int16_t *ring, uint32_t frames, int) {
     s_ring = ring;
     s_ring_frames = frames;
     s_rd = amiga_audio_write_pos();

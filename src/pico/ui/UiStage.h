@@ -43,7 +43,11 @@ enum SettingFlags : uint16_t {
     X(SET_UI_ROUNDED,  AC_PURE, F_PREVIEW | F_MODAL,           get_rounded,   put_rounded,   hook_ui) \
     X(SET_UI_VGA_SOLID,AC_PURE, F_PREVIEW | F_PALETTE | F_MODAL, get_vgasolid, put_vgasolid, hook_ui) \
     X(SET_KICK,        AC_LIVE, 0,                             get_kick,      put_kick,      hook_kick) \
-    X(SET_DF0_WP,      AC_LIVE, 0,                             get_df0wp,     put_df0wp,     hook_df0wp)
+    X(SET_DF0_WP,      AC_LIVE, 0,                             get_df0wp,     put_df0wp,     hook_df0wp) \
+    X(SET_VOLUME,      AC_LIVE, F_PREVIEW,                     get_volume,    put_volume,    hook_sound) \
+    X(SET_HDMI_AUDIO,  AC_LIVE, F_PREVIEW,                     get_hdmiaudio, put_hdmiaudio, hook_sound) \
+    X(SET_AUDIO_OUT,   AC_REBOOT, 0,                           get_audioout,  put_audioout,  nullptr) \
+    X(SET_CPU_MHZ,     AC_REBOOT, 0,                           get_cpumhz,    put_cpumhz,    nullptr)
 
 #define NM_X_ENUM(id, cls, flags, g, p, h) id,
 enum SettingId : uint16_t {

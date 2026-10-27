@@ -11,6 +11,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define HDMI_ISLAND_PX 44
 #define HDMI_VLEAD_PX  10
 
@@ -29,6 +33,10 @@ void hdmi_audio_init(const int16_t *ring, uint32_t frames, uint32_t pixel_hz, ui
 // order: it consumes audio.
 void hdmi_audio_island(uint32_t *chars, uint32_t blank, bool vsync);
 
+// Audio sample packets on/off (the link stays HDMI either way; off sends Null
+// packets where the audio went).
+void hdmi_audio_set_enabled(bool on);
+
 // The video preamble + guard band (VSYNC inactive, HSYNC inactive).
 extern const uint32_t hdmi_video_lead[HDMI_VLEAD_PX];
 
@@ -39,3 +47,7 @@ extern const uint32_t hdmi_video_lead[HDMI_VLEAD_PX];
 void hdmi_audio_packet(uint8_t nib[32][3], uint32_t blank, bool vsync);
 void hdmi_island_frame(uint32_t pre[10], uint32_t post[2], bool vsync);
 uint32_t hdmi_terc4(int nibble);
+
+#ifdef __cplusplus
+}
+#endif

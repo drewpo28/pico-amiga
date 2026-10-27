@@ -91,9 +91,16 @@ static void __attribute__((noreturn)) fail(uint16_t colour) {
     }
 }
 
+// drivers/sdcard: the SPI divider follows clk_sys, re-derived after a clock change.
+void sdcard_reclock(void);
+
 int main(void) {
-    clock_overclock(CPU_MHZ);
     led_init();
+    // The card first, at the boot clock: storage.nvs says which clock to run at.
+    const bool card = f_mount(&fs, "", 1) == FR_OK;
+    if (card) ui_load_settings();
+    clock_overclock(settings_cpu_mhz());
+    if (card) sdcard_reclock();
     // PSRAM first: its bring-up runs QMI direct mode, during which nothing on
     // either core may fetch from flash (core 1 is not started yet, USB is off).
     // RP2350A carriers wire CS1 to BUTTER_PSRAM_GPIO, RP2350B modules to 47.
@@ -115,8 +122,7 @@ int main(void) {
 
     // The card holds the settings, the disks and an optional kick.rom; with a
     // built-in ROM the machine also boots without one.
-    const bool card = f_mount(&fs, "", 1) == FR_OK;
-    ui_init(fb);                     // settings (defaults without a card); the menu draws into fb
+    ui_init(fb);                     // the menu draws into fb
     if (!machine_select_rom(&cfg)) fail(card ? 0x00F : 0xF0F);
 
     cfg.framebuffer = fb;
@@ -125,7 +131,8 @@ int main(void) {
     amiga_init(&cfg);
     if (card) machine_restore_disks();
 
-    audio_out_start(audio_ring, AUDIO_FRAMES);
+    audio_out_start(audio_ring, AUDIO_FRAMES, settings_audio_out());
+    settings_apply_sound();
 
     uint32_t vf = video_frames();
     for (uint32_t frame = 0;; frame++) {

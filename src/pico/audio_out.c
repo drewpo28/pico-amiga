@@ -31,6 +31,9 @@
 #endif
 
 bool is_i2s_enabled = false;      // drivers/audio/audio.c reads it
+volatile int16_t audio_volume_q8 = 256;
+
+void audio_set_volume(int q8) { audio_volume_q8 = (int16_t)(q8 < 0 ? 0 : q8 > 256 ? 256 : q8); }
 
 static i2s_config_t i2s_config = {
     .sample_freq = AMIGA_AUDIO_RATE,
@@ -61,6 +64,9 @@ static uint32_t au_frac;          // its fraction, 1/256 us
 static uint32_t au_period_q8;     // 1/AMIGA_AUDIO_RATE in 1/256 us
 
 static inline void __not_in_flash_func(output)(int32_t sL, int32_t sR) {
+    const int32_t vol = audio_volume_q8;
+    sL = (sL * vol) >> 8;
+    sR = (sR * vol) >> 8;
     if (is_i2s_enabled) {
         if (!pio_sm_is_tx_fifo_full(i2s_config.pio, i2s_config.sm))
             pio_sm_put(i2s_config.pio, i2s_config.sm, ((uint32_t)(uint16_t)sR << 16) | (uint16_t)sL);
@@ -125,12 +131,12 @@ bool audio_out_pcm5122_present(void) {
 #endif
 }
 
-void audio_out_start(const int16_t *audio_ring, uint32_t frames) {
+void audio_out_start(const int16_t *audio_ring, uint32_t frames, int mode) {
     ring = audio_ring;
     ring_frames = frames;
 
 #ifdef PCM5122_I2S_DATA
-    if (audio_out_pcm5122_present() && pcm5122_init(PCM5122_I2C_SDA, PCM5122_I2C_SCL)) {
+    if (mode != 1 && audio_out_pcm5122_present() && pcm5122_init(PCM5122_I2C_SDA, PCM5122_I2C_SCL)) {
         i2s_config.data_pin = PCM5122_I2S_DATA;
         i2s_config.bck_pin = PCM5122_I2S_BCK;
         i2s_config.lck_pin = PCM5122_I2S_LCK;
@@ -138,7 +144,11 @@ void audio_out_start(const int16_t *audio_ring, uint32_t frames) {
         out_name = "PCM5122";
     } else
 #endif
-    if (I2S_BCK_PIO != I2S_LCK_PIO && I2S_LCK_PIO != I2S_DATA_PIO && I2S_BCK_PIO != I2S_DATA_PIO) {
+    if (mode == 2) {
+        is_i2s_enabled = I2S_BCK_PIO != I2S_LCK_PIO;      // forced, unless the board has none
+        if (is_i2s_enabled) out_name = "I2S";
+    } else if (mode == 0 &&
+               I2S_BCK_PIO != I2S_LCK_PIO && I2S_LCK_PIO != I2S_DATA_PIO && I2S_BCK_PIO != I2S_DATA_PIO) {
         // Drain residual charge before probing: after a warm restart the PWM
         // board's RC filter caps can hold the pins high, so testPins reads 1 even
         // under pull-down and would falsely select I2S.

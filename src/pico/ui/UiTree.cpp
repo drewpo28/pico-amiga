@@ -32,6 +32,12 @@ static const Option opt_mouse_swap[] = {
 static const Option opt_mouse_sens[] = {
     { "1/4", 64 }, { "1/2", 128 }, { "1:1", 256 }, { "x2", 512 },
 };
+static const Option opt_audio_out[] = {
+    { "Auto (PCM5122 / I2S DAC / PWM)", 0, "Auto" }, { "PWM", 1 }, { "I2S", 2 },
+};
+static const Option opt_cpu_mhz[] = {
+    { "252 MHz", 252 }, { "378 MHz", 378 }, { "504 MHz", 504 },
+};
 static const Option opt_theme[] = {
     { "Slate", 0 }, { "ZX Spectrum", 1 },
 };
@@ -145,17 +151,32 @@ static const Node kDisks[] = {
     NM_BOOL   ("DF0 write protect", SET_DF0_WP, nullptr),
 };
 
+static const Node kInterface[] = {
+    NM_RADIO("Theme",        SET_UI_THEME,     opt_theme,     nullptr),
+    NM_RADIO("Corners",      SET_UI_ROUNDED,   opt_corners,   nullptr),
+    NM_RADIO("VGA colours",  SET_UI_VGA_SOLID, opt_vga_solid, nullptr),
+};
+
+static const Node kAudio[] = {
+    NM_INT  ("Volume", SET_VOLUME, 0, 16, 1, nullptr),
+    NM_RADIO("Output", SET_AUDIO_OUT, opt_audio_out, nullptr),
+};
+
+static const Node kVideo[] = {
+    NM_BOOL("HDMI audio", SET_HDMI_AUDIO, nullptr),
+};
+
+static const Node kOptions[] = {
+    NM_RADIO("CPU clock", SET_CPU_MHZ, opt_cpu_mhz, nullptr),
+    NM_SUB  ("Interface", kInterface, nullptr),
+};
+
 static const Node kInput[] = {
     NM_BOOL ("Cursor keys as joystick", SET_CURSOR_JOY, nullptr),
     NM_RADIO("Mouse speed",             SET_MOUSE_SENS, opt_mouse_sens, nullptr),
     NM_RADIO("Swap mouse buttons",      SET_MOUSE_SWAP, opt_mouse_swap, nullptr),
 };
 
-static const Node kInterface[] = {
-    NM_RADIO("Theme",        SET_UI_THEME,     opt_theme,     nullptr),
-    NM_RADIO("Corners",      SET_UI_ROUNDED,   opt_corners,   nullptr),
-    NM_RADIO("VGA colours",  SET_UI_VGA_SOLID, opt_vga_solid, nullptr),
-};
 
 static const Node kHelp[] = {
     NM_PAGE("Hotkeys", page_hotkeys, nullptr),
@@ -171,7 +192,9 @@ static const Node kRoot[] = {
     NM_SUB("Disks",     kDisks,     nullptr),
     NM_SUB("Machine",   kMachine,   nullptr),
     NM_SUB("Input",     kInput,     nullptr),
-    NM_SUB("Interface", kInterface, nullptr),
+    NM_SUB("Audio",     kAudio,     nullptr),
+    NM_SUB("Video",     kVideo,     nullptr),
+    NM_SUB("Options",   kOptions,   nullptr),
     NM_SUB("Help",      kHelp,      nullptr),
     NM_SUB("Reset",     kReset,     nullptr),
 };

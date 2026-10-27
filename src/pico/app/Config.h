@@ -21,6 +21,13 @@ public:
     static bool     ui_rounded;     // rounded window corners
     static bool     ui_vga_solid;   // VGA: the on-grid theme twin (no dither shimmer)
 
+    // Board (read at boot)
+    static uint16_t cpu_mhz;        // 252 / 378 / 504
+    static uint8_t  audio_out;      // 0 auto, 1 PWM, 2 I2S (audio_out.c)
+    // Sound
+    static uint8_t  volume;         // 0..16 (16 = full scale)
+    static bool     hdmi_audio;     // send audio in the HDMI data islands
+
     // Machine (machine.cpp)
     static std::string kick;        // built-in ROM id (roms.h), or "sd" = /amiga/kick.rom
     static std::string df0;         // ADF in DF0 ("" = empty drive)

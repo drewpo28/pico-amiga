@@ -20,6 +20,7 @@
 #include <string.h>
 #include "pico.h"
 #include "amiga.h"
+#include "audio_out.h"
 
 #define FS 48000u
 
@@ -173,6 +174,9 @@ static uint32_t lag_target;
 static uint32_t credit;               // 48 kHz samples owed, Q24
 static uint32_t credit_line;          // ...accrued per line
 static int      iec_ct;               // IEC 60958 192-frame block counter
+static volatile bool enabled = true;
+
+void hdmi_audio_set_enabled(bool on) { enabled = on; }
 
 static void __not_in_flash_func(next_sample)(int16_t *l, int16_t *r) {
     const uint32_t wp = amiga_audio_write_pos();
@@ -191,8 +195,9 @@ static void __not_in_flash_func(next_sample)(int16_t *l, int16_t *r) {
 
     const uint32_t i0 = (rd_frame & ring_mask) * 2, i1 = ((rd_frame + 1) & ring_mask) * 2;
     const int32_t f = (int32_t)rd_frac;
-    *l = (int16_t)(ring[i0]     + (((ring[i1]     - ring[i0])     * f) >> 16));
-    *r = (int16_t)(ring[i0 + 1] + (((ring[i1 + 1] - ring[i0 + 1]) * f) >> 16));
+    const int32_t vol = audio_volume_q8;  // audio_out.c: the one volume for every output
+    *l = (int16_t)(((ring[i0]     + (((ring[i1]     - ring[i0])     * f) >> 16)) * vol) >> 8);
+    *r = (int16_t)(((ring[i0 + 1] + (((ring[i1 + 1] - ring[i0 + 1]) * f) >> 16)) * vol) >> 8);
     rd_frac += step;
     rd_frame += rd_frac >> 16;
     rd_frac &= 0xFFFF;
@@ -266,7 +271,7 @@ void __not_in_flash_func(hdmi_audio_packet)(uint8_t nib[32][3], uint32_t blank, 
     else if (!vsync && blank == 3)             p = &pk_vendor;
     else if (!vsync && blank == 4)             p = &pk_aif;
     else if (!vsync && blank && !(blank & 3))  p = &pk_acr;
-    else if (credit >= (4u << 24) && ring) {
+    else if (credit >= (4u << 24) && ring && enabled) {
         credit -= 4u << 24;
         audio_packet(&a);
         p = &a;

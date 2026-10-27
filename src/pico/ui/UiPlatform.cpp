@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include "input.h"
 #include "machine.h"
+#include "audio_out.h"
+#include "hdmi_audio.h"
 #include "ui.h"
 #include "UiGfx.h"
 #include "app/Config.h"
@@ -36,9 +38,16 @@ void uiAmigaReset() { input_request_reset(); }
 
 }  // namespace nm
 
-extern "C" void ui_init(uint16_t *framebuffer) {
-    Config::load();
-    nm::gfxSetFramebuffer(framebuffer);
+extern "C" void ui_load_settings(void) { Config::load(); }
+
+extern "C" void ui_init(uint16_t *framebuffer) { nm::gfxSetFramebuffer(framebuffer); }
+
+extern "C" int settings_cpu_mhz(void)   { return Config::cpu_mhz; }
+extern "C" int settings_audio_out(void) { return Config::audio_out; }
+
+extern "C" void settings_apply_sound(void) {
+    audio_set_volume(Config::volume * 16);
+    hdmi_audio_set_enabled(Config::hdmi_audio);
 }
 
 namespace OSD {

@@ -12,6 +12,7 @@
 #include "app/Config.h"
 #include "roms.h"
 #include "machine.h"
+#include "ui.h"
 
 namespace nm {
 
@@ -52,6 +53,13 @@ static bool hook_df0wp(int32_t, int32_t) {
     const std::string path = machine_disk(0);
     return path.empty() || machine_insert(0, path.c_str(), Config::df0_wp);
 }
+
+NM_INT_ACCESS (volume,    volume,     uint8_t)
+NM_BOOL_ACCESS(hdmiaudio, hdmi_audio)
+NM_INT_ACCESS (audioout,  audio_out,  uint8_t)
+NM_INT_ACCESS (cpumhz,    cpu_mhz,    uint16_t)
+// Volume and HDMI audio reach the outputs at once (heard while editing).
+static bool hook_sound(int32_t, int32_t) { settings_apply_sound(); return true; }
 
 // The menu's look: Config is already written (F_PREVIEW puts first); F_PALETTE
 // re-installs the colours and F_MODAL has the nav repaint everything.
