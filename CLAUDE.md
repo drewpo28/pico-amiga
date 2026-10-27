@@ -33,6 +33,9 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   must go through it (CPU and copper writes carry their own hpos).
 - Single playfield sprite priority uses **PF2P**, not PF1P (vAmiga agrees).
 - Byte writes to custom registers put the byte on both halves of the word.
+- Area blits with B DMA off use BLTBDAT (shifted on the CPU write), not 0:
+  graphics RectFill/Flood rely on it. With 0 KS 1.2/1.3's strap Flood() loops
+  forever and the "insert disk" hand never appears.
 - CIA-A /IRQ is level-like: `cia_line()` re-raises INTREQ PORTS while an
   enabled ICR flag is pending.
 - PIO TMDS (video_pio.c): core 1 encodes each FB row one row ahead of the

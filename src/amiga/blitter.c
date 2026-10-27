@@ -14,6 +14,7 @@ static uint16_t con0, con1, afwm = 0xFFFF, alwm = 0xFFFF;
 static uint32_t pt[4];
 static int16_t  mod[4];
 static uint16_t adat, bdat, cdat;
+static uint16_t bold, bhold;      // B shifter state; kept between blits (B DMA off uses BLTBDAT)
 static uint16_t size;
 static bool     pending;          // BLTSIZE written while blitter DMA was off
 static bool     busy, zero = true;
@@ -64,7 +65,7 @@ static uint32_t area_blit(void) {
     int w = size & 0x3F;  if (!w) w = 64;
     int h = size >> 6;    if (!h) h = 1024;
     const int inc = desc ? -2 : 2;
-    uint16_t aold = 0, bold = 0, bhold = 0;
+    uint16_t aold = 0;
     bool z = true;
 
     for (int y = 0; y < h; y++) {
@@ -195,7 +196,12 @@ void blitter_write(uint32_t reg, uint16_t v) {
     case R_BLTAMOD: mod[BA] = (int16_t)(v & 0xFFFE); break;
     case R_BLTDMOD: mod[BD] = (int16_t)(v & 0xFFFE); break;
     case R_BLTCDAT: cdat = v; break;
-    case R_BLTBDAT: bdat = v; break;
+    case R_BLTBDAT:
+        // The CPU write goes through the B barrel shifter like a DMA fetch.
+        bdat = v;
+        bhold = (con1 & 0x0002) ? shift_desc(v, bold, con1 >> 12) : shift_asc(v, bold, con1 >> 12);
+        bold = v;
+        break;
     case R_BLTADAT: adat = v; break;
     case R_BLTSIZE:
         size = v;
@@ -210,6 +216,6 @@ void blitter_write(uint32_t reg, uint16_t v) {
 void blitter_reset(void) {
     con0 = con1 = 0; afwm = alwm = 0xFFFF;
     for (int i = 0; i < 4; i++) { pt[i] = 0; mod[i] = 0; }
-    adat = bdat = cdat = 0; size = 0;
+    adat = bdat = cdat = 0; bold = bhold = 0; size = 0;
     pending = busy = false; zero = true;
 }
