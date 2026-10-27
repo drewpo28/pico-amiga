@@ -476,6 +476,10 @@ AMIGA_HOT static void output(int x0, int x1) {
 
     const bool sprites = spl_hi > wa && spl_lo < wb;
     if (!sprites) { w_plain(wa, wb, hires); return; }
+    // Only the columns sprites cover take the per-pixel path.
+    if (spl_lo > wa) { w_plain(wa, spl_lo, hires); wa = spl_lo; }
+    const int tail = spl_hi < wb ? spl_hi : wb;
+    if (tail < wb) { w_plain(tail, wb, hires); wb = tail; }
     if (!hires) {
         {
             for (int x = wa; x < wb; x++) {
@@ -547,11 +551,11 @@ AMIGA_HOT static void sprite_dma(void) {
     }
 }
 
-static inline int spr_bits(int s, int x) {
-    if (!spr_armed[s]) return 0;
-    int i = x - spr_x(s);
-    if (i < 0 || i > 15) return 0;
-    return ((sprdata[s] >> (15 - i)) & 1) | (((sprdatb[s] >> (15 - i)) & 1) << 1);
+// Pixel x of a sprite starting at x0 (data a, b): its 2-bit colour, 0 outside.
+static inline int spr_px(int x, int x0, uint16_t a, uint16_t b) {
+    const unsigned i = (unsigned)(x - x0);
+    if (i > 15) return 0;
+    return ((a >> (15 - i)) & 1) | (((b >> (15 - i)) & 1) << 1);
 }
 
 AMIGA_HOT static void sprite_compose(void) {
@@ -569,8 +573,12 @@ AMIGA_HOT static void sprite_compose(void) {
         }
         if (lo < 0) lo = 0;
         if (hi > SPL_SIZE) hi = SPL_SIZE;
+        // An unarmed sprite of the pair draws nothing: data 0.
+        const int xe = spr_x(e), xo = spr_x(o);
+        const uint16_t ea = spr_armed[e] ? sprdata[e] : 0, eb = spr_armed[e] ? sprdatb[e] : 0;
+        const uint16_t oa = spr_armed[o] ? sprdata[o] : 0, ob = spr_armed[o] ? sprdatb[o] : 0;
         for (int x = lo; x < hi; x++) {
-            int ve = spr_bits(e, x), vo = spr_bits(o, x), ci;
+            int ve = spr_px(x, xe, ea, eb), vo = spr_px(x, xo, oa, ob), ci;
             if (att) ci = (vo << 2) | ve;
             else if (ve) ci = 4 * pair + ve;
             else if (vo) ci = 4 * pair + vo;
