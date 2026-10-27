@@ -11,8 +11,9 @@
 //   - VK_DPAD_* (pads; cursor keys + Left Ctrl while CursorAsJoy) -> joystick in
 //     game port 2; cursor keys are not passed on as keys while CursorAsJoy is on
 //   - the HID mouse -> port 1 mouse
-// Hotkeys: F1 opens the menu (ui/, from pico-speccy), F12 resets the Amiga,
-// Ctrl+J toggles CursorAsJoy (as on pico-speccy).
+// Hotkeys (WinUAE's layout): F12 opens the menu (ui/, from pico-speccy), Ctrl+F12
+// the DF0 disk browser, Shift+F12 resets the Amiga; Ctrl+J toggles CursorAsJoy (as
+// on pico-speccy). F1..F10 are the Amiga's, F11 and Insert its Help key.
 #include "input.h"
 #include <string.h>
 #include "pico/stdlib.h"
@@ -419,17 +420,22 @@ static bool cursor_key(fabgl::VirtualKey vk) {
 void input_frame(void) {
     fabgl::VirtualKeyItem item;
     while (kbd.virtualKeyAvailable() && kbd.getNextVirtualKey(&item, 0)) {
-        if (item.vk == fabgl::VirtualKey::VK_F12) { if (item.down) reset_req = true; continue; }
-        if (item.vk == fabgl::VirtualKey::VK_F1) {
-            if (item.down) {
-                // The Amiga must not see keys held across the menu: release what
-                // it thinks is down, then hand the screen over.
-                release_amiga_keys();
-                menu_open = true;
-                nm::run();
-                menu_open = false;
-                kbd.emptyVirtualKeyQueue();
-            }
+        // F12 is the emulator's key (as on WinUAE): the menu; with Ctrl the disk
+        // browser for DF0, with Shift a reset. F1..F10 belong to the Amiga.
+        if (item.vk == fabgl::VirtualKey::VK_F12) {
+            if (!item.down) continue;
+            const bool ctrl  = kbd.isVKDown(fabgl::VirtualKey::VK_LCTRL) || kbd.isVKDown(fabgl::VirtualKey::VK_RCTRL);
+            const bool shift = kbd.isVKDown(fabgl::VirtualKey::VK_LSHIFT) || kbd.isVKDown(fabgl::VirtualKey::VK_RSHIFT);
+            if (shift) { reset_req = true; continue; }
+            // The Amiga must not see keys held across the menu (the Ctrl of
+            // Ctrl+F12 included): release what it thinks is down, then hand
+            // the screen over.
+            release_amiga_keys();
+            menu_open = true;
+            if (ctrl) nm::runDiskInsert(0);
+            else      nm::run();
+            menu_open = false;
+            kbd.emptyVirtualKeyQueue();
             continue;
         }
         if (Config::CursorAsJoy && cursor_key(item.vk)) continue;

@@ -1,4 +1,4 @@
-// pico-amiga (from pico-speccy) — the fullscreen two-pane menu (F1).
+// pico-amiga (from pico-speccy) — the fullscreen two-pane menu (F12).
 //
 // Everything about this UI lives under src/pico/ui/. It owns its own geometry,
 // colours and key loop, and draws straight into the Amiga framebuffer, which the
@@ -14,9 +14,13 @@ namespace nm {
 // True when the current video mode can host the fullscreen layout.
 bool available();
 
-// Open the menu. Blocks until the user closes it (input.cpp calls it on F1, from
+// Open the menu. Blocks until the user closes it (input.cpp calls it on F12, from
 // the emulator loop), owning the screen and the keyboard while it runs.
 void run();
+
+// The Ctrl+F12 hotkey: the file browser straight onto "insert into DF<drive>",
+// outside the menu; the disk goes in when one is picked.
+void runDiskInsert(int drive);
 
 // A yes/no question in THIS UI, asked from outside the menu while the machine
 // runs (the SD automount's "settings found on the card — reboot?"). Owns its

@@ -152,7 +152,8 @@ static NmKey decode(const fabgl::VirtualKeyItem& k) {
         case fabgl::VK_F6:         return NK_F6;
         case fabgl::VK_F8:         return NK_F8;
         case fabgl::VK_ESCAPE:     return NK_ESC;
-        case fabgl::VK_F1:         return NK_CLOSE;   // closes from any depth
+        case fabgl::VK_F1:
+        case fabgl::VK_F12:        return NK_CLOSE;   // closes from any depth (F12 opened it)
         default:                   return NK_NONE;
     }
 }

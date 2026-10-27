@@ -17,6 +17,7 @@
 #include "UiPlatform.h"
 #include "UiNav.h"
 #include "UiBrowser.h"
+#include "UiGfx.h"
 #include "app/Config.h"
 #include "roms.h"
 #include "machine.h"
@@ -72,7 +73,9 @@ static const char* df0Label() {
     return s ? s + 1 : p;
 }
 
-static void act_df0_insert() {
+// Browse for an ADF and put it in DF0; true when a disk went in. Shared by the
+// menu row and the Ctrl+F12 hotkey (runDiskInsert).
+static bool df0PickAndInsert() {
     // Start where the last disk came from, else in /amiga/.
     static std::string dir;
     if (dir.empty()) {
@@ -82,15 +85,25 @@ static void act_df0_insert() {
         if (dir != "/" && f_stat(dir.substr(0, dir.size() - 1).c_str(), &fi) != FR_OK) dir = "/";
     }
     const std::string r = browseFile(dir, "Insert into DF0", BROWSE_ADF);
-    if (r.size() < 2 || r[0] != 'R') return;
+    if (r.size() < 2 || r[0] != 'R') return false;
     const std::string path = dir + r.substr(1);
     if (!machine_insert(0, path.c_str(), Config::df0_wp)) {
+        gfxBegin();
         uiToast("Not an 880 KB ADF, or it cannot be opened", true, 2000);
-        return;
+        gfxEnd();
+        return false;
     }
     Config::df0 = path;
     Config::save();
-    requestClose();                  // back to the Amiga with the disk in
+    return true;
+}
+
+static void act_df0_insert() {
+    if (df0PickAndInsert()) requestClose();   // back to the Amiga with the disk in
+}
+
+void runDiskInsert(int drive) {
+    if (drive == 0) df0PickAndInsert();
 }
 
 static void act_df0_eject() {
@@ -113,9 +126,11 @@ static void act_reboot() {
 
 static void page_hotkeys() {
     uiTextPage("Hotkeys",
-        "F1          This menu (Esc goes back, F1 closes)\n"
-        "F12         Reset the Amiga\n"
+        "F12         This menu (Esc goes back, F12 closes)\n"
+        "Ctrl+F12    Insert a disk into DF0\n"
+        "Shift+F12   Reset the Amiga\n"
         "Ctrl+J      Cursor keys as joystick on/off\n"
+        "F1..F10     Amiga function keys\n"
         "\n"
         "Joystick (game port 2) while cursor keys are a joystick:\n"
         "  Cursor keys   directions\n"
@@ -123,7 +138,7 @@ static void page_hotkeys() {
         "\n"
         "Amiga keys on a PC keyboard:\n"
         "  Win / PgDn / PgUp   left / left / right Amiga\n"
-        "  Insert, F11         Help\n"
+        "  F11, Insert         Help\n"
         "  Home, End           keypad ( )\n"
         "\n"
         "Mouse: port 1. A USB/XInput/NES pad drives port 2.");
