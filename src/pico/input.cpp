@@ -18,6 +18,7 @@
 #include "hardware/clocks.h"
 #include "tusb.h"
 #include "amiga.h"
+#include "audio_out.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-compare"      // pico-speccy's headers
 #include "drivers/input_glue.h"
@@ -492,7 +493,13 @@ void input_init(void) {
     kbd.begin(true, true, 0, false);
     const tusb_rhport_init_t host = { TUSB_ROLE_HOST, TUSB_SPEED_AUTO };
     tusb_rhport_init(BOARD_TUH_RHPORT, &host);
+#ifdef KBD_ALT_CLOCK_PIN
+    // ZERO2: the PCM5122 board's control I2C sits on the PS/2 pins; with the
+    // board fitted the keyboard is wired to the alternate pair.
+    ps2kbd.init_gpio(audio_out_pcm5122_present() ? KBD_ALT_CLOCK_PIN : KBD_CLOCK_PIN);
+#else
     ps2kbd.init_gpio();
+#endif
 #ifdef USE_NESPAD
     nespad_active = nespad_begin(clock_get_hz(clk_sys) / 1000, NES_GPIO_CLK, NES_GPIO_DATA, NES_GPIO_LAT);
 #endif

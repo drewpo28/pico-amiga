@@ -41,7 +41,7 @@ include(src/pico/drivers/sdcard/sdcard.cmake)
 
 add_executable(pico-amiga
     src/pico/main.c
-    src/pico/audio_pwm.c
+    src/pico/audio_out.c
     src/pico/clock.c
     src/pico/psram.c
     src/pico/usb_disk_stub.c
@@ -56,8 +56,12 @@ add_executable(pico-amiga
     src/pico/drivers/input/codepages.cpp
     src/pico/drivers/ps2kbd/ps2kbd_mrmltr.cpp
     src/pico/drivers/nespad/nespad.cpp
+    # Audio drivers from pico-speccy.
+    src/pico/drivers/audio/audio.c
+    src/pico/drivers/audio/pcm5122_init.c
 )
 pico_generate_pio_header(pico-amiga ${CMAKE_CURRENT_LIST_DIR}/src/pico/drivers/ps2kbd/ps2kbd_mrmltr.pio)
+pico_generate_pio_header(pico-amiga ${CMAKE_CURRENT_LIST_DIR}/src/pico/drivers/audio/audio_i2s.pio)
 if(VIDEO STREQUAL "PIO")
     target_sources(pico-amiga PRIVATE src/pico/video_pio.c)
     pico_generate_pio_header(pico-amiga ${CMAKE_CURRENT_LIST_DIR}/src/pico/tmds.pio)
@@ -78,12 +82,13 @@ set_source_files_properties(
     src/pico/drivers/usbhost/hid_rip.c src/pico/drivers/input/keyboard.cpp
     src/pico/drivers/input/codepages.cpp src/pico/drivers/ps2kbd/ps2kbd_mrmltr.cpp
     src/pico/drivers/nespad/nespad.cpp
+    src/pico/drivers/audio/audio.c src/pico/drivers/audio/pcm5122_init.c
     PROPERTIES COMPILE_OPTIONS "-w")
 target_link_libraries(pico-amiga PRIVATE
     amiga_core
     sdcard fatfs
     pico_stdlib pico_multicore
-    hardware_clocks hardware_dma hardware_pwm hardware_vreg hardware_pio
+    hardware_clocks hardware_dma hardware_pwm hardware_vreg hardware_pio hardware_i2c
     tinyusb_host
 )
 set_target_properties(pico-amiga PROPERTIES OUTPUT_NAME "${BOARD_TAG}-amiga-${PORT_VERSION}")

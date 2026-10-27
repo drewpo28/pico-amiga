@@ -1,7 +1,7 @@
 // pico-amiga firmware: an Amiga 500 on an RP2350 with QSPI PSRAM.
 //
 //   core 0: clocks, PSRAM, SD, input (USB host, PS/2, NES pads), the emulator
-//           (src/amiga), PWM audio
+//           (src/amiga), audio (PWM, I2S or PCM5122)
 //   core 1: HDMI scanout (video_hstx.c, or video_pio.c on boards without HSTX pins)
 //
 // PSRAM layout (2 MB minimum):
@@ -19,10 +19,11 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
+#include "hardware/dma.h"
 #include "hardware/structs/sysinfo.h"
 #include "ff.h"
 #include "amiga.h"
-#include "audio_pwm.h"
+#include "audio_out.h"
 #include "clock.h"
 #include "psram.h"
 #include "input.h"
@@ -117,7 +118,10 @@ int main(void) {
     // either core may fetch from flash (core 1 is not started yet, USB is off).
     // RP2350A carriers wire CS1 to BUTTER_PSRAM_GPIO, RP2350B modules to 47.
     uint32_t psram = psram_init(chip_is_rp2350a() ? BUTTER_PSRAM_GPIO : 47);
+    dma_channel_claim(0);            // video_hstx.c / video_pio.c scanout ping-pong
+    dma_channel_claim(1);
     multicore_launch_core1(core1_main);
+    audio_out_pcm5122_present();     // probe before the PS/2 keyboard takes GP2/3 (ZERO2)
     input_init();
     if (psram < 2 * MB) fail(0xF00);
     uint8_t *ps = (uint8_t *)PSRAM_BASE;
@@ -148,7 +152,7 @@ int main(void) {
         amiga_insert_disk(0, &d);
     }
 
-    audio_pwm_start(PWM_PIN1, PWM_PIN0, audio_ring, AUDIO_FRAMES);
+    audio_out_start(audio_ring, AUDIO_FRAMES);
 
     uint32_t vf = video_frames();
     for (uint32_t frame = 0;; frame++) {
