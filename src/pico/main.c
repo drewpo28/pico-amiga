@@ -1,7 +1,7 @@
 // pico-amiga firmware: an Amiga 500 on an RP2350 with QSPI PSRAM.
 //
 //   core 0: clocks, PSRAM, SD, USB host, the emulator (src/amiga), PWM audio
-//   core 1: HDMI scanout (HSTX + DMA, see video_hstx.c)
+//   core 1: HDMI scanout (video_hstx.c, or video_pio.c on boards without HSTX pins)
 //
 // PSRAM layout (2 MB minimum):
 //   +0.0 MB  chip RAM 512 KB      +0.5 MB  slow RAM 512 KB ($C00000)
@@ -25,7 +25,7 @@
 #include "clock.h"
 #include "psram.h"
 #include "usb_input.h"
-#include "video_hstx.h"
+#include "video.h"
 
 #ifndef CPU_MHZ
 #define CPU_MHZ 378

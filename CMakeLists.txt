@@ -1,6 +1,6 @@
 # pico-amiga firmware (RP2350).  Host test bench: see host/CMakeLists.txt.
 #
-#   cmake -B build -DPICO_SDK_PATH=/path/to/pico-sdk [-DBOARD=MURM2|PICO_PC] [-DCPU_MHZ=378]
+#   cmake -B build -DPICO_SDK_PATH=/path/to/pico-sdk [-DBOARD=MURM2|PICO_PC|PICO_DV] [-DCPU_MHZ=378]
 #   cmake --build build -j
 cmake_minimum_required(VERSION 3.13)
 
@@ -31,8 +31,14 @@ add_executable(pico-amiga
     src/pico/psram.c
     src/pico/usb_disk_stub.c
     src/pico/usb_input.c
-    src/pico/video_hstx.c
 )
+if(VIDEO STREQUAL "PIO")
+    target_sources(pico-amiga PRIVATE src/pico/video_pio.c)
+    pico_generate_pio_header(pico-amiga ${CMAKE_CURRENT_LIST_DIR}/src/pico/tmds.pio)
+    target_link_libraries(pico-amiga PRIVATE hardware_pio)
+else()
+    target_sources(pico-amiga PRIVATE src/pico/video_hstx.c)
+endif()
 target_include_directories(pico-amiga PRIVATE src/pico)
 target_compile_definitions(pico-amiga PRIVATE ${BOARD_DEFS}
     CPU_MHZ=${CPU_MHZ} PORT_VERSION="${PORT_VERSION}")

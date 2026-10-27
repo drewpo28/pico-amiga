@@ -35,6 +35,11 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
 - Byte writes to custom registers put the byte on both halves of the word.
 - CIA-A /IRQ is level-like: `cia_line()` re-raises INTREQ PORTS while an
   enabled ICR flag is pending.
+- PIO TMDS (video_pio.c): core 1 encodes each FB row one row ahead of the
+  beam from tables of balanced character pairs (tmds_pio.h, tmds_pair.h). The
+  word format was checked bit-for-bit against pico-speccy's hdmi_pack3_pio /
+  hdmi_pins_pio for the PICO_DV pin map; build-host/tmds_test decodes all 4096
+  colours like a receiver. Re-run it after touching either header.
 - Firmware: PSRAM init runs QMI direct mode — nothing may fetch from flash on
   either core meanwhile, so it runs before core 1 starts and before USB.
 

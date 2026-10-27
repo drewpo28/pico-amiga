@@ -1,0 +1,18 @@
+; TMDS serializer: 6 data pins per bit (3 differential lanes), 10 bits per
+; pixel, the clock pair side-set high for the first five bits and low for the
+; last five.  Same program as pico-speccy's instructions_PIO_HDMI.
+; Needs autopull, shift right, threshold 30; one PIO cycle per TMDS bit.
+.program tmds
+.side_set 2
+.wrap_target
+    out pins, 6   side 2
+    out pins, 6   side 2
+    out pins, 6   side 2
+    out pins, 6   side 2
+    out pins, 6   side 2
+    out pins, 6   side 1
+    out pins, 6   side 1
+    out pins, 6   side 1
+    out pins, 6   side 1
+    out pins, 6   side 1
+.wrap

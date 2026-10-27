@@ -15,7 +15,7 @@
 // transfer, after the pico-examples "dvi_out_hstx_encoder" design (BSD-3,
 // Raspberry Pi).  The pin/lane map is pico-speccy's (src/drivers/hdmi/
 // hdmi_word.h) for its HDMI_BASE_PIN 12 boards.
-#include "video_hstx.h"
+#include "video.h"
 #include <string.h>
 #include "pico/stdlib.h"
 #include "hardware/clocks.h"

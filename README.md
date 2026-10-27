@@ -4,9 +4,9 @@ An Amiga 500 (OCS, PAL) emulator for RP2350 boards with QSPI PSRAM, in the
 family of [pico-speccy](https://github.com/drewpo28/pico-speccy).
 
 > **Status: skeleton.** The emulation core boots DiagROM and AROS and loads a
-> bootblock from an ADF on the host test bench. The firmware builds for MURM2 and
-> Olimex PICO-PC, but **nobody has run it on hardware yet**, and speed on the
-> RP2350 has not been measured.
+> bootblock from an ADF on the host test bench. The firmware builds for MURM2,
+> Olimex PICO-PC and Pimoroni Pico DV, but **nobody has run it on hardware yet**,
+> and speed on the RP2350 has not been measured.
 
 Verified on the host (`host/tests/smoke.sh`):
 
@@ -23,14 +23,19 @@ Verified on the host (`host/tests/smoke.sh`):
 |---|---|
 | MCU | RP2350 (A or B), clocked at 378 MHz (252/504 also selectable) |
 | PSRAM | QSPI "butter" PSRAM on XIP CS1, **at least 2 MB**: GPIO 8 on RP2350A carriers, GPIO 47 on RP2350B modules (Pimoroni Pico Plus 2) |
-| Video | HDMI/DVI through HSTX on GPIO 12-19: 720x576 @ 50 Hz, the 360x288 Amiga image pixel-doubled |
-| Storage | SD card over SPI0 (FatFs) |
+| Video | HDMI/DVI, 720x576 @ 50 Hz, the 360x288 Amiga image pixel-doubled: through HSTX when the display is on GPIO 12-19, through a PIO TMDS serializer otherwise |
+| Storage | SD card over SPI (FatFs; PIO SPI on PICO_DV) |
 | Input | USB keyboard and mouse (TinyUSB host, boot protocol) |
 | Audio | PWM on two pins (RC filter expected) |
 
-Boards: `MURM2` (Murmulator 2.0) and `PICO_PC` (Olimex RP2040-PICO-PC with a Pico 2).
-Pin maps are pico-speccy's. Boards with HDMI on other pins (PICO_DV, MURM1,
-ZERO2) need the PIO TMDS back-end, which is not ported yet.
+| Board | `-DBOARD=` | Video | Notes |
+|---|---|---|---|
+| Murmulator 2.0 | `MURM2` (default) | HSTX, GPIO 12-19 | |
+| Olimex RP2040-PICO-PC + Pico 2 | `PICO_PC` | HSTX, GPIO 12-19 | red/green lanes swapped |
+| Pimoroni Pico DV Demo Base + Pico Plus 2 | `PICO_DV` | PIO, GPIO 6-13 | SD on PIO SPI; needs the Plus 2's PSRAM |
+
+Pin maps are pico-speccy's. MURM1 and ZERO2 would be a board entry each in
+`cmake/boards.cmake` (MURM1 uses the same PIO back-end).
 
 ## SD card
 
@@ -50,7 +55,7 @@ blinks: red = no PSRAM (or less than 2 MB), magenta = no SD card, blue = no
 Firmware (needs the Pico SDK 2.x and an Arm toolchain):
 
 ```sh
-cmake -B build -DPICO_SDK_PATH=/path/to/pico-sdk -DBOARD=MURM2   # or PICO_PC; -DCPU_MHZ=504
+cmake -B build -DPICO_SDK_PATH=/path/to/pico-sdk -DBOARD=MURM2   # or PICO_PC, PICO_DV; -DCPU_MHZ=504
 cmake --build build -j
 # -> build/m2p2-amiga-0.1.0.uf2
 ```
@@ -80,7 +85,7 @@ src/amiga/     the emulator: platform-independent C, shared by firmware and host
   paula.c        4-channel DMA audio
   cia.c          two 8520s (timers, TOD, ICR, keyboard serial port)
   floppy.c       drives, ADF <-> MFM track codec, disk DMA
-src/pico/      RP2350 firmware: main, HSTX video, PSRAM, clocks, USB input, PWM audio
+src/pico/      RP2350 firmware: main, video (HSTX / PIO TMDS), PSRAM, clocks, USB input, PWM audio
 host/          test bench and smoke tests
 external/      Musashi 68000 core (+ generated const opcode tables), FatFs
 tools/         gen_musashi.py (regenerates external/musashi/gen)
@@ -104,7 +109,8 @@ The main ideas are in the file headers; in short:
 ## Credits and licences
 
 GPL-3.0 (see LICENSE), like pico-speccy, whose PSRAM, clock and board code this
-reuses. Third-party parts keep their licences: Musashi (MIT, Karl Stenerud),
+reuses (the PIO TMDS pin format and balanced character pairs, `tmds_pair.h`,
+are pico-speccy's too). Third-party parts keep their licences: Musashi (MIT, Karl Stenerud),
 FatFs (ChaN), the SD card driver (BSD-2, Elehobica, via pico-speccy), the HSTX
 scanout structure (BSD-3, Raspberry Pi pico-examples). Hardware behaviour was
 checked against the Amiga Hardware Reference Manual and, where it is vague,

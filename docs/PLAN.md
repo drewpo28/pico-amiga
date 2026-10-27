@@ -15,12 +15,14 @@ verified on the host bench; "hw" means verified on a board.
 - [x] Floppy: ADF <-> MFM, disk DMA with sync, write-back, motor/step/side/CHNG/index
 - [x] Host bench (PNG/WAV/serial/scripted keys) and smoke tests
 - [x] Firmware: clocks, PSRAM, SD/FatFs, HSTX 720x576@50, USB HID, PWM audio (builds; not run on hw)
+- [x] PIO TMDS scanout for PICO_DV (builds; word format bit-identical to pico-speccy's, host-decoded)
 
 ## 1. Hardware bring-up
 
 - [ ] MURM2: picture, PSRAM detection, SD, USB keyboard/mouse, PWM audio
 - [ ] Measure: frames per second at 378 and 504 MHz with DiagROM, AROS, a game
 - [ ] PICO_PC: check the swapped red/green lanes and the PWM pins
+- [ ] PICO_DV: PIO TMDS picture at 378 (divider 1.5) and 504; SD over PIO SPI; core 1 encode load
 - [ ] UART debug console (SERDAT and firmware logs) on a free pin
 
 ## 2. Speed (expected to be needed: the host profile is ~50% bitplane fetch)
@@ -50,6 +52,6 @@ verified on the host bench; "hw" means verified on a board.
 - [ ] On-screen menu: pick ADFs from the SD card, swap disks, reset, settings
 - [ ] Joystick: USB gamepads, NES/SNES pads (pico-speccy drivers)
 - [ ] A600 profile: ECS Agnus/Denise, 1 MB chip RAM, KS 2.05, Gayle IDE with HDF images
-- [ ] PIO TMDS back-end for PICO_DV / MURM1 / ZERO2 (pico-speccy hdmi.c), VGA
+- [x] PIO TMDS back-end (PICO_DV); MURM1 / ZERO2 board entries still to add; VGA
 - [ ] HDMI audio, I2S DAC
 - [ ] Save states

@@ -9,6 +9,7 @@ OUT=${2:-build-host/smoke}
 BIN=build-host/pico-amiga-host
 mkdir -p "$OUT"
 fail=0
+if build-host/tmds_test > "$OUT/tmds.log"; then echo "PASS tmds tables"; else echo "FAIL tmds tables"; cat "$OUT/tmds.log"; fail=1; fi
 check() {  # name, pattern, log
     if grep -q "$2" "$3"; then echo "PASS $1"; else echo "FAIL $1 (no '$2' in $3)"; fail=1; fi
 }
