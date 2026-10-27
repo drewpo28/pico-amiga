@@ -50,6 +50,7 @@ add_executable(pico-amiga
     src/pico/psram.c
     src/pico/usb_disk_stub.c
     src/pico/input.cpp
+    src/pico/input_devices.cpp
     # Input drivers from pico-speccy (PICO-AMIGA: marks local changes).
     src/pico/drivers/usbhost/hid_app.cpp
     src/pico/drivers/usbhost/joy_hid.cpp
