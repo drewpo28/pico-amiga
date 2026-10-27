@@ -12,9 +12,8 @@
 // The sample clock is a hardware alarm with a RAM-resident ISR (an SDK repeating
 // timer runs its alarm pool from flash on every tick) at AMIGA_AUDIO_RATE, with a
 // fractional period.  The emulator fills the ring in bursts paced by the HDMI
-// frame (50.06 Hz, a hair faster than 31300 frames/s): the reader holds the last
-// frame when it catches up, drops single frames while it is more than a few
-// frames' worth behind, and jumps when it has lost track entirely.
+// frame (50.06 Hz, a hair faster than 31300 frames/s, or slower when a frame
+// takes more than 20 ms): audio_reader.h reads it at a slightly varying rate.
 #include "audio_out.h"
 #include "pico/stdlib.h"
 #include "hardware/clocks.h"
@@ -26,6 +25,7 @@
 #include "amiga.h"
 #include "board.h"
 #include "hdmi_audio.h"
+#include "audio_reader.h"
 #include "drivers/audio/audio.h"
 #ifdef PCM5122_I2S_DATA
 #include "drivers/audio/pcm5122_init.h"
@@ -56,8 +56,7 @@ static const char *out_name = "none";
 // ---- sample clock and output ---------------------------------------------------------
 static const int16_t *ring;
 static uint32_t ring_frames;
-static uint32_t rd;
-static int16_t  last_l, last_r;
+static au_reader_t reader;
 
 static int      au_alarm = -1;
 static uint32_t au_target;        // next alarm, microseconds (the 32-bit timer)
@@ -90,10 +89,8 @@ static inline void __not_in_flash_func(output)(int32_t sL, int32_t sR) {
 
 static uint32_t isr_cycles;
 uint32_t audio_out_isr_cycles(void) { return isr_cycles; }
-// Ticks that found no new frame (the emulation behind real time: the last one
-// is held) and frames skipped to catch up (audio_out.h).
-static volatile uint32_t held, skipped;
-void audio_out_counts(uint32_t *hold, uint32_t *skip) { *hold = held; *skip = skipped; }
+// Ticks on an empty ring (the last frame held) and frames jumped over (audio_out.h).
+void audio_out_counts(uint32_t *hold, uint32_t *skip) { *hold = reader.held; *skip = reader.skipped; }
 
 static void __not_in_flash_func(au_alarm_isr)(void) {
     const uint32_t c0 = board_cycles();
@@ -106,18 +103,8 @@ static void __not_in_flash_func(au_alarm_isr)(void) {
     const uint32_t target = au_target;
     timer_hw->alarm[au_alarm] = target;
 
-    const uint32_t wp = amiga_audio_write_pos();
-    uint32_t lag = wp - rd;
-    if (lag > ring_frames / 2) { skipped += lag - ring_frames / 4; rd = wp - ring_frames / 4; lag = ring_frames / 4; }   // lost track
-    else if (lag > 3 * (AMIGA_AUDIO_RATE / 50)) { rd++; lag--; skipped++; }             // drifting ahead
-    if (!lag) held++;
-    if (lag) {
-        const uint32_t i = (rd & (ring_frames - 1)) * 2;
-        last_l = ring[i];
-        last_r = ring[i + 1];
-        rd++;
-    }
-    output(last_l, last_r);
+    au_reader_next(&reader, ring, ring_frames, amiga_audio_write_pos());
+    output(reader.l, reader.r);
 
     // An alarm fires only on an exact match, so a target already behind the
     // counter (a long IRQ-off stretch) would wait for the 32-bit wrap: force the
@@ -190,7 +177,7 @@ void audio_out_start(const int16_t *audio_ring, uint32_t frames, int mode) {
         out_name = "PWM";
     }
 
-    rd = amiga_audio_write_pos();
+    au_reader_start(&reader, amiga_audio_write_pos());
     au_alarm = hardware_alarm_claim_unused(true);
     const uint irq = hardware_alarm_get_irq_num(au_alarm);
     irq_set_exclusive_handler(irq, au_alarm_isr);

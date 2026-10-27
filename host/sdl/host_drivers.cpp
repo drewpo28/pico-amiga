@@ -13,6 +13,7 @@ extern "C" {
 #include "amiga.h"
 #include "video.h"
 #include "audio_out.h"
+#include "audio_reader.h"
 #include "psram.h"
 #include "clock.h"
 }
@@ -64,27 +65,17 @@ extern "C" uint32_t video_late_lines(void) { return 0; }
 extern "C" void video_core1_cycles(uint32_t *irq, uint32_t *enc) { *irq = *enc = 0; }
 
 // ---- audio_out.h: an SDL device pulling the Paula ring ------------------------------
-// The same reader as audio_out.c: hold on underrun, drop single frames while more
-// than three frames' worth behind, re-centre when lost.
+// The same reader as audio_out.c (audio_reader.h).
 static const int16_t *s_ring;
-static uint32_t s_ring_frames, s_rd;
+static uint32_t s_ring_frames;
+static au_reader_t s_reader;
 
 static void audio_cb(void *, Uint8 *stream, int len) {
     int16_t *out = (int16_t *)stream;
-    static int16_t last_l, last_r;
     for (int n = len / 4; n--; ) {
-        const uint32_t wp = amiga_audio_write_pos();
-        uint32_t lag = wp - s_rd;
-        if (lag > s_ring_frames / 2) { s_rd = wp - s_ring_frames / 4; lag = s_ring_frames / 4; }
-        else if (lag > 3 * (AMIGA_AUDIO_RATE / 50)) { s_rd++; lag--; }
-        if (lag) {
-            const uint32_t i = (s_rd & (s_ring_frames - 1)) * 2;
-            last_l = s_ring[i];
-            last_r = s_ring[i + 1];
-            s_rd++;
-        }
-        *out++ = (int16_t)((last_l * audio_volume_q8) >> 8);
-        *out++ = (int16_t)((last_r * audio_volume_q8) >> 8);
+        au_reader_next(&s_reader, s_ring, s_ring_frames, amiga_audio_write_pos());
+        *out++ = (int16_t)((s_reader.l * audio_volume_q8) >> 8);
+        *out++ = (int16_t)((s_reader.r * audio_volume_q8) >> 8);
     }
 }
 
@@ -97,7 +88,7 @@ extern "C" void sdcard_reclock(void) {}
 extern "C" void audio_out_start(const int16_t *ring, uint32_t frames, int) {
     s_ring = ring;
     s_ring_frames = frames;
-    s_rd = amiga_audio_write_pos();
+    au_reader_start(&s_reader, amiga_audio_write_pos());
     SDL_AudioSpec want = {}, have;
     want.freq = AMIGA_AUDIO_RATE;
     want.format = AUDIO_S16SYS;

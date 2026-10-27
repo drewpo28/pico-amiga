@@ -56,7 +56,7 @@ void perf_log_frame(uint32_t emu_us) {
 #define MS(i) (unsigned)(ms10[i] / 10), (unsigned)(ms10[i] % 10)
     printf("PERF fps %u.%u emu %u.%u ms (%u%%, %u slow) | cpu %u.%u ren %u.%u+bpl %u.%u+rd %u.%u cop %u.%u blt %u.%u"
            " aud %u.%u line %u.%u dsk %u.%u oth %u.%u wait %u.%u (irq %u.%u) | core1 render %u.%u irq %u.%u enc %u.%u"
-           " | cpu %u flash %u psram %u MHz | late %u | au hold %u drop %u hdmi starve %u full %u min %u\n",
+           " | cpu %u flash %u psram %u MHz | late %u | au hold %u skip %u hdmi starve %u full %u min %u\n",
            (unsigned)(fps10 / 10), (unsigned)(fps10 % 10),
            (unsigned)(emu10 / 10), (unsigned)(emu10 % 10),
            (unsigned)(emu_avg ? 2000000u / emu_avg : 0), (unsigned)slow,     // 20 ms = 100%
