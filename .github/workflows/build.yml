@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-24.04
     strategy:
       matrix:
-        board: [MURM2, PICO_PC, PICO_DV]
+        board: [MURM, MURM2, PICO_PC, PICO_DV, ZERO2]
     steps:
       - uses: actions/checkout@v4
       - name: Install

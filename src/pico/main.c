@@ -58,14 +58,19 @@ static void core1_main(void) {
     for (;;) __wfi();
 }
 
+// PICO_DEFAULT_LED_PIN 255 = no LED (ZERO2, the stock W module's is on the radio).
+#if defined(PICO_DEFAULT_LED_PIN) && PICO_DEFAULT_LED_PIN < NUM_BANK0_GPIOS
+#define HAVE_LED 1
+#endif
+
 static void led_init(void) {
-#ifdef PICO_DEFAULT_LED_PIN
+#ifdef HAVE_LED
     gpio_init(PICO_DEFAULT_LED_PIN);
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
 #endif
 }
 static void led(bool on) {
-#ifdef PICO_DEFAULT_LED_PIN
+#ifdef HAVE_LED
     gpio_put(PICO_DEFAULT_LED_PIN, on);
 #else
     (void)on;

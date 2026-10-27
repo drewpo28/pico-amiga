@@ -14,14 +14,12 @@ endif()
 # ====================================================================================
 # pico-amiga firmware (RP2350).  Host test bench: see host/CMakeLists.txt.
 #
-#   cmake -B build -DPICO_SDK_PATH=/path/to/pico-sdk [-DBOARD=MURM2|PICO_PC|PICO_DV] [-DCPU_MHZ=378]
+#   cmake -B build -DPICO_SDK_PATH=/path/to/pico-sdk [-DBOARD=MURM2|PICO_DV|...] [-DCPU_MHZ=378]
 #   cmake --build build -j
+# Boards: cmake/boards.cmake.
 cmake_minimum_required(VERSION 3.13)
 
-set(PICO_BOARD_HEADER_DIRS ${CMAKE_CURRENT_LIST_DIR}/src/pico/boards)
-set(PICO_BOARD pico_amiga_rp2350b CACHE STRING "Board type" FORCE)
-set(PICO_PLATFORM rp2350-arm-s)
-
+include(cmake/boards.cmake)          # before the SDK: it picks PICO_BOARD
 include(pico_sdk_import.cmake)
 project(pico_amiga C CXX ASM)
 set(CMAKE_C_STANDARD 11)
@@ -29,7 +27,6 @@ pico_sdk_init()
 
 set(PORT_VERSION "0.1.0")
 set(ROOT ${CMAKE_CURRENT_LIST_DIR})
-include(cmake/boards.cmake)
 include(cmake/amiga_core.cmake)
 # The CPU's memory callbacks run in RAM (.time_critical.* is copied to SRAM).
 target_compile_definitions(amiga_core PRIVATE

@@ -9,7 +9,7 @@
 //       SHOULD ONLY CONSIST OF PREPROCESSOR DIRECTIVES
 // -----------------------------------------------------
 
-// pico-speccy RP2350B (48-GPIO) board profile.
+// pico-amiga (from pico-speccy) RP2350B (48-GPIO) board profile.
 //
 // This is a verbatim copy of the SDK's "pico2" board header with the ONLY
 // change being the RP2350 variant flipped to the B package (PICO_RP2350A 0).

@@ -122,6 +122,9 @@ void video_start(const uint16_t *framebuffer) {
     build_static();
     tmds_encode_row(rowbuf[0], fb, AMIGA_FB_W, tab_r, tab_gb);
 
+#if HDMI_BASE_PIN >= 32
+    pio_set_gpio_base(VPIO, 16);     // ZERO2: display on GPIO 32-39
+#endif
     uint offset = pio_add_program(VPIO, &tmds_program);
     pio_sm_config c = tmds_program_get_default_config(offset);
     sm_config_set_sideset_pins(&c, PIN_CLK);
