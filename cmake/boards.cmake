@@ -144,6 +144,11 @@ else()  # MURM
         USE_NESPAD NES_GPIO_CLK=14 NES_GPIO_LAT=15 NES_GPIO_DATA=16
         VGA_BASE_PIN=6 HDMI_BASE_PIN=6)
 endif()
+# MURM2_WS: the pad data pins land on GPIO40/41, beyond pio1's reach (PS/2 pins it
+# to gpio_base 0), so the pad takes pio2 (unused: HSTX video, no radio driver).
+if(CARRIER STREQUAL "MURM2" AND W_SUFFIX STREQUAL "_WS")
+    list(APPEND BOARD_DEFS NESPAD_PIO=pio2)
+endif()
 list(APPEND BOARD_DEFS
     BUTTER_PSRAM_GPIO=${BUTTER_PSRAM_GPIO}
     PICO_DEFAULT_LED_PIN=${W_LED_PIN})

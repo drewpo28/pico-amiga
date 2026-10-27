@@ -1,9 +1,14 @@
-// TinyUSB configuration: host mode on the native USB port, HID only.
-// Sizes follow pico-speccy's tusb_config.h, where they were tuned on hardware.
+// TinyUSB configuration: host mode on the native USB port; HID and XInput.
+// Built against the TinyUSB 0.21 copy in external/tinyusb (pico-speccy's), with
+// the sizes pico-speccy tuned on hardware.
 #pragma once
 
 #ifndef CFG_TUSB_MCU
 #error CFG_TUSB_MCU must be defined (the pico-sdk does this)
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 #define CFG_TUSB_OS                 OPT_OS_PICO
@@ -11,6 +16,12 @@
 #define BOARD_TUH_RHPORT            0
 #define CFG_TUH_ENABLED             1
 #define CFG_TUH_MAX_SPEED           OPT_MODE_FULL_SPEED
+
+// A failed TU_ASSERT would execute a bkpt with a debug probe attached, freezing the
+// session on every RECOVERABLE assert; count it instead (input.cpp), hid_app.cpp's
+// wedged-endpoint recovery reads the counter.
+void pico_amiga_tusb_assert_hook(void);
+#define CFG_TUSB_DEBUG_BREAKPOINT   pico_amiga_tusb_assert_hook
 
 // tuh_task() only runs between emulated frames (~20 ms).  The default 16-entry
 // event queue can overflow meanwhile; a dropped xfer-complete event leaves that
@@ -23,3 +34,8 @@
 #define CFG_TUH_HID                 8   // composite keyboards/receivers use several interfaces
 #define CFG_TUH_HID_EPIN_BUFSIZE    64
 #define CFG_TUH_HID_EPOUT_BUFSIZE   64
+#define CFG_TUH_XINPUT              1   // drivers/usbhost/xinput_host.c
+
+#ifdef __cplusplus
+}
+#endif

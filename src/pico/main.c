@@ -1,6 +1,7 @@
 // pico-amiga firmware: an Amiga 500 on an RP2350 with QSPI PSRAM.
 //
-//   core 0: clocks, PSRAM, SD, USB host, the emulator (src/amiga), PWM audio
+//   core 0: clocks, PSRAM, SD, input (USB host, PS/2, NES pads), the emulator
+//           (src/amiga), PWM audio
 //   core 1: HDMI scanout (video_hstx.c, or video_pio.c on boards without HSTX pins)
 //
 // PSRAM layout (2 MB minimum):
@@ -24,7 +25,7 @@
 #include "audio_pwm.h"
 #include "clock.h"
 #include "psram.h"
-#include "usb_input.h"
+#include "input.h"
 #include "video.h"
 
 #ifndef CPU_MHZ
@@ -82,7 +83,7 @@ static void __attribute__((noreturn)) fail(uint16_t colour) {
     for (;;) {
         led(true);  sleep_ms(150);
         led(false); sleep_ms(850);
-        usb_input_poll();
+        input_poll();
     }
 }
 
@@ -117,7 +118,7 @@ int main(void) {
     // RP2350A carriers wire CS1 to BUTTER_PSRAM_GPIO, RP2350B modules to 47.
     uint32_t psram = psram_init(chip_is_rp2350a() ? BUTTER_PSRAM_GPIO : 47);
     multicore_launch_core1(core1_main);
-    usb_input_init();
+    input_init();
     if (psram < 2 * MB) fail(0xF00);
     uint8_t *ps = (uint8_t *)PSRAM_BASE;
 
@@ -151,13 +152,14 @@ int main(void) {
 
     uint32_t vf = video_frames();
     for (uint32_t frame = 0;; frame++) {
-        usb_input_poll();
-        if (usb_input_reset_requested()) amiga_reset(false);
+        input_poll();
+        input_frame();
+        if (input_reset_requested()) amiga_reset(false);
         amiga_run_frame();
         // LED: slow blink = no keyboard, fast blink = keyboard mounted, steady = key held.
-        led(usb_input_key_held() || (frame & (usb_input_keyboard_mounted() ? 8 : 32)) != 0);
+        led(input_key_held() || (frame & (input_keyboard_mounted() ? 8 : 32)) != 0);
         // Pace to the HDMI frame (50.06 Hz); a slow frame simply runs late.
-        while (video_frames() == vf) { usb_input_poll(); }
+        while (video_frames() == vf) { input_poll(); }
         vf = video_frames();
     }
 }
