@@ -8,6 +8,9 @@
 //   pico-amiga-host --rom kick.rom [--ext ext.rom] [--adf disk.adf]
 //                   [--frames N] [--shot N:file.png]... [--wav out.wav]
 //                   [--slow] [--key N:code:down]... [--status K]
+//                   [--joy N:dirs:fire]... [--mouse N:dx:dy:buttons]...
+// --joy sets game port 2 from frame N on (dirs: bit0 up 1 down 2 left 3 right);
+// --mouse moves the port 1 mouse once at frame N (buttons: bit0 left 1 right).
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -145,6 +148,7 @@ static void serial_out(void *ctx, uint8_t c) {
 
 typedef struct { int frame; char path[256]; } shot_t;
 typedef struct { int frame, code, down; } keyev_t;
+typedef struct { int frame, a, b, c; } inev_t;     // --joy: dirs fire; --mouse: dx dy buttons
 
 int main(int argc, char **argv) {
     const char *rom_path = NULL, *ext_path = NULL, *adf_path = NULL, *wav_path = NULL;
@@ -152,6 +156,8 @@ int main(int argc, char **argv) {
     bool slow = false;
     shot_t shots[64]; int nshots = 0;
     keyev_t keys[256]; int nkeys = 0;
+    inev_t joys[256]; int njoys = 0;
+    inev_t mice[256]; int nmice = 0;
 
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i];
@@ -172,6 +178,12 @@ int main(int argc, char **argv) {
             nshots++; i++;
         } else if (!strcmp(a, "--key") && v && nkeys < 256) {
             if (sscanf(v, "%d:%i:%d", &keys[nkeys].frame, &keys[nkeys].code, &keys[nkeys].down) == 3) nkeys++;
+            i++;
+        } else if (!strcmp(a, "--joy") && v && njoys < 256) {
+            if (sscanf(v, "%d:%i:%d", &joys[njoys].frame, &joys[njoys].a, &joys[njoys].b) == 3) njoys++;
+            i++;
+        } else if (!strcmp(a, "--mouse") && v && nmice < 256) {
+            if (sscanf(v, "%d:%d:%d:%i", &mice[nmice].frame, &mice[nmice].a, &mice[nmice].b, &mice[nmice].c) == 4) nmice++;
             i++;
         } else { fprintf(stderr, "unknown option %s\n", a); return 2; }
     }
@@ -203,6 +215,9 @@ int main(int argc, char **argv) {
 
     for (int f = 0; f < frames; f++) {
         for (int k = 0; k < nkeys; k++) if (keys[k].frame == f) amiga_key((uint8_t)keys[k].code, keys[k].down);
+        for (int k = 0; k < njoys; k++) if (joys[k].frame == f) amiga_joystick(1, (uint8_t)joys[k].a, joys[k].b);
+        for (int k = 0; k < nmice; k++)
+            if (mice[k].frame == f) amiga_mouse(mice[k].a, mice[k].b, mice[k].c & 1, mice[k].c & 2);
         amiga_run_frame();
         drain_audio();
         for (int s = 0; s < nshots; s++) if (shots[s].frame == f + 1) write_png(shots[s].path, scale);
