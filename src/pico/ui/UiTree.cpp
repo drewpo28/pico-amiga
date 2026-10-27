@@ -129,6 +129,7 @@ static void page_hotkeys() {
         "F12         This menu (Esc goes back, F12 closes)\n"
         "Ctrl+F12    Insert a disk into DF0\n"
         "Shift+F12   Reset the Amiga\n"
+        "Alt+F12     Performance band on/off\n"
         "Ctrl+J      Cursor keys as joystick on/off\n"
         "F1..F10     Amiga function keys\n"
         "\n"

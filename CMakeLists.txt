@@ -68,6 +68,7 @@ add_executable(pico-amiga
     src/pico/ui/UiTree.cpp
     src/pico/ui/UiDesc.cpp
     src/pico/ui/UiPlatform.cpp
+    src/pico/ui/UiStats.cpp
     # Input drivers from pico-speccy (PICO-AMIGA: marks local changes).
     src/pico/drivers/usbhost/hid_app.cpp
     src/pico/drivers/usbhost/joy_hid.cpp

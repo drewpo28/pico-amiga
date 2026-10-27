@@ -12,7 +12,7 @@
 //     game port 2; cursor keys are not passed on as keys while CursorAsJoy is on
 //   - the HID mouse -> port 1 mouse
 // Hotkeys (WinUAE's layout): F12 opens the menu (ui/, from pico-speccy), Ctrl+F12
-// the DF0 disk browser, Shift+F12 resets the Amiga; Ctrl+J toggles CursorAsJoy (as
+// the DF0 disk browser, Shift+F12 resets the Amiga, Alt+F12 the performance band; Ctrl+J toggles CursorAsJoy (as
 // on pico-speccy). F1..F10 are the Amiga's, F11 and Insert its Help key.
 #include "input.h"
 #include <string.h>
@@ -21,6 +21,7 @@
 #include "amiga.h"
 #include "ui/OSDNewMenu.h"
 #include "ui/UiPlatform.h"
+#include "ui/ui.h"
 #include "input_devices.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-compare"      // pico-speccy's headers
@@ -426,7 +427,9 @@ void input_frame(void) {
             if (!item.down) continue;
             const bool ctrl  = kbd.isVKDown(fabgl::VirtualKey::VK_LCTRL) || kbd.isVKDown(fabgl::VirtualKey::VK_RCTRL);
             const bool shift = kbd.isVKDown(fabgl::VirtualKey::VK_LSHIFT) || kbd.isVKDown(fabgl::VirtualKey::VK_RSHIFT);
+            const bool alt = kbd.isVKDown(fabgl::VirtualKey::VK_LALT) || kbd.isVKDown(fabgl::VirtualKey::VK_RALT);
             if (shift) { reset_req = true; continue; }
+            if (alt)   { ui_stats_toggle(); continue; }
             // The Amiga must not see keys held across the menu (the Ctrl of
             // Ctrl+F12 included): release what it thinks is down, then hand
             // the screen over.

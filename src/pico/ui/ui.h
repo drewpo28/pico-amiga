@@ -18,6 +18,11 @@ int  settings_audio_out(void);          // 0 auto, 1 PWM, 2 I2S
 // Push the live sound settings (volume, HDMI audio) to the outputs.
 void settings_apply_sound(void);
 
+// The performance band (UiStats.cpp, Alt+F12): toggle it; after every emulated
+// frame, the time amiga_run_frame() took (draws the band when it is on).
+void ui_stats_toggle(void);
+void ui_stats_frame(uint32_t emu_us);
+
 #ifdef __cplusplus
 }
 #endif

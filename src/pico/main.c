@@ -139,7 +139,9 @@ int main(void) {
         input_poll();
         input_frame();
         if (input_reset_requested()) amiga_reset(false);
+        const uint32_t t_emu = time_us_32();
         amiga_run_frame();
+        ui_stats_frame(time_us_32() - t_emu);
         // LED: slow blink = no keyboard, fast blink = keyboard mounted, steady = key held.
         led(input_key_held() || (frame & (input_keyboard_mounted() ? 8 : 32)) != 0);
         // Pace to the HDMI frame (50.06 Hz); a slow frame simply runs late.

@@ -53,7 +53,8 @@ if(SDL2_FOUND)
         ${ROOT}/src/pico/ui/UiStage.cpp
         ${ROOT}/src/pico/ui/UiTree.cpp
         ${ROOT}/src/pico/ui/UiDesc.cpp
-        ${ROOT}/src/pico/ui/UiPlatform.cpp)
+        ${ROOT}/src/pico/ui/UiPlatform.cpp
+        ${ROOT}/src/pico/ui/UiStats.cpp)
     set_source_files_properties(${ROOT}/src/pico/main.c PROPERTIES COMPILE_DEFINITIONS main=firmware_main)
     add_executable(pico-amiga ${FIRMWARE_SRC}
         ${SDL_DIR}/host_main.cpp
