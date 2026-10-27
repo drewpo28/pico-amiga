@@ -260,7 +260,10 @@ static bool     lut_dirty = true;
 // pf value -> palette index of the row being written (0xFF = not assigned yet);
 // valid for one line and one LUT generation.
 static uint8_t  ilut[64];
-AMIGA_HOT static void ilut_reset(void) { fill_bytes(ilut, 0xFF, (int)sizeof ilut); }
+// Hires IDX8 row whose palette starts with lut[0..15] as entries 0..15 (w_begin)
+// and whose LUT has not changed since: a pf value is its own index.
+static bool     ilut_ident;
+AMIGA_HOT static void ilut_reset(void) { fill_bytes(ilut, 0xFF, (int)sizeof ilut); ilut_ident = false; }
 
 AMIGA_HOT static void build_lut(void) {
     for (int v = 0; v < 64; v++) {
@@ -299,6 +302,19 @@ AMIGA_HOT static void w_begin(amiga_row_t *row, int mode, int field) {
         memset(row->px.nib[o], 0, sizeof row->px.nib[o]);
     }
     row->mode = (uint8_t)mode;
+    if (mode == AMIGA_ROW_IDX8) {
+        // Hires has at most 4 planes: the 16 pf values take entries 0..15 as
+        // they are, leaving 48 for sprites and colours changed mid-line.
+        for (int v = 0; v < 16; v++) {
+            const uint16_t c = lut[v];
+            row->pal[v] = c;
+            if (map_tag[c] != map_gen) { map_tag[c] = map_gen; map_idx[c] = (uint8_t)v; }
+            ilut[v] = (uint8_t)v;
+        }
+        w_n = 16;
+        row->ncol[0] = 16;
+        ilut_ident = true;
+    }
 }
 
 AMIGA_HOT static void w_to_direct(amiga_row_t *row) {
@@ -377,6 +393,19 @@ AMIGA_HOT static void w_plain(int x0, int x1, bool hires) {
             }
         }
         return;
+    }
+    if (ilut_ident && hires) {
+        // pf values are the indices: copy the line as it is (4 pixels a word).
+        // A value of 16+ (planes fetched in lowres before a mode switch) has no
+        // such entry: then the general path below redoes the range.
+        uint8_t *d = row->px.idx + 2 * (x0 - f0);
+        const uint8_t *s = pf + 2 * x0;
+        int n = 2 * (x1 - x0);
+        uint32_t any = 0;
+        for (; n >= 4; n -= 4, d += 4, s += 4) { uint32_t t; memcpy(&t, s, 4); memcpy(d, &t, 4); any |= t; }
+        for (; n > 0; n--) { any |= *s; *d++ = *s++; }
+        if (!(any & 0xF0F0F0F0u)) return;
+        ilut_ident = false;
     }
     for (int x = x0; x < x1; x++) {
         uint8_t v0 = pf[2 * x], v1 = hires ? pf[2 * x + 1] : v0;
