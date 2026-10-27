@@ -18,7 +18,10 @@ void audio_out_start(const int16_t *ring, uint32_t frames, int mode);
 // HDMI audio included (hdmi_audio.c reads it).
 void audio_set_volume(int q8);
 extern volatile int16_t audio_volume_q8;
-const char *audio_out_name(void);   // "PWM", "I2S", "PCM5122"
+const char *audio_out_name(void);
+// clk_sys cycles spent in the sample tick's interrupt so far (the profiler's
+// clock, board_cycles; wraps).
+uint32_t audio_out_isr_cycles(void);   // "PWM", "I2S", "PCM5122"
 
 #ifdef __cplusplus
 }

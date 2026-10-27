@@ -88,7 +88,11 @@ static inline void __not_in_flash_func(output)(int32_t sL, int32_t sR) {
     pwm_set_gpio_level(PWM_PIN1, outL);
 }
 
+static uint32_t isr_cycles;
+uint32_t audio_out_isr_cycles(void) { return isr_cycles; }
+
 static void __not_in_flash_func(au_alarm_isr)(void) {
+    const uint32_t c0 = board_cycles();
     const uint32_t bit = 1u << au_alarm;
     timer_hw->intr = bit;
     hw_clear_bits(&timer_hw->intf, bit);
@@ -114,6 +118,7 @@ static void __not_in_flash_func(au_alarm_isr)(void) {
     // counter (a long IRQ-off stretch) would wait for the 32-bit wrap: force the
     // interrupt instead, and the ticks catch up back to back.
     if ((int32_t)(target - timer_hw->timerawl) <= 0) hw_set_bits(&timer_hw->intf, bit);
+    isr_cycles += board_cycles() - c0;
 }
 
 static void pwm_pin_init(uint pin) {

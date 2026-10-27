@@ -140,7 +140,14 @@ static void decode_write(int d, uint32_t ptr, uint32_t words) {
 }
 
 // ---- DMA ----------------------------------------------------------------------
+static void dma_start_(void);
 static void dma_start(void) {
+    const int prof = prof_switch(AMIGA_PROF_DISK);
+    dma_start_();
+    prof_switch(prof);
+}
+
+static void dma_start_(void) {
     uint32_t words = dsklen & 0x3FFF;
     dma_drive = sel;
     dma_write = (dsklen & 0x4000) != 0;

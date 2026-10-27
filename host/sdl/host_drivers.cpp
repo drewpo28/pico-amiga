@@ -107,6 +107,7 @@ extern "C" void audio_out_start(const int16_t *ring, uint32_t frames, int) {
     SDL_PauseAudioDevice(dev, 0);
 }
 extern "C" const char *audio_out_name(void) { return "SDL"; }
+extern "C" uint32_t audio_out_isr_cycles(void) { return 0; }
 
 // ---- input_devices.h: SDL keyboard reports and mouse --------------------------------
 static std::mutex s_kmx;

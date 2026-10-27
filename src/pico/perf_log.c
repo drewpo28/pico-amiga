@@ -6,6 +6,7 @@
 #include "board.h"
 #include "pico/time.h"
 #include "ui/ui.h"
+#include "audio_out.h"
 
 // The QMI SCK a limit gives: clk_sys over the smallest whole divider that keeps
 // under it, never below 2 (clock.c / psram.c).
@@ -18,8 +19,9 @@ static unsigned sck(unsigned mhz, unsigned limit) {
 void perf_log_frame(uint32_t emu_us) {
     static uint32_t frames, emu_sum, t0, slow;
     static amiga_profile_t last;
+    static uint32_t isr_last;
     if (!dbg_uart_active()) return;
-    if (!t0) { t0 = time_us_32(); amiga_get_profile(&last, false); return; }
+    if (!t0) { t0 = time_us_32(); amiga_get_profile(&last, false); isr_last = audio_out_isr_cycles(); return; }
     frames++;
     emu_sum += emu_us;
     if (emu_us > 20000) slow++;
@@ -33,18 +35,20 @@ void perf_log_frame(uint32_t emu_us) {
     uint32_t ms10[AMIGA_PROF_COUNT];                 // tenths of a ms per frame
     for (int i = 0; i < AMIGA_PROF_COUNT; i++)
         ms10[i] = (uint32_t)((uint64_t)(p.ticks[i] - last.ticks[i]) / nf / cpu_us / 100);
+    const uint32_t isr = audio_out_isr_cycles();
+    const uint32_t irq10 = (isr - isr_last) / nf / cpu_us / 100;   // the audio tick, per frame
+    isr_last = isr;
     const uint32_t emu_avg = emu_sum / frames, emu10 = emu_avg / 100;
     const uint32_t fps10 = (uint32_t)((uint64_t)frames * 10000000u / (now - t0));
-    printf("PERF fps %u.%u emu %u.%u ms (%u%%, %u slow) | cpu %u.%u ren %u.%u cop %u.%u blt %u.%u oth %u.%u"
-           " | cpu %u flash %u psram %u MHz\n",
+#define MS(i) (unsigned)(ms10[i] / 10), (unsigned)(ms10[i] % 10)
+    printf("PERF fps %u.%u emu %u.%u ms (%u%%, %u slow) | cpu %u.%u ren %u.%u cop %u.%u blt %u.%u"
+           " aud %u.%u line %u.%u dsk %u.%u oth %u.%u (irq %u.%u) | cpu %u flash %u psram %u MHz\n",
            (unsigned)(fps10 / 10), (unsigned)(fps10 % 10),
            (unsigned)(emu10 / 10), (unsigned)(emu10 % 10),
            (unsigned)(emu_avg ? 2000000u / emu_avg : 0), (unsigned)slow,     // 20 ms = 100%
-           (unsigned)(ms10[AMIGA_PROF_CPU] / 10),    (unsigned)(ms10[AMIGA_PROF_CPU] % 10),
-           (unsigned)(ms10[AMIGA_PROF_RENDER] / 10), (unsigned)(ms10[AMIGA_PROF_RENDER] % 10),
-           (unsigned)(ms10[AMIGA_PROF_COPPER] / 10), (unsigned)(ms10[AMIGA_PROF_COPPER] % 10),
-           (unsigned)(ms10[AMIGA_PROF_BLIT] / 10),   (unsigned)(ms10[AMIGA_PROF_BLIT] % 10),
-           (unsigned)(ms10[AMIGA_PROF_OTHER] / 10),  (unsigned)(ms10[AMIGA_PROF_OTHER] % 10),
+           MS(AMIGA_PROF_CPU), MS(AMIGA_PROF_RENDER), MS(AMIGA_PROF_COPPER), MS(AMIGA_PROF_BLIT),
+           MS(AMIGA_PROF_PAULA), MS(AMIGA_PROF_LINE), MS(AMIGA_PROF_DISK), MS(AMIGA_PROF_OTHER),
+           (unsigned)(irq10 / 10), (unsigned)(irq10 % 10),
            (unsigned)settings_cpu_mhz(), sck((unsigned)settings_cpu_mhz(), (unsigned)settings_flash_mhz()),
            sck((unsigned)settings_cpu_mhz(), settings_psram_mhz() < 135 ? (unsigned)settings_psram_mhz() : 135u));
     last = p;

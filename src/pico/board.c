@@ -82,7 +82,7 @@ int board_test_pins(uint32_t pin0, uint32_t pin1) {
 #define DWT_CTRL   (*(volatile uint32_t *)0xE0001000u)
 #define DWT_CYCCNT (*(volatile uint32_t *)0xE0001004u)
 
-uint32_t board_cycles(void) {
+uint32_t __not_in_flash_func(board_cycles)(void) {   // the audio tick IRQ calls it too
     static bool on;
     if (!on) {                       // trace enable, then the counter (per core)
         DEMCR |= 1u << 24;

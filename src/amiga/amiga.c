@@ -141,7 +141,9 @@ static void run_line(void) {
         copper_vblank();
         denise_frame_start();
     }
+    prof_switch(AMIGA_PROF_LINE);
     denise_line_start();
+    prof_switch(AMIGA_PROF_OTHER);
     copper_line_start();
     for (int h = SLICE_CC; ; h += SLICE_CC) {
         if (h > AMIGA_CC_PER_LINE) h = AMIGA_CC_PER_LINE;
@@ -154,9 +156,12 @@ static void run_line(void) {
         if (h == AMIGA_CC_PER_LINE) break;
     }
     denise_line_end();
+    prof_switch(AMIGA_PROF_PAULA);
     paula_half_line();
     paula_half_line();
+    prof_switch(AMIGA_PROF_DISK);
     floppy_line();
+    prof_switch(AMIGA_PROF_OTHER);
     cia_line();
     keyboard_line();
     A.line_cyc += 2u * AMIGA_CC_PER_LINE;
