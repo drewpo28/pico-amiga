@@ -877,20 +877,20 @@ AMIGA_HOT static bool o_step(int step) {
     return true;
 }
 
-// One step of whichever stage this core can take, the output stage first (it
-// frees the fetch stage's ring).  False: nothing to do now.
-AMIGA_HOT static bool c_step_any(int step) {
-    if (!atomic_flag_test_and_set_explicit(&o_lock, memory_order_acquire)) {
-        const bool did = o_step(step);
-        atomic_flag_clear_explicit(&o_lock, memory_order_release);
-        if (did) return true;
-    }
-    if (!atomic_flag_test_and_set_explicit(&f_lock, memory_order_acquire)) {
-        const bool did = f_step(step);
-        atomic_flag_clear_explicit(&f_lock, memory_order_release);
-        if (did) return true;
-    }
-    return false;
+AMIGA_HOT static bool try_stage(atomic_flag *lock, bool (*stage)(int), int step) {
+    if (atomic_flag_test_and_set_explicit(lock, memory_order_acquire)) return false;
+    const bool did = stage(step);
+    atomic_flag_clear_explicit(lock, memory_order_release);
+    return did;
+}
+
+// One step of whichever stage this core can take, `out_first` or the fetch
+// stage first.  The render core prefers the output stage (the heavier one,
+// and serial); the emulation's core, helping while it waits, the fetch stage,
+// so the two do not queue for the same one.  False: nothing to do now.
+AMIGA_HOT static bool c_step_any(int step, bool out_first) {
+    if (out_first) return try_stage(&o_lock, o_step, step) || try_stage(&f_lock, f_step, step);
+    return try_stage(&f_lock, f_step, step) || try_stage(&o_lock, o_step, step);
 }
 
 static uint32_t c1_ticks;               // render time on the other core (its clock)
@@ -898,7 +898,7 @@ static uint32_t c1_ticks;               // render time on the other core (its cl
 AMIGA_HOT bool amiga_render_pump(void) {
     if (!is_async()) return false;
     const uint32_t t0 = A.cfg.prof_clock ? A.cfg.prof_clock() : 0;
-    const bool did = c_step_any(STEP_CC);
+    const bool did = c_step_any(STEP_CC, true);
     if (did && A.cfg.prof_clock) c1_ticks += A.cfg.prof_clock() - t0;
     return did;
 }
@@ -907,7 +907,7 @@ AMIGA_HOT bool amiga_render_pump(void) {
 // RENDER), else spin.
 AMIGA_HOT static void c_help(void) {
     const int prof = prof_switch(AMIGA_PROF_RENDER);
-    c_step_any(AMIGA_CC_PER_LINE);
+    c_step_any(AMIGA_CC_PER_LINE, false);
     prof_switch(prof);
 }
 
