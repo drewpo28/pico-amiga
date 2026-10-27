@@ -125,7 +125,10 @@
 /* If ON, the CPU will monitor the trace flags and take trace exceptions
  */
 #ifndef M68K_EMULATE_TRACE
-#define M68K_EMULATE_TRACE          M68K_OPT_OFF
+/* PICO-AMIGA: on. Trace-vector decoders (Cannon Fodder's disk 2 loader, Copylock)
+ * decrypt their code one instruction at a time from the Trace exception; with it
+ * off they spin forever with SR.T set. */
+#define M68K_EMULATE_TRACE          M68K_OPT_ON
 #endif
 
 
