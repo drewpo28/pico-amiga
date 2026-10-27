@@ -177,8 +177,10 @@ void gfxEnd() {}
 // DIRECT one showing the same picture (the left pixel of each hires pair, the
 // upper output line).  Denise rewrites every row on its next frame anyway.
 uint16_t* gfxRowDirect(int row) {
-    if (!s_fb) return nullptr;
-    amiga_row_t* r = &s_fb[row];
+    return s_fb ? gfxRowToDirect(&s_fb[row]) : nullptr;
+}
+
+uint16_t* gfxRowToDirect(amiga_row_t* r) {
     if (r->mode != AMIGA_ROW_DIRECT) {
         static uint16_t line[AMIGA_OUT_W];
         amiga_fb_line(r, 0, line);

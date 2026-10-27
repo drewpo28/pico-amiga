@@ -2,9 +2,9 @@
 // (OSD::drawStats): a few short lines in the UI face over the bottom of the
 // picture, refreshed every 25 frames (~0.5 s).  The Amiga repaints the whole
 // framebuffer each frame, so the band is kept as pixels and put back into each
-// of its rows the moment Denise has finished that row (ui_stats_row, the core's
-// row_done hook): drawn once per frame after the frame, it flickered, the scanout
-// showing the rows between Denise's repaint and the redraw.  Alt+F12 steps
+// of its rows by the core's row_done hook (ui_stats_row) before the row reaches
+// the framebuffer (amiga_set_overlay_rows): drawn after the frame it flickered,
+// and put back after Denise's repaint a line could still slip through.  Alt+F12 steps
 // off -> summary -> breakdown -> off.
 //
 // Summary:
@@ -54,9 +54,10 @@ static void drawBand() {
     s_bh = h < BAND_H ? h : BAND_H;
     for (int r = 0; r < s_bh; r++) {
         const uint16_t* src = gfxRowDirect(s_by + r);
-        if (!src) { s_bh = 0; return; }
+        if (!src) { s_bh = 0; break; }
         for (int i = 0; i < s_bw; i++) s_px[r][i] = src[s_bx + i];
     }
+    amiga_set_overlay_rows(s_by, s_by + s_bh);
 }
 
 }  // namespace nm
@@ -71,13 +72,13 @@ extern "C" void ui_stats_toggle(void) {
     for (int i = 0; i < 3; i++) snprintf(s_l[i], sizeof s_l[i], "  --");
     s_dirty = true;
     s_bh = 0;
+    amiga_set_overlay_rows(0, 0);
 }
 
-extern "C" void ui_stats_row(void*, int row) {
+extern "C" void ui_stats_row(void*, int row, amiga_row_t* r) {
     using namespace nm;
     if (!s_page || row < s_by || row >= s_by + s_bh) return;
-    uint16_t* d = gfxRowDirect(row);
-    if (!d) return;
+    uint16_t* d = gfxRowToDirect(r);
     const uint16_t* s = s_px[row - s_by];
     for (int i = 0; i < s_bw; i++) d[s_bx + i] = s[i];
 }

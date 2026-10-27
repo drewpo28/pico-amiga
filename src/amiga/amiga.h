@@ -55,6 +55,8 @@ typedef struct {
 void amiga_fb_line(const amiga_row_t *row, int sub, uint16_t out[AMIGA_OUT_W]);
 // Paint the whole framebuffer one colour (DIRECT rows), e.g. for boot errors.
 void amiga_fb_fill(amiga_row_t *fb, uint16_t colour);
+// Framebuffer rows [y0, y1) carry a platform overlay (row_done); y1 <= y0: none.
+void amiga_set_overlay_rows(int y0, int y1);
 
 // ---- Audio -----------------------------------------------------------------
 // Paula is sampled twice per line: 313 * 2 * 50 = 31300 Hz, interleaved stereo
@@ -81,7 +83,18 @@ typedef struct {
     // Optional hooks (may be NULL).
     void (*serial_out)(void *ctx, uint8_t byte);   // SERDAT, for DiagROM / debug
     void (*frame_done)(void *ctx);                 // after each completed frame
-    void (*row_done)(void *ctx, int row);          // after Denise finished framebuffer row `row`
+    // Overlay rows (amiga_set_overlay_rows): Denise builds each of them in a
+    // scratch row, hands it to row_done, which draws the overlay on it, and only
+    // then copies it into the framebuffer, so the scanout never shows such a
+    // row without its overlay.  Called for the overlay rows only.
+    void (*row_done)(void *ctx, int row, amiga_row_t *r);
+    // Bitplane prefetch, or NULL: at the start of a line with bitplane DMA the
+    // core asks for `n` blocks of `bytes` (a multiple of 4) of chip RAM, from
+    // the 4-aligned offsets src[0..n-1], to be copied one after another to dst,
+    // followed by a nonzero word at dst + n * bytes once all is there.  It may
+    // run in the background (DMA); return false to decline (the core then reads
+    // chip RAM itself).
+    bool (*bpl_prefetch)(void *ctx, const uint32_t *src, int n, uint32_t bytes, void *dst);
     // Profiling clock (any free-running counter, e.g. CPU cycles), or NULL: when
     // set, the core charges the time between its section switches to
     // amiga_profile_t's buckets.

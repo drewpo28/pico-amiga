@@ -143,6 +143,18 @@ static int disk_write(void *ctx, uint32_t off, const void *src, uint32_t len) {
     return 0;
 }
 
+// The firmware's bitplane prefetch (bpl_dma.c), done on the spot, so the
+// bench runs the core's prefetch path; --no-prefetch reads chip RAM directly.
+static const uint8_t *chip_ram;
+static bool prefetch(void *ctx, const uint32_t *src, int n, uint32_t bytes, void *dst) {
+    (void)ctx;
+    uint8_t *d = dst;
+    for (int i = 0; i < n; i++) memcpy(d + i * bytes, chip_ram + src[i], bytes);
+    const uint32_t one = 1;
+    memcpy(d + n * bytes, &one, 4);
+    return true;
+}
+
 static void serial_out(void *ctx, uint8_t c) {
     (void)ctx;
     if (c == '\r') return;
@@ -157,7 +169,7 @@ typedef struct { int frame, a, b, c; } inev_t;     // --joy: dirs fire; --mouse:
 int main(int argc, char **argv) {
     const char *rom_path = NULL, *ext_path = NULL, *adf_path = NULL, *wav_path = NULL;
     int frames = 250, status_every = 0, scale = 1;
-    bool slow = false;
+    bool slow = false, no_prefetch = false;
     shot_t shots[64]; int nshots = 0;
     keyev_t keys[256]; int nkeys = 0;
     inev_t joys[256]; int njoys = 0;
@@ -174,6 +186,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--status") && v) { status_every = atoi(v); i++; }
         else if (!strcmp(a, "--scale") && v) { scale = atoi(v); i++; }
         else if (!strcmp(a, "--slow")) slow = true;
+        else if (!strcmp(a, "--no-prefetch")) no_prefetch = true;
         else if (!strcmp(a, "--shot") && v && nshots < 64) {
             const char *c = strchr(v, ':');
             if (!c) { fprintf(stderr, "--shot N:file.png\n"); return 2; }
@@ -207,6 +220,8 @@ int main(int argc, char **argv) {
     cfg.framebuffer = fb;
     cfg.audio_ring = audio; cfg.audio_frames = AUDIO_FRAMES;
     cfg.serial_out = serial_out;
+    chip_ram = cfg.chip_ram;
+    if (!no_prefetch) cfg.bpl_prefetch = prefetch;
     amiga_init(&cfg);
 
     mem_disk_t md;

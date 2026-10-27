@@ -54,6 +54,7 @@ extern Surface Sf;
 void gfxSetFramebuffer(amiga_row_t* fb);
 // Framebuffer row `row` as 0x0RGB, turned into a DIRECT row first if need be.
 uint16_t* gfxRowDirect(int row);
+uint16_t* gfxRowToDirect(amiga_row_t* r);   // the same for any row
 // Computes the surface from the live video mode. Cheap, no side effects — safe to call
 // just to test whether the layout fits.
 void gfxComputeSurface();

@@ -26,7 +26,7 @@ void settings_apply_sound(void);
 // frame, the time amiga_run_frame() took (draws the band when it is on).
 void ui_stats_toggle(void);
 void ui_stats_frame(uint32_t emu_us);
-void ui_stats_row(void *ctx, int row);   // amiga_config_t.row_done
+void ui_stats_row(void *ctx, int row, amiga_row_t *r);   // amiga_config_t.row_done
 
 #ifdef __cplusplus
 }

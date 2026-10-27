@@ -46,6 +46,7 @@ add_executable(pico-amiga
     src/pico/audio_out.c
     src/pico/board.c
     src/pico/dbg_uart.c
+    src/pico/bpl_dma.c
     src/pico/perf_log.c
     src/pico/video.c
     src/pico/video_vga.c
