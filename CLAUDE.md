@@ -70,12 +70,16 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   writes carry their own hpos).
 - **Denise runs as an event consumer** (denise.c, the queue at the end): the
   scheduler's line start/end, frame start and display writes are queued with
-  the state they read (vpos, DMACON, LOF). Sync mode replays at once (host
-  bench, smoke); the firmware turns on `amiga_render_async` and core 1 replays
-  through `amiga_render_pump()` (between TMDS line encodes on PICO_DV, in
-  32-cc steps); `amiga_run_frame()` waits for it at frame end. Chip RAM is read
-  live. `pico-amiga-host --render-thread` runs the async path on a thread; its
-  screens must match the sync ones.
+  the state they read (vpos, DMACON, LOF), and replayed by two stages with
+  their own cursor and lock: fetch (bitplane DMA into a 4-line pf ring) and
+  output (colours, sprites, framebuffer), which follows it and may be on the
+  other core. Each keeps its own copy of BPLCON0 and DIW. Sync mode replays at
+  once (host bench, smoke); the firmware turns on `amiga_render_async`, core 1
+  pumps (`amiga_render_pump()`, 32-cc steps, between line builds on PICO_DV)
+  and core 0 takes a stage itself whenever it would wait;
+  `amiga_run_frame()` waits for both at frame end. Chip RAM is read live
+  (ThreadSanitizer reports only those races). `pico-amiga-host --render-thread`
+  runs the async path on a thread; its screens must match the sync ones.
 - Single playfield sprite priority uses **PF2P**, not PF1P (vAmiga agrees).
 - Byte writes to custom registers put the byte on both halves of the word.
 - Area blits with B DMA off use BLTBDAT (shifted on the CPU write), not 0:
