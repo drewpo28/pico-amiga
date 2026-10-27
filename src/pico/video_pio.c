@@ -7,10 +7,12 @@
 //
 // Every output pixel is two 32-bit words of pin patterns (tmds_pio.h), i.e.
 // 1664 words per line and ~200 MB/s of DMA.  Core 1's main loop TMDS-encodes
-// one output line ahead of the beam (33 us) from lookup tables of balanced
-// character pairs - doubled lowres pixels, or hires pairs of two different
-// colours - copying instead of encoding the second line of a row that is not
-// interlaced; the DMA
+// up to two output lines ahead of the beam (66 us) from lookup tables of
+// balanced character pairs - doubled lowres pixels, or hires pairs of two
+// different colours; the second line of a row that is not interlaced sends the
+// first one's buffer again.  One line ahead (33 us) was not enough for a full
+// hires encode at 504 MHz: late lines went out with the pixels of two lines
+// earlier and hires text shook.  The DMA
 // ping-pong + IRQ structure is the one in video_hstx.c, each line being two
 // transfers: blanking (fp + sync + bp) and the active part.
 #include "video.h"
@@ -56,7 +58,10 @@ static uint32_t tab_gb[256][4];
 static uint32_t tab_mix[3][16][16][4];             // hires pairs of different colours
 static uint32_t blank_line[2][H_BLANK * 2];        // [vsync active?]
 static uint32_t blank_active[2][H_ACTIVE * 2];     // the active part of a vblank line
-static uint32_t linebuf[2][AMIGA_FB_W * 4];       // by output line parity
+static uint32_t linebuf[4][AMIGA_FB_W * 4];       // by output line & 3
+static const uint32_t *volatile line_src[4];      // what output line n sends: [n & 3]
+static volatile int      line_ready[4] = { -1, -1, -1, -1 };   // output line in [n & 3]
+static volatile uint32_t late;                    // lines sent before they were encoded
 // The blanking part of each line, by line parity: blank_line plus the line's data
 // island in the sync pulse and, before an active line, the video preamble/guard band.
 static uint32_t blankbuf[2][H_BLANK * 2];
@@ -142,7 +147,9 @@ static void __not_in_flash_func(dma_irq)(void) {
     } else {
         if (active) {
             int out = (int)(v_line - (V_TOTAL - V_ACTIVE));
-            c->read_addr = (uintptr_t)linebuf[out & 1];
+            if (line_ready[out & 3] != out) late++;
+            line_ready[out & 3] = -1;
+            c->read_addr = (uintptr_t)line_src[out & 3];
             shown_line = out;
         } else {
             c->read_addr = (uintptr_t)blank_active[vsync];
@@ -153,15 +160,23 @@ static void __not_in_flash_func(dma_irq)(void) {
     }
 }
 
-// Encode output line `out` (0..575) into linebuf[out & 1].
+// Encode output line `out` (0..575) into linebuf[out & 3].
 static void __not_in_flash_func(encode_line)(int out) {
     static uint16_t left[AMIGA_FB_W], right[AMIGA_FB_W];
+    static bool prev_lace;                         // the row of line out - 1 was LACE4
     const amiga_row_t *row = &fb[out >> 1];
     const int sub = out & 1;
-    uint32_t *dst = linebuf[out & 1];
+    uint32_t *dst = linebuf[out & 3];
+    // The second line of a row that was not interlaced when its first line was
+    // encoded: the same pixels, from the same buffer.
+    if (sub && !prev_lace) {
+        line_src[out & 3] = linebuf[(out - 1) & 3];
+        line_ready[out & 3] = out;
+        return;
+    }
+    prev_lace = row->mode == AMIGA_ROW_LACE4;
     switch (row->mode) {
     case AMIGA_ROW_IDX8:
-        if (sub) { memcpy(dst, linebuf[0], sizeof linebuf[0]); return; }   // same as line 2r
         for (int x = 0; x < AMIGA_FB_W; x++) {
             left[x] = row->pal[row->px.idx[2 * x] & 63];
             right[x] = row->pal[row->px.idx[2 * x + 1] & 63];
@@ -176,26 +191,25 @@ static void __not_in_flash_func(encode_line)(int out) {
         break;
     }
     default:
-        if (sub) { memcpy(dst, linebuf[0], sizeof linebuf[0]); return; }
         tmds_encode_row(dst, row->px.rgb, AMIGA_FB_W, tab_r, tab_gb);
         break;
     }
+    line_src[out & 3] = dst;
+    line_ready[out & 3] = out;
 }
 
-// Core 1, forever: keep one output line ahead of the beam (line 0 during the
-// vertical blank).  The second line of a non-interlaced row is a copy of the
-// first, so those rows cost one encode per two lines.
+// Core 1, forever: keep up to two output lines ahead of the beam (lines 0 and 1
+// during the vertical blank).  Buffer n & 3 is free again once line n - 2 has
+// been sent, i.e. while line n - 1 is on the wire.
 static void __no_inline_not_in_flash_func(encode_loop)(void) {
-    int done = -2;
+    int done = 0;                                  // hdmi_start encoded line 0
     for (;;) {
-        int want = shown_line + 1;
-        if (want >= 2 * AMIGA_FB_H) want = 0;
-        if (want != done) {
-            encode_line(want);
-            done = want;
-        } else {
-            __wfi();
-        }
+        const int shown = shown_line;
+        if (shown + 2 < done) done = -1;           // a new frame began
+        int target = shown + 2;
+        if (target >= 2 * AMIGA_FB_H) target = 2 * AMIGA_FB_H - 1;
+        if (done < target) encode_line(++done);
+        else               __wfi();
     }
 }
 
@@ -248,3 +262,4 @@ void hdmi_start(const amiga_row_t *framebuffer) {
 }
 
 uint32_t hdmi_frames(void) { return frames; }
+uint32_t hdmi_late_lines(void) { return late; }

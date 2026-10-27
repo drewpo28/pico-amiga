@@ -241,3 +241,4 @@ void hdmi_start(const amiga_row_t *framebuffer) {
 }
 
 uint32_t hdmi_frames(void) { return frames; }
+uint32_t hdmi_late_lines(void) { return 0; }

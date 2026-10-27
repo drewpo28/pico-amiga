@@ -18,9 +18,12 @@ void video_start(const amiga_row_t *framebuffer);
 
 // Number of output frames completed.
 uint32_t video_frames(void);
+// Output lines sent before core 1 had encoded them (PIO HDMI; 0 elsewhere).
+uint32_t video_late_lines(void);
 
 // The back-ends.
 void hdmi_start(const amiga_row_t *framebuffer);
 uint32_t hdmi_frames(void);
+uint32_t hdmi_late_lines(void);
 void vga_start(const amiga_row_t *framebuffer);
 uint32_t vga_frames(void);

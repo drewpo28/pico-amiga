@@ -60,6 +60,7 @@ extern "C" void video_start(const amiga_row_t *framebuffer) {
     }).detach();
 }
 extern "C" uint32_t video_frames(void) { return s_frames; }
+extern "C" uint32_t video_late_lines(void) { return 0; }
 
 // ---- audio_out.h: an SDL device pulling the Paula ring ------------------------------
 // The same reader as audio_out.c: hold on underrun, drop single frames while more
