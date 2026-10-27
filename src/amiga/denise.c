@@ -17,6 +17,10 @@
 // Playfield bits are accumulated per line in pf[] at hires resolution (two
 // entries per lowres pixel), sprites in spl[] at lowres resolution; colours
 // are resolved at output time, so palette writes affect only later pixels.
+//
+// The per-line path is AMIGA_HOT (SRAM on the board): run from flash it took
+// 8-11 ms a frame on Cannon Fodder, its code competing with the PSRAM chip RAM
+// for the same 16 KB XIP cache.
 #include <string.h>
 #include "amiga_int.h"
 #ifdef DENISE_DEBUG
@@ -51,7 +55,7 @@ static uint16_t ham_col;
 static bool     ham_in;
 
 // ---- helpers -----------------------------------------------------------------
-static int planes(void) {
+AMIGA_HOT static int planes(void) {
     int np = (bplcon0 >> 12) & 7;
     if (bplcon0 & 0x8000) { if (np > 4) np = 4; }
     else if (np > 6) np = 6;
@@ -76,6 +80,17 @@ static void tables_init(void) {
     }
 }
 
+// memset() is a libc call in flash: the hot path clears with this instead (the
+// attribute keeps GCC from turning the loop back into that call).
+#if defined(__GNUC__) && !defined(__clang__)
+__attribute__((optimize("no-tree-loop-distribute-patterns")))
+#endif
+static inline void clear_bytes(uint8_t *p, int n) {
+    while (n > 0 && ((uintptr_t)p & 3)) { *p++ = 0; n--; }
+    for (; n >= 4; n -= 4, p += 4) *(uint32_t *)(void *)p = 0;
+    while (n-- > 0) *p++ = 0;
+}
+
 static inline void or32(uint8_t *p, uint32_t v) { uint32_t t; memcpy(&t, p, 4); t |= v; memcpy(p, &t, 4); }
 static inline void or64(uint8_t *p, uint64_t v) { uint64_t t; memcpy(&t, p, 8); t |= v; memcpy(p, &t, 8); }
 
@@ -84,7 +99,7 @@ static inline void or64(uint8_t *p, uint64_t v) { uint64_t t; memcpy(&t, p, 8); 
 // or after DDFSTOP is the last one, as in the OCS sequencer.  So lowres
 // $38/$D0 gives 20 units (20 words), hires $3C/$D4 and $3C/$D0 both 20 units
 // (40 words) - the latter is what AROS programs for a 640-pixel screen.
-static void compute_ddf(void) {
+AMIGA_HOT static void compute_ddf(void) {
     int a = ddfstrt & 0xFC, b = ddfstop & 0xFC;
     if (a < 0x18) a = 0x18;
     if (b > 0xD8) b = 0xD8;
@@ -93,7 +108,7 @@ static void compute_ddf(void) {
     nunits = b < a ? 0 : ((b - a + 7) >> 3) + 1;
 }
 
-static void fetch_unit(int k) {
+AMIGA_HOT static void fetch_unit(int k) {
     int t = ds + k * unit_cc;
     bool hires = bplcon0 & 0x8000;
     int np = planes();
@@ -168,7 +183,7 @@ static uint16_t lut[64];
 static uint8_t  lut_pf[64];
 static bool     lut_dirty = true;
 
-static void build_lut(void) {
+AMIGA_HOT static void build_lut(void) {
     for (int v = 0; v < 64; v++) {
         int w;
         lut[v] = pf_color((uint8_t)v, &w);
@@ -177,7 +192,7 @@ static void build_lut(void) {
     lut_dirty = false;
 }
 
-static void output_ham(int x0, int x1) {
+AMIGA_HOT static void output_ham(int x0, int x1) {
     for (int x = x0; x < x1; x++) {
         if (!ham_in) { ham_col = color[0]; ham_in = true; }
         uint8_t v = pf[2 * x];
@@ -194,7 +209,7 @@ static void output_ham(int x0, int x1) {
 }
 
 // Pixels [x0, x1) of the current line, in DIW coordinates.
-static void output(int x0, int x1) {
+AMIGA_HOT static void output(int x0, int x1) {
     if (lut_dirty) build_lut();
     const int hstart = diwstrt & 0xFF, hstop = (diwstop & 0xFF) | 0x100;
     const bool hires = bplcon0 & 0x8000;
@@ -245,7 +260,7 @@ static void output(int x0, int x1) {
     }
 }
 
-static void render_to(int h) {
+AMIGA_HOT static void render_to(int h) {
     if (h > AMIGA_CC_PER_LINE) h = AMIGA_CC_PER_LINE;
     if (h <= r_h) return;
     const int prof = prof_switch(AMIGA_PROF_RENDER);
@@ -261,16 +276,16 @@ static void render_to(int h) {
 }
 
 // ---- sprites -----------------------------------------------------------------
-static void spr_decode(int s) {
+AMIGA_HOT static void spr_decode(int s) {
     spr_vstart[s] = (uint16_t)((sprpos[s] >> 8) | ((sprctl[s] & 4) << 6));
     spr_vstop[s]  = (uint16_t)((sprctl[s] >> 8) | ((sprctl[s] & 2) << 7));
 }
 
-static int spr_x(int s) {   // DIW x of the sprite's first pixel
+AMIGA_HOT static int spr_x(int s) {   // DIW x of the sprite's first pixel
     return (((sprpos[s] & 0xFF) << 1) | (sprctl[s] & 1)) + 1;
 }
 
-static void sprite_dma(void) {
+AMIGA_HOT static void sprite_dma(void) {
     bool on = (A.dmacon & (DMAF_MASTER | DMAF_SPRITE)) == (DMAF_MASTER | DMAF_SPRITE);
     if (!on || A.vpos < 25 || A.vpos >= A.lines - 1) return;
     for (int s = 0; s < 8; s++) {
@@ -303,8 +318,8 @@ static inline int spr_bits(int s, int x) {
     return ((sprdata[s] >> (15 - i)) & 1) | (((sprdatb[s] >> (15 - i)) & 1) << 1);
 }
 
-static void sprite_compose(void) {
-    if (spl_hi > spl_lo) memset(spl + spl_lo, 0, (size_t)(spl_hi - spl_lo));
+AMIGA_HOT static void sprite_compose(void) {
+    if (spl_hi > spl_lo) clear_bytes(spl + spl_lo, spl_hi - spl_lo);
     spl_lo = SPL_SIZE; spl_hi = 0;
     for (int pair = 3; pair >= 0; pair--) {
         int e = 2 * pair, o = e + 1;
@@ -333,11 +348,11 @@ static void sprite_compose(void) {
 }
 
 // ---- line / frame hooks ------------------------------------------------------
-void denise_frame_start(void) {
+AMIGA_HOT void denise_frame_start(void) {
     for (int s = 0; s < 8; s++) { spr_dma[s] = SPR_FETCH_CTL; spr_armed[s] = false; }
 }
 
-void denise_line_start(void) {
+AMIGA_HOT void denise_line_start(void) {
     int vstart = diwstrt >> 8;
     int vstop = (diwstop >> 8) | ((diwstop & 0x8000) ? 0 : 0x100);
     vwin = A.vpos >= vstart && A.vpos < vstop;
@@ -345,7 +360,7 @@ void denise_line_start(void) {
     compute_ddf();
     fetch_k = 0;
     r_h = 0;
-    memset(pf, 0, sizeof pf);
+    clear_bytes(pf, (int)sizeof pf);
     ham_in = false;
     int row = (int)A.vpos - AMIGA_FB_Y0;
     fbrow = (A.cfg.framebuffer && row >= 0 && row < AMIGA_FB_H)
@@ -360,7 +375,7 @@ void denise_line_start(void) {
 #endif
 }
 
-void denise_line_end(void) {
+AMIGA_HOT void denise_line_end(void) {
     render_to(AMIGA_CC_PER_LINE);
     // The framebuffer reaches a few pixels past the end of the line: border.
     if (fbrow) {
@@ -370,7 +385,7 @@ void denise_line_end(void) {
 }
 
 // ---- registers ---------------------------------------------------------------
-void denise_write(uint32_t reg, uint16_t v, int hpos) {
+AMIGA_HOT void denise_write(uint32_t reg, uint16_t v, int hpos) {
     render_to(hpos);
     if (reg >= R_COLOR00 && reg < R_COLOR00 + 64) {
         color[(reg - R_COLOR00) >> 1] = v & 0xFFF;
