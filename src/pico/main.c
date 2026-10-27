@@ -142,6 +142,7 @@ int main(void) {
     cfg.framebuffer = fb;
     cfg.audio_ring = audio_ring;
     cfg.audio_frames = AUDIO_FRAMES;
+    cfg.row_done = ui_stats_row;     // the Alt+F12 band, put back over each row Denise repaints
     cfg.prof_clock = board_cycles;   // where the frame time goes (Alt+F12, second page)
     amiga_init(&cfg);
     if (card) machine_restore_disks();

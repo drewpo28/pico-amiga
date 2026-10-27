@@ -1,7 +1,10 @@
 // pico-amiga — the performance band (Alt+F12), after pico-speccy's F8 stats
 // (OSD::drawStats): a few short lines in the UI face over the bottom of the
-// picture, refreshed every 25 frames (~0.5 s) and redrawn after every emulated
-// frame, since the Amiga repaints the whole framebuffer each frame. Alt+F12 steps
+// picture, refreshed every 25 frames (~0.5 s).  The Amiga repaints the whole
+// framebuffer each frame, so the band is kept as pixels and put back into each
+// of its rows the moment Denise has finished that row (ui_stats_row, the core's
+// row_done hook): drawn once per frame after the frame, it flickered, the scanout
+// showing the rows between Denise's repaint and the redraw.  Alt+F12 steps
 // off -> summary -> breakdown -> off.
 //
 // Summary:
@@ -29,16 +32,31 @@ static char     s_l[3][24];
 static int      s_lines;
 static uint32_t s_frames, s_emu_sum, s_t0;
 static amiga_profile_t s_prof;       // the profile at the last refresh (perf_log.c keeps its own)
+static bool     s_dirty;            // the text changed: draw the band again
+
+// The band as drawn: framebuffer rectangle and its pixels.
+enum { BAND_COLS = 19, BAND_W = (BAND_COLS + 2) * UI_FONT_W + 4, BAND_H = 3 * UI_FONT_H + 6 };
+static uint16_t s_px[BAND_H][BAND_W];
+static int      s_bx, s_by, s_bw, s_bh;
 
 static void drawBand() {
     gfxComputeSurface();
     gfxInstallPalette();
-    const int w = 18 * glyphW() + 4, h = s_lines * UI_FONT_H + 4;
+    const int g = glyphW();
+    const int w = (BAND_COLS + 2) * g + 4, h = s_lines * UI_FONT_H + 6;
     const int x = Sf.w - w - 4, y = Sf.h - h - 4;
     fill(x, y, w, h, C_PANEL);
     frame(x, y, w, h, C_SEP);
-    for (int i = 0; i < s_lines; i++)
-        text(x + 2, y + 2 + i * UI_FONT_H, s_l[i], i ? C_TEXT : C_WHITE);
+    for (int i = 0; i < s_lines; i++)      // one blank column of padding on the left
+        text(x + 2 + g, y + 3 + i * UI_FONT_H, s_l[i], i ? C_TEXT : C_WHITE);
+    s_bx = Sf.fbx + x; s_by = Sf.oy + y;
+    s_bw = w < BAND_W ? w : BAND_W;
+    s_bh = h < BAND_H ? h : BAND_H;
+    for (int r = 0; r < s_bh; r++) {
+        const uint16_t* src = gfxRowDirect(s_by + r);
+        if (!src) { s_bh = 0; return; }
+        for (int i = 0; i < s_bw; i++) s_px[r][i] = src[s_bx + i];
+    }
 }
 
 }  // namespace nm
@@ -51,6 +69,17 @@ extern "C" void ui_stats_toggle(void) {
     amiga_get_profile(&s_prof, false);
     s_lines = s_page == 2 ? 3 : 2;
     for (int i = 0; i < 3; i++) snprintf(s_l[i], sizeof s_l[i], "  --");
+    s_dirty = true;
+    s_bh = 0;
+}
+
+extern "C" void ui_stats_row(void*, int row) {
+    using namespace nm;
+    if (!s_page || row < s_by || row >= s_by + s_bh) return;
+    uint16_t* d = gfxRowDirect(row);
+    if (!d) return;
+    const uint16_t* s = s_px[row - s_by];
+    for (int i = 0; i < s_bw; i++) d[s_bx + i] = s[i];
 }
 
 // ticks per frame as "mm.m" milliseconds
@@ -92,6 +121,7 @@ extern "C" void ui_stats_frame(uint32_t emu_us) {
         }
         s_frames = s_emu_sum = 0;
         s_t0 = now;
+        s_dirty = true;
     }
-    drawBand();
+    if (s_dirty) { drawBand(); s_dirty = false; }
 }

@@ -52,6 +52,8 @@ extern Surface Sf;
 // The framebuffer to draw into (the firmware's AMIGA_FB_H rows; the menu draws
 // AMIGA_FB_W x AMIGA_FB_H lowres pixels, turning each row it touches DIRECT).
 void gfxSetFramebuffer(amiga_row_t* fb);
+// Framebuffer row `row` as 0x0RGB, turned into a DIRECT row first if need be.
+uint16_t* gfxRowDirect(int row);
 // Computes the surface from the live video mode. Cheap, no side effects — safe to call
 // just to test whether the layout fits.
 void gfxComputeSurface();

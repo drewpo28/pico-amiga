@@ -81,6 +81,7 @@ typedef struct {
     // Optional hooks (may be NULL).
     void (*serial_out)(void *ctx, uint8_t byte);   // SERDAT, for DiagROM / debug
     void (*frame_done)(void *ctx);                 // after each completed frame
+    void (*row_done)(void *ctx, int row);          // after Denise finished framebuffer row `row`
     // Profiling clock (any free-running counter, e.g. CPU cycles), or NULL: when
     // set, the core charges the time between its section switches to
     // amiga_profile_t's buckets.

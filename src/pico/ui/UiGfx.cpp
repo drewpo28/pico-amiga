@@ -176,16 +176,21 @@ void gfxEnd() {}
 // The menu draws lowres 0x0RGB: a hires or interlaced row is first turned into a
 // DIRECT one showing the same picture (the left pixel of each hires pair, the
 // upper output line).  Denise rewrites every row on its next frame anyway.
-static uint16_t* fbRow(int y) {
+uint16_t* gfxRowDirect(int row) {
     if (!s_fb) return nullptr;
-    amiga_row_t* r = &s_fb[Sf.oy + y];
+    amiga_row_t* r = &s_fb[row];
     if (r->mode != AMIGA_ROW_DIRECT) {
         static uint16_t line[AMIGA_OUT_W];
         amiga_fb_line(r, 0, line);
         for (int x = 0; x < AMIGA_FB_W; x++) r->px.rgb[x] = line[2 * x];
         r->mode = AMIGA_ROW_DIRECT;
     }
-    return r->px.rgb + Sf.fbx;
+    return r->px.rgb;
+}
+
+static uint16_t* fbRow(int y) {
+    uint16_t* r = gfxRowDirect(Sf.oy + y);
+    return r ? r + Sf.fbx : nullptr;
 }
 
 void px(int x, int y, UiColor c) {

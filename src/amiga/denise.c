@@ -116,15 +116,58 @@ AMIGA_HOT static void fetch_unit(int k) {
     int np = planes();
     int x = hires ? 2 * (2 * t + 9) : 2 * (2 * t + 17);       // hires-pixel coordinate
     int d1 = 2 * (bplcon1 & 15), d2 = 2 * ((bplcon1 >> 4) & 15);
-    // The chip RAM reads first, as a bucket of their own (PSRAM latency).
+    // The chip RAM reads first, as a bucket of their own (PSRAM latency).  A
+    // hires plane's two words are one 32-bit read when they share a word.
     uint16_t wd[6][2];
     const int prof = prof_switch(AMIGA_PROF_BPLRD);
+    const uint8_t *cr = A.cfg.chip_ram;
+    const uint32_t cm = A.chip_mask & ~1u;
     for (int p = 0; p < np; p++) {
-        wd[p][0] = chip_rw(bplpt[p]);
-        if (hires) wd[p][1] = chip_rw(bplpt[p] + 2);
+        const uint32_t a = bplpt[p] & cm;
+        if (hires && !(a & 2)) {
+            uint32_t v;
+            memcpy(&v, cr + a, 4);
+            v = __builtin_bswap32(v);
+            wd[p][0] = (uint16_t)(v >> 16);
+            wd[p][1] = (uint16_t)v;
+        } else {
+            wd[p][0] = U16BE(cr + a);
+            if (hires) wd[p][1] = U16BE(cr + ((bplpt[p] + 2) & cm));
+        }
         bplpt[p] += hires ? 4 : 2;
     }
     prof_switch(prof);
+    // Same scroll for odd and even planes (the usual case): every plane lands on
+    // the same pixels, so a group of pixels is built in a register and ORed in
+    // once (OR, not store: a scroll or DDF change mid-line may overlap units).
+    if (d1 == d2 && np > 0) {
+        if (hires) {
+            for (int j = 0, pos = x + d1; j < 2; j++, pos += 16) {
+                if (pos < 0 || pos + 16 > PF_SIZE) continue;
+                for (int n = 0, s = 12; n < 4; n++, s -= 4) {
+                    uint32_t v = 0;
+                    for (int p = 0; p < np; p++) v |= spread4[(wd[p][j] >> s) & 15] << p;
+                    or32(pf + pos + 4 * n, v);
+                }
+            }
+        } else {
+            const int pos = x + d1;
+            if (pos >= 0 && pos + 32 <= PF_SIZE) {
+                for (int n = 0, s = 12; n < 4; n++, s -= 4) {
+                    uint32_t v = 0;
+                    for (int p = 0; p < np; p++) v |= spread4[(wd[p][0] >> s) & 15] << p;
+                    // Each lowres pixel twice: bytes abcd -> aabb ccdd.
+                    const uint32_t lo = (v & 0xFF) | (v & 0xFF) << 8 | (v & 0xFF00) << 8 | (v & 0xFF00) << 16;
+                    const uint32_t hi = (v >> 16 & 0xFF) | (v >> 16 & 0xFF) << 8 | (v >> 8 & 0xFF0000) | (v & 0xFF000000);
+                    or32(pf + pos + 8 * n, lo);
+                    or32(pf + pos + 8 * n + 4, hi);
+                }
+            }
+        }
+        if (k == nunits - 1)
+            for (int p = 0; p < np; p++) bplpt[p] += (uint32_t)(int32_t)bplmod[p & 1];
+        return;
+    }
     for (int p = 0; p < np; p++) {
         int pos = x + ((p & 1) ? d2 : d1);
         if (hires) {
@@ -527,6 +570,7 @@ AMIGA_HOT void denise_line_end(void) {
     if (fbrow) {
         const int x = 2 * AMIGA_CC_PER_LINE - AMIGA_FB_X0;
         w_fill(x < 0 ? 0 : x, AMIGA_FB_W, color[0]);
+        if (A.cfg.row_done) A.cfg.row_done(A.cfg.ctx, (int)(fbrow - A.cfg.framebuffer));
     }
 }
 
