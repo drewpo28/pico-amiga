@@ -91,13 +91,21 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   window path (w_plain) caches pf value -> index in ilut[]; keep it that way,
   the generic per-pixel w_put cost +50% host time.
 - LOF toggles every frame while BPLCON0 LACE is set (amiga.c), 313/312 lines.
-- PIO TMDS (video_pio.c): core 1 encodes one output line ahead of the beam
-  from tables of balanced character pairs (tmds_pio.h, tmds_pair.h); hires
-  pairs of different colours use per-lane [16][16] tables whose second
-  character may be off by up to 4 levels to keep each pair DC-balanced. The
-  word format was checked bit-for-bit against pico-speccy's hdmi_pack3_pio /
-  hdmi_pins_pio for the PICO_DV pin map; build-host/tmds_test decodes all 4096
-  colours like a receiver. Re-run it after touching either header.
+- PIO TMDS (video_pio.c) goes out by lookup, pico-speccy's scheme with a
+  palette per line (tmds_lut.h): a line is 416 entry numbers (one per two
+  pixels), a DMA chain + a converter SM turn them into the entries' pin words.
+  Core 1 builds lines two ahead, encoding only each new colour / hires pair of
+  a line into its page (5 pages for 4 line buffers: a row's second line reuses
+  the first's numbers). The entry window must be 64 KB-aligned: it is the
+  `.hdmi_lut` section at ORIGIN(RAM), src/pico/ld/ overrides the SDK's
+  section_ram_vector_table.incl. Entries come from tables of balanced character
+  pairs (tmds_pio.h, tmds_pair.h); hires pairs of different colours use
+  per-lane [16][16] tables whose second character may be off by up to 4 levels
+  to keep each pair DC-balanced. The word format was checked bit-for-bit
+  against pico-speccy's hdmi_pack3_pio / hdmi_pins_pio for the PICO_DV pin map;
+  build-host/tmds_test decodes all 4096 colours like a receiver and checks the
+  lookup lines against the CPU encoder word for word. Re-run it after touching
+  tmds_pio.h, tmds_pair.h or tmds_lut.h.
 - **No DMA reads from PSRAM while the PIO TMDS scanout runs** (PICO_DV): the DMA
   has one read master, a PSRAM read stalls it for hundreds of ns, the video
   channel starves and HDMI drops (tried: a per-line bitplane prefetch, hires
@@ -115,6 +123,6 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   (framebuffer 245 KB, colour map 12 KB, track buffer 12.4 KB, audio ring 16 KB,
   ~45 KB of SRAM code incl. 17 KB of Musashi handlers; DV adds TMDS tables/line
   buffers) of 520 KB.
-- PIO encode budget (estimate, not measured): an interlaced line is a full
-  encode per output line (~24 us of the 33 us at 378 MHz); other rows encode
-  once per two lines.
+- PICO_DV core 1 before the lookup scanout (Cannon Fodder, 504 MHz, ms per
+  frame): CPU TMDS encoding 6.5, line IRQ 1.6, leaving Denise ~6 (the PERF
+  line's `core1 render/irq/enc`).

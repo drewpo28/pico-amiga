@@ -1,0 +1,21 @@
+/* PICO-AMIGA: replaces the SDK's section_ram_vector_table.incl (CMakeLists:
+ * pico_add_linker_script_override_path).  The PIO HDMI's entry window
+ * (video_pio.c, tmds_lut.h) must sit inside one 64 KB-aligned block: its PIO
+ * address converter builds window_base | entry << 4 with the base from the X
+ * register's 16 bits.  It goes first, at ORIGIN(RAM) (0x20000000), where that
+ * costs nothing; NOLOAD and outside crt0's .bss range, video_pio.c fills it.
+ * The vector table then needs its own 512-byte alignment (VTOR), which it got
+ * for free at ORIGIN(RAM) before (pico-speccy's rp2350-memmap.ld does the same). */
+SECTIONS
+{
+    .hdmi_lut (NOLOAD): {
+        . = ALIGN(65536);
+        *(.bss.hdmi_lut_window)
+        . = ALIGN(4);
+    } > RAM
+
+    .ram_vector_table (NOLOAD): {
+        . = ALIGN(512);
+        *(.ram_vector_table)
+    } > RAM
+}

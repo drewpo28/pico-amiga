@@ -28,7 +28,6 @@ void video_start(const amiga_row_t *framebuffer) {
 
 uint32_t video_frames(void) { return vga ? vga_frames() : hdmi_frames(); }
 uint32_t video_late_lines(void) { return vga ? 0 : hdmi_late_lines(); }
-uint32_t video_irq_missed(void) { return vga ? 0 : hdmi_irq_missed(); }
 void video_core1_cycles(uint32_t *irq, uint32_t *enc) {
     if (vga) *irq = *enc = 0;
     else     hdmi_core1_cycles(irq, enc);

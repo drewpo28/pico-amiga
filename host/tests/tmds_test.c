@@ -3,9 +3,15 @@
 // differential, recover the 10-bit characters, TMDS-decode them and compare
 // with the intended levels; check DC balance of every pixel pair and the
 // control-period symbols.
+//
+// Then the PIO HDMI by lookup (src/pico/tmds_lut.h): lines built as entry
+// numbers, resolved through the entry window, must give exactly the words the
+// CPU encoder and the old blanking composition gave, for every row mode.
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "tmds_pio.h"
+#include "tmds_lut.h"
 
 static int fails;
 #define CHECK(c, ...) do { if (!(c)) { if (fails++ < 20) { printf(__VA_ARGS__); printf("\n"); } } } while (0)
@@ -30,6 +36,112 @@ static int tmds_decode(uint16_t s) {
         out |= (uint8_t)(b << i);
     }
     return out;
+}
+
+// ---- the lookup path against the old CPU composition ------------------------
+static uint32_t rnd(void) { static uint32_t s = 12345; s ^= s << 13; s ^= s >> 17; s ^= s << 5; return s; }
+
+static uint32_t terc4[16], pre[2][10], post[2][2], lead[10];
+enum { HDMI_PK_N = 5 };                      // hdmi_audio.h HDMI_PK_FIXED
+static uint8_t  fixed_nibs[HDMI_PK_N][2][32][3];
+static void fixed_nib(int id, bool vs, uint8_t nib[32][3]) { memcpy(nib, fixed_nibs[id][vs], 32 * 3); }
+
+static void old_char(uint32_t c, uint32_t w[2]) { tl_char_words(c, w); }
+
+// The old video_pio.c blanking: control periods, the island at pixel 12, the lead.
+static void old_blank(uint32_t *d, bool vsync, bool active, const uint8_t nib[32][3],
+                      uint32_t terc_w[3][16][2]) {
+    const int vlev = vsync ? 0 : 1;
+    uint32_t w[2];
+    int px = 0;
+    tmds_ctrl_words(vlev, 1, w); for (int i = 0; i < 12; i++, px++) { d[2 * px] = w[0]; d[2 * px + 1] = w[1]; }
+    tmds_ctrl_words(vlev, 0, w); for (int i = 0; i < 64; i++, px++) { d[2 * px] = w[0]; d[2 * px + 1] = w[1]; }
+    tmds_ctrl_words(vlev, 1, w); for (int i = 0; i < 36; i++, px++) { d[2 * px] = w[0]; d[2 * px + 1] = w[1]; }
+    uint32_t *isl = d + 2 * 12;
+    for (int i = 0; i < 10; i++, isl += 2) old_char(pre[vsync][i], isl);
+    for (int t = 0; t < 32; t++, isl += 2) {
+        isl[0] = terc_w[0][nib[t][0]][0] | terc_w[1][nib[t][1]][0] | terc_w[2][nib[t][2]][0];
+        isl[1] = terc_w[0][nib[t][0]][1] | terc_w[1][nib[t][1]][1] | terc_w[2][nib[t][2]][1];
+    }
+    for (int i = 0; i < 2; i++, isl += 2) old_char(post[vsync][i], isl);
+    if (active) for (int i = 0; i < 10; i++) old_char(lead[i], d + 2 * (112 - 10 + i));
+}
+
+// The old video_pio.c encode_line, one output line of a row.
+static void old_active(uint32_t *dst, const amiga_row_t *row, int sub,
+                       const uint32_t tab_r[16][4], const uint32_t tab_gb[256][4], const uint32_t mix[3][16][16][4]) {
+    static uint16_t l[AMIGA_FB_W], r[AMIGA_FB_W];
+    if (row->mode == AMIGA_ROW_IDX8) {
+        for (int x = 0; x < AMIGA_FB_W; x++) { l[x] = row->pal[row->px.idx[2 * x] & 63]; r[x] = row->pal[row->px.idx[2 * x + 1] & 63]; }
+        tmds_encode_pairs(dst, l, r, AMIGA_FB_W, tab_r, tab_gb, mix);
+    } else if (row->mode == AMIGA_ROW_LACE4) {
+        const uint16_t *pal = row->pal + 16 * sub;
+        for (int x = 0; x < AMIGA_FB_W; x++) { l[x] = pal[row->px.nib[sub][x] >> 4]; r[x] = pal[row->px.nib[sub][x] & 15]; }
+        tmds_encode_pairs(dst, l, r, AMIGA_FB_W, tab_r, tab_gb, mix);
+    } else {
+        tmds_encode_row(dst, row->px.rgb, AMIGA_FB_W, tab_r, tab_gb);
+    }
+}
+
+static void random_row(amiga_row_t *row, int mode) {
+    memset(row, 0, sizeof *row);
+    row->mode = (uint8_t)mode;
+    for (int i = 0; i < 64; i++) row->pal[i] = (uint16_t)(rnd() & 0xFFF);
+    uint32_t v = 0;
+    for (int x = 0; x < AMIGA_OUT_W; x++) {
+        if (rnd() % 4 == 0) v = rnd();                   // runs, as on a real screen
+        if (mode == AMIGA_ROW_DIRECT && x < AMIGA_FB_W) row->px.rgb[x] = (uint16_t)(v & 0xFFF);
+        if (mode == AMIGA_ROW_IDX8) row->px.idx[x] = (uint8_t)(v % 64);
+        if (mode == AMIGA_ROW_LACE4 && x < AMIGA_FB_W) { row->px.nib[0][x] = (uint8_t)v; row->px.nib[1][x] = (uint8_t)(v >> 8); }
+    }
+}
+
+static int lut_check(const uint32_t tab_r[16][4], const uint32_t tab_gb[256][4], const uint32_t mix[3][16][16][4]) {
+    static tl_entry_t lut[TL_ENTRIES];
+    static tl_t t;
+    for (int i = 0; i < 16; i++) terc4[i] = rnd() & 0x3FF;
+    for (int vs = 0; vs < 2; vs++) {
+        for (int i = 0; i < 10; i++) pre[vs][i] = rnd() & 0x3FFFFFFF;
+        for (int i = 0; i < 2; i++) post[vs][i] = rnd() & 0x3FFFFFFF;
+    }
+    for (int i = 0; i < 10; i++) lead[i] = rnd() & 0x3FFFFFFF;
+    for (int id = 0; id < HDMI_PK_N; id++)
+        for (int vs = 0; vs < 2; vs++)
+            for (int k = 0; k < 32; k++)
+                for (int l = 0; l < 3; l++) fixed_nibs[id][vs][k][l] = (uint8_t)(rnd() & 15);
+    tl_init(&t, lut, tab_r, tab_gb, mix, terc4, pre, post, lead, fixed_nib, HDMI_PK_N);
+
+    static uint32_t want[2 * 832], got[2 * 832];
+    static uint16_t items[TL_LINE];
+    static amiga_row_t row;
+    int lines = 0;
+    for (int n = 0; n < 3000; n++, lines++) {
+        const int page = n & 3, mode = n % 3;
+        const bool vsync = n % 7 == 0, active = n % 5 != 0;
+        const int sub = (n >> 2) & 1;
+        uint8_t nib[32][3];
+        const int id = (n % 3 == 0) ? -1 : (int)(rnd() % HDMI_PK_N);
+        if (id < 0) for (int k = 0; k < 32; k++) for (int l = 0; l < 3; l++) nib[k][l] = (uint8_t)(rnd() & 15);
+        else memcpy(nib, fixed_nibs[id][vsync], sizeof nib);
+        random_row(&row, mode);
+
+        old_blank(want, vsync, active, nib, t.terc);
+        if (active) old_active(want + 2 * 112, &row, sub, tab_r, tab_gb, mix);
+        else { uint32_t w[2]; tmds_ctrl_words(vsync ? 0 : 1, 1, w); for (int x = 112; x < 832; x++) { want[2 * x] = w[0]; want[2 * x + 1] = w[1]; } }
+
+        int used = 0;
+        tl_blank(items, vsync, active);
+        if (id >= 0) tl_island_fixed(items, id, vsync); else tl_island_audio(&t, items, page, &used, nib);
+        if (active) tl_active(&t, items, page, &used, &row, sub); else tl_active_blank(items, vsync);
+        CHECK(used <= TL_PAGE, "line %d: %d entries", n, used);
+        for (int s = 0; s < TL_LINE; s++) {
+            CHECK(items[s] < TL_ENTRIES, "line %d slot %d: entry %u", n, s, items[s]);
+            memcpy(got + 4 * s, lut[items[s]], 16);
+        }
+        for (int i = 0; i < 2 * 832; i++)
+            if (got[i] != want[i]) { CHECK(0, "line %d (mode %d vs %d act %d id %d): word %d (px %d)", n, mode, vsync, active, id, i, i / 2); break; }
+    }
+    return lines;
 }
 
 int main(void) {
@@ -90,7 +202,10 @@ int main(void) {
             CHECK(!(w[0] >> 30) && !(w[1] >> 30), "bits 30/31 must stay clear");
         }
 
+    const int lines = lut_check(tab_r, tab_gb, mix);
+
     if (fails) { printf("tmds_test: %d failures\n", fails); return 1; }
-    printf("tmds_test: 4096 doubled colours, 3x256 mixed pairs (2nd within +-%d), 4 control states OK\n", maxdev);
+    printf("tmds_test: 4096 doubled colours, 3x256 mixed pairs (2nd within +-%d), 4 control states,"
+           " %d lookup lines OK\n", maxdev, lines);
     return 0;
 }

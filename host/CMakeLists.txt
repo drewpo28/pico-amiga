@@ -16,7 +16,7 @@ target_compile_options(pico-amiga-host PRIVATE -Wall -Wextra)
 
 # PIO TMDS word tables (src/pico/tmds_pio.h is plain C), decoded like a receiver would.
 add_executable(tmds_test tests/tmds_test.c)
-target_include_directories(tmds_test PRIVATE ${ROOT}/src/pico)
+target_include_directories(tmds_test PRIVATE ${ROOT}/src/pico ${ROOT}/src/amiga)
 target_compile_options(tmds_test PRIVATE -Wall -Wextra)
 
 # ---- pico-amiga: the firmware on a PC (SDL2), like the UF2 ------------------------

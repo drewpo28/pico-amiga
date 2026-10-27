@@ -21,7 +21,7 @@ static unsigned sck(unsigned mhz, unsigned limit) {
 void perf_log_frame(uint32_t emu_us) {
     static uint32_t frames, emu_sum, t0, slow;
     static amiga_profile_t last;
-    static uint32_t isr_last, late_last, c1irq_last, c1enc_last, hold_last, skip_last, full_last, starve_last, miss_last;
+    static uint32_t isr_last, late_last, c1irq_last, c1enc_last, hold_last, skip_last, full_last, starve_last;
     if (!dbg_uart_active()) return;
     if (!t0) { t0 = time_us_32(); amiga_get_profile(&last, false); isr_last = audio_out_isr_cycles(); return; }
     frames++;
@@ -42,8 +42,6 @@ void perf_log_frame(uint32_t emu_us) {
     isr_last = isr;
     const uint32_t late = video_late_lines() - late_last;   // video lines, this second
     late_last += late;
-    const uint32_t miss = video_irq_missed() - miss_last;
-    miss_last += miss;
     uint32_t c1irq, c1enc;                                  // core 1's video work, per frame
     video_core1_cycles(&c1irq, &c1enc);
     const uint32_t irq1 = (c1irq - c1irq_last) / nf / cpu_us / 100, enc1 = (c1enc - c1enc_last) / nf / cpu_us / 100;
@@ -58,7 +56,7 @@ void perf_log_frame(uint32_t emu_us) {
 #define MS(i) (unsigned)(ms10[i] / 10), (unsigned)(ms10[i] % 10)
     printf("PERF fps %u.%u emu %u.%u ms (%u%%, %u slow) | cpu %u.%u ren %u.%u+bpl %u.%u+rd %u.%u cop %u.%u blt %u.%u"
            " aud %u.%u line %u.%u dsk %u.%u oth %u.%u wait %u.%u (irq %u.%u) | core1 render %u.%u irq %u.%u enc %u.%u"
-           " | cpu %u flash %u psram %u MHz | late %u irqmiss %u | au hold %u drop %u hdmi starve %u full %u min %u\n",
+           " | cpu %u flash %u psram %u MHz | late %u | au hold %u drop %u hdmi starve %u full %u min %u\n",
            (unsigned)(fps10 / 10), (unsigned)(fps10 % 10),
            (unsigned)(emu10 / 10), (unsigned)(emu10 % 10),
            (unsigned)(emu_avg ? 2000000u / emu_avg : 0), (unsigned)slow,     // 20 ms = 100%
@@ -68,7 +66,7 @@ void perf_log_frame(uint32_t emu_us) {
            (unsigned)(irq1 / 10), (unsigned)(irq1 % 10), (unsigned)(enc1 / 10), (unsigned)(enc1 % 10),
            (unsigned)settings_cpu_mhz(), sck((unsigned)settings_cpu_mhz(), (unsigned)settings_flash_mhz()),
            sck((unsigned)settings_cpu_mhz(), settings_psram_mhz() < 135 ? (unsigned)settings_psram_mhz() : 135u),
-           (unsigned)late, (unsigned)miss, (unsigned)dh, (unsigned)ds, (unsigned)dst, (unsigned)df, (unsigned)qmin);
+           (unsigned)late, (unsigned)dh, (unsigned)ds, (unsigned)dst, (unsigned)df, (unsigned)qmin);
     last = p;
     frames = emu_sum = slow = 0;
     t0 = now;

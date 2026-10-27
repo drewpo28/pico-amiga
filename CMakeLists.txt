@@ -132,4 +132,7 @@ target_link_libraries(pico-amiga PRIVATE
 set_target_properties(pico-amiga PROPERTIES OUTPUT_NAME "${BOARD_TAG}-amiga-${PORT_VERSION}")
 pico_enable_stdio_uart(pico-amiga 0)
 pico_enable_stdio_usb(pico-amiga 0)
+# The PIO HDMI's entry window first in RAM (src/pico/ld/section_ram_vector_table.incl).
+pico_add_linker_script_override_path(pico-amiga ${CMAKE_CURRENT_LIST_DIR}/src/pico/ld
+    FILES section_ram_vector_table.incl)
 pico_add_extra_outputs(pico-amiga)
