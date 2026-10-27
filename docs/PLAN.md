@@ -16,6 +16,8 @@ verified on the host bench; "hw" means verified on a board.
 - [x] Host bench (PNG/WAV/serial/scripted keys) and smoke tests
 - [x] Firmware: clocks, PSRAM, SD/FatFs, HSTX 720x576@50, USB HID, PWM audio (builds; not run on hw)
 - [x] PIO TMDS scanout for PICO_DV (builds; word format bit-identical to pico-speccy's, host-decoded)
+- [x] Native hires (720 output pixels) and interlace with both fields: per-row
+      framebuffer formats, LOF toggling (reference shots: docs/screens/)
 
 ## 1. Hardware bring-up
 
@@ -40,7 +42,7 @@ verified on the host bench; "hw" means verified on a board.
 - [ ] DMA contention: CPU loses chip-bus cycles to bitplanes/copper/blitter
       (today the CPU runs at full speed whatever the display does)
 - [ ] Copper slots taken by hires/6-plane fetches; blitter cycle timing and nasty mode
-- [ ] Interlace: both fields (a 576-row framebuffer or field blending), LOF toggling, short frames
+- [ ] Interlace with more than 16 colours per line (falls back to the latest field today)
 - [ ] Sprite collisions (CLXDAT/CLXCON), sprite writes mid-line, sprite DMA slot limits vs DDFSTRT
 - [ ] Paula: ADKCON attach modes, the LED low-pass filter, non-DMA playback
 - [ ] Keyboard: power-up key stream, Ctrl-Amiga-Amiga reset, Caps Lock LED semantics

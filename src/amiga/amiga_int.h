@@ -134,6 +134,7 @@ void     denise_write(uint32_t reg, uint16_t v, int hpos);
 void     denise_line_start(void);
 void     denise_line_end(void);
 void     denise_frame_start(void);
+bool     denise_lace(void);                         // BPLCON0 LACE
 
 // ---- paula: audio (paula.c) ------------------------------------------------
 void     paula_reset(void);

@@ -46,7 +46,7 @@ static int      spl_lo, spl_hi;           // dirty range of spl[]
 static int      r_h;                      // rendered up to this colour clock
 static bool     vwin, bpl_dma;
 static int      fetch_k, nunits, ds, unit_cc;
-static uint16_t *fbrow;
+static amiga_row_t *fbrow;              // row being written, or NULL
 static uint16_t ham_col;
 static bool     ham_in;
 
@@ -167,6 +167,10 @@ static inline uint16_t sprite_mix(int x, uint16_t c, int which) {
 static uint16_t lut[64];
 static uint8_t  lut_pf[64];
 static bool     lut_dirty = true;
+// pf value -> palette index of the row being written (0xFF = not assigned yet);
+// valid for one line and one LUT generation.
+static uint8_t  ilut[64];
+static void ilut_reset(void) { memset(ilut, 0xFF, sizeof ilut); }
 
 static void build_lut(void) {
     for (int v = 0; v < 64; v++) {
@@ -175,6 +179,105 @@ static void build_lut(void) {
         lut_pf[v] = (uint8_t)w;
     }
     lut_dirty = false;
+    ilut_reset();
+}
+
+// ---- framebuffer row writer ---------------------------------------------------
+// Pixels arrive as (lowres column, left hires colour, right hires colour).  The
+// row's storage (amiga.h) is chosen at line start; colours are turned into
+// palette indices through a 4096-entry map tagged per line, and a line that
+// runs out of palette entries is converted to DIRECT on the spot.
+static int      w_mode, w_field, w_base, w_max, w_n;
+static uint16_t map_tag[4096];
+static uint8_t  map_idx[4096];
+static uint16_t map_gen;
+static uint16_t last_c = 0xFFFF;
+static uint8_t  last_i;
+
+static void w_begin(amiga_row_t *row, int mode, int field) {
+    ilut_reset();
+    if (++map_gen == 0) { memset(map_tag, 0, sizeof map_tag); map_gen = 1; }
+    last_c = 0xFFFF;
+    w_mode = mode; w_field = field; w_n = 0;
+    w_base = mode == AMIGA_ROW_LACE4 ? 16 * field : 0;
+    w_max = mode == AMIGA_ROW_LACE4 ? 16 : 64;
+    if (mode == AMIGA_ROW_LACE4 && row->mode != AMIGA_ROW_LACE4) {
+        // Entering interlace: the other field's line is unknown until it is drawn.
+        int o = field ^ 1;
+        row->pal[16 * o] = color[0];
+        row->ncol[o] = 1;
+        memset(row->px.nib[o], 0, sizeof row->px.nib[o]);
+    }
+    row->mode = (uint8_t)mode;
+}
+
+static void w_to_direct(amiga_row_t *row) {
+    static uint8_t tmp[AMIGA_FB_W];
+    if (w_mode == AMIGA_ROW_IDX8) {
+        for (int x = 0; x < AMIGA_FB_W; x++)
+            row->px.rgb[x] = avg(row->pal[row->px.idx[2 * x]], row->pal[row->px.idx[2 * x + 1]]);
+    } else if (w_mode == AMIGA_ROW_LACE4) {
+        memcpy(tmp, row->px.nib[w_field], sizeof tmp);
+        for (int x = 0; x < AMIGA_FB_W; x++)
+            row->px.rgb[x] = avg(row->pal[w_base + (tmp[x] >> 4)], row->pal[w_base + (tmp[x] & 15)]);
+    }
+    row->mode = AMIGA_ROW_DIRECT;
+    w_mode = AMIGA_ROW_DIRECT;
+}
+
+static inline int w_index(amiga_row_t *row, uint16_t c) {
+    if (c == last_c) return last_i;
+    int i;
+    if (map_tag[c] == map_gen) i = map_idx[c];
+    else {
+        if (w_n == w_max) return -1;
+        i = w_n++;
+        row->pal[w_base + i] = c;
+        row->ncol[w_field] = (uint8_t)w_n;
+        map_tag[c] = map_gen;
+        map_idx[c] = (uint8_t)i;
+    }
+    last_c = c; last_i = (uint8_t)i;
+    return i;
+}
+
+static inline void w_put(int fx, uint16_t c0, uint16_t c1) {
+    amiga_row_t *row = fbrow;
+    if (w_mode != AMIGA_ROW_DIRECT) {
+        int i0 = w_index(row, c0), i1 = c1 == c0 ? i0 : w_index(row, c1);
+        if (i0 >= 0 && i1 >= 0) {
+            if (w_mode == AMIGA_ROW_IDX8) { row->px.idx[2 * fx] = (uint8_t)i0; row->px.idx[2 * fx + 1] = (uint8_t)i1; }
+            else row->px.nib[w_field][fx] = (uint8_t)((i0 << 4) | i1);
+            return;
+        }
+        w_to_direct(row);
+    }
+    row->px.rgb[fx] = c0 == c1 ? c0 : avg(c0, c1);
+}
+
+// Window pixels [x0, x1) without sprites (DIW coordinates, already clipped to
+// the framebuffer): the common case, kept free of per-pixel colour lookups.
+static void w_plain(int x0, int x1, bool hires) {
+    amiga_row_t *row = fbrow;
+    const int f0 = AMIGA_FB_X0;
+    for (int x = x0; x < x1; x++) {
+        uint8_t v0 = pf[2 * x], v1 = hires ? pf[2 * x + 1] : v0;
+        if (w_mode == AMIGA_ROW_DIRECT) {
+            uint16_t c0 = lut[v0], c1 = lut[v1];
+            row->px.rgb[x - f0] = c0 == c1 ? c0 : avg(c0, c1);
+            continue;
+        }
+        uint8_t i0 = ilut[v0], i1 = ilut[v1];
+        if ((i0 | i1) & 0x80) {                 // first use on this line: allocate
+            int a = w_index(row, lut[v0]);
+            int b = a >= 0 ? w_index(row, lut[v1]) : -1;
+            if (b < 0) { w_put(x - f0, lut[v0], lut[v1]); continue; }   // overflow -> DIRECT
+            ilut[v0] = (uint8_t)a; ilut[v1] = (uint8_t)b;
+            i0 = (uint8_t)a; i1 = (uint8_t)b;
+        }
+        if (w_mode == AMIGA_ROW_IDX8) { row->px.idx[2 * (x - f0)] = i0; row->px.idx[2 * (x - f0) + 1] = i1; }
+        else row->px.nib[w_field][x - f0] = (uint8_t)((i0 << 4) | i1);
+    }
 }
 
 static void output_ham(int x0, int x1) {
@@ -189,7 +292,10 @@ static void output_ham(int x0, int x1) {
         default: ham_col = (uint16_t)((ham_col & 0xF0F) | (d << 4)); break;
         }
         int fx = x - AMIGA_FB_X0;
-        if (fbrow && fx >= 0 && fx < AMIGA_FB_W) fbrow[fx] = sprite_mix(x, ham_col, v ? 2 : 0);
+        if (fbrow && fx >= 0 && fx < AMIGA_FB_W) {
+            uint16_t c = sprite_mix(x, ham_col, v ? 2 : 0);
+            w_put(fx, c, c);
+        }
     }
 }
 
@@ -215,31 +321,28 @@ static void output(int x0, int x1) {
     const int f0 = AMIGA_FB_X0, f1 = AMIGA_FB_X0 + AMIGA_FB_W;
     int a = x0 < f0 ? f0 : x0, b = x1 > f1 ? f1 : x1;
     if (a >= b) return;
-    uint16_t *row = fbrow - AMIGA_FB_X0;
     const uint16_t bg = color[0];
     int wa = w0 < a ? a : w0, wb = w1 > b ? b : w1;
     if (wb < wa) wb = wa;
-    for (int x = a; x < wa; x++) row[x] = bg;
-    for (int x = wb; x < b; x++) row[x] = bg;
+    for (int x = a; x < wa; x++) w_put(x - f0, bg, bg);
+    for (int x = wb; x < b; x++) w_put(x - f0, bg, bg);
     if (ham || wa >= wb) return;
 
     const bool sprites = spl_hi > wa && spl_lo < wb;
+    if (!sprites) { w_plain(wa, wb, hires); return; }
     if (!hires) {
-        if (!sprites) {
-            for (int x = wa; x < wb; x++) row[x] = lut[pf[2 * x]];
-        } else {
+        {
             for (int x = wa; x < wb; x++) {
                 uint8_t v = pf[2 * x];
-                row[x] = sprite_mix(x, lut[v], lut_pf[v]);
+                uint16_t c = sprite_mix(x, lut[v], lut_pf[v]);
+                w_put(x - f0, c, c);
             }
         }
     } else {
-        if (!sprites) {
-            for (int x = wa; x < wb; x++) row[x] = avg(lut[pf[2 * x]], lut[pf[2 * x + 1]]);
-        } else {
+        {
             for (int x = wa; x < wb; x++) {
                 uint8_t v0 = pf[2 * x], v1 = pf[2 * x + 1];
-                row[x] = avg(sprite_mix(x, lut[v0], lut_pf[v0]), sprite_mix(x, lut[v1], lut_pf[v1]));
+                w_put(x - f0, sprite_mix(x, lut[v0], lut_pf[v0]), sprite_mix(x, lut[v1], lut_pf[v1]));
             }
         }
     }
@@ -346,8 +449,13 @@ void denise_line_start(void) {
     memset(pf, 0, sizeof pf);
     ham_in = false;
     int row = (int)A.vpos - AMIGA_FB_Y0;
-    fbrow = (A.cfg.framebuffer && row >= 0 && row < AMIGA_FB_H)
-          ? A.cfg.framebuffer + row * AMIGA_FB_W : NULL;
+    fbrow = (A.cfg.framebuffer && row >= 0 && row < AMIGA_FB_H) ? A.cfg.framebuffer + row : NULL;
+    if (fbrow) {
+        if (lut_dirty) build_lut();
+        if (bplcon0 & 0x0004)      w_begin(fbrow, AMIGA_ROW_LACE4, A.lof ? 0 : 1);
+        else if (bplcon0 & 0x8000) w_begin(fbrow, AMIGA_ROW_IDX8, 0);
+        else                       w_begin(fbrow, AMIGA_ROW_DIRECT, 0);
+    }
     sprite_dma();
     sprite_compose();
 #ifdef DENISE_DEBUG
@@ -363,9 +471,11 @@ void denise_line_end(void) {
     // The framebuffer reaches a few pixels past the end of the line: border.
     if (fbrow) {
         int x = 2 * AMIGA_CC_PER_LINE - AMIGA_FB_X0;
-        for (; x < AMIGA_FB_W; x++) if (x >= 0) fbrow[x] = color[0];
+        for (; x < AMIGA_FB_W; x++) if (x >= 0) w_put(x, color[0], color[0]);
     }
 }
+
+bool denise_lace(void) { return (bplcon0 & 0x0004) != 0; }
 
 // ---- registers ---------------------------------------------------------------
 void denise_write(uint32_t reg, uint16_t v, int hpos) {

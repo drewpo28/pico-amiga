@@ -62,6 +62,63 @@ static inline void tmds_build_tables(uint32_t tab_r[16][4], uint32_t tab_gb[256]
         for (int k = 0; k < 4; k++) tab_gb[i][k] = g[i >> 4][k] | bl[i & 15][k];
 }
 
+// Two DIFFERENT colours side by side (hires pixels): the first character is
+// exactly va, the second vb or a neighbour within +-4 chosen so that the
+// one-counts still sum to 10 - the same rule tmds_balanced_pair() applies to
+// a doubled pixel, so the line stays DC-balanced pair by pair.
+static inline void tmds_mixed_pair(uint8_t va, uint8_t vb, uint16_t *first, uint16_t *second) {
+    if (va == vb) { tmds_balanced_pair(va, first, second); return; }
+    const uint16_t qa = tmds_qm(va);
+    int best = 1 << 30;
+    *first = qa; *second = tmds_qm(vb);
+    for (int d = 0; d <= 4; d++) {
+        for (int sgn = -1; sgn <= 1; sgn += 2) {
+            int c = vb + sgn * d;
+            if (c < 0 || c > 255 || (d == 0 && sgn > 0)) continue;
+            const uint16_t qb = tmds_qm((uint8_t)c);
+            for (int i = 0; i < 2; i++)
+                for (int j = 0; j < 2; j++) {
+                    uint16_t a = tmds_rep(qa, i), b = tmds_rep(qb, j);
+                    if (tmds_ones(a) + tmds_ones(b) != 10) continue;
+                    int score = d * 1000 + tmds_pair_swing(a, b) * 32 + tmds_pair_run(a, b);
+                    if (score < best) { best = score; *first = a; *second = b; }
+                }
+        }
+        if (best < (1 << 30)) return;
+    }
+}
+
+// Per-lane tables for a pair of different nibbles: [left][right] -> 4 words.
+static inline void tmds_build_mixed(uint32_t tab[3][16][16][4]) {
+    for (int lane = 0; lane < 3; lane++)
+        for (int a = 0; a < 16; a++)
+            for (int b = 0; b < 16; b++) {
+                uint16_t ca, cb;
+                tmds_mixed_pair(tmds_level(a), tmds_level(b), &ca, &cb);
+                tmds_lane_words(lane, ca, &tab[lane][a][b][0]);
+                tmds_lane_words(lane, cb, &tab[lane][a][b][2]);
+            }
+}
+
+// Encode one output line of two-colours-per-column pixels: left[x], right[x]
+// are the 0x0RGB colours of output pixels 2x and 2x+1.  Equal pairs take the
+// doubled-pixel tables, the rest the mixed ones.
+static inline void tmds_encode_pairs(uint32_t *dst, const uint16_t *left, const uint16_t *right, int n,
+                                     const uint32_t tab_r[16][4], const uint32_t tab_gb[256][4],
+                                     const uint32_t mix[3][16][16][4]) {
+    for (int x = 0; x < n; x++, dst += 4) {
+        uint16_t a = left[x], b = right[x];
+        const uint32_t *p0, *p1, *p2 = 0;
+        if (a == b) { p0 = tab_r[(a >> 8) & 15]; p1 = tab_gb[a & 0xFF]; }
+        else {
+            p0 = mix[2][(a >> 8) & 15][(b >> 8) & 15];
+            p1 = mix[1][(a >> 4) & 15][(b >> 4) & 15];
+            p2 = mix[0][a & 15][b & 15];
+        }
+        for (int k = 0; k < 4; k++) dst[k] = p0[k] | p1[k] | (p2 ? p2[k] : 0);
+    }
+}
+
 // Two words of a control period pixel: lane 0 carries {vsync, hsync}.
 static inline void tmds_ctrl_words(int vsync, int hsync, uint32_t w[2]) {
     static const uint16_t ctrl[4] = { TMDS_CTRL_00, TMDS_CTRL_01, TMDS_CTRL_10, TMDS_CTRL_11 };

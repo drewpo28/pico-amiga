@@ -11,12 +11,13 @@ mkdir -p "$OUT"
 fail=0
 if build-host/tmds_test > "$OUT/tmds.log"; then echo "PASS tmds tables"; else echo "FAIL tmds tables"; cat "$OUT/tmds.log"; fail=1; fi
 check() {  # name, pattern, log
-    if grep -q "$2" "$3"; then echo "PASS $1"; else echo "FAIL $1 (no '$2' in $3)"; fail=1; fi
+    if grep -aq "$2" "$3"; then echo "PASS $1"; else echo "FAIL $1 (no '$2' in $3)"; fail=1; fi
 }
 
 # 1. DiagROM: CPU, chip RAM detection, CIAs, serial, copper/bitplanes.
-$BIN --rom "$ROMS/diagrom-13.bin" --frames 1500 --shot 1500:"$OUT/diagrom.png" > "$OUT/diagrom.log" 2>&1
+$BIN --rom "$ROMS/diagrom-13.bin" --frames 1500 --status 1500 --shot 1500:"$OUT/diagrom.png" > "$OUT/diagrom.log" 2>&1
 check "diagrom chipmem" "CHIPMEM OK" "$OUT/diagrom.log"
+check "diagrom hires rows at full resolution" "idx8=2[0-9][0-9]" "$OUT/diagrom.log"
 
 # 2. DiagROM keyboard + Paula: '1' (audio menu), '2' (play module).
 $BIN --rom "$ROMS/diagrom-13.bin" --frames 2300 --key 1500:0x01:1 --key 1505:0x01:0 \
@@ -34,5 +35,10 @@ python3 host/tests/make_boot_adf.py "$OUT/boot.adf"
 $BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --slow --adf "$OUT/boot.adf" \
      --frames 1200 --shot 1200:"$OUT/aros-boot.png" > "$OUT/aros.log" 2>&1
 check "aros bootblock" "BOOTBLOCK OK" "$OUT/aros.log"
+
+# 4. AROS boot screen: 640x512 interlace, both fields kept (LOF toggles).
+$BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --slow --frames 1000 --status 1000 \
+     --shot 1000:"$OUT/aros-screen.png" > "$OUT/aros-screen.log" 2>&1
+check "aros interlace rows" "lace4=2[0-9][0-9]" "$OUT/aros-screen.log"
 
 exit $fail

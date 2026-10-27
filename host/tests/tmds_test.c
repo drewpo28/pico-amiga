@@ -54,6 +54,32 @@ int main(void) {
         }
     }
 
+    // Different neighbours (hires): every pair of nibble levels on every lane.
+    static uint32_t mix[3][16][16][4];
+    tmds_build_mixed(mix);
+    int maxdev = 0;
+    for (int lane = 0; lane < 3; lane++)
+        for (int a = 0; a < 16; a++)
+            for (int b = 0; b < 16; b++) {
+                const uint32_t *w = mix[lane][a][b];
+                uint16_t ca = lane_sym(w, lane), cb = lane_sym(w + 2, lane);
+                CHECK(tmds_decode(ca) == tmds_level(a), "mixed %X/%X lane %d: first %02X", a, b, lane, tmds_decode(ca));
+                int d = tmds_decode(cb) - tmds_level(b); if (d < 0) d = -d;
+                if (d > maxdev) maxdev = d;
+                CHECK(d <= 4, "mixed %X/%X lane %d: second off by %d", a, b, lane, d);
+                CHECK(tmds_ones(ca) + tmds_ones(cb) == 10, "mixed %X/%X lane %d: not balanced", a, b, lane);
+            }
+    // tmds_encode_pairs on a line mixing equal and different neighbours.
+    static uint16_t lft[64], rgt[64];
+    static uint32_t line[64 * 4];
+    for (int i = 0; i < 64; i++) { lft[i] = (uint16_t)(i * 67 & 0xFFF); rgt[i] = (i & 1) ? lft[i] : (uint16_t)(i * 151 & 0xFFF); }
+    tmds_encode_pairs(line, lft, rgt, 64, tab_r, tab_gb, mix);
+    for (int i = 0; i < 64; i++) {
+        int pa[3] = { lft[i] & 15, (lft[i] >> 4) & 15, lft[i] >> 8 };
+        for (int lane = 0; lane < 3; lane++)
+            CHECK(tmds_decode(lane_sym(line + 4 * i, lane)) == tmds_level(pa[lane]), "encode_pairs px %d lane %d", i, lane);
+    }
+
     static const uint16_t ctrl[4] = { TMDS_CTRL_00, TMDS_CTRL_01, TMDS_CTRL_10, TMDS_CTRL_11 };
     for (int vs = 0; vs < 2; vs++)
         for (int hs = 0; hs < 2; hs++) {
@@ -65,6 +91,6 @@ int main(void) {
         }
 
     if (fails) { printf("tmds_test: %d failures\n", fails); return 1; }
-    printf("tmds_test: 4096 colours, 4 control states OK\n");
+    printf("tmds_test: 4096 doubled colours, 3x256 mixed pairs (2nd within +-%d), 4 control states OK\n", maxdev);
     return 0;
 }

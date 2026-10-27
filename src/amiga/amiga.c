@@ -154,6 +154,11 @@ void amiga_run_frame(void) {
     for (A.vpos = 0; A.vpos < A.lines; A.vpos++) run_line();
     A.vpos = 0;
     A.frame++;
+    // Agnus toggles the long-frame flag every frame while LACE is set: long
+    // (313-line) and short (312-line) fields alternate, which is what makes the
+    // copper lists of interlaced screens show both fields.
+    A.lof = denise_lace() ? !A.lof : true;
+    A.lines = A.lof ? AMIGA_LINES_LONG : AMIGA_LINES_LONG - 1;
     if (A.cfg.frame_done) A.cfg.frame_done(A.cfg.ctx);
 }
 

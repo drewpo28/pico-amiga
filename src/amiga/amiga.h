@@ -15,15 +15,46 @@ extern "C" {
 #endif
 
 // ---- Display ---------------------------------------------------------------
-// The framebuffer is one row per PAL line, one entry per LOWRES pixel, each
-// entry the Amiga's own 12-bit colour 0x0RGB (hires pixel pairs are averaged).
-// Column 0 is DIW coordinate AMIGA_FB_X0, row 0 is beam line AMIGA_FB_Y0: the
-// standard 320x256 window (DIWSTRT $2C81) lands at (32, 18), with overscan
-// room on every side.  360x288 is exactly half of a 720x576 HDMI mode.
-#define AMIGA_FB_W   360
+// The framebuffer is AMIGA_FB_H rows, one per PAL line from beam line
+// AMIGA_FB_Y0; column 0 is lowres DIW coordinate AMIGA_FB_X0 (the standard
+// DIWSTRT $2C81 window lands at (32, 18)).  It is shown as 720x576: every row
+// covers two output lines and 720 output pixels (one per HIRES pixel).
+//
+// Each row picks its own storage so that 288 rows fit in ~245 KB:
+//   AMIGA_ROW_DIRECT  360 x 0x0RGB, one per lowres pixel (each shown twice).
+//                     Lowres lines, HAM, and the fallback for anything else.
+//   AMIGA_ROW_IDX8    720 x 8-bit index into pal[] (up to 64 colours): a
+//                     hires line at full resolution.
+//   AMIGA_ROW_LACE4   two lines of 720 x 4-bit index - the long field's line
+//                     (output line 2r, pal[0..15]) and the short field's line
+//                     (2r+1, pal[16..31]): interlace at full resolution.
+// A line that needs more colours than its mode holds falls back to DIRECT
+// (hires pixel pairs averaged, interlace showing the latest field).
+// amiga_fb_line() expands any row into 720 colours, as the scanout does.
+#define AMIGA_FB_W   360    // lowres columns
+#define AMIGA_OUT_W  720    // output pixels per line
 #define AMIGA_FB_H   288
 #define AMIGA_FB_X0  0x61   // lowres DIW x shown in column 0
 #define AMIGA_FB_Y0  26     // beam line shown in row 0
+
+enum { AMIGA_ROW_DIRECT = 0, AMIGA_ROW_IDX8 = 1, AMIGA_ROW_LACE4 = 2 };
+
+typedef struct {
+    uint8_t  mode;          // AMIGA_ROW_*
+    uint8_t  ncol[2];       // palette entries in use (LACE4: per field line)
+    uint8_t  pad;
+    uint16_t pal[64];       // IDX8: 0..63; LACE4: field 0 = 0..15, field 1 = 16..31
+    union {
+        uint16_t rgb[AMIGA_FB_W];        // DIRECT
+        uint8_t  idx[AMIGA_OUT_W];       // IDX8
+        uint8_t  nib[2][AMIGA_FB_W];     // LACE4: two pixels per byte, high nibble first
+    } px;
+} amiga_row_t;
+
+// Output line `sub` (0 = upper, 1 = lower) of a row as 720 0x0RGB colours.
+void amiga_fb_line(const amiga_row_t *row, int sub, uint16_t out[AMIGA_OUT_W]);
+// Paint the whole framebuffer one colour (DIRECT rows), e.g. for boot errors.
+void amiga_fb_fill(amiga_row_t *fb, uint16_t colour);
 
 // ---- Audio -----------------------------------------------------------------
 // Paula is sampled twice per line: 313 * 2 * 50 = 31300 Hz, interleaved stereo
@@ -42,7 +73,7 @@ typedef struct {
     const uint8_t *rom;      uint32_t rom_size;    // 256 KB (mirrored) or 512 KB at $F80000
     const uint8_t *ext_rom;  uint32_t ext_size;    // 0 or 512 KB at $E00000 (AROS ext)
 
-    uint16_t *framebuffer;   // AMIGA_FB_W * AMIGA_FB_H entries, or NULL (no video)
+    amiga_row_t *framebuffer; // AMIGA_FB_H rows, or NULL (no video)
 
     int16_t  *audio_ring;    // interleaved stereo frames, or NULL
     uint32_t  audio_frames;  // ring capacity in stereo frames (power of two)
