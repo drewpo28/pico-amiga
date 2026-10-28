@@ -58,6 +58,16 @@ verified on the host bench; "hw" means verified on a board.
 - [x] PIO TMDS back-end (PICO_DV); MURM1 / ZERO2 board entries still to add; VGA
 - [ ] HDMI audio, I2S DAC
 - [ ] Save states
+- [ ] LHA archives (later, with WHDLoad below): most .lha games on the net are
+      WHDLoad packages. A plain one (e.g. ArmyMiner-1.2.lha: one 127 KB program,
+      its .info, doc and high scores, lh5) could go in like a .dms: an lh0/5/6/7
+      decoder (src/pico/lha.c, level 0-2 headers; lhasa is ISC) into an OFS
+      image in a PSRAM drive slot (~830 KB of files at most), either a data
+      disk for DF1 next to Workbench or bootable with a startup-sequence
+      that runs it (then the program has none of Workbench's libraries)
+- [ ] WHDLoad: needs a hard disk (an autoconfig board, a boot ROM and a
+      filesystem handler over a card folder or an HDF), WHDLoad itself, the
+      Kickstart files it wants, and fast RAM the A500 profile does not have yet
 
 ## 5. A500+ (ECS)
 
