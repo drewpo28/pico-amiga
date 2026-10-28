@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Convert screenshot.gdb's framebuffer dump to a 720x576 PNG,
-# /tmp/pico-amiga_screen.png (tools/picospec-tools.json names the files).
+# /tmp/pico-amiga_screen.png (tools/pico-amiga-tools.json names the files).
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FB=/tmp/pico-amiga_fb.bin

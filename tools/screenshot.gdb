@@ -2,7 +2,7 @@
 # Ctrl+Alt+P), for pico-speccy's VS Code extension (local.picospec-tools): it
 # halts the target, sources this file, resumes, runs tools/screenshot.sh and
 # opens /tmp/pico-amiga_screen.png.  The file names are set in
-# tools/picospec-tools.json; the extension checks they were written and waits
+# tools/pico-amiga-tools.json; the extension checks they were written and waits
 # for /tmp/pico-amiga_gdb_done.
 #
 #   /tmp/pico-amiga_fb.bin    main.c's fb[AMIGA_FB_H]: amiga_row_t rows (amiga.h)

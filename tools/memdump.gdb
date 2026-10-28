@@ -1,7 +1,7 @@
 # memdump.gdb - the Amiga's memory and chip state (Ctrl+Alt+M), for pico-speccy's
 # VS Code extension (local.picospec-tools): it halts the target, sources this
 # file, resumes, runs tools/memdump.py and opens /tmp/pico-amiga_dump.log
-# (tools/picospec-tools.json names the files).
+# (tools/pico-amiga-tools.json names the files).
 #
 #   /tmp/pico-amiga_pc.bin     256 bytes from PC-64 (chip RAM or Kickstart ROM)
 #   /tmp/pico-amiga_cop.bin    2 KB of chip RAM from COP1LC (the copper list)

@@ -32,7 +32,7 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   `PICO_AMIGA_KEYS=150:F12,200:Down,...` presses keys at output frames.
 - Board debugging from VS Code (Cortex-Debug session, pico-speccy's local
   `picospec-tools` extension: it runs the open workspace's `tools/`, with the
-  file names of `tools/picospec-tools.json`): Ctrl+Alt+S / Ctrl+Alt+P =
+  file names of `tools/pico-amiga-tools.json`): Ctrl+Alt+S / Ctrl+Alt+P =
   screenshot (`screenshot.gdb` dumps main.c's `fb`, `fb2png.py` expands it as
   `amiga_fb_line` does) to /tmp/pico-amiga_screen.png; Ctrl+Alt+M =
   `memdump.gdb` + `memdump.py`: /tmp/pico-amiga_dump.log (CPU, custom chips,
