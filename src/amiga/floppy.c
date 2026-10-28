@@ -67,6 +67,10 @@ static uint16_t dsklen, dsklen_prev, dsksync = 0x4489;
 static bool     dma_on, dma_write;
 static int      dma_drive;
 static uint32_t dma_lines_left;
+// The read running: where its data started on the track, how many words, and
+// its time in lines - to put the head where it is when the read is cut short.
+static uint32_t rd_pos0, rd_words, rd_lines;
+static bool     rd_active;
 static uint32_t dma_end_frame;           // A.frame when the last DMA ended (amiga_floppy_status)
 static int      last_drive = -1;
 static uint8_t  last_sector = 11;        // where the last DMA started (amiga_floppy_status)
@@ -173,8 +177,24 @@ static void dma_start(void) {
     prof_switch(prof);
 }
 
+// A read stopped before its end (DSKLEN written again): the words were all
+// handed over at its start and rot_pos moved past them, but the head has only
+// turned as far as the time it ran.  RoboCop's loader reads one sector, looks at
+// its header as soon as it is in, and restarts at once for a sector it does not
+// want - with the head at the read's end it found every other sector only, and
+// waited forever for the odd ones.
+static void abort_read(void) {
+    if (!rd_active) return;
+    rd_active = false;
+    const uint32_t ran = rd_lines - dma_lines_left;
+    uint32_t done = ran * 2 * FLOPPY_TURBO;
+    if (done > rd_words) done = rd_words;
+    rot_pos = (rd_pos0 + done) % TRACK_WORDS;
+}
+
 static void dma_start_(void) {
     uint32_t words = dsklen & 0x3FFF;
+    if (dma_on) abort_read();
     dma_drive = sel;
     if (sel >= 0) last_drive = sel;
     dma_write = (dsklen & 0x4000) != 0;
@@ -196,6 +216,7 @@ static void dma_start_(void) {
         amiga_set_intreq(INTF_DSKSYNC);
     }
     last_sector = (uint8_t)(pos / SECTOR_WORDS);
+    rd_pos0 = pos; rd_words = words; rd_lines = dma_lines_left; rd_active = true;
     for (uint32_t n = 0; n < words; n++) {
         chip_ww(dskpt + n * 2, track[pos]);
         if (++pos == TRACK_WORDS) pos = 0;
@@ -208,6 +229,7 @@ static void dma_finish(void) {
     if (dma_write && dma_drive >= 0) decode_write(dma_drive, dskpt, words);
     dskpt += words * 2;
     dma_on = false;
+    rd_active = false;
     dma_end_frame = A.frame;
     amiga_set_intreq(INTF_DSKBLK);
 }
@@ -220,7 +242,11 @@ void floppy_write(uint32_t reg, uint16_t v) {
     case R_DSKLEN:
         dsklen_prev = dsklen;
         dsklen = v;
-        if (!(v & 0x8000)) { if (dma_on) dma_end_frame = A.frame; dma_on = false; break; }
+        if (!(v & 0x8000)) {
+            if (dma_on) { abort_read(); dma_end_frame = A.frame; }
+            dma_on = false;
+            break;
+        }
         if ((dsklen_prev & 0x8000) && (A.dmacon & (DMAF_MASTER | DMAF_DISK)) == (DMAF_MASTER | DMAF_DISK))
             dma_start();
         break;
@@ -341,7 +367,7 @@ void floppy_reset(void) {
         if (!drv[d].inserted) drv[d].empty_lines = SWAP_LINES;
     }
     prb_last = 0xFF; sel = -1; side = 0;
-    dma_on = false; dsklen = dsklen_prev = 0; dsksync = 0x4489;
+    dma_on = false; rd_active = false; dsklen = dsklen_prev = 0; dsksync = 0x4489;
     dma_end_frame = A.frame - 1000;             // no recent activity
     trk_drive = -1;
 }

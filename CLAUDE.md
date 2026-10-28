@@ -133,6 +133,11 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   Barbarian's loader stops a two-revolution read on the third index; with
   only DSKBLK scaled its index handler stayed on the level 6 vector and the OS
   hung in a storm of uncleared EXTER interrupts (black screen).
+- **A read cut short leaves the head where the time took it** (floppy.c
+  abort_read): the words are handed over at the DMA's start, but a DSKLEN write
+  that stops it puts rot_pos at start + the words that read time covers.
+  RoboCop's loader looks at a sector's header and restarts at once for a sector
+  it does not want; with the head at the read's end it saw every other sector.
 - **A swapped disk must be seen gone** (floppy.c, SWAP_LINES): Kickstart polls
   /CHNG now and then, and the menu swaps with no emulated time in between, so
   the core keeps the drive empty 2 s before the new disk is in (KS 1.3 needs
