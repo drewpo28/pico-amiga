@@ -36,7 +36,9 @@ set(ROOT ${CMAKE_CURRENT_LIST_DIR})
 include(cmake/amiga_core.cmake)
 # The CPU's memory callbacks run in RAM (.time_critical.* is copied to SRAM).
 target_compile_definitions(amiga_core PRIVATE
-    "AMIGA_HOT=__attribute__((section(\".time_critical.amiga\")))")
+    "AMIGA_HOT=__attribute__((section(\".time_critical.amiga\")))"
+    # The profile reads board_cycles()' counter in place (amiga_int.h, prof_switch).
+    AMIGA_PROF_CYCCNT=0xE0001004u)
 
 include(external/fatfs/fatfs.cmake)
 include(src/pico/drivers/sdcard/sdcard.cmake)

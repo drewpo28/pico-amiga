@@ -135,7 +135,10 @@ void amiga_init(const amiga_config_t *cfg) {
 }
 
 // ---- scheduler ------------------------------------------------------------------
-AMIGA_HOT static void run_line(void) {
+// noinline: inlined, it went where amiga_run_frame is (flash on the board), the
+// slice loop and its 14 calls a line into SRAM through veneers, the code competing
+// with chip RAM (PSRAM) for the XIP cache.
+AMIGA_HOT __attribute__((noinline)) static void run_line(void) {
     if (A.vpos == 0) {
         amiga_set_intreq(INTF_VERTB);
         cia_vsync();

@@ -88,12 +88,19 @@ extern amiga_t A;
 // ---- profiling (amiga_get_profile) ------------------------------------------
 // Charge the time since the last switch to the current bucket and make `cat` the
 // current one; returns the previous, for nested sections to switch back to.
-// Free when cfg.prof_clock is NULL.
+// Free when cfg.prof_clock is NULL.  A platform whose prof_clock is a memory-
+// mapped counter may name its address (AMIGA_PROF_CYCCNT; the firmware: the
+// DWT cycle counter, which prof_clock enables at the frame's start): one load
+// instead of a call.  A copper-heavy frame switches ~25,000 times (core 0 only).
 extern uint8_t  prof_cur;
 extern uint32_t prof_t, prof_acc[AMIGA_PROF_COUNT];
 static inline int prof_switch(int cat) {
     if (!A.cfg.prof_clock) return cat;
+#ifdef AMIGA_PROF_CYCCNT
+    const uint32_t now = *(volatile uint32_t *)(AMIGA_PROF_CYCCNT);
+#else
     const uint32_t now = A.cfg.prof_clock();
+#endif
     prof_acc[prof_cur] += now - prof_t;
     prof_t = now;
     const int old = prof_cur;
