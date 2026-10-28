@@ -5,7 +5,7 @@
 // as PNG, Paula output as WAV, SERDAT bytes to stdout.  It is the test bench:
 // everything the core does can be checked here before it goes near a board.
 //
-//   pico-amiga-host --rom kick.rom [--ext ext.rom] [--adf disk.adf]
+//   pico-amiga-host --rom kick.rom [--ext ext.rom] [--adf disk.adf]... (DF0, DF1, ...)
 //                   [--frames N] [--shot N:file.png]... [--wav out.wav]
 //                   [--slow] [--key N:code:down]... [--status K]
 //                   [--joy N:dirs:fire]... [--mouse N:dx:dy:buttons]...
@@ -16,7 +16,9 @@
 #include <string.h>
 #include <pthread.h>
 #include <stdint.h>
+#include <time.h>
 #include "amiga.h"
+#include "m68k.h"
 
 static amiga_row_t fb[AMIGA_FB_H];
 #define AUDIO_FRAMES 65536
@@ -162,21 +164,29 @@ typedef struct { int frame; char path[256]; } shot_t;
 typedef struct { int frame, code, down; } keyev_t;
 typedef struct { int frame, a, b, c; } inev_t;     // --joy: dirs fire; --mouse: dx dy buttons
 
+static uint32_t prof_clock(void) {
+    struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint32_t)(ts.tv_sec * 1000000000ll + ts.tv_nsec);
+}
+
 int main(int argc, char **argv) {
-    const char *rom_path = NULL, *ext_path = NULL, *adf_path = NULL, *wav_path = NULL;
+    const char *rom_path = NULL, *ext_path = NULL, *wav_path = NULL;
+    const char *adf_path[4] = {0}; int nadf = 0;
     int frames = 250, status_every = 0, scale = 1;
     bool slow = false, render_thread_on = false;
     shot_t shots[64]; int nshots = 0;
     keyev_t keys[256]; int nkeys = 0;
     inev_t joys[256]; int njoys = 0;
     inev_t mice[256]; int nmice = 0;
+    inev_t dumps[16]; int ndumps = 0;                  // --dump frame:addr:words (hex words to stderr)
+    inev_t swaps[16]; int nswaps = 0;                  // --swap frame:drive:disk (an --adf index, -1 ejects)
 
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i];
         const char *v = i + 1 < argc ? argv[i + 1] : NULL;
         if (!strcmp(a, "--rom") && v) { rom_path = v; i++; }
         else if (!strcmp(a, "--ext") && v) { ext_path = v; i++; }
-        else if (!strcmp(a, "--adf") && v) { adf_path = v; i++; }
+        else if (!strcmp(a, "--adf") && v && nadf < 4) { adf_path[nadf++] = v; i++; }   // DF0, DF1, ...
         else if (!strcmp(a, "--frames") && v) { frames = atoi(v); i++; }
         else if (!strcmp(a, "--wav") && v) { wav_path = v; i++; }
         else if (!strcmp(a, "--status") && v) { status_every = atoi(v); i++; }
@@ -198,11 +208,17 @@ int main(int argc, char **argv) {
         } else if (!strcmp(a, "--mouse") && v && nmice < 256) {
             if (sscanf(v, "%d:%d:%d:%i", &mice[nmice].frame, &mice[nmice].a, &mice[nmice].b, &mice[nmice].c) == 4) nmice++;
             i++;
+        } else if (!strcmp(a, "--dump") && v && ndumps < 16) {
+            if (sscanf(v, "%d:%i:%d", &dumps[ndumps].frame, &dumps[ndumps].a, &dumps[ndumps].b) == 3) ndumps++;
+            i++;
+        } else if (!strcmp(a, "--swap") && v && nswaps < 16) {
+            if (sscanf(v, "%d:%d:%d", &swaps[nswaps].frame, &swaps[nswaps].a, &swaps[nswaps].b) == 3) nswaps++;
+            i++;
         } else { fprintf(stderr, "unknown option %s\n", a); return 2; }
     }
     if (!rom_path) {
-        fprintf(stderr, "usage: %s --rom kick.rom [--ext ext.rom] [--adf disk.adf] [--frames N]\n"
-                        "       [--shot N:file.png] [--wav out.wav] [--slow] [--status K]\n", argv[0]);
+        fprintf(stderr, "usage: %s --rom kick.rom [--ext ext.rom] [--adf disk.adf]... [--frames N]\n"
+                        "       [--shot N:file.png] [--wav out.wav] [--slow] [--status K] [--swap frame:drive:disk]\n", argv[0]);
         return 2;
     }
 
@@ -216,6 +232,7 @@ int main(int argc, char **argv) {
     cfg.framebuffer = fb;
     cfg.audio_ring = audio; cfg.audio_frames = AUDIO_FRAMES;
     cfg.serial_out = serial_out;
+    cfg.prof_clock = prof_clock;            // --status: the core's buckets, ns
     amiga_init(&cfg);
     if (render_thread_on) {
         pthread_t th;
@@ -223,12 +240,13 @@ int main(int argc, char **argv) {
         amiga_render_async(true);
     }
 
-    mem_disk_t md;
-    if (adf_path) {
-        md.data = load(adf_path, &md.size);
-        amiga_disk_t d = { disk_read, disk_write, &md, md.size };
-        amiga_insert_disk(0, &d);
+    static mem_disk_t md[4];
+    for (int k = 0; k < nadf; k++) {
+        md[k].data = load(adf_path[k], &md[k].size);
+        amiga_disk_t d = { disk_read, disk_write, &md[k], md[k].size };
+        amiga_insert_disk(k, &d);
     }
+    if (nadf > 1) { amiga_set_drives(nadf); amiga_reset(true); }   // Kickstart finds DF1+ at reset
     if (wav_path) wav_open(wav_path);
 
     for (int f = 0; f < frames; f++) {
@@ -236,17 +254,36 @@ int main(int argc, char **argv) {
         for (int k = 0; k < njoys; k++) if (joys[k].frame == f) amiga_joystick(1, (uint8_t)joys[k].a, joys[k].b);
         for (int k = 0; k < nmice; k++)
             if (mice[k].frame == f) amiga_mouse(mice[k].a, mice[k].b, mice[k].c & 1, mice[k].c & 2);
+        for (int k = 0; k < nswaps; k++)
+            if (swaps[k].frame == f) {
+                if (swaps[k].b < 0 || swaps[k].b >= nadf) amiga_eject_disk(swaps[k].a);   // -1: eject
+                else {
+                    amiga_disk_t d = { disk_read, disk_write, &md[swaps[k].b], md[swaps[k].b].size };
+                    amiga_insert_disk(swaps[k].a, &d);
+                }
+            }
         amiga_run_frame();
+        for (int k = 0; k < ndumps; k++) if (dumps[k].frame == f + 1) {
+            fprintf(stderr, "dump %06X:", dumps[k].a);
+            for (int w = 0; w < dumps[k].b; w++) fprintf(stderr, " %04X", m68k_read_memory_16((unsigned)(dumps[k].a + 2 * w)));
+            fprintf(stderr, "\n");
+        }
         drain_audio();
         for (int s = 0; s < nshots; s++) if (shots[s].frame == f + 1) write_png(shots[s].path, scale);
         if (status_every && (f + 1) % status_every == 0) {
             amiga_status_t st; amiga_get_status(&st);
             int modes[3] = {0, 0, 0};
             for (int r = 0; r < AMIGA_FB_H; r++) if (fb[r].mode < 3) modes[fb[r].mode]++;
-            fprintf(stderr, "frame %u pc=%06X dmacon=%04X intena=%04X intreq=%04X ovl=%d cop=%06X blits=%u "
-                    "rows direct=%d idx8=%d lace4=%d\n",
-                    st.frame, st.pc, st.dmacon, st.intena, st.intreq, st.overlay, st.cop_pc, st.blits,
-                    modes[0], modes[1], modes[2]);
+            struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts);
+            amiga_profile_t pr; amiga_get_profile(&pr, true);        // since the last status
+            const uint32_t nf = pr.frames ? pr.frames : 1;
+            fprintf(stderr, "frame %u t=%ld.%06ld pc=%06X dmacon=%04X intena=%04X intreq=%04X ovl=%d cop=%06X blits=%u "
+                    "rows direct=%d idx8=%d lace4=%d | us/frame cpu %u ren %u bpl %u rd %u cop %u blt %u\n",
+                    st.frame, (long)ts.tv_sec, ts.tv_nsec / 1000, st.pc, st.dmacon, st.intena, st.intreq, st.overlay, st.cop_pc, st.blits,
+                    modes[0], modes[1], modes[2],
+                    (unsigned)(pr.ticks[AMIGA_PROF_CPU] / nf / 1000), (unsigned)(pr.ticks[AMIGA_PROF_RENDER] / nf / 1000),
+                    (unsigned)(pr.ticks[AMIGA_PROF_BPL] / nf / 1000), (unsigned)(pr.ticks[AMIGA_PROF_BPLRD] / nf / 1000),
+                    (unsigned)(pr.ticks[AMIGA_PROF_COPPER] / nf / 1000), (unsigned)(pr.ticks[AMIGA_PROF_BLIT] / nf / 1000));
         }
     }
     if (wav) wav_close();

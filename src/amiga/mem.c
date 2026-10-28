@@ -156,6 +156,21 @@ AMIGA_HOT unsigned int m68k_read_memory_16(unsigned int a) {
 
 AMIGA_HOT unsigned int m68k_read_memory_32(unsigned int a) {
     a &= 0xFFFFFF;
+#ifdef AMIGA_TRACE_VECTORS
+    // A vector fetch of exceptions 2-11 (host debugging): the faulting PC and opcode.
+    if (a >= 8 && a < 48 && !(a & 3)) {
+        extern int printf(const char *, ...);
+        printf("[vec %u] ppc=%06X pc=%06X ir=%04X sr=%04X frame %u\n", a / 4,
+               m68k_get_reg(NULL, M68K_REG_PPC), m68k_get_reg(NULL, M68K_REG_PC),
+               m68k_get_reg(NULL, M68K_REG_IR), m68k_get_reg(NULL, M68K_REG_SR), (unsigned)A.frame);
+        const uint32_t ppc = m68k_get_reg(NULL, M68K_REG_PPC);
+        if (a == 16 && ppc >= 32 && ppc < A.cfg.chip_size - 64) {
+            printf("[vec]  code:");
+            for (uint32_t x = ppc - 24; x < ppc + 40; x += 2) printf("%s%04X", x == ppc ? " *" : " ", m68k_read_memory_16(x));
+            printf("\n");
+        }
+    }
+#endif
     const bank_t *b = &banks[a >> 16];
     if (b->rd && ((a + 2) & 0xFFFF) >= 2) {           // both halves in this bank
         const uint8_t *p = b->rd + (a & b->mask);
