@@ -33,16 +33,30 @@ for i in range(32):
     REGS[0x180 + 2 * i] = "COLOR%02d" % i
 
 
+def mi_unescape(s):
+    out, i = [], 0
+    while i < len(s):
+        c = s[i]
+        if c == "\\" and i + 1 < len(s):
+            n = s[i + 1]
+            out.append({"n": "\n", "t": "\t", '"': '"', "\\": "\\"}.get(n, n))
+            i += 2
+        else:
+            out.append(c)
+            i += 1
+    return "".join(out)
+
+
 def state_lines():
-    out = []
-    for raw in open(STATE, errors="replace"):
-        line = raw.rstrip("\n")
-        # Cortex-Debug may log in MI form: ~"text\n"
-        if line.startswith('~"') and line.endswith('"'):
-            line = line[2:-1].replace("\\n", "").replace('\\"', '"')
-        if line:
-            out.append(line)
-    return out
+    raw = open(STATE, errors="replace").read().splitlines()
+    # Under Cortex-Debug GDB logs in MI form: console output comes as ~"..."
+    # records cut anywhere ("~\"PC 0032DA\\nPPC \"" then "~\"0032D8\\n\""), mixed
+    # with other records (=cmd-param-changed, ^done): join the console strings,
+    # then split the text into lines.  A plain GDB writes the text as it is.
+    if any(l.startswith('~"') for l in raw):
+        text = "".join(mi_unescape(l[2:-1]) for l in raw if l.startswith('~"') and l.endswith('"'))
+        raw = text.split("\n")
+    return [l.rstrip() for l in raw if l.strip()]
 
 
 def kv(lines):
