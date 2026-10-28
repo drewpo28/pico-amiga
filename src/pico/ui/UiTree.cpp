@@ -68,19 +68,38 @@ static const Option opt_vga_solid[] = {
     { "Dithered (full colour)", 0, "Dithered" }, { "Solid (VGA grid)", 1, "Solid" },
 };
 
-// Machine > Kickstart: the built-in ROMs, then the card's kick.rom. Built once per
-// boot (the table is fixed in the image). Values are what UiStage's get_kick reads.
-static const Option* kickOpts(uint8_t& cnt) {
-    static Option opts[16];
-    static uint8_t n;
-    if (!n) {
-        for (unsigned i = 0; i < builtin_rom_count && n < 15; i++)
-            opts[n++] = { builtin_roms[i].label, (int32_t)i, nullptr };
-        opts[n++] = { "SD card: amiga/kick.rom", 100, "SD card" };
-    }
+// Machine: a row per machine, each a radio over the same SET_KICK listing the
+// built-in ROMs filed under it (cmake/roms.cmake's machine field); a row whose
+// ROM is not the one running shows no value. Values are what UiStage's get_kick
+// reads: the built-in ROM's index, 100 the card's kick.rom. Built once per boot
+// (the table is fixed in the image).
+static uint8_t romOpts(const char* machine, Option* opts, uint8_t max, const char* slabel) {
+    uint8_t n = 0;
+    for (unsigned i = 0; i < builtin_rom_count && n < max; i++)
+        if (!strcmp(builtin_roms[i].machine, machine)) opts[n++] = { builtin_roms[i].label, (int32_t)i, slabel };
+    return n;
+}
+static const Option* diagOpts(uint8_t& cnt) {
+    static Option opts[2];
+    static uint8_t n = romOpts("DiagROM", opts, 2, "On");
     cnt = n;
     return opts;
 }
+static const Option* a500Opts(uint8_t& cnt) {
+    static Option opts[8];
+    static uint8_t n = romOpts("A500", opts, 8, nullptr);
+    cnt = n;
+    return opts;
+}
+static const Option* sdOpts(uint8_t& cnt) {
+    static const Option opts[] = { { "amiga/kick.rom", 100, "On" } };
+    cnt = NM_COUNT(opts);
+    return opts;
+}
+// A600 and A1200: rows for the machines to come, greyed until their chipsets are.
+static bool p_never() { return false; }
+static void act_none() {}
+static const char* laterLabel() { return "later"; }
 
 // ── actions and pages ──────────────────────────────────────────────────────────
 
@@ -261,9 +280,11 @@ static void page_about() {
 // ── the tree ───────────────────────────────────────────────────────────────────
 
 static const Node kMachine[] = {
-    NM_RADIO_D("Kickstart", SET_KICK, kickOpts, nullptr),
-    NM_RADIO  ("Floppy drives", SET_DRIVES, opt_drives, nullptr),
-    NM_ACTION ("Reset the Amiga", act_amiga_reset, nullptr),
+    NM_RADIO_D   ("DiagROM",     SET_KICK, diagOpts, nullptr),
+    NM_RADIO_D   ("A500",        SET_KICK, a500Opts, nullptr),
+    NM_ACTIONV_EN("A600",        act_none, laterLabel, nullptr, p_never),
+    NM_ACTIONV_EN("A1200",       act_none, laterLabel, nullptr, p_never),
+    NM_RADIO_D   ("SD card ROM", SET_KICK, sdOpts, nullptr),
 };
 
 static const Node kDisks[] = {
@@ -271,6 +292,7 @@ static const Node kDisks[] = {
     NM_PICK   ("DF0", SET_DF0_DISK, setOpts, setRowKey, setDf0Label, opt_set_foot, p_diskSet),
     NM_ACTION ("Eject DF0", act_df0_eject, nullptr),
     NM_BOOL   ("DF0 write protect", SET_DF0_WP, nullptr),
+    NM_RADIO  ("Floppy drives", SET_DRIVES, opt_drives, nullptr),
 };
 
 static const Node kInterface[] = {

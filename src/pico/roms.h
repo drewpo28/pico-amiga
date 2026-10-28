@@ -10,6 +10,7 @@ extern "C" {
 typedef struct {
     const char    *id;      // what storage.nvs keeps (Config::kick)
     const char    *label;   // what the menu shows
+    const char    *machine; // the Machine menu row it is under ("DiagROM", "A500")
     const uint8_t *data;    // in flash (XIP); the core reads it in place
     uint32_t       size;    // 256 or 512 KB
 } builtin_rom_t;

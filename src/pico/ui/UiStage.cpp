@@ -33,7 +33,7 @@ NM_INT_ACCESS (theme,     ui_theme,   uint8_t)
 NM_BOOL_ACCESS(rounded,   ui_rounded)
 NM_BOOL_ACCESS(vgasolid,  ui_vga_solid)
 
-// Machine > Kickstart: the value is the built-in ROM's index, KICK_SD the card's.
+// Machine (DiagROM / A500 / SD card ROM rows): the built-in ROM's index, KICK_SD the card's.
 #define KICK_SD 100
 static int32_t get_kick() {
     if (Config::kick == "sd") return KICK_SD;

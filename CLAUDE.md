@@ -30,12 +30,12 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   reboot), `app/Config.*` (settings in pico-speccy's storage.nvs format, at
   /.config/pico-amiga/<board tag>/storage.nvs). Check menu changes on the PC host:
   `PICO_AMIGA_KEYS=150:F12,200:Down,...` presses keys at output frames.
-- Built-in ROMs (Machine > Kickstart: DiagROM, KS 1.2/1.3/2.04/3.1) are linked
+- Built-in ROMs (Machine: DiagROM; A500 > KS 1.2/1.3/2.04/3.1) are linked
   into the firmware and the host with `.incbin` from `ROMS_DIR` (default `debug/`,
   git-ignored: the Kickstarts are Commodore's and must never be committed).
   `cmake/roms.cmake` lists them; an id there is what storage.nvs keeps, never
   reuse one. The firmware targets 16 MB flash; the core reads the ROM in place
-  (XIP). `machine.cpp` owns ROM selection and the drives: DF0..DF3 (Machine > Floppy
+  (XIP). `machine.cpp` owns ROM selection and the drives: DF0..DF3 (Disks > Floppy
   drives, Auto = one per disk of an `.m3u` set; Kickstart finds DF1+ by drive ID
   at reset). An ADF streams from the card; a `.dms` is unpacked at insert time by
   `src/pico/dms.c` (xDMS port, its ~100 KB work area in PSRAM) into a per-drive

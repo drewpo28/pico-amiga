@@ -11,7 +11,7 @@
 //   +2.0 MB  DMS images: the decoder's work area, then 880 KB per drive
 //            (machine.cpp; DF0..DF3 fit in 8 MB, a 2 MB PSRAM takes no DMS)
 //
-// ROMs: the built-in ones (roms.h, picked in Machine > Kickstart), or from the card:
+// ROMs: the built-in ones (roms.h, picked in the Machine menu), or from the card:
 //   /amiga/kick.rom   256 or 512 KB Kickstart (Kickstart = "SD card"; AROS works)
 //   /amiga/ext.rom    512 KB extended ROM at $E00000 (optional, AROS needs it)
 // Disks: Disks > DF0 picks an ADF on the card (streamed from it) or a DMS (unpacked

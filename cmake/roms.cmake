@@ -1,19 +1,21 @@
 # Built-in ROMs: Amiga ROM images linked into the firmware (flash) and the PC host,
-# picked in Machine > Kickstart. They come from ROMS_DIR at build time (.incbin)
+# picked in the Machine menu. They come from ROMS_DIR at build time (.incbin)
 # and never enter git: the Kickstarts are Commodore's, debug/ is git-ignored.
 # A ROM whose file is missing is simply left out (a warning says so).
 #
 #   amiga_builtin_roms(<target>)
 #
-# Each entry: id;label;file (relative to ROMS_DIR). The id is what storage.nvs
-# keeps (Config::kick), so never reuse one for a different ROM.
+# Each entry: id|label|machine|file (file relative to ROMS_DIR). The id is what
+# storage.nvs keeps (Config::kick), so never reuse one for a different ROM. The
+# machine is the Machine menu row the ROM is listed under (DiagROM, A500; the
+# A600 and A1200 rows wait for their chipsets).
 set(ROMS_DIR "${CMAKE_CURRENT_LIST_DIR}/../debug" CACHE PATH "Where the built-in ROM images are")
 set(AMIGA_BUILTIN_ROMS
-    "diag|DiagROM|DiagROM/diagrom.rom"
-    "ks12|Kickstart 1.2|Kickstarts/PUAE Bios/kick33180.A500"
-    "ks13|Kickstart 1.3|Kickstarts/PUAE Bios/kick34005.A500"
-    "ks204|Kickstart 2.04|Kickstarts/PUAE Bios/kick37175.A500"
-    "ks31|Kickstart 3.1|Kickstarts/PUAE Bios/kick40063.A600")
+    "diag|DiagROM|DiagROM|DiagROM/diagrom.rom"
+    "ks12|Kickstart 1.2|A500|Kickstarts/PUAE Bios/kick33180.A500"
+    "ks13|Kickstart 1.3|A500|Kickstarts/PUAE Bios/kick34005.A500"
+    "ks204|Kickstart 2.04|A500|Kickstarts/PUAE Bios/kick37175.A500"
+    "ks31|Kickstart 3.1|A500|Kickstarts/PUAE Bios/kick40063.A600")
 
 function(amiga_builtin_roms target)
     set(gen ${CMAKE_BINARY_DIR}/gen)
@@ -25,7 +27,8 @@ function(amiga_builtin_roms target)
         string(REPLACE "|" ";" f "${entry}")
         list(GET f 0 id)
         list(GET f 1 label)
-        list(GET f 2 file)
+        list(GET f 2 machine)
+        list(GET f 3 file)
         set(path "${ROMS_DIR}/${file}")
         if(NOT EXISTS "${path}")
             message(WARNING "built-in ROM ${label}: ${path} not found - left out")
@@ -36,14 +39,14 @@ function(amiga_builtin_roms target)
         string(APPEND asm ".section .rodata.builtin_rom_${id},\"a\"\n.balign 4096\n"
                           ".global builtin_rom_${id}\nbuiltin_rom_${id}:\n.incbin \"${path}\"\n")
         string(APPEND tab "extern const uint8_t builtin_rom_${id}[];\n")
-        string(APPEND rows "    { \"${id}\", \"${label}\", builtin_rom_${id}, ${size}u },\n")
+        string(APPEND rows "    { \"${id}\", \"${label}\", \"${machine}\", builtin_rom_${id}, ${size}u },\n")
         math(EXPR n "${n} + 1")
         set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${path}")
     endforeach()
     # The PC host's linker wants the no-exec-stack note; the firmware's does not.
     string(APPEND asm "#if defined(__x86_64__) || defined(__aarch64__)\n.section .note.GNU-stack,\"\",%progbits\n#endif\n")
     if(n EQUAL 0)
-        string(APPEND tab "const builtin_rom_t builtin_roms[1] = { { 0, 0, 0, 0 } };\n")
+        string(APPEND tab "const builtin_rom_t builtin_roms[1] = { { 0, 0, 0, 0, 0 } };\n")
     else()
         string(APPEND tab "const builtin_rom_t builtin_roms[] = {\n${rows}};\n")
     endif()
