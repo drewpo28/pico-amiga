@@ -15,6 +15,11 @@ target_include_directories(pico-amiga-host PRIVATE ${ROOT}/src/pico)
 target_link_libraries(pico-amiga-host PRIVATE amiga_core pthread m)
 target_compile_options(pico-amiga-host PRIVATE -Wall -Wextra)
 
+# Musashi's disassembler on a binary (tools/memdump.py: the code around a board's PC).
+add_executable(m68kdis tools/m68kdis.c ${ROOT}/external/musashi/m68kdasm.c)
+target_include_directories(m68kdis PRIVATE ${ROOT}/external/musashi ${ROOT}/external/musashi/gen)
+target_compile_options(m68kdis PRIVATE -w)
+
 # PIO TMDS word tables (src/pico/tmds_pio.h is plain C), decoded like a receiver would.
 add_executable(tmds_test tests/tmds_test.c)
 target_include_directories(tmds_test PRIVATE ${ROOT}/src/pico ${ROOT}/src/amiga)
