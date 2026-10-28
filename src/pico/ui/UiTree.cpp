@@ -18,6 +18,7 @@
 #include "UiNav.h"
 #include "UiBrowser.h"
 #include "UiGfx.h"
+#include "UiRender.h"
 #include "app/Config.h"
 #include "roms.h"
 #include "machine.h"
@@ -94,25 +95,46 @@ static const char* df0Label() {
     return *p ? baseName(p) : "empty";
 }
 
-// Disks > DF1..DF3: what the other connected drives hold (a set's disks 2..).
-static const char* dfLabel(int d) { const char* p = machine_disk(d); return *p ? baseName(p) : "empty"; }
-static const char* df1Label() { return dfLabel(1); }
-static const char* df2Label() { return dfLabel(2); }
-static const char* df3Label() { return dfLabel(3); }
-static bool p_df1() { return machine_drives() > 1; }
-static bool p_df2() { return machine_drives() > 2; }
-static bool p_df3() { return machine_drives() > 3; }
-static void act_none() {}
-
-// Disks > Swap disk: "2 of 3" while an .m3u disk set is loaded.
+// Disks > DF0 with an .m3u disk set loaded: the row shows the set, the right
+// pane its disks (the one in DF0 marked; a disk in another drive says which),
+// Enter swaps the chosen one into DF0.
 static bool p_diskSet() { return machine_set_count() > 1; }
-static const char* setLabel() {
-    static char b[16];
-    snprintf(b, sizeof b, "%d of %d", machine_set_index() + 1, machine_set_count());
-    return b;
+static bool p_noSet() { return !p_diskSet(); }
+static const char* setDf0Label() { return baseName(Config::df0.c_str()); }
+
+#define SET_ROWS 17                                   // machine.cpp's 16 disks + Other disk...
+static const Option* setOpts(uint8_t& cnt) {
+    static Option opts[SET_ROWS];
+    static char labels[SET_ROWS][48];
+    const int n = machine_set_count();
+    for (int i = 0; i < n && i < SET_ROWS - 1; i++) {
+        const char* disk = machine_set_disk(i);
+        int in = -1;                                  // the drive holding it, if any
+        for (int d = 0; d < machine_drives(); d++) if (!strcmp(machine_disk(d), disk)) in = d;
+        if (in > 0) snprintf(labels[i], sizeof labels[i], "%s  (DF%d)", baseName(disk), in);
+        else        snprintf(labels[i], sizeof labels[i], "%s", baseName(disk));
+        opts[i] = { labels[i], i, nullptr };
+    }
+    cnt = (uint8_t)(n < SET_ROWS - 1 ? n : SET_ROWS - 1);
+    opts[cnt] = { "Other disk...", cnt, nullptr };
+    cnt++;
+    return opts;
 }
 
-// The set's disks, then "Other disk..." (the file browser) on the last row.
+static bool df0PickAndInsert();
+static void setRowKey(int32_t tag, uint8_t) {
+    if (tag >= machine_set_count()) { if (df0PickAndInsert()) requestClose(); return; }
+    if (tag == machine_set_index()) return;
+    if (!machine_set_select((int)tag)) { uiToast("That disk cannot be opened", true, 2000); return; }
+    Config::df0_disk = (uint8_t)tag;
+    Config::save();
+    requestClose();                                   // back to the Amiga with the disk in
+}
+static const Option opt_set_foot[] = {
+    { SYM_ENTER " Insert into DF0   " SYM_LEFT " Back", 0 },
+};
+
+// Ctrl+F12's popup: the set's disks, then "Other disk..." (the file browser).
 static void setRow(int i, char* out, size_t n) {
     if (i < machine_set_count())
         snprintf(out, n, "%c %d  %s", i == machine_set_index() ? '>' : ' ', i + 1,
@@ -120,8 +142,6 @@ static void setRow(int i, char* out, size_t n) {
     else
         snprintf(out, n, "  Other disk...");
 }
-
-static bool df0PickAndInsert();
 
 // Pick a disk of the set for DF0 (RetroArch's Disk Control); true when the
 // drive changed.
@@ -158,7 +178,7 @@ static bool df0PickAndInsert() {
     std::string ext = dot == std::string::npos ? "" : path.substr(dot);
     for (char& c : ext) c = (char)(c | 0x20);
     // An .m3u is a disk set (RetroArch's playlist): disk 1 goes in, the rest
-    // wait for Disks > Swap disk / Ctrl+F12.
+    // wait in Disks > DF0 (the right pane) / Ctrl+F12.
     const bool set = ext == ".m3u";
     if (set ? !machine_load_set(path.c_str(), 0) : !machine_insert(0, path.c_str(), Config::df0_wp)) {
         gfxBegin();
@@ -177,10 +197,6 @@ static bool df0PickAndInsert() {
 
 static void act_df0_insert() {
     if (df0PickAndInsert()) requestClose();   // back to the Amiga with the disk in
-}
-
-static void act_df0_swap() {
-    if (df0SwapPick()) requestClose();
 }
 
 // Ctrl+F12: with a disk set loaded, its disks (one key press to swap, as
@@ -251,11 +267,8 @@ static const Node kMachine[] = {
 };
 
 static const Node kDisks[] = {
-    NM_ACTIONV("DF0", act_df0_insert, df0Label, nullptr),
-    NM_ACTIONV("Swap disk", act_df0_swap, setLabel, p_diskSet),
-    NM_ACTIONV("DF1", act_none, df1Label, p_df1),
-    NM_ACTIONV("DF2", act_none, df2Label, p_df2),
-    NM_ACTIONV("DF3", act_none, df3Label, p_df3),
+    NM_ACTIONV("DF0", act_df0_insert, df0Label, p_noSet),
+    NM_PICK   ("DF0", SET_DF0_DISK, setOpts, setRowKey, setDf0Label, opt_set_foot, p_diskSet),
     NM_ACTION ("Eject DF0", act_df0_eject, nullptr),
     NM_BOOL   ("DF0 write protect", SET_DF0_WP, nullptr),
 };

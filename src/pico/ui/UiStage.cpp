@@ -55,6 +55,11 @@ static bool hook_df0wp(int32_t, int32_t) {
     return path.empty() || machine_insert(0, path.c_str(), Config::df0_wp);
 }
 
+// Disks > DF0 with an .m3u set: which of its disks is in the drive.  Read for
+// the pick list's marker; the list itself swaps disks (machine_set_select).
+static int32_t get_df0disk() { return machine_set_index(); }
+static void    put_df0disk(int32_t v) { Config::df0_disk = (uint8_t)v; }
+
 NM_INT_ACCESS (volume,    volume,     uint8_t)
 NM_BOOL_ACCESS(hdmiaudio, hdmi_audio)
 NM_INT_ACCESS (audioout,  audio_out,  uint8_t)
