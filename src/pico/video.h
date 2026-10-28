@@ -18,6 +18,11 @@ void video_start(const amiga_row_t *framebuffer);
 
 // Number of output frames completed.
 uint32_t video_frames(void);
+// Output lines begun, counted so that a multiple of video_frame_lines() is the
+// first line of a picture (row 0 of the framebuffer); main.c paces the frames
+// to a line of it.
+uint32_t video_lines(void);
+uint32_t video_frame_lines(void);
 // Output lines sent before core 1 had encoded them (PIO HDMI; 0 elsewhere).
 uint32_t video_late_lines(void);
 // Output lines in which the serializer ran dry (PIO HDMI; 0 elsewhere).
@@ -29,8 +34,12 @@ void video_core1_cycles(uint32_t *irq, uint32_t *enc);
 // The back-ends.
 void hdmi_start(const amiga_row_t *framebuffer);
 uint32_t hdmi_frames(void);
+uint32_t hdmi_lines(void);
+uint32_t hdmi_frame_lines(void);
 uint32_t hdmi_late_lines(void);
 uint32_t hdmi_stalled_lines(void);
 void hdmi_core1_cycles(uint32_t *irq, uint32_t *enc);
 void vga_start(const amiga_row_t *framebuffer);
 uint32_t vga_frames(void);
+uint32_t vga_lines(void);
+uint32_t vga_frame_lines(void);

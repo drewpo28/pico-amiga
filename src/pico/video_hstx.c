@@ -73,6 +73,7 @@ static uint32_t linebuf[2][AMIGA_FB_W];
 #define CMD_WORDS (2 + 1 + HDMI_ISLAND_PX + 2 + 2 + 1 + HDMI_VLEAD_PX + 1)
 static uint32_t cmdbuf[2][CMD_WORDS];
 static volatile uint32_t frames;
+static volatile uint32_t lines;              // v_line advances (v_line = lines + 2)
 static bool     dma_pong;
 static uint32_t v_line;              // next output line to post
 static bool     cmd_posted;
@@ -158,6 +159,7 @@ static void __not_in_flash_func(dma_irq)(void) {
         cmd_posted = false;
     }
     if (!cmd_posted) {
+        lines++;
         if (++v_line == V_TOTAL) { v_line = 0; frames++; }
     }
 }
@@ -241,6 +243,9 @@ void hdmi_start(const amiga_row_t *framebuffer) {
 }
 
 uint32_t hdmi_frames(void) { return frames; }
+// The picture begins at v_line V_TOTAL - V_ACTIVE.
+uint32_t hdmi_lines(void) { return lines + 2 + V_ACTIVE; }
+uint32_t hdmi_frame_lines(void) { return V_TOTAL; }
 uint32_t hdmi_late_lines(void) { return 0; }
 uint32_t hdmi_stalled_lines(void) { return 0; }
 void hdmi_core1_cycles(uint32_t *irq, uint32_t *enc) { *irq = *enc = 0; }

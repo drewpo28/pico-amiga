@@ -44,6 +44,9 @@ extern "C" int clock_overclock(int mhz, int flash_mhz) { (void)flash_mhz; return
 // the main thread presents host_fb whenever it changes.
 const amiga_row_t *volatile host_fb;
 static std::atomic<uint32_t> s_frames{0};
+// The output clock's origin: the program's start, so that video_lines() never
+// goes back (main.c may read it before core 1 calls video_start()).
+static const std::chrono::steady_clock::time_point s_t0 = std::chrono::steady_clock::now();
 
 extern "C" void video_select(void) {}
 extern "C" bool video_is_vga(void) { return false; }
@@ -52,7 +55,7 @@ extern "C" void video_start(const amiga_row_t *framebuffer) {
     std::thread([] {
         using clk = std::chrono::steady_clock;
         const auto period = std::chrono::nanoseconds(1000000000ull * 832 * 605 / 25200000);
-        auto next = clk::now() + period;
+        auto next = s_t0 + period;
         for (;;) {
             std::this_thread::sleep_until(next);
             next += period;
@@ -61,6 +64,13 @@ extern "C" void video_start(const amiga_row_t *framebuffer) {
     }).detach();
 }
 extern "C" uint32_t video_frames(void) { return s_frames; }
+// The HDMI line clock (832 pixels at 25.2 MHz), from the same start; the picture
+// begins 29 lines into a frame there.
+extern "C" uint32_t video_lines(void) {
+    const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - s_t0).count();
+    return (uint32_t)((uint64_t)ns * 25200000ull / (832ull * 1000000000ull)) + 576;
+}
+extern "C" uint32_t video_frame_lines(void) { return 605; }
 extern "C" uint32_t video_late_lines(void) { return 0; }
 extern "C" uint32_t video_stalled_lines(void) { return 0; }
 extern "C" void video_core1_cycles(uint32_t *irq, uint32_t *enc) { *irq = *enc = 0; }

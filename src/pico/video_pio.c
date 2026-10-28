@@ -252,6 +252,9 @@ void hdmi_start(const amiga_row_t *framebuffer) {
 }
 
 uint32_t hdmi_frames(void) { return frames; }
+// `started` and v_isr start at 0 together; the picture begins at V_TOTAL - V_ACTIVE.
+uint32_t hdmi_lines(void) { return started + V_ACTIVE; }
+uint32_t hdmi_frame_lines(void) { return V_TOTAL; }
 uint32_t hdmi_late_lines(void) { return late; }
 uint32_t hdmi_stalled_lines(void) { return stalls; }
 void hdmi_core1_cycles(uint32_t *irq, uint32_t *enc) { *irq = irq_cyc; *enc = enc_cyc; }

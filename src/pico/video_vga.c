@@ -53,6 +53,7 @@ static uint8_t *tmpl_ptr[4];
 static int      dma_data, dma_ctrl;
 static uint32_t line;                      // line whose template the ctrl channel just loaded
 static volatile uint32_t frames;
+static volatile uint32_t lines;            // line advances (line = lines mod V_TOTAL)
 
 // vga.c's vga_bayer4 on a 4-bit channel: level 0..12, low 2-bit value plus how
 // many of the four Bayer positions take the next value up.
@@ -115,6 +116,7 @@ static void __not_in_flash_func(render)(int t, uint32_t l) {
 static void __not_in_flash_func(dma_irq)(void) {
     dma_hw->ints0 = 1u << dma_ctrl;
     // The ctrl channel has just started line `line`; queue line + 1.
+    lines++;
     if (++line == V_TOTAL) { line = 0; frames++; }
     const uint32_t next = line + 1 == V_TOTAL ? 0 : line + 1;
     int t;
@@ -180,3 +182,5 @@ void vga_start(const amiga_row_t *framebuffer) {
 }
 
 uint32_t vga_frames(void) { return frames; }
+uint32_t vga_lines(void) { return lines; }          // the picture is lines 0..V_ACTIVE-1
+uint32_t vga_frame_lines(void) { return V_TOTAL; }

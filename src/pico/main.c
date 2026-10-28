@@ -158,8 +158,24 @@ int main(void) {
     settings_apply_video();
     printf("kickstart %s, audio %s\n", machine_rom_name(), audio_out_name());
 
-    uint32_t vf = video_frames();
+    // A frame starts when the scanout is 70% into its picture.  There is one
+    // framebuffer: Denise (core 1) paints row r while the scanout reads it, and
+    // starting at the frame's top, a frame that takes about as long as the
+    // scanout (copper-heavy demos: 18-20 ms) crossed the beam halfway down - two
+    // frames in one picture, the cut moving.  From 70% on, each row is painted
+    // after the scanout has shown it and before it shows it again, for frames
+    // of ~5 to 20 ms with the render up to ~4 ms behind the emulation: one frame
+    // of latency, never a cut.
+    const uint32_t total = video_frame_lines();
+    uint32_t next = video_lines();
+    next += total * 7 / 10 + total - next % total;
     for (uint32_t frame = 0;; frame++) {
+        while ((int32_t)(video_lines() - next) < 0) { input_poll(); dbg_uart_pump(); }
+        dbg_uart_pump();
+        // A slow frame simply runs late (the next starts at once, back on the
+        // grid); more than a frame late, the grid moves on.
+        const uint32_t late = video_lines() - next;
+        next += total + late / total * total;
         input_poll();
         input_frame();
         if (input_reset_requested()) amiga_reset(false);
@@ -170,9 +186,5 @@ int main(void) {
         perf_log_frame(emu_us);
         // LED: slow blink = no keyboard, fast blink = keyboard mounted, steady = key held.
         led(input_key_held() || (frame & (input_keyboard_mounted() ? 8 : 32)) != 0);
-        // Pace to the HDMI frame (50.06 Hz); a slow frame simply runs late.
-        while (video_frames() == vf) { input_poll(); dbg_uart_pump(); }
-        dbg_uart_pump();
-        vf = video_frames();
     }
 }
