@@ -25,12 +25,12 @@ public:
     static uint16_t cpu_mhz;        // 252 / 378 / 504
     static uint16_t max_flash_freq; // flash SCK limit, MHz (default 66)
     static uint16_t max_psram_freq; // PSRAM SCK limit, MHz (default 166; 135 is the cap)
-    static uint8_t  audio_out;      // 0 auto, 1 PWM, 2 I2S (audio_out.c)
+    static uint8_t  audio_out;      // 0 auto (+ HDMI), 1 PWM, 2 I2S, 3 HDMI only (audio_out.c)
     static bool     dbg_uart;       // Debug > UART log (dbg_uart.c)
     static bool     render_c1;      // Debug > Render on core 1 (amiga_render_async)
     // Sound
     static uint8_t  volume;         // 0..16 (16 = full scale)
-    static bool     hdmi_audio;     // send audio in the HDMI data islands
+    static bool     hdmi_audio;     // retired: HDMI audio is audio_out 0 (with the DAC) or 3
     static bool     hdmi_capture;   // Video > Capture card compatibility (PIO HDMI, tmds_pio.h)
 
     // Video

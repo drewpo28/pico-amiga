@@ -45,6 +45,7 @@ enum SettingFlags : uint16_t {
     X(SET_KICK,        AC_LIVE, 0,                             get_kick,      put_kick,      hook_kick) \
     X(SET_DF0_WP,      AC_LIVE, 0,                             get_df0wp,     put_df0wp,     hook_df0wp) \
     X(SET_VOLUME,      AC_LIVE, F_PREVIEW,                     get_volume,    put_volume,    hook_sound) \
+    /* retired, no row: HDMI audio is Audio > Output (Auto or HDMI) */ \
     X(SET_HDMI_AUDIO,  AC_LIVE, F_PREVIEW,                     get_hdmiaudio, put_hdmiaudio, hook_sound) \
     X(SET_AUDIO_OUT,   AC_REBOOT, 0,                           get_audioout,  put_audioout,  nullptr) \
     X(SET_CPU_MHZ,     AC_REBOOT, 0,                           get_cpumhz,    put_cpumhz,    nullptr) \

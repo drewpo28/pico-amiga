@@ -37,9 +37,16 @@ static const Option opt_mouse_swap[] = {
 static const Option opt_mouse_sens[] = {
     { "1/4", 64 }, { "1/2", 128 }, { "1:1", 256 }, { "x2", 512 },
 };
-static const Option opt_audio_out[] = {
-    { "Auto (PCM5122 / I2S DAC / PWM)", 0, "Auto" }, { "PWM", 1 }, { "I2S", 2 },
-};
+// Audio > Output: Auto is the DAC it finds (or PWM) and HDMI as well; HDMI alone
+// is offered on an HDMI display.
+static const Option* audioOutOpts(uint8_t& cnt) {
+    static const Option opts[] = {
+        { "Auto (DAC or PWM, and HDMI)", 0, "Auto" }, { "PWM", 1 }, { "I2S", 2 },
+        { "HDMI", 3 },
+    };
+    cnt = video_is_vga() ? 3 : 4;
+    return opts;
+}
 static const Option opt_cpu_mhz[] = {
     { "252 MHz", 252 }, { "378 MHz", 378 }, { "504 MHz", 504 },
 };
@@ -306,7 +313,7 @@ static const Node kInterface[] = {
 
 static const Node kAudio[] = {
     NM_INT  ("Volume", SET_VOLUME, 0, 16, 1, nullptr),
-    NM_RADIO("Output", SET_AUDIO_OUT, opt_audio_out, nullptr),
+    NM_RADIO_D("Output", SET_AUDIO_OUT, audioOutOpts, nullptr),
 };
 
 // Capture card compatibility: only the PIO HDMI encodes pixel pairs itself (the
@@ -321,7 +328,6 @@ static bool p_pioHdmi() {
 
 static const Node kVideo[] = {
     NM_RADIO("Picture position", SET_HPOS, opt_hpos, nullptr),
-    NM_BOOL("HDMI audio", SET_HDMI_AUDIO, nullptr),
     NM_BOOL("Capture card compatibility", SET_HDMI_CAPTURE, p_pioHdmi),
 };
 

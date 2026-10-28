@@ -120,6 +120,7 @@ void Config::load() {
     nvs_get_b  ("hdmi_capture",  hdmi_capture, sts);
     if (cpu_mhz != 252 && cpu_mhz != 378 && cpu_mhz != 504) cpu_mhz = CPU_MHZ;
     if (volume > 16) volume = 16;
+    if (audio_out > 3) audio_out = 0;
     if (max_flash_freq < 33 || max_flash_freq > 166) max_flash_freq = 66;
     if (max_psram_freq < 66 || max_psram_freq > 166) max_psram_freq = 166;
     nvs_get_str("kick",          kick,         sts);

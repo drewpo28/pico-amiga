@@ -8,6 +8,8 @@
 //   - an I2S DAC on I2S_DATA/BCK/LCK, detected with board_test_pins(): I2S
 //   - otherwise 8-bit PWM with first-order error feedback on PWM_PIN0 (right)
 //     and PWM_PIN1 (left), an RC filter on the pins as on every Murmulator
+// or none of them (Audio > Output = HDMI): the tick then feeds the HDMI data
+// islands only (hdmi_audio.c, which takes the same stream from every tick).
 //
 // The sample clock is a hardware alarm with a RAM-resident ISR (an SDK repeating
 // timer runs its alarm pool from flash on every tick) at AMIGA_AUDIO_RATE, with a
@@ -52,6 +54,7 @@ static i2s_config_t i2s_config = {
 };
 
 static const char *out_name = "none";
+static bool analog = true;        // PWM or I2S runs (false: HDMI only)
 
 // ---- sample clock and output ---------------------------------------------------------
 static const int16_t *ring;
@@ -73,6 +76,7 @@ static inline void __not_in_flash_func(output)(int32_t sL, int32_t sR) {
     sL = (sL * vol) >> 8;
     sR = (sR * vol) >> 8;
     hdmi_audio_push((int16_t)sL, (int16_t)sR);    // the HDMI islands take the same stream
+    if (!analog) return;
     if (is_i2s_enabled) {
         if (!pio_sm_is_tx_fifo_full(i2s_config.pio, i2s_config.sm))
             pio_sm_put(i2s_config.pio, i2s_config.sm, ((uint32_t)(uint16_t)sR << 16) | (uint16_t)sL);
@@ -139,6 +143,10 @@ void audio_out_start(const int16_t *audio_ring, uint32_t frames, int mode) {
     ring = audio_ring;
     ring_frames = frames;
 
+    if (mode == 3) {                                       // HDMI only: no analog output
+        analog = false;
+        out_name = "HDMI";
+    } else
 #ifdef PCM5122_I2S_DATA
     if (mode != 1 && audio_out_pcm5122_present() && pcm5122_init(PCM5122_I2C_SDA, PCM5122_I2C_SCL)) {
         i2s_config.data_pin = PCM5122_I2S_DATA;
@@ -169,7 +177,8 @@ void audio_out_start(const int16_t *audio_ring, uint32_t frames, int mode) {
         if (is_i2s_enabled) out_name = "I2S";
     }
 
-    if (is_i2s_enabled) {
+    if (!analog) {
+    } else if (is_i2s_enabled) {
         // Above GPIO31 (the _WS modules' audio on 40-42) I2S needs a block whose
         // window can move to gpio_base 16: pio1 is pinned to 0 by the keyboard.
         if (i2s_config.data_pin >= 32 || i2s_config.bck_pin >= 32 || i2s_config.lck_pin >= 32)

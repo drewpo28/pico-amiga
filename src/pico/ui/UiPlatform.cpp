@@ -7,6 +7,9 @@
 #include "machine.h"
 #include "audio_out.h"
 #include "hdmi_audio.h"
+extern "C" {
+#include "video.h"
+}
 #include "ui.h"
 #include "UiGfx.h"
 #include "app/Config.h"
@@ -43,7 +46,10 @@ extern "C" void ui_load_settings(void) { Config::load(); }
 extern "C" void ui_init(amiga_row_t *framebuffer) { nm::gfxSetFramebuffer(framebuffer); }
 
 extern "C" int settings_cpu_mhz(void)   { return Config::cpu_mhz; }
-extern "C" int settings_audio_out(void) { return Config::audio_out; }
+// Audio > Output: 3 (HDMI only) means nothing on a VGA display - the DAC then.
+extern "C" int settings_audio_out(void) {
+    return Config::audio_out == 3 && video_is_vga() ? 0 : Config::audio_out;
+}
 extern "C" bool settings_dbg_uart(void) { return Config::dbg_uart; }
 extern "C" int settings_flash_mhz(void) { return Config::max_flash_freq; }
 extern "C" int settings_psram_mhz(void) { return Config::max_psram_freq; }
@@ -56,7 +62,9 @@ extern "C" void settings_apply_video(void) {
 
 extern "C" void settings_apply_sound(void) {
     audio_set_volume(Config::volume * 16);
-    hdmi_audio_set_enabled(Config::hdmi_audio);
+    // HDMI carries the sound in Auto (beside the DAC / PWM) and as the only output.
+    const int out = settings_audio_out();
+    hdmi_audio_set_enabled(out == 0 || out == 3);
 }
 
 namespace OSD {
