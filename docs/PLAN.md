@@ -92,5 +92,10 @@ Step 2 - ECS Agnus proper (the few programs that test for ECS):
 Step 3 - ECS Denise (Workbench in the high modes):
 
 - [ ] DENISEID ($FC), BPLCON3, BRDRBLNK
-- [ ] Super-hires (1280+ wide: 2 pixels per output pixel of the 720) and productivity;
-      needs a framebuffer row format and scanout path of its own
+- [ ] Super-hires (1280 x 256 PAL, interlaced too; 2 pixels per output pixel of
+      the 720) - 2 bitplanes, 4 colours on screen; needs a framebuffer row format
+      and scanout path of its own. Mostly Workbench 2.04's high-resolution modes;
+      games and demos hardly use it
+- [ ] Productivity (640 x 480 non-interlaced, 31 kHz on a real Amiga: a multisync
+      monitor), also 4 colours: our output is 576p50, so at best it is shown
+      scaled, never at its own timing
