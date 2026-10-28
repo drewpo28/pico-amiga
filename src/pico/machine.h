@@ -53,6 +53,14 @@ int  machine_set_index(void);           // the disk now in DF0
 const char *machine_set_disk(int i);    // its card path
 bool machine_set_select(int i);         // swap disk i into DF0
 
+// Disks > New blank disk: an empty formatted 880 KB ADF (OFS, not bootable, as a
+// quick Format leaves it) named after the volume, next to the loaded disk set
+// (or DF0's disk, else in /amiga/disks/). With a set loaded it joins the set
+// (machine_set_add); otherwise it goes into DF0. Its path goes to path_out.
+bool machine_new_disk(const char *volume, char *path_out, unsigned path_size);
+// Add a disk to the loaded set: to the .m3u on the card and to the swap list.
+bool machine_set_add(const char *path);
+
 // Connect the drives Config::drives asks for (0 = Auto: one per disk of a set,
 // up to 4; one otherwise) and put the set's disks 2.. into DF1.. . True when
 // the count changed: Kickstart only looks for drives at reset.

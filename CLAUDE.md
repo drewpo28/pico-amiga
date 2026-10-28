@@ -52,7 +52,11 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   drives, Auto = one per disk of an `.m3u` set; Kickstart finds DF1+ by drive ID
   at reset). An ADF streams from the card; a `.dms` is unpacked at insert time by
   `src/pico/dms.c` (xDMS port, its ~100 KB work area in PSRAM) into a per-drive
-  880 KB PSRAM slot above 2 MB, write-protected. The bench takes `--adf x.dms` too.
+  880 KB PSRAM slot above 2 MB, write-protected. The bench takes `--adf x.dms` too,
+  up to 8 `--adf` (DF0..DF3, the rest for `--swap`), `--drives N` and `--write-back`
+  (written disks saved to their files). Disks > New blank disk formats an empty
+  OFS ADF on the card (`machine_new_disk`); with an .m3u set loaded it is appended
+  to the set (games' own save-disk formatters: swap it in with Ctrl+F12).
 - `src/pico/drivers/` are pico-speccy's drivers (USB HID/XInput, fabgl VK keyboard
   queue, PS/2, NES pad, SD); local changes are marked `PICO-AMIGA:`, and
   `drivers/input_glue.h` stands in for pico-speccy's Config/Debug/ESPectrum.
@@ -113,6 +117,13 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   Barbarian's loader stops a two-revolution read on the third index; with
   only DSKBLK scaled its index handler stayed on the level 6 vector and the OS
   hung in a storm of uncleared EXTER interrupts (black screen).
+- **A swapped disk must be seen gone** (floppy.c, SWAP_LINES): Kickstart polls
+  /CHNG now and then, and the menu swaps with no emulated time in between, so
+  the core keeps the drive empty 2 s before the new disk is in (KS 1.3 needs
+  ~0.5 s). Without it Dune II asked for a disk that was already in DF0.
+- **Every connected drive costs Kickstart memory**: Dune II (1 MB) reports a
+  "Memory Allocation Error" with 4 drives (Floppy drives Auto on its 5-disk
+  set) and runs with 1 or 2; the message is drawn while its palette is black.
 - Single playfield sprite priority uses **PF2P**, not PF1P (vAmiga agrees).
 - Byte writes to custom registers put the byte on both halves of the word.
 - Area blits with B DMA off use BLTBDAT (shifted on the CPU write), not 0:

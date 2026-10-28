@@ -8,10 +8,15 @@
 #include "dms.h"
 #include "roms.h"
 #include "app/Config.h"
+#include "pico/stdlib.h"
 
 #define KB 1024u
 
 static uint8_t *s_rom_buf, *s_ext_buf;
+// One file for the menu's one-off jobs (a DMS, an .m3u, a new disk): they never
+// overlap, and each FIL carries a 512-byte buffer of the menu's SRAM heap.
+// Static: these run deep in core 0's 4 KB stack.
+static FIL s_job;
 static uint8_t *s_dms_area;
 static uint32_t s_dms_size;
 static const char *s_rom_name = "";
@@ -162,8 +167,7 @@ static bool insert_dms(int drive, const char *path) {
     Drive &d = s_drv[drive];
     uint8_t *img = dms_slot(drive);
     if (!img) return false;                                 // not enough PSRAM for this drive
-    // Static: this runs from the menu, deep in core 0's 4 KB stack.
-    static FIL f;
+    FIL &f = s_job;
     if (f_open(&f, path, FA_READ) != FR_OK) return false;
     const int err = dms_unpack(dms_fread, &f, img, s_dms_area);
     f_close(&f);
@@ -208,8 +212,7 @@ static bool is_m3u(const std::string &p) {
 }
 
 bool machine_load_set(const char *m3u_path, int index) {
-    // Static: this runs from the menu, deep in core 0's 4 KB stack.
-    static FIL f;
+    FIL &f = s_job;
     if (f_open(&f, m3u_path, FA_READ) != FR_OK) return false;
     const std::string list = m3u_path;
     const std::string dir = list.substr(0, list.find_last_of('/') + 1);
@@ -273,6 +276,96 @@ bool machine_set_select(int i) {
     if (other && !old.empty()) insert_adf(other, old.c_str(), Config::df0_wp);
     s_set_index = i;
     return true;
+}
+
+// ---- blank disks ---------------------------------------------------------------------
+static void put32(uint8_t *b, int off, uint32_t v) {
+    b[off] = (uint8_t)(v >> 24); b[off + 1] = (uint8_t)(v >> 16);
+    b[off + 2] = (uint8_t)(v >> 8); b[off + 3] = (uint8_t)v;
+}
+
+// AmigaDOS block checksum: the longs sum to 0.
+static void block_sum(uint8_t *b, int off) {
+    uint32_t s = 0;
+    for (int i = 0; i < 512; i += 4)
+        s += ((uint32_t)b[i] << 24) | ((uint32_t)b[i + 1] << 16) | ((uint32_t)b[i + 2] << 8) | b[i + 3];
+    put32(b, off, (uint32_t)-s);
+}
+
+static bool file_exists(const std::string &p) {
+    FILINFO fi;
+    return f_stat(p.c_str(), &fi) == FR_OK;
+}
+
+bool machine_new_disk(const char *volume, char *path_out, unsigned path_size) {
+    // Where: beside the set's .m3u, else beside DF0's disk, else /amiga/disks/.
+    std::string dir = s_set_count ? Config::df0 : s_drv[0].path;
+    dir = dir.substr(0, dir.find_last_of('/') + 1);
+    if (dir.empty()) { dir = "/amiga/disks/"; if (!file_exists("/amiga/disks")) dir = "/amiga/"; }
+    std::string base = volume;
+    for (char &c : base)
+        if (strchr(":/\\*?\"<>|", c) || (unsigned char)c < 32) c = '_';
+    std::string path = dir + base + ".adf";
+    for (int n = 2; file_exists(path) && n < 100; n++) path = dir + base + " " + std::to_string(n) + ".adf";
+    FIL &f = s_job;
+    if (f_open(&f, path.c_str(), FA_WRITE | FA_CREATE_NEW) != FR_OK) return false;
+    // The volume's dates tell it from other volumes of the same name (two
+    // "Empty" disks in two drives): the creation time is the board's clock.
+    const uint32_t t = time_us_32();
+    const uint32_t days = 17000 + (t >> 26), mins = (t >> 20) % 1440, ticks = (t >> 10) % 3000;
+    static uint8_t blk[512];
+    bool ok = true;
+    for (int n = 0; n < 1760 && ok; n++) {
+        memset(blk, 0, sizeof blk);
+        if (n == 0) {
+            memcpy(blk, "DOS", 4);                          // DOS\0: OFS, not bootable
+            put32(blk, 8, 880);
+        } else if (n == 880) {                              // the root block
+            put32(blk, 0x000, 2);                           // T_HEADER
+            put32(blk, 0x00C, 72);                          // hash table size
+            put32(blk, 0x138, 0xFFFFFFFFu);                 // bitmap valid
+            put32(blk, 0x13C, 881);                         // bitmap block
+            for (int o : { 0x1A4, 0x1D8, 0x1E4 }) {         // root, volume, creation dates
+                put32(blk, o, days); put32(blk, o + 4, mins); put32(blk, o + 8, ticks);
+            }
+            const size_t len = base.size() < 30 ? base.size() : 30;
+            blk[0x1B0] = (uint8_t)len;
+            memcpy(blk + 0x1B1, volume, len);
+            put32(blk, 0x1FC, 1);                           // ST_ROOT
+            block_sum(blk, 0x014);
+        } else if (n == 881) {                              // the bitmap: 1 = free
+            for (int b = 2; b < 1760; b++)
+                if (b != 880 && b != 881) blk[4 + (b - 2) / 32 * 4 + 3 - ((b - 2) % 32) / 8] |= (uint8_t)(1u << ((b - 2) % 8));
+            block_sum(blk, 0);
+        }
+        UINT w = 0;
+        ok = f_write(&f, blk, sizeof blk, &w) == FR_OK && w == sizeof blk;
+    }
+    f_close(&f);
+    if (!ok) { f_unlink(path.c_str()); return false; }
+    snprintf(path_out, path_size, "%s", path.c_str());
+    return true;
+}
+
+bool machine_set_add(const char *path) {
+    if (!s_set_count || s_set_count >= 16 || Config::df0.empty()) return false;
+    const std::string dir = Config::df0.substr(0, Config::df0.find_last_of('/') + 1);
+    std::string line = path;
+    if (line.compare(0, dir.size(), dir) == 0) line = line.substr(dir.size());   // relative, as the rest
+    FIL &f = s_job;
+    if (f_open(&f, Config::df0.c_str(), FA_READ | FA_WRITE | FA_OPEN_EXISTING) != FR_OK) return false;
+    // A last line without its newline gets one first.
+    const FSIZE_t size = f_size(&f);
+    char c = '\n'; UINT got = 0;
+    if (size) { f_lseek(&f, size - 1); f_read(&f, &c, 1, &got); }
+    const bool nl = c == '\n';
+    f_lseek(&f, size);
+    line = (nl ? "" : "\n") + line + "\n";
+    UINT w = 0;
+    const bool ok = f_write(&f, line.data(), (UINT)line.size(), &w) == FR_OK && w == line.size();
+    f_close(&f);
+    if (ok) s_set[s_set_count++] = path;
+    return ok;
 }
 
 // ---- drives ------------------------------------------------------------------------

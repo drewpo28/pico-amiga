@@ -275,6 +275,31 @@ void runDiskInsert(int drive) {
     gfxEnd();
 }
 
+// Disks > New blank disk: a formatted empty ADF on the card. With a disk set
+// loaded it joins the set (Ctrl+F12 swaps it in, e.g. when a game's own
+// save-disk formatter asks for a disk); otherwise it goes into DF0.
+static void act_new_disk() {
+    std::string name = "Empty";
+    if (!uiPrompt("New blank disk: volume name", name, 30)) return;
+    char path[256];
+    if (!machine_new_disk(name.c_str(), path, sizeof path)) {
+        uiToast("The disk cannot be created on the card", true, 2000);
+        return;
+    }
+    char msg[96];
+    if (machine_set_count() > 0) {
+        if (!machine_set_add(path)) { uiToast("Created, but the disk set is full", true, 2000); return; }
+        snprintf(msg, sizeof msg, "%s: in the disk set (Ctrl+F12)", baseName(path));
+    } else {
+        if (!machine_insert(0, path, Config::df0_wp)) { uiToast("Created, but it cannot be opened", true, 2000); return; }
+        Config::df0 = path;
+        Config::df0_disk = 0;
+        Config::save();
+        snprintf(msg, sizeof msg, "%s: in DF0", baseName(path));
+    }
+    uiToast(msg, false, 2000);
+}
+
 static void act_df0_eject() {
     machine_eject(0);
     machine_apply_drives();
@@ -339,6 +364,7 @@ static const Node kDisks[] = {
     NM_ACTIONV("DF0", act_df0_insert, df0Label, p_noSet),
     NM_PICK   ("DF0", SET_DF0_DISK, setOpts, setRowKey, setDf0Label, opt_set_foot, p_diskSet),
     NM_ACTION ("Eject DF0", act_df0_eject, nullptr),
+    NM_ACTION ("New blank disk", act_new_disk, nullptr),
     NM_BOOL   ("DF0 write protect", SET_DF0_WP, nullptr),
     NM_RADIO  ("Floppy drives", SET_DRIVES, opt_drives, nullptr),
 };

@@ -5,7 +5,9 @@
 // as PNG, Paula output as WAV, SERDAT bytes to stdout.  It is the test bench:
 // everything the core does can be checked here before it goes near a board.
 //
-//   pico-amiga-host --rom kick.rom [--ext ext.rom] [--adf disk.adf|.dms]... (DF0, DF1, ...)
+//   pico-amiga-host --rom kick.rom [--ext ext.rom] [--adf disk.adf|.dms]... (DF0..DF3; 5th-8th: --swap only)
+//                   [--drives N] (fewer drives than --adf: the rest wait for --swap)
+//                   [--write-back] (disks the Amiga wrote are saved to their files at the end)
 //                   [--frames N] [--shot N:file.png]... [--wav out.wav]
 //                   [--slow] [--a500plus] [--vcentre] [--key N:code:down]... [--status K]
 //                   [--joy N:dirs:fire]... [--mouse N:dx:dy:buttons]...
@@ -158,7 +160,7 @@ static void drain_audio(void) {
 }
 
 // ---- disk ----------------------------------------------------------------------
-typedef struct { uint8_t *data; uint32_t size; } mem_disk_t;
+typedef struct { uint8_t *data; uint32_t size; bool dirty; } mem_disk_t;
 static int disk_read(void *ctx, uint32_t off, void *dst, uint32_t len) {
     mem_disk_t *d = ctx;
     if (off + len > d->size) return -1;
@@ -169,6 +171,7 @@ static int disk_write(void *ctx, uint32_t off, const void *src, uint32_t len) {
     mem_disk_t *d = ctx;
     if (off + len > d->size) return -1;
     memcpy(d->data + off, src, len);
+    d->dirty = true;
     return 0;
 }
 
@@ -205,9 +208,9 @@ static int64_t rtc_time(void *ctx) {
 
 int main(int argc, char **argv) {
     const char *rom_path = NULL, *ext_path = NULL, *wav_path = NULL;
-    const char *adf_path[4] = {0}; int nadf = 0;
-    int frames = 250, status_every = 0, scale = 1;
-    bool slow = false, render_thread_on = false, plus = false, vcentre = false;
+    const char *adf_path[8] = {0}; int nadf = 0;        // the first 4 go in DF0..DF3, the rest wait for --swap
+    int frames = 250, status_every = 0, scale = 1, drives_opt = 0;
+    bool slow = false, render_thread_on = false, plus = false, vcentre = false, write_back = false;
     shot_t shots[64]; int nshots = 0;
     keyev_t keys[256]; int nkeys = 0;
     inev_t joys[256]; int njoys = 0;
@@ -220,13 +223,15 @@ int main(int argc, char **argv) {
         const char *v = i + 1 < argc ? argv[i + 1] : NULL;
         if (!strcmp(a, "--rom") && v) { rom_path = v; i++; }
         else if (!strcmp(a, "--ext") && v) { ext_path = v; i++; }
-        else if (!strcmp(a, "--adf") && v && nadf < 4) { adf_path[nadf++] = v; i++; }   // DF0, DF1, ...
+        else if (!strcmp(a, "--adf") && v && nadf < 8) { adf_path[nadf++] = v; i++; }   // DF0, DF1, ...
         else if (!strcmp(a, "--frames") && v) { frames = atoi(v); i++; }
         else if (!strcmp(a, "--wav") && v) { wav_path = v; i++; }
         else if (!strcmp(a, "--status") && v) { status_every = atoi(v); i++; }
         else if (!strcmp(a, "--scale") && v) { scale = atoi(v); i++; }
         else if (!strcmp(a, "--slow")) slow = true;
         else if (!strcmp(a, "--a500plus")) plus = true;
+        else if (!strcmp(a, "--write-back")) write_back = true;
+        else if (!strcmp(a, "--drives") && v) { drives_opt = atoi(v); i++; }
         else if (!strcmp(a, "--vcentre")) vcentre = true;
         else if (!strcmp(a, "--render-thread")) render_thread_on = true;
         else if (!strcmp(a, "--shot") && v && nshots < 64) {
@@ -278,13 +283,16 @@ int main(int argc, char **argv) {
         amiga_render_async(true);
     }
 
-    static mem_disk_t md[4];
+    static mem_disk_t md[8];
+    int ndrv = nadf < 4 ? nadf : 4;
+    if (drives_opt > 0 && drives_opt < ndrv) ndrv = drives_opt;
     for (int k = 0; k < nadf; k++) {
         md[k].data = load_disk(adf_path[k], &md[k].size);
+        if (k >= ndrv) continue;
         amiga_disk_t d = { disk_read, disk_write, &md[k], md[k].size };
         amiga_insert_disk(k, &d);
     }
-    if (nadf > 1) { amiga_set_drives(nadf); amiga_reset(true); }   // Kickstart finds DF1+ at reset
+    if (ndrv > 1) { amiga_set_drives(ndrv); amiga_reset(true); }   // Kickstart finds DF1+ at reset
     if (wav_path) wav_open(wav_path);
 
     for (int f = 0; f < frames; f++) {
@@ -325,5 +333,14 @@ int main(int argc, char **argv) {
         }
     }
     if (wav) wav_close();
+    // --write-back: what the Amiga wrote goes back into the image files (a DMS is
+    // written as the ADF it was unpacked to, under its own name).
+    for (int k = 0; write_back && k < nadf; k++) {
+        if (!md[k].dirty) continue;
+        FILE *f = fopen(adf_path[k], "wb");
+        if (!f || fwrite(md[k].data, 1, md[k].size, f) != md[k].size) { perror(adf_path[k]); return 1; }
+        fclose(f);
+        fprintf(stderr, "wrote back %s\n", adf_path[k]);
+    }
     return 0;
 }
