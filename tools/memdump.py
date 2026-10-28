@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
-"""Turn memdump.gdb's dumps into /tmp/picospec_dump.log (pico-speccy's VS Code
+"""Turn memdump.gdb's dumps into /tmp/pico-amiga_dump.log (pico-speccy's VS Code
 extension opens it): the CPU registers and SR, the custom chip state, the code
 around the PC (disassembled with build-host/m68kdis when it is built, else a
 hex dump) and the copper list from COP1LC.  The binaries stay in /tmp for the
-host tools: picoamiga_chip.bin, picoamiga_slow.bin, picoamiga_pc.bin.
+host tools in /tmp: pico-amiga_chip.bin and pico-amiga_slow.bin (when asked for),
+pico-amiga_cop.bin, pico-amiga_pc.bin.
 """
 import os
 import subprocess
 import sys
 
-STATE = "/tmp/picoamiga_state.txt"
-CHIP = "/tmp/picoamiga_chip.bin"
-PCBIN = "/tmp/picoamiga_pc.bin"
-OUT = "/tmp/picospec_dump.log"
+STATE = "/tmp/pico-amiga_state.txt"
+CHIP = "/tmp/pico-amiga_chip.bin"         # only with $amiga_chip set
+COP = "/tmp/pico-amiga_cop.bin"           # 2 KB from COP1LC
+PCBIN = "/tmp/pico-amiga_pc.bin"
+OUT = "/tmp/pico-amiga_dump.log"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIS = os.path.join(ROOT, "build-host", "m68kdis")
 
@@ -78,14 +80,15 @@ def sr_text(d):
     return "SR %04X  %s  IPL mask %d" % (sr, flags, (sr >> 8) & 7)
 
 
-def copper_list(chip, lc, count=200):
+def copper_list(mem, base, lc, count=200):
+    """mem holds chip RAM from address `base` (0 for all of it)."""
     out = []
-    mask = len(chip) - 1
     pc = lc
     for _ in range(count):
-        a = pc & mask & ~1
-        if a + 4 > len(chip):
+        a = (pc - base) & ~1
+        if a < 0 or a + 4 > len(mem):
             break
+        chip = mem
         ir1 = chip[a] << 8 | chip[a + 1]
         ir2 = chip[a + 2] << 8 | chip[a + 3]
         if not ir1 & 1:
@@ -117,7 +120,6 @@ def code_around_pc(pc):
 def main():
     lines = state_lines()
     d = kv(lines)
-    chip = open(CHIP, "rb").read()
     pc = int(d["PC"][0], 16)
     log = ["pico-amiga memory dump", ""]
     log += ["PC %06X  (previous %s)" % (pc, d["PPC"][0]), sr_text(d)]
@@ -125,10 +127,23 @@ def main():
     log += ["--- state (memdump.gdb)"] + lines + [""]
     log += ["--- code around PC"] + code_around_pc(pc) + [""]
     lc = int(d["COP1LC"][0], 16)
-    log += ["--- copper list from COP1LC %06X" % lc] + copper_list(chip, lc) + [""]
-    log += ["--- files", CHIP + " (chip RAM, %d KB)" % (len(chip) // 1024)]
-    if os.path.exists("/tmp/picoamiga_slow.bin"):
-        log.append("/tmp/picoamiga_slow.bin (slow RAM)")
+    chip_size = int(d["CHIP"][0])
+    if os.path.exists(CHIP):
+        mem, base = open(CHIP, "rb").read(), 0
+        lc &= chip_size - 1
+    elif os.path.exists(COP):
+        mem, base = open(COP, "rb").read(), lc & (chip_size - 1) & ~1
+        lc = base
+    else:
+        mem, base = b"", 0
+    log += ["--- copper list from COP1LC %06X" % int(d["COP1LC"][0], 16)] + copper_list(mem, base, lc) + [""]
+    log += ["--- files"]
+    if os.path.exists(CHIP):
+        log.append(CHIP + " (chip RAM)")
+    else:
+        log.append("chip RAM not dumped: `set $amiga_chip = 1` in the Debug Console before Ctrl+Alt+M")
+    if os.path.exists("/tmp/pico-amiga_slow.bin"):
+        log.append("/tmp/pico-amiga_slow.bin (slow RAM)")
     open(OUT, "w").write("\n".join(log) + "\n")
     print(OUT)
 

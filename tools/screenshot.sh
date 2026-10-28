@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
-# Convert the framebuffer dump of screenshot.gdb (or screenshot_profi.gdb with
-# --profi) to a 720x576 PNG, as pico-speccy's VS Code extension expects:
-# /tmp/picospec_screen.png (or /tmp/picospec_profi_screen.png).
+# Convert screenshot.gdb's framebuffer dump to a 720x576 PNG,
+# /tmp/pico-amiga_screen.png (tools/picospec-tools.json names the files).
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [[ "${1:-}" == "--profi" ]]; then
-    FB=/tmp/picospec_profi_fb.bin; DIM=/tmp/picospec_profi_dim.txt; OUT=/tmp/picospec_profi_screen.png
-else
-    FB=/tmp/picospec_fb.bin; DIM=/tmp/picospec_dim.txt; OUT=/tmp/picospec_screen.png
-fi
+FB=/tmp/pico-amiga_fb.bin
+DIM=/tmp/pico-amiga_dim.txt
+OUT=/tmp/pico-amiga_screen.png
 if [[ ! -f "$FB" || ! -f "$DIM" ]]; then
     echo "Missing dump files. Run the screenshot GDB script in an active GDB session first."
     exit 1

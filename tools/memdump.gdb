@@ -1,20 +1,39 @@
 # memdump.gdb - the Amiga's memory and chip state (Ctrl+Alt+M), for pico-speccy's
 # VS Code extension (local.picospec-tools): it halts the target, sources this
-# file, resumes, runs tools/memdump.py and opens /tmp/picospec_dump.log.
+# file, resumes, runs tools/memdump.py and opens /tmp/pico-amiga_dump.log
+# (tools/picospec-tools.json names the files).
 #
-#   /tmp/picoamiga_chip.bin   chip RAM            /tmp/picoamiga_slow.bin  slow RAM
-#   /tmp/picoamiga_pc.bin     256 bytes from PC-64 (chip RAM or Kickstart ROM)
-#   /tmp/picoamiga_state.txt  CPU registers, custom chips (memdump.py reads the
+#   /tmp/pico-amiga_pc.bin     256 bytes from PC-64 (chip RAM or Kickstart ROM)
+#   /tmp/pico-amiga_cop.bin    2 KB of chip RAM from COP1LC (the copper list)
+#   /tmp/pico-amiga_chip.bin   all of chip RAM, only after `set $amiga_chip = 1`
+#   /tmp/pico-amiga_slow.bin   slow RAM, only after `set $amiga_slow = 1`
+#                             (both in the Debug Console before Ctrl+Alt+M)
+# The whole RAM is opt-in: it keeps the target halted for seconds (512 KB of
+# PSRAM through SWD each); the default dump is about as short as a screenshot.
+#   /tmp/pico-amiga_state.txt  CPU registers, custom chips (memdump.py reads the
 #                             "KEY value" lines, the rest goes to the log as is)
 # Every symbol below exists in the firmware; a missing one would stop the script
 # half-way (the extension then reports the files that were not written).
-shell rm -f /tmp/picospec_gdb_done /tmp/picoamiga_slow.bin
+# GDB's print and logging settings are put back at the end: Cortex-Debug keeps
+# using this GDB after the script.
+shell rm -f /tmp/pico-amiga_gdb_done /tmp/pico-amiga_slow.bin /tmp/pico-amiga_chip.bin /tmp/pico-amiga_cop.bin
 set pagination off
-set print pretty on
 
-dump binary memory /tmp/picoamiga_chip.bin A.cfg.chip_ram (A.cfg.chip_ram + A.cfg.chip_size)
-if A.cfg.slow_ram != 0
-  dump binary memory /tmp/picoamiga_slow.bin A.cfg.slow_ram (A.cfg.slow_ram + A.cfg.slow_size)
+if $_isvoid($amiga_chip)
+  set $amiga_chip = 0
+end
+if $_isvoid($amiga_slow)
+  set $amiga_slow = 0
+end
+if $amiga_chip
+  dump binary memory /tmp/pico-amiga_chip.bin A.cfg.chip_ram (A.cfg.chip_ram + A.cfg.chip_size)
+end
+set $q = A.cfg.chip_ram + ('copper.c'::lc[0] & A.chip_mask & ~1)
+if ('copper.c'::lc[0] & A.chip_mask) + 2048 <= A.cfg.chip_size
+  dump binary memory /tmp/pico-amiga_cop.bin $q ($q + 2048)
+end
+if $amiga_slow && A.cfg.slow_ram != 0
+  dump binary memory /tmp/pico-amiga_slow.bin A.cfg.slow_ram (A.cfg.slow_ram + A.cfg.slow_size)
 end
 set $apc = m68ki_cpu.pc & 0xFFFFFF
 if $apc >= 0xF80000
@@ -22,9 +41,9 @@ if $apc >= 0xF80000
 else
   set $p = A.cfg.chip_ram + (($apc - 64) & A.chip_mask)
 end
-dump binary memory /tmp/picoamiga_pc.bin $p ($p + 256)
+dump binary memory /tmp/pico-amiga_pc.bin $p ($p + 256)
 
-set logging file /tmp/picoamiga_state.txt
+set logging file /tmp/pico-amiga_state.txt
 set logging overwrite on
 set logging redirect on
 set logging enabled on
@@ -53,10 +72,11 @@ printf "BLIT con0 %04X con1 %04X afwm %04X alwm %04X size %04X busy %d count %u\
 printf "BLITPT A %06X B %06X C %06X D %06X mods %d %d %d %d\n", 'blitter.c'::pt[0], 'blitter.c'::pt[1], 'blitter.c'::pt[2], 'blitter.c'::pt[3], 'blitter.c'::mod[0], 'blitter.c'::mod[1], 'blitter.c'::mod[2], 'blitter.c'::mod[3]
 printf "DISK sel %d side %d cyl0 %d dsklen %04X dskpt %06X dma %d track %d\n", 'floppy.c'::sel, 'floppy.c'::side, 'floppy.c'::drv[0].cyl, 'floppy.c'::dsklen, 'floppy.c'::dskpt, 'floppy.c'::dma_on, 'floppy.c'::trk_num
 printf "--- CIAs\n"
+set print pretty on
 print/x 'cia.c'::cia
+set print pretty off
 set logging enabled off
 set logging redirect off
+set logging overwrite off
 printf "memdump: done\n"
-# The extension checks this one was (re)written; the dumps above have Amiga names.
-shell touch /tmp/picospec_ram7.bin
-shell touch /tmp/picospec_gdb_done
+shell touch /tmp/pico-amiga_gdb_done

@@ -31,13 +31,16 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   /.config/pico-amiga/<board tag>/storage.nvs). Check menu changes on the PC host:
   `PICO_AMIGA_KEYS=150:F12,200:Down,...` presses keys at output frames.
 - Board debugging from VS Code (Cortex-Debug session, pico-speccy's local
-  `picospec-tools` extension, which runs the open workspace's `tools/`):
-  Ctrl+Alt+S / Ctrl+Alt+P = screenshot (`tools/screenshot*.gdb` dump main.c's
-  `fb`, `fb2png.py` expands it as `amiga_fb_line` does) to
-  /tmp/picospec_screen.png; Ctrl+Alt+M = `tools/memdump.gdb` + `memdump.py`:
-  chip/slow RAM to /tmp/picoamiga_*.bin and /tmp/picospec_dump.log (CPU, custom
-  chips, code at PC via `build-host/m68kdis`, the copper list). The file names
-  are the extension's; checked against the PC build under host gdb.
+  `picospec-tools` extension: it runs the open workspace's `tools/`, with the
+  file names of `tools/picospec-tools.json`): Ctrl+Alt+S / Ctrl+Alt+P =
+  screenshot (`screenshot.gdb` dumps main.c's `fb`, `fb2png.py` expands it as
+  `amiga_fb_line` does) to /tmp/pico-amiga_screen.png; Ctrl+Alt+M =
+  `memdump.gdb` + `memdump.py`: /tmp/pico-amiga_dump.log (CPU, custom chips,
+  code at PC via `build-host/m68kdis`, the copper list). All of chip / slow RAM
+  only after `set $amiga_chip = 1` / `set $amiga_slow = 1` (seconds of halt).
+  The two cores are separate GDB threads: a pause may stop core 1 alone, and a
+  continue sent to core 0 left the HDMI core halted (black screen); the
+  extension continues the threads that stopped.
 - Built-in ROMs (Machine: DiagROM; A500 > KS 1.2/1.3/2.04/3.1) are linked
   into the firmware and the host with `.incbin` from `ROMS_DIR` (default `debug/`,
   git-ignored: the Kickstarts are Commodore's and must never be committed).

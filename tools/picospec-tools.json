@@ -1,0 +1,22 @@
+{
+  "title": "pico-amiga",
+  "done": "/tmp/pico-amiga_gdb_done",
+  "memDump": {
+    "script": "memdump.gdb",
+    "convert": "python3 ${tools}/memdump.py",
+    "result": "/tmp/pico-amiga_dump.log",
+    "fresh": ["/tmp/pico-amiga_state.txt", "/tmp/pico-amiga_pc.bin"]
+  },
+  "screenshot": {
+    "script": "screenshot.gdb",
+    "convert": "${tools}/screenshot.sh",
+    "result": "/tmp/pico-amiga_screen.png",
+    "fresh": ["/tmp/pico-amiga_fb.bin", "/tmp/pico-amiga_dim.txt"]
+  },
+  "screenshotProfi": {
+    "script": "screenshot.gdb",
+    "convert": "${tools}/screenshot.sh",
+    "result": "/tmp/pico-amiga_screen.png",
+    "fresh": ["/tmp/pico-amiga_fb.bin", "/tmp/pico-amiga_dim.txt"]
+  }
+}
