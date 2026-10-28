@@ -31,6 +31,7 @@ public:
     // Sound
     static uint8_t  volume;         // 0..16 (16 = full scale)
     static bool     hdmi_audio;     // send audio in the HDMI data islands
+    static bool     hdmi_capture;   // Video > Capture card compatibility (PIO HDMI, tmds_pio.h)
 
     // Video
     static uint8_t  hpos;           // picture position: 0 centred, 1 left overscan

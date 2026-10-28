@@ -39,24 +39,48 @@ static inline void tmds_lane_words(int lane, uint16_t sym, uint32_t w[2]) {
 // nibble; tab_gb covers lanes 1 and 0 for a (green << 4 | blue) byte.
 // Nibbles are expanded to 8 bits (n * 17) and kept inside 0x08..0xF6, the
 // level clamp pico-speccy found to steady marginal receivers.
-static inline uint8_t tmds_level(int nibble) {
-    int v = nibble * 17;
-    return (uint8_t)(v < 0x08 ? 0x08 : v > 0xF6 ? 0xF6 : v);
+//
+// `capture` (Video > Capture card compatibility, pico-speccy's option of that
+// name): a pixel pair normally carries v and v+-1 (a doubled pixel) or a second
+// level shifted up to 4 (a hires pair) to stay DC-balanced.  A monitor cannot
+// tell, but an MS2130 capture card has a pixel-phase stage that turns such
+// pairs into two different colours (pico-speccy, 2026-08-30); State of the
+// Art's dithered hires "Spaceballs production" screen showed on a monitor and
+// not through the card.  With it, every level snaps to one whose character is
+// balanced by itself (five ones of ten: nibbles 3, 6, 9, 12 move by 1-2 of 255)
+// and a pair is those characters as they are.
+static inline bool tmds_single(uint8_t v, uint16_t *c) {   // v's five-ones character
+    const uint16_t q = tmds_qm(v);
+    for (int i = 0; i < 2; i++)
+        if (tmds_ones(tmds_rep(q, i)) == 5) { *c = tmds_rep(q, i); return true; }
+    return false;
 }
 
-static inline void tmds_pair_words(int lane, uint8_t v, uint32_t out[4]) {
+static inline uint8_t tmds_level(int nibble, bool capture) {
+    int v = nibble * 17;
+    v = v < 0x08 ? 0x08 : v > 0xF6 ? 0xF6 : v;
+    uint16_t c;
+    if (capture)
+        for (int d = 0; d < 256; d++) {                     // the nearest, the lower on a tie
+            if (v - d >= 0 && tmds_single((uint8_t)(v - d), &c)) return (uint8_t)(v - d);
+            if (v + d <= 255 && tmds_single((uint8_t)(v + d), &c)) return (uint8_t)(v + d);
+        }
+    return (uint8_t)v;
+}
+
+static inline void tmds_pair_words(int lane, uint8_t v, uint32_t out[4], bool capture) {
     uint16_t a, b;
-    tmds_balanced_pair(v, &a, &b);
+    if (!capture || !tmds_single(v, &a) || !tmds_single(v, &b)) tmds_balanced_pair(v, &a, &b);
     tmds_lane_words(lane, a, &out[0]);
     tmds_lane_words(lane, b, &out[2]);
 }
 
-static inline void tmds_build_tables(uint32_t tab_r[16][4], uint32_t tab_gb[256][4]) {
+static inline void tmds_build_tables(uint32_t tab_r[16][4], uint32_t tab_gb[256][4], bool capture) {
     uint32_t g[16][4], bl[16][4];
     for (int n = 0; n < 16; n++) {
-        tmds_pair_words(2, tmds_level(n), tab_r[n]);
-        tmds_pair_words(1, tmds_level(n), g[n]);
-        tmds_pair_words(0, tmds_level(n), bl[n]);
+        tmds_pair_words(2, tmds_level(n, capture), tab_r[n], capture);
+        tmds_pair_words(1, tmds_level(n, capture), g[n], capture);
+        tmds_pair_words(0, tmds_level(n, capture), bl[n], capture);
     }
     for (int i = 0; i < 256; i++)
         for (int k = 0; k < 4; k++) tab_gb[i][k] = g[i >> 4][k] | bl[i & 15][k];
@@ -89,12 +113,14 @@ static inline void tmds_mixed_pair(uint8_t va, uint8_t vb, uint16_t *first, uint
 }
 
 // Per-lane tables for a pair of different nibbles: [left][right] -> 4 words.
-static inline void tmds_build_mixed(uint32_t tab[3][16][16][4]) {
+static inline void tmds_build_mixed(uint32_t tab[3][16][16][4], bool capture) {
     for (int lane = 0; lane < 3; lane++)
         for (int a = 0; a < 16; a++)
             for (int b = 0; b < 16; b++) {
                 uint16_t ca, cb;
-                tmds_mixed_pair(tmds_level(a), tmds_level(b), &ca, &cb);
+                const uint8_t va = tmds_level(a, capture), vb = tmds_level(b, capture);
+                if (!capture || !tmds_single(va, &ca) || !tmds_single(vb, &cb))
+                    tmds_mixed_pair(va, vb, &ca, &cb);
                 tmds_lane_words(lane, ca, &tab[lane][a][b][0]);
                 tmds_lane_words(lane, cb, &tab[lane][a][b][2]);
             }

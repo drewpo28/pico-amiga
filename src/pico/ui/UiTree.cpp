@@ -22,6 +22,9 @@
 #include "app/Config.h"
 #include "roms.h"
 #include "machine.h"
+extern "C" {
+#include "video.h"
+}
 #include <string>
 
 namespace nm {
@@ -306,9 +309,20 @@ static const Node kAudio[] = {
     NM_RADIO("Output", SET_AUDIO_OUT, opt_audio_out, nullptr),
 };
 
+// Capture card compatibility: only the PIO HDMI encodes pixel pairs itself (the
+// HSTX encoder and VGA have nothing to change).
+static bool p_pioHdmi() {
+#ifdef VIDEO_PIO
+    return !video_is_vga();
+#else
+    return false;
+#endif
+}
+
 static const Node kVideo[] = {
     NM_RADIO("Picture position", SET_HPOS, opt_hpos, nullptr),
     NM_BOOL("HDMI audio", SET_HDMI_AUDIO, nullptr),
+    NM_BOOL("Capture card compatibility", SET_HDMI_CAPTURE, p_pioHdmi),
 };
 
 static const Node kOverclock[] = {

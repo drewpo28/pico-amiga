@@ -19,6 +19,7 @@ int  settings_flash_mhz(void);          // flash / PSRAM SCK limits (Options)
 int  settings_psram_mhz(void);
 int  settings_audio_out(void);
 bool settings_dbg_uart(void);          // 0 auto, 1 PWM, 2 I2S
+bool settings_hdmi_capture(void);      // Video > Capture card compatibility (PIO HDMI)
 // Push the live sound settings (volume, HDMI audio) to the outputs.
 void settings_apply_sound(void);
 void settings_apply_video(void);     // picture position (Video), render core (Debug)

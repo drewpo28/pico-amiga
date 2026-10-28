@@ -32,6 +32,7 @@ uint16_t Config::max_psram_freq = 166;
 uint8_t  Config::audio_out    = 0;
 uint8_t  Config::volume       = 16;
 bool     Config::hdmi_audio   = true;
+bool     Config::hdmi_capture = false;
 uint8_t  Config::hpos         = 0;
 std::string Config::kick      = "ks13";
 std::string Config::df0       = "";
@@ -116,6 +117,7 @@ void Config::load() {
     nvs_get_b  ("render_c1",     render_c1,    sts);
     nvs_get_u8 ("volume",        volume,       sts);
     nvs_get_b  ("hdmi_audio",    hdmi_audio,   sts);
+    nvs_get_b  ("hdmi_capture",  hdmi_capture, sts);
     if (cpu_mhz != 252 && cpu_mhz != 378 && cpu_mhz != 504) cpu_mhz = CPU_MHZ;
     if (volume > 16) volume = 16;
     if (max_flash_freq < 33 || max_flash_freq > 166) max_flash_freq = 66;
@@ -198,6 +200,7 @@ bool Config::save() {
     nvs_set_b(buf, "render_c1",     render_c1);
     nvs_set_i(buf, "volume",        volume);
     nvs_set_b(buf, "hdmi_audio",    hdmi_audio);
+    nvs_set_b(buf, "hdmi_capture",  hdmi_capture);
     nvs_set_str(buf, "kick",        kick.c_str());
     nvs_set_str(buf, "df0",         df0.c_str());
     nvs_set_b(buf, "df0_wp",        df0_wp);

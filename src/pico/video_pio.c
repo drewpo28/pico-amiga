@@ -30,6 +30,7 @@
 #include "hardware/pio.h"
 #include "hardware/structs/bus_ctrl.h"
 #include "amiga.h"
+#include "ui/ui.h"
 #include "tmds_pio.h"
 #include "tmds_lut.h"
 #include "tmds.pio.h"
@@ -152,8 +153,10 @@ static void set_x(PIO pio, uint sm, uint32_t v) {
 void hdmi_start(const amiga_row_t *framebuffer) {
     fb = framebuffer;
     hdmi_audio_init(25200000u, H_TOTAL, V_TOTAL);
-    tmds_build_tables(tab_r, tab_gb);
-    tmds_build_mixed(tab_mix);
+    // Video > Capture card compatibility (tmds_pio.h): read once, at boot.
+    const bool capture = settings_hdmi_capture();
+    tmds_build_tables(tab_r, tab_gb, capture);
+    tmds_build_mixed(tab_mix, capture);
     uint32_t terc4[16], pre[2][10], post[2][2];
     for (int n = 0; n < 16; n++) terc4[n] = hdmi_terc4(n);
     for (int vs = 0; vs < 2; vs++) hdmi_island_frame(pre[vs], post[vs], vs);

@@ -54,7 +54,9 @@ enum SettingFlags : uint16_t {
     X(SET_DRIVES,      AC_LIVE, 0,                             get_drives,    put_drives,    hook_drives) \
     X(SET_HPOS,        AC_LIVE, 0,                             get_hpos,      put_hpos,      hook_hpos) \
     X(SET_RENDER_C1,   AC_LIVE, 0,                             get_renderc1,  put_renderc1,  hook_hpos) \
-    X(SET_DF0_DISK,    AC_LIVE, 0,                             get_df0disk,   put_df0disk,   nullptr)
+    X(SET_DF0_DISK,    AC_LIVE, 0,                             get_df0disk,   put_df0disk,   nullptr) \
+    /* Video > Capture card compatibility: the PIO HDMI tables are built at boot */ \
+    X(SET_HDMI_CAPTURE, AC_REBOOT, 0,                          get_hdmicapture, put_hdmicapture, nullptr)
 
 #define NM_X_ENUM(id, cls, flags, g, p, h) id,
 enum SettingId : uint16_t {

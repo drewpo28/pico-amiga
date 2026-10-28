@@ -47,6 +47,7 @@ extern "C" int settings_audio_out(void) { return Config::audio_out; }
 extern "C" bool settings_dbg_uart(void) { return Config::dbg_uart; }
 extern "C" int settings_flash_mhz(void) { return Config::max_flash_freq; }
 extern "C" int settings_psram_mhz(void) { return Config::max_psram_freq; }
+extern "C" bool settings_hdmi_capture(void) { return Config::hdmi_capture; }
 
 extern "C" void settings_apply_video(void) {
     amiga_set_fb_x0(Config::hpos ? AMIGA_FB_X0_WIDE : AMIGA_FB_X0_CENTRE);

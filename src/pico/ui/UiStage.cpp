@@ -62,6 +62,7 @@ static void    put_df0disk(int32_t v) { Config::df0_disk = (uint8_t)v; }
 
 NM_INT_ACCESS (volume,    volume,     uint8_t)
 NM_BOOL_ACCESS(hdmiaudio, hdmi_audio)
+NM_BOOL_ACCESS(hdmicapture, hdmi_capture)
 NM_INT_ACCESS (audioout,  audio_out,  uint8_t)
 NM_INT_ACCESS (cpumhz,    cpu_mhz,    uint16_t)
 NM_INT_ACCESS (flashfreq, max_flash_freq, uint16_t)

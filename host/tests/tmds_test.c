@@ -144,9 +144,11 @@ static int lut_check(const uint32_t tab_r[16][4], const uint32_t tab_gb[256][4],
     return lines;
 }
 
-int main(void) {
-    static uint32_t tab_r[16][4], tab_gb[256][4];
-    tmds_build_tables(tab_r, tab_gb);
+// The doubled and mixed tables of one mode.  capture (Capture card
+// compatibility): every character is balanced by itself and a doubled pixel is
+// one character twice, a mixed pair the two levels exactly.
+static int tables_check(bool capture, uint32_t tab_r[16][4], uint32_t tab_gb[256][4], uint32_t mix[3][16][16][4]) {
+    tmds_build_tables(tab_r, tab_gb, capture);
 
     uint16_t px[4096];
     for (int c = 0; c < 4096; c++) px[c] = (uint16_t)c;
@@ -158,28 +160,34 @@ int main(void) {
         int nib[3] = { c & 15, (c >> 4) & 15, (c >> 8) & 15 };     // lane 0 blue, 1 green, 2 red
         for (int lane = 0; lane < 3; lane++) {
             uint16_t a = lane_sym(w, lane), b = lane_sym(w + 2, lane);
-            int want = tmds_level(nib[lane]);
+            int want = tmds_level(nib[lane], capture);
             CHECK(tmds_decode(a) == want, "colour %03X lane %d: first decodes %02X, want %02X", c, lane, tmds_decode(a), want);
             int db = tmds_decode(b) - want;
             CHECK(db >= -1 && db <= 1, "colour %03X lane %d: second decodes %02X", c, lane, tmds_decode(b));
             CHECK(tmds_ones(a) + tmds_ones(b) == 10, "colour %03X lane %d: pair not DC-balanced", c, lane);
+            if (capture) CHECK(a == b && tmds_ones(a) == 5, "capture: colour %03X lane %d: %03X %03X", c, lane, a, b);
         }
     }
+    if (capture)
+        for (int n = 0; n < 16; n++) {
+            int d = tmds_level(n, true) - tmds_level(n, false); if (d < 0) d = -d;
+            CHECK(d <= 2, "capture: nibble %X moves by %d", n, d);
+        }
 
     // Different neighbours (hires): every pair of nibble levels on every lane.
-    static uint32_t mix[3][16][16][4];
-    tmds_build_mixed(mix);
+    tmds_build_mixed(mix, capture);
     int maxdev = 0;
     for (int lane = 0; lane < 3; lane++)
         for (int a = 0; a < 16; a++)
             for (int b = 0; b < 16; b++) {
                 const uint32_t *w = mix[lane][a][b];
                 uint16_t ca = lane_sym(w, lane), cb = lane_sym(w + 2, lane);
-                CHECK(tmds_decode(ca) == tmds_level(a), "mixed %X/%X lane %d: first %02X", a, b, lane, tmds_decode(ca));
-                int d = tmds_decode(cb) - tmds_level(b); if (d < 0) d = -d;
+                CHECK(tmds_decode(ca) == tmds_level(a, capture), "mixed %X/%X lane %d: first %02X", a, b, lane, tmds_decode(ca));
+                int d = tmds_decode(cb) - tmds_level(b, capture); if (d < 0) d = -d;
                 if (d > maxdev) maxdev = d;
-                CHECK(d <= 4, "mixed %X/%X lane %d: second off by %d", a, b, lane, d);
+                CHECK(d <= (capture ? 0 : 4), "mixed %X/%X lane %d: second off by %d", a, b, lane, d);
                 CHECK(tmds_ones(ca) + tmds_ones(cb) == 10, "mixed %X/%X lane %d: not balanced", a, b, lane);
+                if (capture) CHECK(tmds_ones(ca) == 5 && tmds_ones(cb) == 5, "capture: mixed %X/%X lane %d", a, b, lane);
             }
     // tmds_encode_pairs on a line mixing equal and different neighbours.
     static uint16_t lft[64], rgt[64];
@@ -189,8 +197,17 @@ int main(void) {
     for (int i = 0; i < 64; i++) {
         int pa[3] = { lft[i] & 15, (lft[i] >> 4) & 15, lft[i] >> 8 };
         for (int lane = 0; lane < 3; lane++)
-            CHECK(tmds_decode(lane_sym(line + 4 * i, lane)) == tmds_level(pa[lane]), "encode_pairs px %d lane %d", i, lane);
+            CHECK(tmds_decode(lane_sym(line + 4 * i, lane)) == tmds_level(pa[lane], capture), "encode_pairs px %d lane %d", i, lane);
     }
+    return maxdev;
+}
+
+int main(void) {
+    static uint32_t tab_r[16][4], tab_gb[256][4];
+    static uint32_t mix[3][16][16][4];
+    tables_check(true, tab_r, tab_gb, mix);
+    const int lines_capture = lut_check(tab_r, tab_gb, mix);
+    const int maxdev = tables_check(false, tab_r, tab_gb, mix);
 
     static const uint16_t ctrl[4] = { TMDS_CTRL_00, TMDS_CTRL_01, TMDS_CTRL_10, TMDS_CTRL_11 };
     for (int vs = 0; vs < 2; vs++)
@@ -206,6 +223,6 @@ int main(void) {
 
     if (fails) { printf("tmds_test: %d failures\n", fails); return 1; }
     printf("tmds_test: 4096 doubled colours, 3x256 mixed pairs (2nd within +-%d), 4 control states,"
-           " %d lookup lines OK\n", maxdev, lines);
+           " %d lookup lines OK; capture mode: single characters, %d lookup lines OK\n", maxdev, lines, lines_capture);
     return 0;
 }

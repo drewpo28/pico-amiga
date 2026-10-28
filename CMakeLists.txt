@@ -94,6 +94,7 @@ pico_generate_pio_header(pico-amiga ${CMAKE_CURRENT_LIST_DIR}/src/pico/drivers/p
 pico_generate_pio_header(pico-amiga ${CMAKE_CURRENT_LIST_DIR}/src/pico/drivers/audio/audio_i2s.pio)
 if(VIDEO STREQUAL "PIO")
     target_sources(pico-amiga PRIVATE src/pico/video_pio.c)
+    target_compile_definitions(pico-amiga PRIVATE VIDEO_PIO=1)   # the menu's PIO-only rows
     pico_generate_pio_header(pico-amiga ${CMAKE_CURRENT_LIST_DIR}/src/pico/tmds.pio)
     target_link_libraries(pico-amiga PRIVATE hardware_pio)
 else()
