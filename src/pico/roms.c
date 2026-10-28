@@ -8,3 +8,14 @@ const builtin_rom_t *builtin_rom_find(const char *id) {
         if (!strcmp(builtin_roms[i].id, id)) return &builtin_roms[i];
     return NULL;
 }
+
+bool builtin_rom_on(const builtin_rom_t *r, const char *machine) {
+    const size_t n = strlen(machine);
+    for (const char *p = r->machine; p && *p; ) {
+        const char *e = strchr(p, ',');
+        const size_t len = e ? (size_t)(e - p) : strlen(p);
+        if (len == n && !strncmp(p, machine, n)) return true;
+        p = e ? e + 1 : NULL;
+    }
+    return false;
+}

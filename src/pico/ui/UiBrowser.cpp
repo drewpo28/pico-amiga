@@ -57,7 +57,7 @@ struct BrowseTypeState {
 static BrowseTypeState s_types[BROWSE_COUNT] = {
     { "" },                                      // BROWSE_ALL
     { ".adf,.dms,.m3u" },                        // BROWSE_ADF (an .m3u is a disk set)
-    { ".rom,.bin" },                             // BROWSE_ROM
+    { ".rom,.bin,.a500,.a600,.a1000,.cdtv" },    // BROWSE_ROM (.A500 etc.: PUAE's names)
     { "" },                                      // BROWSE_CFG
 };
 
@@ -256,7 +256,8 @@ static bool extMatches(const string& name) {
     if (s_exts.empty()) return true;
     const size_t dot = name.find_last_of('.');
     if (dot == string::npos) return false;
-    const string e = name.substr(dot);
+    string e = name.substr(dot);
+    for (auto& c : e) c = (char)tolower((uint8_t)c);                // KICK.ROM, kick40063.A600
     for (const auto& x : s_exts) if (e == x) return true;
     return false;
 }
@@ -265,7 +266,8 @@ static const char* typeLabel(const string& lcext) {
     if (lcext == "adf")                                     return "Amiga disk";
     if (lcext == "dms")                                     return "Amiga disk (DMS)";
     if (lcext == "adz" || lcext == "ipf")                   return "Disk (unsupported)";
-    if (lcext == "rom" || lcext == "bin")                   return "ROM image";
+    if (lcext == "rom" || lcext == "bin" || lcext == "a500" || lcext == "a600" ||
+        lcext == "a1000" || lcext == "cdtv")                return "ROM image";
     if (lcext == "hdf")                                     return "Hard disk image";
     if (lcext == "lha" || lcext == "lzh" || lcext == "zip") return "Archive";
     if (lcext == "mod")                                     return "Module";

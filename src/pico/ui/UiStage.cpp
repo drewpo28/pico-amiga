@@ -33,19 +33,26 @@ NM_INT_ACCESS (theme,     ui_theme,   uint8_t)
 NM_BOOL_ACCESS(rounded,   ui_rounded)
 NM_BOOL_ACCESS(vgasolid,  ui_vga_solid)
 
-// Machine (DiagROM / A500 / SD card ROM rows): the built-in ROM's index, KICK_SD the card's.
-#define KICK_SD 100
+// Machine (DiagROM / A500 / A500+ rows): the built-in ROM's index, KICK_SD the
+// card's (Custom ROM, set by its own row: no radio lists it); KICK_PLUS added on
+// the A500+ (the same ROM is listed under both A500 and A500+, and only the
+// running machine's row shows it).
+#define KICK_SD   100
+#define KICK_PLUS 200
 static int32_t get_kick() {
-    if (Config::kick == "sd") return KICK_SD;
+    const int32_t plus = Config::machine ? KICK_PLUS : 0;
+    if (Config::kick == "sd") return KICK_SD + plus;
     for (unsigned i = 0; i < builtin_rom_count; i++)
-        if (Config::kick == builtin_roms[i].id) return (int32_t)i;
+        if (Config::kick == builtin_roms[i].id) return (int32_t)i + plus;
     return -1;
 }
 static void put_kick(int32_t v) {
+    Config::machine = v >= KICK_PLUS;
+    if (v >= KICK_PLUS) v -= KICK_PLUS;
     if (v == KICK_SD) Config::kick = "sd";
     else if (v >= 0 && (unsigned)v < builtin_rom_count) Config::kick = builtin_roms[v].id;
 }
-// A new ROM means a cold start of the Amiga (the disk stays in).
+// A new ROM or machine means a cold start of the Amiga (the disk stays in).
 static bool hook_kick(int32_t, int32_t) { return machine_apply_kickstart(); }
 
 NM_BOOL_ACCESS(df0wp, df0_wp)
@@ -76,6 +83,7 @@ static bool hook_drives(int32_t, int32_t) {
 }
 NM_INT_ACCESS (hpos,      hpos,       uint8_t)
 NM_BOOL_ACCESS(renderc1,  render_c1)
+NM_BOOL_ACCESS(vcentre,   vcentre)
 // Picture position, render core: from the next frame on.
 static bool hook_hpos(int32_t, int32_t) { settings_apply_video(); return true; }
 // Volume and HDMI audio reach the outputs at once (heard while editing).

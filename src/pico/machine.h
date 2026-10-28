@@ -16,12 +16,19 @@ extern "C" {
 void machine_init(uint8_t *rom_buf, uint8_t *ext_buf, uint8_t *dms_area, uint32_t dms_size);
 
 // Fill cfg->rom / ext_rom from Config::kick: a built-in ROM (roms.h, read in
-// place from flash), or "sd" = /amiga/kick.rom (+ /amiga/ext.rom) from the card,
-// falling back to the first built-in ROM.  False when there is no ROM at all.
+// place from flash), or "sd" = Config::kick_file from the card (Machine >
+// Custom ROM; with an ext.rom in its folder, that at $E00000: AROS), falling
+// back to the first built-in ROM; and the model from Config::machine:
+// cfg->chipset, chip_size, slow_size.  The A500 has 512 KB chip RAM at the
+// chip_ram buffer and 512 KB slow RAM at slow_ram; the A500+ 1 MB of chip RAM
+// and no slow RAM, so slow_ram must be chip_ram + 512 KB (PSRAM: one 1 MB
+// area).  False when there is no ROM at all.
 bool machine_select_rom(amiga_config_t *cfg);
-// The menu changed Config::kick: swap the ROM in and hard-reset the Amiga.
+// The menu changed Config::kick or Config::machine: swap the ROM and the model
+// in and hard-reset the Amiga.
 bool machine_apply_kickstart(void);
-// What is running, for the menu's sub-header ("Kickstart 1.3").
+// What is running, for the menu's sub-header ("A500+", "Kickstart 2.04").
+const char *machine_name(void);
 const char *machine_rom_name(void);
 
 // DF0..DF3 (only DF0 is wired in the core so far).  insert: open the ADF at

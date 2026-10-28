@@ -7,10 +7,12 @@
 //
 //   pico-amiga-host --rom kick.rom [--ext ext.rom] [--adf disk.adf|.dms]... (DF0, DF1, ...)
 //                   [--frames N] [--shot N:file.png]... [--wav out.wav]
-//                   [--slow] [--key N:code:down]... [--status K]
+//                   [--slow] [--a500plus] [--vcentre] [--key N:code:down]... [--status K]
 //                   [--joy N:dirs:fire]... [--mouse N:dx:dy:buttons]...
 // --joy sets game port 2 from frame N on (dirs: bit0 up 1 down 2 left 3 right);
 // --mouse moves the port 1 mouse once at frame N (buttons: bit0 left 1 right).
+// --a500plus: the A500+ (ECS chipset, 1 MB chip RAM, no slow RAM, the battery
+// clock showing the PC's local time).  --vcentre: amiga_set_vcentre(true).
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -193,11 +195,19 @@ static uint32_t prof_clock(void) {
     return (uint32_t)(ts.tv_sec * 1000000000ll + ts.tv_nsec);
 }
 
+static int64_t rtc_time(void *ctx) {
+    (void)ctx;
+    const time_t t = time(NULL);
+    struct tm lt;
+    localtime_r(&t, &lt);
+    return (int64_t)t + lt.tm_gmtoff;
+}
+
 int main(int argc, char **argv) {
     const char *rom_path = NULL, *ext_path = NULL, *wav_path = NULL;
     const char *adf_path[4] = {0}; int nadf = 0;
     int frames = 250, status_every = 0, scale = 1;
-    bool slow = false, render_thread_on = false;
+    bool slow = false, render_thread_on = false, plus = false, vcentre = false;
     shot_t shots[64]; int nshots = 0;
     keyev_t keys[256]; int nkeys = 0;
     inev_t joys[256]; int njoys = 0;
@@ -216,6 +226,8 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--status") && v) { status_every = atoi(v); i++; }
         else if (!strcmp(a, "--scale") && v) { scale = atoi(v); i++; }
         else if (!strcmp(a, "--slow")) slow = true;
+        else if (!strcmp(a, "--a500plus")) plus = true;
+        else if (!strcmp(a, "--vcentre")) vcentre = true;
         else if (!strcmp(a, "--render-thread")) render_thread_on = true;
         else if (!strcmp(a, "--shot") && v && nshots < 64) {
             const char *c = strchr(v, ':');
@@ -242,14 +254,15 @@ int main(int argc, char **argv) {
     }
     if (!rom_path) {
         fprintf(stderr, "usage: %s --rom kick.rom [--ext ext.rom] [--adf disk.adf]... [--frames N]\n"
-                        "       [--shot N:file.png] [--wav out.wav] [--slow] [--status K] [--swap frame:drive:disk]\n", argv[0]);
+                        "       [--shot N:file.png] [--wav out.wav] [--slow] [--a500plus] [--status K] [--swap frame:drive:disk]\n", argv[0]);
         return 2;
     }
 
     amiga_config_t cfg = {0};
-    cfg.chip_size = 512 * 1024;
+    cfg.chip_size = plus ? 1024 * 1024 : 512 * 1024;
     cfg.chip_ram = calloc(1, cfg.chip_size);
-    if (slow) { cfg.slow_size = 512 * 1024; cfg.slow_ram = calloc(1, cfg.slow_size); }
+    if (plus) { cfg.chipset = AMIGA_ECS; cfg.rtc_time = rtc_time; }
+    else if (slow) { cfg.slow_size = 512 * 1024; cfg.slow_ram = calloc(1, cfg.slow_size); }
     uint32_t rs; cfg.rom = load(rom_path, &rs); cfg.rom_size = rs;
     if (rs != 256 * 1024 && rs != 512 * 1024) { fprintf(stderr, "ROM must be 256 or 512 KB\n"); return 1; }
     if (ext_path) { uint32_t es; cfg.ext_rom = load(ext_path, &es); cfg.ext_size = es; }
@@ -258,6 +271,7 @@ int main(int argc, char **argv) {
     cfg.serial_out = serial_out;
     cfg.prof_clock = prof_clock;            // --status: the core's buckets, ns
     amiga_init(&cfg);
+    amiga_set_vcentre(vcentre);
     if (render_thread_on) {
         pthread_t th;
         pthread_create(&th, NULL, render_thread, NULL);

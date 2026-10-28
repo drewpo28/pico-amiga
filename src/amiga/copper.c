@@ -119,9 +119,9 @@ void copper_dma_changed(void) {}
 
 void copper_write(uint32_t reg, uint16_t v) {
     switch (reg) {
-    case R_COP1LCH: lc[0] = (lc[0] & 0xFFFF) | ((uint32_t)(v & 7) << 16); break;
+    case R_COP1LCH: lc[0] = (lc[0] & 0xFFFF) | ((uint32_t)(v & 0x1F) << 16); break;
     case R_COP1LCL: lc[0] = (lc[0] & 0xFFFF0000) | (v & 0xFFFE); break;
-    case R_COP2LCH: lc[1] = (lc[1] & 0xFFFF) | ((uint32_t)(v & 7) << 16); break;
+    case R_COP2LCH: lc[1] = (lc[1] & 0xFFFF) | ((uint32_t)(v & 0x1F) << 16); break;
     case R_COP2LCL: lc[1] = (lc[1] & 0xFFFF0000) | (v & 0xFFFE); break;
     case R_COPJMP1: pc = lc[0]; state = COP_RUN; break;
     case R_COPJMP2: pc = lc[1]; state = COP_RUN; break;

@@ -9,6 +9,7 @@
 //   $A00000-$BFFFFF  CIAs (CIA-A on odd bytes when A12=0, CIA-B on even when A13=0)
 //   $C00000-$C7FFFF  slow RAM if fitted, otherwise custom-register mirror
 //   $C80000-$D7FFFF  custom-register mirror
+//   $DC0000-$DCFFFF  battery clock if the platform has a time (cfg.rtc_time)
 //   $DF0000-$DFFFFF  custom chips
 //   $E00000-$E7FFFF  extended ROM (AROS) if supplied
 //   $E80000-$EFFFFF  Zorro II autoconfig space (empty: reads 0)
@@ -17,7 +18,7 @@
 #include "amiga_int.h"
 #include "m68k.h"
 
-enum { B_NONE = 0, B_CIA, B_CUSTOM };
+enum { B_NONE = 0, B_CIA, B_CUSTOM, B_RTC };
 
 typedef struct {
     const uint8_t *rd;   // direct read base, or NULL
@@ -56,6 +57,7 @@ void mem_init(void) {
     map(0xA0, 0x20, NULL, NULL, 0, B_CIA);
     map(0xC0, 0x18, NULL, NULL, 0, B_CUSTOM);          // $C00000-$D7FFFF mirror
     map(0xDF, 0x01, NULL, NULL, 0, B_CUSTOM);
+    if (c->rtc_time) map(0xDC, 0x01, NULL, NULL, 0, B_RTC);
     if (c->slow_ram && c->slow_size)
         map(0xC0, (int)(c->slow_size >> 16), c->slow_ram, c->slow_ram, c->slow_size - 1, B_NONE);
     if (c->ext_rom && c->ext_size)
@@ -83,6 +85,8 @@ static uint8_t io_read8(uint32_t a, int io) {
         uint16_t w = custom_read(a & 0x1FE);
         return (a & 1) ? (uint8_t)w : (uint8_t)(w >> 8);
     }
+    case B_RTC:                     // register n: the low nibble of the word at $DC0000 + 4n + 2
+        return (a & 1) ? rtc_read((int)(a >> 2) & 15) : 0;
     default:
         return 0;
     }
@@ -97,6 +101,8 @@ static uint16_t io_read16(uint32_t a, int io) {
     }
     case B_CUSTOM:
         return custom_read(a & 0x1FE);
+    case B_RTC:
+        return rtc_read((int)(a >> 2) & 15);
     default:
         return 0;
     }
@@ -112,6 +118,9 @@ static void io_write8(uint32_t a, uint8_t v, int io) {
         // The 68000 drives a byte write onto both halves of the data bus.
         custom_write(a & 0x1FE, (uint16_t)((v << 8) | v), amiga_hpos(), false);
         break;
+    case B_RTC:
+        if (a & 1) rtc_write((int)(a >> 2) & 15, v);
+        break;
     default:
         break;
     }
@@ -125,6 +134,9 @@ static void io_write16(uint32_t a, uint16_t v, int io) {
         break;
     case B_CUSTOM:
         custom_write(a & 0x1FE, v, amiga_hpos(), false);
+        break;
+    case B_RTC:
+        rtc_write((int)(a >> 2) & 15, (uint8_t)v);
         break;
     default:
         break;

@@ -114,7 +114,7 @@ void paula_write(uint32_t reg, uint16_t v) {
     if (i < 0 || i > 3) return;
     chan_t *c = &ch[i];
     switch (reg & 0xE) {
-    case 0x0: c->lc = (c->lc & 0xFFFF) | ((uint32_t)(v & 7) << 16); break;
+    case 0x0: c->lc = (c->lc & 0xFFFF) | ((uint32_t)(v & 0x1F) << 16); break;
     case 0x2: c->lc = (c->lc & 0xFFFF0000) | (v & 0xFFFE); break;
     case 0x4: c->len = v; break;
     case 0x6: c->per = v; break;

@@ -23,7 +23,7 @@ enum {
     R_BLTCON0 = 0x040, R_BLTCON1 = 0x042, R_BLTAFWM = 0x044, R_BLTALWM = 0x046,
     R_BLTCPTH = 0x048, R_BLTCPTL = 0x04A, R_BLTBPTH = 0x04C, R_BLTBPTL = 0x04E,
     R_BLTAPTH = 0x050, R_BLTAPTL = 0x052, R_BLTDPTH = 0x054, R_BLTDPTL = 0x056,
-    R_BLTSIZE = 0x058,
+    R_BLTSIZE = 0x058, R_BLTCON0L = 0x05A, R_BLTSIZV = 0x05C, R_BLTSIZH = 0x05E,
     R_BLTCMOD = 0x060, R_BLTBMOD = 0x062, R_BLTAMOD = 0x064, R_BLTDMOD = 0x066,
     R_BLTCDAT = 0x070, R_BLTBDAT = 0x072, R_BLTADAT = 0x074,
     R_DENISEID = 0x07C, R_DSKSYNC = 0x07E,
@@ -40,6 +40,7 @@ enum {
     R_SPR0PTH = 0x120,          // .. SPR7PTL = 0x13E
     R_SPR0POS = 0x140,          // + 8 per sprite: POS CTL DATA DATB
     R_COLOR00 = 0x180,          // .. COLOR31 = 0x1BE
+    R_BEAMCON0 = 0x1DC, R_DIWHIGH = 0x1E4,          // ECS
 };
 
 // DMACON
@@ -62,6 +63,7 @@ enum {
 typedef struct {
     amiga_config_t cfg;
     uint32_t chip_mask;        // chip_size - 1
+    bool     ecs;              // cfg.chipset == AMIGA_ECS
 
     // Beam / time. One colour clock = 2 CPU cycles.
     uint32_t frame;
@@ -75,6 +77,7 @@ typedef struct {
     uint16_t dmacon, intena, intreq, adkcon;
     uint16_t copcon;
     uint16_t potgo, serper;
+    uint16_t beamcon0;         // ECS: stored (PAL only, its sync options are not modelled)
     uint8_t  ipl_pending;      // IPL computed while the CPU was running
 
     // Input
@@ -183,6 +186,11 @@ void     floppy_line(void);                         // per-line: DMA completion,
 void     floppy_insert(int drive, const amiga_disk_t *d);
 void     floppy_eject(int drive);
 void     floppy_set_drives(int n);
+
+// ---- battery clock (rtc.c) ---------------------------------------------------
+uint8_t  rtc_read(int reg);                         // reg 0..15: the nibble
+void     rtc_write(int reg, uint8_t v);
+void     rtc_reset(void);
 
 // ---- CIAs (cia.c) ----------------------------------------------------------
 void     cia_reset(void);

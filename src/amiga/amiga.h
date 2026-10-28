@@ -1,4 +1,4 @@
-// pico-amiga — Amiga 500 (OCS, PAL) emulation core.
+// pico-amiga — Amiga 500 / 500+ (OCS / ECS, PAL) emulation core.
 //
 // This header is the whole contract between the emulated machine and whatever
 // runs it: the RP2350 firmware (src/pico/) or the headless host runner (host/).
@@ -61,6 +61,13 @@ void amiga_fb_line(const amiga_row_t *row, int sub, uint16_t out[AMIGA_OUT_W]);
 void amiga_fb_fill(amiga_row_t *fb, uint16_t colour);
 // The lowres DIW x shown in framebuffer column 0, from the next line on.
 void amiga_set_fb_x0(int x0);
+// Vertical centring.  Off (the default): row 0 is beam line AMIGA_FB_Y0.  On:
+// the lines with bitplane DMA are centred in the AMIGA_FB_H rows (row 0 down to
+// beam line 0), so a short picture - an NTSC-sized 200-line game - sits in the
+// middle instead of at the top; a new height is followed once it has held for
+// half a second, so screens that flash or open their window line by line do
+// not make the picture jump.
+void amiga_set_vcentre(bool on);
 // Framebuffer rows [y0, y1) carry a platform overlay (row_done); y1 <= y0: none.
 void amiga_set_overlay_rows(int y0, int y1);
 // Denise on another core: with async on, the emulation queues the display
@@ -80,10 +87,16 @@ bool amiga_render_pump(void);
 #define AMIGA_LINES_LONG     313        // long frame (LOF=1); short frame 312
 #define AMIGA_CPU_HZ         7093790    // 68000 clock, 2 CPU cycles per colour clock
 
+// Chipsets (amiga_config_t.chipset).  ECS is the A500+'s: Agnus 8375 (21-bit
+// DMA pointers, large blits, DIWHIGH, BEAMCON0 stored) and Denise 8373
+// (DENISEID, super-hires, BPLCON3's border blank).
+enum { AMIGA_OCS = 0, AMIGA_ECS = 1 };
+
 typedef struct {
     // Memory supplied by the platform. Contents are big-endian Amiga order.
-    uint8_t  *chip_ram;      uint32_t chip_size;   // 512 KB (A500); power of two
+    uint8_t  *chip_ram;      uint32_t chip_size;   // 512 KB (A500), 1 MB (A500+); power of two
     uint8_t  *slow_ram;      uint32_t slow_size;   // 0 or 512 KB "trapdoor" at $C00000
+    uint8_t   chipset;       // AMIGA_OCS / AMIGA_ECS
     const uint8_t *rom;      uint32_t rom_size;    // 256 KB (mirrored) or 512 KB at $F80000
     const uint8_t *ext_rom;  uint32_t ext_size;    // 0 or 512 KB at $E00000 (AROS ext)
 
@@ -104,6 +117,10 @@ typedef struct {
     // set, the core charges the time between its section switches to
     // amiga_profile_t's buckets.
     uint32_t (*prof_clock)(void);
+    // Battery clock (MSM6242B at $DC0000, as on the A500+ board and the A501
+    // card): the local time as seconds since 1970-01-01, read when Kickstart
+    // reads the clock.  NULL: no clock (the registers read 0, as an empty slot).
+    int64_t (*rtc_time)(void *ctx);
     void *ctx;
 } amiga_config_t;
 
@@ -121,6 +138,9 @@ void amiga_reset(bool hard);             // hard: clears chip RAM as on power-on
 // Swap the Kickstart (and extended) ROM; takes effect at the next amiga_reset(),
 // which a ROM change wants hard.  Same rules as amiga_config_t's fields.
 void amiga_set_roms(const uint8_t *rom, uint32_t rom_size, const uint8_t *ext, uint32_t ext_size);
+// Switch the model (A500 <-> A500+): chipset and RAM sizes, the buffers staying
+// those of amiga_init().  Takes effect at the next amiga_reset(), a hard one.
+void amiga_set_machine(int chipset, uint32_t chip_size, uint32_t slow_size);
 void amiga_run_frame(void);              // one PAL frame (312 or 313 lines)
 
 void amiga_insert_disk(int drive, const amiga_disk_t *disk);  // drive 0..3

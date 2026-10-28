@@ -61,41 +61,51 @@ verified on the host bench; "hw" means verified on a board.
 
 ## 5. A500+ (ECS)
 
-Not "an A500 with 1 MB": Kickstart 2.04 (37.175, already built in as ks204 -
+Not "an A500 with 1 MB": Kickstart 2.04 (37.175, built in as ks204 -
 kick37175.A500 is the A500+ ROM), 1 MB of chip RAM and no slow RAM, and the ECS
-chipset (Agnus 8375, Denise 8373), plus a battery clock at $DC0000. The core is
-OCS today: every DMA pointer keeps 19 bits (512 KB), VPOSR reports an OCS Agnus,
-DENISEID reads $FFFF. A500 keeps KS 2.04 and 3.1 in its list (real A500s took
-them too); A500+ lists the same two.
+chipset (Agnus 8375, Denise 8373), plus a battery clock at $DC0000. A500 keeps
+KS 2.04 and 3.1 in its list (real A500s took them too); A500+ lists the same two.
+Machine > A500+ picks it (Config::machine, storage.nvs `machine=1`); the host
+bench takes `--a500plus`; smoke.sh's test 5 (make_ecs_adf.py) covers the IDs,
+the 1 MB DMA and super-hires with the free AROS ROM.
 
-Step 1 - an A500 with 1 MB chip RAM (what most A500+ software needs):
+Step 1 - an A500 with 1 MB chip RAM (host):
 
-- [ ] Machine menu: an A500+ row (cmake/roms.cmake: ks204 and ks31 under A500+
-      as well, or a per-ROM machine list), Config keeps the machine
-- [ ] main.c / machine.cpp: chip_size 1 MB, no slow RAM, for the A500+ (PSRAM
-      layout: chip RAM grows into the slow RAM's 512 KB)
-- [ ] DMA pointers to 21 bits (`v & 0x1F` in the PTH writes): copper.c (COPxLC),
-      blitter.c (set_ptr), paula.c (AUDxLC), floppy.c (DSKPT), denise.c (BPLxPT,
-      SPRxPT). Safe for the A500: chip_mask still wraps them at 512 KB, as the
-      OCS Agnus ignores the bits
-- [ ] VPOSR: the ECS Agnus ID ($20 for the PAL 8372/8375) when the machine is ECS
-- [ ] Check: KS 2.04 reports 1 MB chip (Workbench's memory gauge), a 1 MB-chip
-      game or demo, the A500 screens unchanged (smoke, the State of the Art set)
+- [x] Machine menu: an A500+ row (cmake/roms.cmake: a ROM lists its machines,
+      ks204, ks205 and ks31 under A500 and A500+); Custom ROM (a Kickstart
+      file from the card) on either
+- [x] main.c / machine.cpp: chip_size 1 MB, no slow RAM, for the A500+ (PSRAM
+      layout: chip RAM grows into the slow RAM's 512 KB); amiga_set_machine()
+      switches the model from the menu (hard reset)
+- [x] DMA pointers to 21 bits (`v & 0x1F` in the PTH writes): copper, blitter,
+      Paula, disk, bitplanes, sprites. The A500's chip_mask still wraps them at 512 KB
+- [x] VPOSR: the ECS Agnus ID ($20, PAL 8372A/8375)
+- [x] Check: KS 2.04 reports 1 MB chip (Workbench: 811,424 graphics mem),
+      State of the Art (needs 1 MB) runs on the A500+, the A500 screens are
+      unchanged frame for frame (IK+, Cannon Fodder, State of the Art, Exolon,
+      Workbench 2.04, DiagROM)
 
-Step 2 - ECS Agnus proper (the few programs that test for ECS):
+Step 2 - ECS Agnus proper (host):
 
-- [ ] BLTSIZV / BLTSIZH (blits up to 32768 x 32768), BLTCON0L
-- [ ] BEAMCON0 (stored; PAL only), DIWHIGH (DIW high bits), DDF and DIW as ECS
-      computes them
-- [ ] The $DC0000 clock (MSM6242B: date/time from the board, writes ignored)
+- [x] BLTSIZV / BLTSIZH (blits up to 32768 x 2048 words), BLTCON0L
+- [x] BEAMCON0 (stored only: PAL, its sync options are not modelled), DIWHIGH
+      (H8, V8-V10; dropped by the next DIWSTRT/DIWSTOP write)
+- [ ] DDF as ECS computes it (its own start/stop limits): OCS rules today
+- [x] The $DC0000 clock (MSM6242B, rtc.c): the platform's time through
+      cfg.rtc_time, writes to the time ignored. The host bench gives the PC's
+      local time; the firmware has no time source yet (no clock fitted)
 
-Step 3 - ECS Denise (Workbench in the high modes):
+Step 3 - ECS Denise (host):
 
-- [ ] DENISEID ($FC), BPLCON3, BRDRBLNK
-- [ ] Super-hires (1280 x 256 PAL, interlaced too; 2 pixels per output pixel of
-      the 720) - 2 bitplanes, 4 colours on screen; needs a framebuffer row format
-      and scanout path of its own. Mostly Workbench 2.04's high-resolution modes;
-      games and demos hardly use it
+- [x] DENISEID ($FC), BPLCON3 BRDRBLNK (with BPLCON0 ECSENA)
+- [x] Super-hires (1280 x 256 PAL and 1280 x 512 interlaced): a pf entry holds
+      a pixel pair, its colour is the pair's two halves (COLOR[p2*4+p1]: the
+      top and low bits of each gun) averaged into one output pixel - hires rows,
+      no new row format. Workbench 2.04 in PAL:SuperHires and
+      SuperHires-Interlaced (ScreenMode prefs) checked; pixels from DIW x 2t + 5
+- [ ] Sprites over super-hires: drawn as on hires (their colours not reduced)
+- [ ] BRDNTRAN, BRDSPRT, ZDBPSEL and the other BPLCON2/3 genlock bits
 - [ ] Productivity (640 x 480 non-interlaced, 31 kHz on a real Amiga: a multisync
       monitor), also 4 colours: our output is 576p50, so at best it is shown
       scaled, never at its own timing
+- [ ] hw: the A500+ on a board (PICO_DV: SRAM left ~5.6 KB)

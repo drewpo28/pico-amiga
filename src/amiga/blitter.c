@@ -1,4 +1,4 @@
-// OCS blitter: area mode (shifts, masks, minterms, fill) and line mode.
+// OCS/ECS blitter: area mode (shifts, masks, minterms, fill) and line mode.
 //
 // A blit is executed to completion the moment it is started (BLTSIZE write
 // with blitter DMA on), then BBUSY stays set for an estimate of the real
@@ -15,7 +15,7 @@ static uint32_t pt[4];
 static int16_t  mod[4];
 static uint16_t adat, bdat, cdat;
 static uint16_t bold, bhold;      // B shifter state; kept between blits (B DMA off uses BLTBDAT)
-static uint16_t size;
+static int      bw = 64, bh = 1024; // blit width (words) and height (rows)
 static bool     pending;          // BLTSIZE written while blitter DMA was off
 static bool     busy, zero = true;
 static uint64_t done_cyc;
@@ -69,8 +69,7 @@ AMIGA_HOT static uint32_t area_blit(void) {
     const bool dofill = con1 & 0x0018, excl = con1 & 0x0010;
     const int ash = con0 >> 12, bsh = con1 >> 12;
     const uint8_t lf = (uint8_t)con0;
-    int w = size & 0x3F;  if (!w) w = 64;
-    int h = size >> 6;    if (!h) h = 1024;
+    const int w = bw, h = bh;
     const int inc = desc ? -2 : 2;
     uint16_t aold = 0;
     bool z = true;
@@ -162,7 +161,7 @@ __attribute__((noinline)) static uint32_t line_blit(void) {
     bool sign = con1 & 0x0040;
     int ash = con0 >> 12, bsh = con1 >> 12;
     const uint8_t lf = (uint8_t)con0;
-    int h = size >> 6; if (!h) h = 1024;
+    const int h = bh;
     bool first = true, z = true;
 
 #define INCX() do { if (++ash == 16) { ash = 0; pt[BC] += 2; } } while (0)
@@ -203,7 +202,9 @@ __attribute__((noinline)) static uint32_t line_blit(void) {
     return (uint32_t)h * 4;
 }
 
-AMIGA_HOT static void start(void) {       // the blits are inlined here
+// noinline: it is called from blitter_dma_changed (flash), and GCC inlined it
+// there once, the blits with it.
+AMIGA_HOT __attribute__((noinline)) static void start(void) {       // the blits are inlined here
     pending = false;
     const int prof = prof_switch(AMIGA_PROF_BLIT);
     uint32_t cc = (con1 & 1) ? line_blit() : area_blit();
@@ -231,8 +232,14 @@ void blitter_dma_changed(void) {
 }
 
 static void set_ptr(int ch, bool hi, uint16_t v) {
-    if (hi) pt[ch] = (pt[ch] & 0x0000FFFF) | ((uint32_t)(v & 0x7) << 16);
+    if (hi) pt[ch] = (pt[ch] & 0x0000FFFF) | ((uint32_t)(v & 0x1F) << 16);
     else    pt[ch] = (pt[ch] & 0xFFFF0000) | (v & 0xFFFE);
+}
+
+static void go(void) {
+    blitter_poll();
+    pending = true;
+    blitter_dma_changed();
 }
 
 void blitter_write(uint32_t reg, uint16_t v) {
@@ -262,10 +269,18 @@ void blitter_write(uint32_t reg, uint16_t v) {
         break;
     case R_BLTADAT: adat = v; break;
     case R_BLTSIZE:
-        size = v;
-        blitter_poll();
-        pending = true;
-        blitter_dma_changed();
+        bh = v >> 6;    if (!bh) bh = 1024;
+        bw = v & 0x3F;  if (!bw) bw = 64;
+        go();
+        break;
+    // ECS Agnus: BLTCON0's low byte alone, and blits up to 32768 x 2048 words
+    // (BLTSIZV, then BLTSIZH, which starts it).
+    case R_BLTCON0L: if (A.ecs) con0 = (uint16_t)((con0 & 0xFF00) | (v & 0xFF)); break;
+    case R_BLTSIZV:  if (A.ecs) { bh = v & 0x7FFF; if (!bh) bh = 0x8000; } break;
+    case R_BLTSIZH:
+        if (!A.ecs) break;
+        bw = v & 0x7FF; if (!bw) bw = 0x800;
+        go();
         break;
     default: break;
     }
@@ -274,6 +289,6 @@ void blitter_write(uint32_t reg, uint16_t v) {
 void blitter_reset(void) {
     con0 = con1 = 0; afwm = alwm = 0xFFFF;
     for (int i = 0; i < 4; i++) { pt[i] = 0; mod[i] = 0; }
-    adat = bdat = cdat = 0; bold = bhold = 0; size = 0;
+    adat = bdat = cdat = 0; bold = bhold = 0; bw = 64; bh = 1024;
     pending = busy = false; zero = true;
 }

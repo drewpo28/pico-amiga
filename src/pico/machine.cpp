@@ -15,6 +15,7 @@ static uint8_t *s_rom_buf, *s_ext_buf;
 static uint8_t *s_dms_area;
 static uint32_t s_dms_size;
 static const char *s_rom_name = "";
+static std::string s_file_name;          // s_rom_name of a Custom ROM
 
 void machine_init(uint8_t *rom_buf, uint8_t *ext_buf, uint8_t *dms_area, uint32_t dms_size) {
     s_rom_buf = rom_buf;
@@ -34,17 +35,30 @@ static uint32_t load_file(const char *path, uint8_t *dst, uint32_t max) {
     return n;
 }
 
+static void select_model(amiga_config_t *cfg) {
+    const bool plus = Config::machine == 1;
+    cfg->chipset = plus ? AMIGA_ECS : AMIGA_OCS;
+    cfg->chip_size = plus ? 1024 * KB : 512 * KB;
+    cfg->slow_size = plus ? 0 : 512 * KB;
+}
+
+const char *machine_name(void) { return Config::machine == 1 ? "A500+" : "A500"; }
+
 bool machine_select_rom(amiga_config_t *cfg) {
+    select_model(cfg);
     cfg->ext_rom = NULL;
     cfg->ext_size = 0;
     if (Config::kick == "sd") {
-        const uint32_t rs = load_file("/amiga/kick.rom", s_rom_buf, 512 * KB);
+        const std::string &path = Config::kick_file;
+        const uint32_t rs = load_file(path.c_str(), s_rom_buf, 512 * KB);
         if (rs == 256 * KB || rs == 512 * KB) {
             cfg->rom = s_rom_buf;
             cfg->rom_size = rs;
-            const uint32_t es = load_file("/amiga/ext.rom", s_ext_buf, 512 * KB);
+            const std::string dir = path.substr(0, path.find_last_of('/') + 1);
+            const uint32_t es = load_file((dir + "ext.rom").c_str(), s_ext_buf, 512 * KB);
             if (es == 512 * KB) { cfg->ext_rom = s_ext_buf; cfg->ext_size = es; }
-            s_rom_name = "kick.rom (SD)";
+            s_file_name = path.substr(path.find_last_of('/') + 1);
+            s_rom_name = s_file_name.c_str();
             return true;
         }
     }
@@ -62,6 +76,7 @@ bool machine_apply_kickstart(void) {
     memset(&c, 0, sizeof c);
     if (!machine_select_rom(&c)) return false;
     amiga_set_roms(c.rom, c.rom_size, c.ext_rom, c.ext_size);
+    amiga_set_machine(c.chipset, c.chip_size, c.slow_size);
     amiga_reset(true);
     return true;
 }
@@ -198,28 +213,41 @@ bool machine_load_set(const char *m3u_path, int index) {
     if (f_open(&f, m3u_path, FA_READ) != FR_OK) return false;
     const std::string list = m3u_path;
     const std::string dir = list.substr(0, list.find_last_of('/') + 1);
-    static char buf[2048];
-    UINT got = 0;
-    f_read(&f, buf, sizeof buf - 1, &got);
-    f_close(&f);
-    buf[got] = 0;
+    // A line at a time through a small buffer (SRAM is the menu's heap); a
+    // line longer than it is dropped - a path that long would not open anyway.
+    static char buf[256];
     static std::string set[16];
     int n = 0;
-    for (char *line = buf, *next; line && *line && n < 16; line = next) {
-        next = strchr(line, '\n');
-        if (next) *next++ = 0;
-        std::string l = line;
+    UINT len = 0;                                           // bytes in buf
+    bool eof = false, skip = false;
+    while (n < 16) {
+        char *nl = (char *)memchr(buf, '\n', len);
+        if (!nl && !eof && len < sizeof buf) {
+            UINT more = 0;
+            if (f_read(&f, buf + len, sizeof buf - len, &more) != FR_OK || !more) eof = true;
+            len += more;
+            continue;
+        }
+        if (!len) break;
+        const UINT ll = nl ? (UINT)(nl - buf) : len;
+        const bool whole = nl || eof;
+        std::string l = whole && !skip ? std::string(buf, ll) : std::string();
+        skip = !whole;                                      // overlong: drop up to its newline
+        const UINT drop = nl ? ll + 1 : len;
+        memmove(buf, buf + drop, len - drop);
+        len -= drop;
         while (!l.empty() && (l.back() == '\n' || l.back() == '\r' || l.back() == ' ' || l.back() == '\t'))
             l.pop_back();
+        if (l.compare(0, 3, "\xEF\xBB\xBF") == 0) l = l.substr(3);   // UTF-8 BOM (before a '#' too)
         size_t s = l.find_first_not_of(" \t");
         if (s == std::string::npos || l[s] == '#') continue;   // blank, or #SAVEDISK: etc.
         l = l.substr(s);
-        if (l.compare(0, 3, "\xEF\xBB\xBF") == 0) l = l.substr(3);   // UTF-8 BOM
         // RetroArch's "file|label" form: the label is not a path.
         const size_t bar = l.find('|');
         if (bar != std::string::npos) l = l.substr(0, bar);
         set[n++] = l[0] == '/' ? l : dir + l;
     }
+    f_close(&f);
     if (!n) return false;
     if (index < 0 || index >= n) index = 0;
     if (!insert_adf(0, set[index].c_str(), Config::df0_wp)) return false;

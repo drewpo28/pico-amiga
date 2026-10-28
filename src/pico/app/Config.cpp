@@ -34,7 +34,10 @@ uint8_t  Config::volume       = 16;
 bool     Config::hdmi_audio   = true;
 bool     Config::hdmi_capture = false;
 uint8_t  Config::hpos         = 0;
+bool     Config::vcentre      = true;
+uint8_t  Config::machine      = 0;
 std::string Config::kick      = "ks13";
+std::string Config::kick_file = "/amiga/kick.rom";
 std::string Config::df0       = "";
 bool     Config::df0_wp       = false;
 uint8_t  Config::df0_disk     = 0;
@@ -123,7 +126,11 @@ void Config::load() {
     if (audio_out > 3) audio_out = 0;
     if (max_flash_freq < 33 || max_flash_freq > 166) max_flash_freq = 66;
     if (max_psram_freq < 66 || max_psram_freq > 166) max_psram_freq = 166;
+    nvs_get_u8 ("machine",       machine,      sts);
+    if (machine > 1) machine = 0;
     nvs_get_str("kick",          kick,         sts);
+    nvs_get_str("kick_file",     kick_file,    sts);
+    if (kick_file.empty()) kick_file = "/amiga/kick.rom";
     if (!nvs_get_str("df0",      df0,          sts)) df0.clear();
     nvs_get_b  ("df0_wp",        df0_wp,       sts);
     nvs_get_u8 ("df0_disk",      df0_disk,     sts);
@@ -131,6 +138,7 @@ void Config::load() {
     if (drives > 4) drives = 0;
     nvs_get_u8 ("hpos",          hpos,         sts);
     if (hpos > 1) hpos = 0;
+    nvs_get_b  ("vcentre",       vcentre,      sts);
 }
 
 // ---- writing -------------------------------------------------------------------------
@@ -202,12 +210,15 @@ bool Config::save() {
     nvs_set_i(buf, "volume",        volume);
     nvs_set_b(buf, "hdmi_audio",    hdmi_audio);
     nvs_set_b(buf, "hdmi_capture",  hdmi_capture);
+    nvs_set_i(buf, "machine",       machine);
     nvs_set_str(buf, "kick",        kick.c_str());
+    nvs_set_str(buf, "kick_file",   kick_file.c_str());
     nvs_set_str(buf, "df0",         df0.c_str());
     nvs_set_b(buf, "df0_wp",        df0_wp);
     nvs_set_i(buf, "df0_disk",      df0_disk);
     nvs_set_i(buf, "drives",        drives);
     nvs_set_i(buf, "hpos",          hpos);
+    nvs_set_b(buf, "vcentre",       vcentre);
     // f_sync before the rename, so a stalled card cannot leave a half-written file
     // under the real name.
     const FRESULT sy = buf.ok ? f_sync(&f) : FR_DISK_ERR;

@@ -79,31 +79,33 @@ static const Option opt_vga_solid[] = {
 };
 
 // Machine: a row per machine, each a radio over the same SET_KICK listing the
-// built-in ROMs filed under it (cmake/roms.cmake's machine field); a row whose
+// built-in ROMs filed under it (cmake/roms.cmake's machines field); a row whose
 // ROM is not the one running shows no value. Values are what UiStage's get_kick
-// reads: the built-in ROM's index, 100 the card's kick.rom. Built once per boot
-// (the table is fixed in the image).
-static uint8_t romOpts(const char* machine, Option* opts, uint8_t max, const char* slabel) {
+// reads: the built-in ROM's index, + 200 on the A500+. Custom ROM is a row of
+// its own (a file from the card, then the machine).
+// Built once per boot (the table is fixed in the image).
+static uint8_t romOpts(const char* machine, Option* opts, uint8_t max, const char* slabel, int32_t add) {
     uint8_t n = 0;
     for (unsigned i = 0; i < builtin_rom_count && n < max; i++)
-        if (!strcmp(builtin_roms[i].machine, machine)) opts[n++] = { builtin_roms[i].label, (int32_t)i, slabel };
+        if (builtin_rom_on(&builtin_roms[i], machine)) opts[n++] = { builtin_roms[i].label, (int32_t)i + add, slabel };
     return n;
 }
 static const Option* diagOpts(uint8_t& cnt) {
     static Option opts[2];
-    static uint8_t n = romOpts("DiagROM", opts, 2, "On");
+    static uint8_t n = romOpts("DiagROM", opts, 2, "On", 0);
     cnt = n;
     return opts;
 }
 static const Option* a500Opts(uint8_t& cnt) {
     static Option opts[8];
-    static uint8_t n = romOpts("A500", opts, 8, nullptr);
+    static uint8_t n = romOpts("A500", opts, 8, nullptr, 0);
     cnt = n;
     return opts;
 }
-static const Option* sdOpts(uint8_t& cnt) {
-    static const Option opts[] = { { "amiga/kick.rom", 100, "On" } };
-    cnt = NM_COUNT(opts);
+static const Option* a500pOpts(uint8_t& cnt) {
+    static Option opts[8];
+    static uint8_t n = romOpts("A500+", opts, 8, nullptr, 200);
+    cnt = n;
     return opts;
 }
 // A600 and A1200: rows for the machines to come, greyed until their chipsets are.
@@ -224,6 +226,41 @@ static bool df0PickAndInsert() {
     return true;
 }
 
+// Machine > Custom ROM: a Kickstart image from the card, then the machine to run
+// it on; a cold start, as any ROM change. The row shows the file while it runs.
+static const char* customRomLabel() {
+    return Config::kick == "sd" ? machine_rom_name() : "";
+}
+
+static void act_custom_rom() {
+    static std::string dir;
+    if (dir.empty()) {
+        dir = Config::kick_file.substr(0, Config::kick_file.find_last_of('/') + 1);
+        FILINFO fi;
+        if (dir.size() < 2 || f_stat(dir.substr(0, dir.size() - 1).c_str(), &fi) != FR_OK) dir = "/";
+    }
+    const std::string r = browseFile(dir, "Custom ROM", BROWSE_ROM);
+    if (r.size() < 2 || r[0] != 'R') return;
+    const std::string path = dir + r.substr(1);
+    FILINFO fi;
+    gfxBegin();
+    if (f_stat(path.c_str(), &fi) != FR_OK || (fi.fsize != 256 * 1024 && fi.fsize != 512 * 1024)) {
+        uiToast("Not a 256 or 512 KB Kickstart image", true, 2000);
+        gfxEnd();
+        return;
+    }
+    static const char* const kMachines[] = { "A500", "A500+" };
+    const int m = uiPickList("Run it on", kMachines, 2, Config::machine);
+    gfxEnd();
+    if (m < 0) return;
+    Config::kick = "sd";
+    Config::kick_file = path;
+    Config::machine = (uint8_t)m;
+    if (!machine_apply_kickstart()) { uiToast("That ROM cannot be read", true, 2000); return; }
+    Config::save();
+    requestClose();                       // back to the Amiga, booting it
+}
+
 static void act_df0_insert() {
     if (df0PickAndInsert()) requestClose();   // back to the Amiga with the disk in
 }
@@ -292,9 +329,10 @@ static void page_about() {
 static const Node kMachine[] = {
     NM_RADIO_D   ("DiagROM",     SET_KICK, diagOpts, nullptr),
     NM_RADIO_D   ("A500",        SET_KICK, a500Opts, nullptr),
+    NM_RADIO_D   ("A500+",       SET_KICK, a500pOpts, nullptr),
     NM_ACTIONV_EN("A600",        act_none, laterLabel, nullptr, p_never),
     NM_ACTIONV_EN("A1200",       act_none, laterLabel, nullptr, p_never),
-    NM_RADIO_D   ("SD card ROM", SET_KICK, sdOpts, nullptr),
+    NM_ACTIONV   ("Custom ROM",  act_custom_rom, customRomLabel, nullptr),
 };
 
 static const Node kDisks[] = {
@@ -328,6 +366,7 @@ static bool p_pioHdmi() {
 
 static const Node kVideo[] = {
     NM_RADIO("Picture position", SET_HPOS, opt_hpos, nullptr),
+    NM_BOOL("Centre short pictures vertically", SET_VCENTRE, nullptr),
     NM_BOOL("Capture card compatibility", SET_HDMI_CAPTURE, p_pioHdmi),
 };
 

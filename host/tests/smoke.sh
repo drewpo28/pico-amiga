@@ -41,4 +41,25 @@ $BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --slow --frames 1000 
      --shot 1000:"$OUT/aros-screen.png" > "$OUT/aros-screen.log" 2>&1
 check "aros interlace rows" "lace4=2[0-9][0-9]" "$OUT/aros-screen.log"
 
+# 5. A500+ (ECS): the chip IDs, and a super-hires screen from the upper 512 KB of
+#    1 MB chip RAM (make_ecs_adf.py): $770 from output column 40 to 679, black around.
+python3 host/tests/make_ecs_adf.py "$OUT/ecs.adf"
+$BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --a500plus --adf "$OUT/ecs.adf" \
+     --frames 1200 --shot 1200:"$OUT/ecs.png" > "$OUT/ecs.log" 2>&1
+check "ecs chip ids" "ECS OK" "$OUT/ecs.log"
+python3 - "$OUT/ecs.png" <<'PY' && echo "PASS ecs super-hires" || { echo "FAIL ecs super-hires"; fail=1; }
+import sys, struct, zlib
+d = open(sys.argv[1], 'rb').read()
+w, h = struct.unpack('>II', d[16:24])
+raw, p = b'', 8
+while p < len(d):
+    n, t = struct.unpack('>I4s', d[p:p + 8])
+    if t == b'IDAT': raw += d[p + 8:p + 8 + n]
+    p += 12 + n
+raw = zlib.decompress(raw)
+row = raw[300 * (1 + 3 * w) + 1:][:3 * w]              # output line 300, filter 0
+px = [tuple(row[3 * x:3 * x + 3]) for x in (39, 40, 360, 679, 680)]
+sys.exit(0 if px == [(0, 0, 0), (0x77, 0x77, 0), (0x77, 0x77, 0), (0x77, 0x77, 0), (0, 0, 0)] else 1)
+PY
+
 exit $fail

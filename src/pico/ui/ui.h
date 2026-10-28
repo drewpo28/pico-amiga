@@ -22,10 +22,13 @@ bool settings_dbg_uart(void);          // 0 auto, 1 PWM, 2 I2S
 bool settings_hdmi_capture(void);      // Video > Capture card compatibility (PIO HDMI)
 // Push the live sound settings (volume, HDMI audio) to the outputs.
 void settings_apply_sound(void);
-void settings_apply_video(void);     // picture position (Video), render core (Debug)
+void settings_apply_video(void);     // picture position, centring (Video), render core (Debug)
 
 // The performance band (UiStats.cpp, Alt+F12): toggle it; after every emulated
 // frame, the time amiga_run_frame() took (draws the band when it is on).
+// The band's pixels (ui_stats_buffer_size() bytes, PSRAM); without one Alt+F12 does nothing.
+size_t ui_stats_buffer_size(void);
+void ui_stats_buffer(void *p);
 void ui_stats_toggle(void);
 void ui_stats_frame(uint32_t emu_us);
 void ui_stats_row(void *ctx, int row, amiga_row_t *r);   // amiga_config_t.row_done

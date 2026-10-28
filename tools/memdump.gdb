@@ -54,9 +54,9 @@ printf "USP %08X\nSSP %08X\n", m68ki_cpu.sp[0], m68ki_cpu.sp[4]
 printf "FLAGS t1 %X s %X x %X n %X notz %X v %X c %X int %X\n", m68ki_cpu.t1_flag, m68ki_cpu.s_flag, m68ki_cpu.x_flag, m68ki_cpu.n_flag, m68ki_cpu.not_z_flag, m68ki_cpu.v_flag, m68ki_cpu.c_flag, m68ki_cpu.int_mask
 printf "BEAM frame %u vpos %u lines %u lof %u\n", A.frame, A.vpos, A.lines, A.lof
 printf "DMACON %04X\nINTENA %04X\nINTREQ %04X\nADKCON %04X\nCOPCON %04X\n", A.dmacon, A.intena, A.intreq, A.adkcon, A.copcon
-printf "CHIP %u\nSLOW %u\nROM %u\n", A.cfg.chip_size, A.cfg.slow_size, A.cfg.rom_size
+printf "CHIP %u\nSLOW %u\nROM %u\nECS %d\n", A.cfg.chip_size, A.cfg.slow_size, A.cfg.rom_size, A.ecs
 printf "COP1LC %06X\nCOP2LC %06X\nCOPPC %06X\nCOPSTATE %d\nCOPH %d\n", 'copper.c'::lc[0], 'copper.c'::lc[1], 'copper.c'::pc, 'copper.c'::state, 'copper.c'::cop_h
-printf "BPLCON0 %04X\nBPLCON2 %04X\nDIWSTRT %04X\nDIWSTOP %04X\n", 'denise.c'::bplcon0, 'denise.c'::bplcon2, 'denise.c'::diwstrt, 'denise.c'::diwstop
+printf "BPLCON0 %04X\nBPLCON2 %04X\nBPLCON3 %04X\nDIWSTRT %04X\nDIWSTOP %04X\nDIWHIGH %04X\n", 'denise.c'::bplcon0, 'denise.c'::bplcon2, 'denise.c'::bplcon3, 'denise.c'::diwstrt, 'denise.c'::diwstop, 'denise.c'::diwhigh
 printf "DDF %02X %02X BPLCON1 %04X\n", 'denise.c'::dma_st.ddfstrt, 'denise.c'::dma_st.ddfstop, 'denise.c'::dma_st.bplcon1
 printf "BPLPT %06X %06X %06X %06X %06X %06X\n", 'denise.c'::bplpt[0], 'denise.c'::bplpt[1], 'denise.c'::bplpt[2], 'denise.c'::bplpt[3], 'denise.c'::bplpt[4], 'denise.c'::bplpt[5]
 printf "BPLMOD %d %d\n", 'denise.c'::bplmod[0], 'denise.c'::bplmod[1]
@@ -68,7 +68,7 @@ while $i < 32
   set $i = $i + 1
 end
 printf "\n"
-printf "BLIT con0 %04X con1 %04X afwm %04X alwm %04X size %04X busy %d count %u\n", 'blitter.c'::con0, 'blitter.c'::con1, 'blitter.c'::afwm, 'blitter.c'::alwm, 'blitter.c'::size, 'blitter.c'::busy, 'blitter.c'::nblits
+printf "BLIT con0 %04X con1 %04X afwm %04X alwm %04X size %dx%d busy %d count %u\n", 'blitter.c'::con0, 'blitter.c'::con1, 'blitter.c'::afwm, 'blitter.c'::alwm, 'blitter.c'::bw, 'blitter.c'::bh, 'blitter.c'::busy, 'blitter.c'::nblits
 printf "BLITPT A %06X B %06X C %06X D %06X mods %d %d %d %d\n", 'blitter.c'::pt[0], 'blitter.c'::pt[1], 'blitter.c'::pt[2], 'blitter.c'::pt[3], 'blitter.c'::mod[0], 'blitter.c'::mod[1], 'blitter.c'::mod[2], 'blitter.c'::mod[3]
 printf "DISK sel %d side %d cyl0 %d dsklen %04X dskpt %06X dma %d track %d\n", 'floppy.c'::sel, 'floppy.c'::side, 'floppy.c'::drv[0].cyl, 'floppy.c'::dsklen, 'floppy.c'::dskpt, 'floppy.c'::dma_on, 'floppy.c'::trk_num
 printf "--- CIAs\n"

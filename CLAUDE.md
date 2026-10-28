@@ -1,6 +1,6 @@
 # pico-amiga — project notes
 
-Amiga 500 (OCS PAL) emulator for RP2350 + QSPI PSRAM. Sister project of
+Amiga 500 / 500+ (OCS / ECS, PAL) emulator for RP2350 + QSPI PSRAM. Sister project of
 pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
 
 ## Layout and rules
@@ -41,7 +41,9 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   The two cores are separate GDB threads: a pause may stop core 1 alone, and a
   continue sent to core 0 left the HDMI core halted (black screen); the
   extension continues the threads that stopped.
-- Built-in ROMs (Machine: DiagROM; A500 > KS 1.2/1.3/2.04/3.1) are linked
+- Built-in ROMs (Machine: DiagROM; A500 > KS 1.2/1.3/2.04/2.05/3.1; A500+ > KS
+  2.04/2.05/3.1; Custom ROM = a file from the card, Config::kick_file, Config::machine = 1: ECS, 1 MB chip RAM over the slow RAM's PSRAM,
+  `amiga_set_machine()`; the bench: `--a500plus`) are linked
   into the firmware and the host with `.incbin` from `ROMS_DIR` (default `debug/`,
   git-ignored: the Kickstarts are Commodore's and must never be committed).
   `cmake/roms.cmake` lists them; an id there is what storage.nvs keeps, never
@@ -99,6 +101,18 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   overlap and slowed Cannon Fodder's intro scroll. `--render-thread` screens must
   match the sync ones (IK+, Cannon Fodder, Exolon checked frame for frame). `pico-amiga-host --render-thread`
   runs the async path on a thread; its screens must match the sync ones.
+- **ECS super-hires** (denise.c): a pf entry is a pixel pair (left bits 0-1,
+  right 2-3) and the LUT gives the pair's colour: COLOR[p2*4+p1], the left pixel
+  its top two bits per gun, the right its low two (WinUAE's linetoscr_*_sh),
+  averaged into one of our 720 pixels. graphics.library lays the palette out
+  for exactly that (Workbench blue $68B shows as $5AA: 64 colours, correct).
+  Pixels start at DIW x 2t + 5 (lowres 17, hires 9): with KS 2.04's DDF
+  $38/$D8, Workbench's last column lands on output pixel 679 as in hires.
+- **FLOPPY_TURBO scales the index pulse too, while a DMA runs** (floppy.c): the
+  drive spins faster, so a transfer spans as many revolutions as on hardware.
+  Barbarian's loader stops a two-revolution read on the third index; with
+  only DSKBLK scaled its index handler stayed on the level 6 vector and the OS
+  hung in a storm of uncleared EXTER interrupts (black screen).
 - Single playfield sprite priority uses **PF2P**, not PF1P (vAmiga agrees).
 - Byte writes to custom registers put the byte on both halves of the word.
 - Area blits with B DMA off use BLTBDAT (shifted on the CPU write), not 0:
@@ -153,10 +167,16 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
 - Host profile with AROS idling at its boot screen (hires, 4 planes): bitplane
   fetch/c2p ~50%, output ~20%, CPU ~10%. The renderer is the first thing to move
   to core 1 / optimize on the RP2350 (docs/PLAN.md, section 2).
-- Firmware RAM (framebuffer 245 KB, colour map 12 KB, track buffer 12.4 KB, audio
+- Firmware RAM (framebuffer 245 KB, colour map 8 KB, track buffer 12.4 KB, audio
   ring 16 KB, ~45 KB of SRAM code incl. 17 KB of Musashi handlers; DV adds TMDS
   tables/line buffers, of 520 KB): PICO_DV has ~8 KB between the end of .bss and
-  __HeapLimit (2026-10-28, `nm` `end`); the old "~50 KB" was stale. MURM2 not
+  __HeapLimit (2026-10-28, `nm` `end`); the old "~50 KB" was stale. That gap
+  is the whole C/C++ heap (the menu's strings, the file browser): with ECS it
+  fell to 5.4 KB and Disks > DF0 panicked "Out of memory" on the board; the
+  colour map's tag and index tables merged into one (-4 KB), the Alt+F12
+  band's pixels moved to PSRAM (16 KB at +2 MB, before the DMS area; a 2 MB
+  PSRAM has no band) and the .m3u read through 256 bytes: 20.5 KB
+  (2026-10-28). Check `end` after adding SRAM code or tables. MURM2 not
   re-measured (was ~100 KB).
 - PICO_DV core 1 before the lookup scanout (Cannon Fodder, 504 MHz, ms per
   frame): CPU TMDS encoding 6.5, line IRQ 1.6, leaving Denise ~6 (the PERF

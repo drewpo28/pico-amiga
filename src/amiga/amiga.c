@@ -104,14 +104,23 @@ void amiga_set_roms(const uint8_t *rom, uint32_t rom_size, const uint8_t *ext, u
     A.cfg.ext_rom = ext; A.cfg.ext_size = ext_size;
 }
 
+void amiga_set_machine(int chipset, uint32_t chip_size, uint32_t slow_size) {
+    A.cfg.chipset = (uint8_t)chipset;
+    A.cfg.chip_size = chip_size;
+    A.cfg.slow_size = slow_size;
+}
+
 void amiga_reset(bool hard) {
+    A.ecs = A.cfg.chipset == AMIGA_ECS;
+    A.chip_mask = A.cfg.chip_size - 1;
     if (hard) {
         memset(A.cfg.chip_ram, 0, A.cfg.chip_size);
-        if (A.cfg.slow_ram) memset(A.cfg.slow_ram, 0, A.cfg.slow_size);
+        if (A.cfg.slow_ram && A.cfg.slow_size) memset(A.cfg.slow_ram, 0, A.cfg.slow_size);
     }
     mem_init();
     custom_reset();
     cia_reset();
+    rtc_reset();
     copper_reset();
     blitter_reset();
     denise_reset();
@@ -128,7 +137,6 @@ void amiga_reset(bool hard) {
 void amiga_init(const amiga_config_t *cfg) {
     memset(&A, 0, sizeof A);
     A.cfg = *cfg;
-    A.chip_mask = cfg->chip_size - 1;
     m68k_init();
     m68k_set_cpu_type(M68K_CPU_TYPE_68000);
     amiga_reset(true);

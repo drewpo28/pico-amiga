@@ -38,7 +38,9 @@ static bool     s_dirty;            // the text changed: draw the band again
 
 // The band as drawn: framebuffer rectangle and its pixels.
 enum { BAND_COLS = 19, BAND_W = (BAND_COLS + 2) * UI_FONT_W + 4, BAND_H = 3 * UI_FONT_H + 6 };
-static uint16_t s_px[BAND_H][BAND_W];
+// In PSRAM (ui_stats_buffer): 9 KB of SRAM is most of the menu's heap. Read by
+// ui_stats_row on the render core, a few KB a frame, only while the band is on.
+static uint16_t (*s_px)[BAND_W];
 static int      s_bx, s_by, s_bw, s_bh;
 
 static void drawBand() {
@@ -71,8 +73,13 @@ static void drawBand() {
 
 }  // namespace nm
 
+extern "C" size_t ui_stats_buffer_size(void) { return sizeof(uint16_t) * nm::BAND_H * nm::BAND_W; }
+
+extern "C" void ui_stats_buffer(void* p) { nm::s_px = (uint16_t (*)[nm::BAND_W])p; }
+
 extern "C" void ui_stats_toggle(void) {
     using namespace nm;
+    if (!s_px) return;                  // no PSRAM to spare (a 2 MB chip): no band
     s_page = (uint8_t)((s_page + 1) % 3);
     s_frames = s_emu_sum = 0;
     s_t0 = time_us_32();

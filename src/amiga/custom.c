@@ -10,7 +10,8 @@ AMIGA_HOT static bool display_reg(uint32_t reg) {
     return (reg >= R_DIWSTRT && reg <= R_DDFSTOP) ||
            (reg >= R_BPL1PTH && reg < R_BPL1PTH + 24) ||
            (reg >= R_BPLCON0 && reg <= R_BPL2MOD) ||
-           (reg >= R_SPR0PTH && reg < R_COLOR00 + 64);
+           (reg >= R_SPR0PTH && reg < R_COLOR00 + 64) ||
+           (reg == R_DIWHIGH && A.ecs);
 }
 
 AMIGA_HOT uint16_t custom_read(uint32_t reg) {
@@ -19,8 +20,8 @@ AMIGA_HOT uint16_t custom_read(uint32_t reg) {
         return (uint16_t)((A.dmacon & 0x07FF) |
                           (blitter_busy() ? DMAF_BBUSY : 0) |
                           (blitter_zero() ? DMAF_BZERO : 0));
-    case R_VPOSR:
-        return (uint16_t)((A.lof ? 0x8000 : 0) | ((A.vpos >> 8) & 1));   // Agnus ID 0: OCS PAL
+    case R_VPOSR:   // Agnus ID: 0 = OCS PAL, $20 = ECS PAL (8372A / 8375)
+        return (uint16_t)((A.lof ? 0x8000 : 0) | (A.ecs ? 0x2000 : 0) | ((A.vpos >> 8) & 1));
     case R_VHPOSR:
         return (uint16_t)(((A.vpos & 0xFF) << 8) | amiga_hpos());
     case R_JOY0DAT: return A.joy0dat;
@@ -40,7 +41,7 @@ AMIGA_HOT uint16_t custom_read(uint32_t reg) {
     case R_DSKBYTR: return floppy_read(reg);
     case R_INTENAR: return A.intena;
     case R_INTREQR: return A.intreq;
-    case R_DENISEID: return 0xFFFF;                      // OCS Denise has no ID register
+    case R_DENISEID: return A.ecs ? 0xFFFC : 0xFFFF;     // ECS 8373: $FC; OCS has no ID register
     default:        return 0;
     }
 }
@@ -91,6 +92,7 @@ AMIGA_HOT void custom_write(uint32_t reg, uint16_t v, int hpos, bool from_copper
         A.joy1dat = (uint16_t)((A.joy1dat & 0x0303) | (v & 0xFCFC));
         break;
     case R_CLXCON: clxcon = v; break;
+    case R_BEAMCON0: if (A.ecs) A.beamcon0 = v; break;
     default: break;   // VPOSW, VHPOSW, REFPTR, STRxxx, BPLxDAT, DSKDAT, COPINS
     }
 }
@@ -98,6 +100,7 @@ AMIGA_HOT void custom_write(uint32_t reg, uint16_t v, int hpos, bool from_copper
 void custom_reset(void) {
     A.dmacon = 0; A.intena = 0; A.intreq = 0; A.adkcon = 0;
     A.copcon = 0; A.potgo = 0; A.serper = 0;
+    A.beamcon0 = 0x0020;                                 // PAL
     clxcon = 0;
     amiga_update_ipl();
 }

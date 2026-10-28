@@ -10,7 +10,13 @@
 // logic works unchanged.  Write DMA decodes the MFM back into sectors.
 //
 // The data moves at DMA start; DSKBLK is raised after the transfer time scaled
-// by FLOPPY_TURBO (1 = real speed, 32 us per word).
+// by FLOPPY_TURBO (1 = real speed, 32 us per word), and while a DMA runs the
+// index pulses come FLOPPY_TURBO times as often too: a drive that spins faster,
+// so a transfer still spans as many revolutions as on hardware.  Barbarian
+// (Palace) starts a two-revolution read on an index pulse and stops it on the
+// third, its DSKBLK handler only a fallback; with the index at real speed the
+// read ended first, the loader returned with its index handler still on the
+// level 6 vector and the next pulse, in the OS's context, never cleared EXTER.
 //
 // DF0..DF(n-1) are connected (floppy_set_drives). Kickstart finds the external
 // ones by their ID, shifted out on /RDY while the motor is off: a 3.5" DD drive
@@ -189,7 +195,7 @@ static void dma_finish(void) {
 
 void floppy_write(uint32_t reg, uint16_t v) {
     switch (reg) {
-    case R_DSKPTH: dskpt = (dskpt & 0x0000FFFF) | ((uint32_t)(v & 0x7) << 16); break;
+    case R_DSKPTH: dskpt = (dskpt & 0x0000FFFF) | ((uint32_t)(v & 0x1F) << 16); break;
     case R_DSKPTL: dskpt = (dskpt & 0xFFFF0000) | (v & 0xFFFE); break;
     case R_DSKSYNC: dsksync = v; break;
     case R_DSKLEN:
@@ -220,9 +226,10 @@ void floppy_line(void) {
     if (dma_on && dma_drive >= 0 && drv[dma_drive].inserted && drv[dma_drive].motor) {
         if (dma_lines_left && --dma_lines_left == 0) dma_finish();
     }
-    // One index pulse per revolution on CIA-B /FLAG while a selected drive spins.
+    // One index pulse per revolution on CIA-B /FLAG while a selected drive spins
+    // (FLOPPY_TURBO times as often during a transfer, as the transfer itself).
     if (sel >= 0 && drv[sel].motor && drv[sel].inserted) {
-        index_lines += 2;
+        index_lines += dma_on ? 2 * FLOPPY_TURBO : 2;
         if (index_lines >= TRACK_WORDS) { index_lines -= TRACK_WORDS; cia_flag(1); }
     }
 }

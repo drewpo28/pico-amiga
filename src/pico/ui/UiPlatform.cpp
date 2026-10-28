@@ -33,7 +33,7 @@ void uiSleepMs(int ms) { sleep_ms((uint32_t)ms); }
 
 const char* uiMachineName() {
     static char buf[48];
-    snprintf(buf, sizeof buf, "A500, %s", machine_rom_name());
+    snprintf(buf, sizeof buf, "%s, %s", machine_name(), machine_rom_name());
     return buf;
 }
 
@@ -57,6 +57,7 @@ extern "C" bool settings_hdmi_capture(void) { return Config::hdmi_capture; }
 
 extern "C" void settings_apply_video(void) {
     amiga_set_fb_x0(Config::hpos ? AMIGA_FB_X0_WIDE : AMIGA_FB_X0_CENTRE);
+    amiga_set_vcentre(Config::vcentre);
     amiga_render_async(Config::render_c1);
 }
 

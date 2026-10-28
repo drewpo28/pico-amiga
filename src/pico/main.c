@@ -1,4 +1,4 @@
-// pico-amiga firmware: an Amiga 500 on an RP2350 with QSPI PSRAM.
+// pico-amiga firmware: an Amiga 500 / 500+ on an RP2350 with QSPI PSRAM.
 //
 //   core 0: clocks, PSRAM, SD, input (USB host, PS/2, NES pads), the emulator
 //           (src/amiga), audio (PWM, I2S or PCM5122)
@@ -7,13 +7,17 @@
 //
 // PSRAM layout (2 MB minimum):
 //   +0.0 MB  chip RAM 512 KB      +0.5 MB  slow RAM 512 KB ($C00000)
+//            (A500+: 1 MB of chip RAM over both, no slow RAM)
 //   +1.0 MB  Kickstart ROM        +1.5 MB  extended ROM (AROS) if present
-//   +2.0 MB  DMS images: the decoder's work area, then 880 KB per drive
-//            (machine.cpp; DF0..DF3 fit in 8 MB, a 2 MB PSRAM takes no DMS)
+//   +2.0 MB  16 KB: the Alt+F12 band's pixels (UiStats.cpp)
+//   +2.0 MB + 16 KB  DMS images: the decoder's work area, then 880 KB per drive
+//            (machine.cpp; DF0..DF3 fit in 8 MB, a 2 MB PSRAM takes no DMS
+//            and has no Alt+F12 band)
 //
 // ROMs: the built-in ones (roms.h, picked in the Machine menu), or from the card:
-//   /amiga/kick.rom   256 or 512 KB Kickstart (Kickstart = "SD card"; AROS works)
-//   /amiga/ext.rom    512 KB extended ROM at $E00000 (optional, AROS needs it)
+//   Machine > Custom ROM picks a 256 or 512 KB Kickstart image on the card
+//   (default /amiga/kick.rom; AROS works); an ext.rom in its folder is the 512 KB
+//   extended ROM at $E00000 (optional, AROS needs it)
 // Disks: Disks > DF0 picks an ADF on the card (streamed from it) or a DMS (unpacked
 //   into PSRAM, write-protected); without a pick,
 //   /amiga/df0.adf goes into DF0 by itself.
@@ -136,11 +140,16 @@ int main(void) {
 
     amiga_config_t cfg;
     memset(&cfg, 0, sizeof cfg);
-    cfg.chip_ram = ps;              cfg.chip_size = 512 * KB;
-    cfg.slow_ram = ps + 512 * KB;   cfg.slow_size = 512 * KB;
-    machine_init(ps + 1 * MB, ps + 1 * MB + 512 * KB, ps + 2 * MB, psram - 2 * MB);
+    cfg.chip_ram = ps;              // sizes and chipset: machine_select_rom (Config::machine)
+    cfg.slow_ram = ps + 512 * KB;
+    const uint32_t misc = 16 * KB;
+    if (ui_stats_buffer_size() > misc) fail(0xF00);   // a build error in all but name
+    const bool more = psram > 2 * MB + misc;
+    if (more) ui_stats_buffer(ps + 2 * MB);
+    machine_init(ps + 1 * MB, ps + 1 * MB + 512 * KB, more ? ps + 2 * MB + misc : NULL,
+                 more ? psram - 2 * MB - misc : 0);
 
-    // The card holds the settings, the disks and an optional kick.rom; with a
+    // The card holds the settings, the disks and an optional Custom ROM; with a
     // built-in ROM the machine also boots without one.
     ui_init(fb);                     // the menu draws into fb
     if (!machine_select_rom(&cfg)) fail(card ? 0x00F : 0xF0F);
@@ -156,7 +165,7 @@ int main(void) {
     audio_out_start(audio_ring, AUDIO_FRAMES, settings_audio_out());
     settings_apply_sound();
     settings_apply_video();
-    printf("kickstart %s, audio %s\n", machine_rom_name(), audio_out_name());
+    printf("%s, kickstart %s, audio %s\n", machine_name(), machine_rom_name(), audio_out_name());
 
     // A frame starts when the scanout is 70% into its picture.  There is one
     // framebuffer: Denise (core 1) paints row r while the scanout reads it, and
