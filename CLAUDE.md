@@ -78,7 +78,10 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   pumps (`amiga_render_pump()`, 32-cc steps, between line builds on PICO_DV)
   and core 0 takes a stage itself whenever it would wait;
   `amiga_run_frame()` waits for both at frame end. Chip RAM is read live
-  (ThreadSanitizer reports only those races). `pico-amiga-host --render-thread`
+  (ThreadSanitizer reports only those races), so the emulation stays at most
+  `LEAD_LINES` (8) lines ahead of the fetch stage: IK+ erases its fighters
+  ~32-64 lines behind the beam and with a frame's lead they flickered
+  (`--render-thread` screens differed from the sync ones; up to 32 they match). `pico-amiga-host --render-thread`
   runs the async path on a thread; its screens must match the sync ones.
 - Single playfield sprite priority uses **PF2P**, not PF1P (vAmiga agrees).
 - Byte writes to custom registers put the byte on both halves of the word.

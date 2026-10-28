@@ -32,8 +32,12 @@
 // (denise_sync).  Whichever core holds c_lock replays: the emulation, when it
 // would wait (the frame end, a full queue), replays events itself instead, so
 // the other core takes what it has time for (its scanout comes first) and
-// the work is never slower than doing it all on one core.  Chip RAM is read live, so a write the CPU or blitter makes
-// before the consumer reached that line shows a frame early.
+// the work is never slower than doing it all on one core.  Chip RAM is read
+// live, so a write the CPU or blitter makes before the fetch stage reached that
+// line shows early: the emulation keeps at most LEAD_LINES lines ahead of the
+// fetch stage (denise_line_start waits, helping), which is the margin a game
+// drawing behind the beam must leave.  IK+ erases and redraws its fighters
+// right after the beam passed them: with a frame's lead they flickered.
 #include <stdatomic.h>
 #include <string.h>
 #include "amiga_int.h"
@@ -802,11 +806,16 @@ typedef struct {
 
 #define EVQ 1024                        // power of two
 #define STEP_CC 32                      // async: colour clocks per pump step
+#ifndef LEAD_LINES
+#define LEAD_LINES 8                    // async: lines the producer may be ahead of the fetch stage
+#endif
 static dev_t            evq[EVQ];
 static _Atomic uint32_t ev_head;        // producer
 static _Atomic uint32_t f_tail, o_tail; // next event of each stage
+static _Atomic uint32_t f_lines_done;   // lines the fetch stage has finished
 static _Atomic uint32_t o_lines_done;   // lines the output stage has finished
 static uint32_t         f_lines, o_lines;   // lines each stage has started
+static uint32_t         p_lines;        // lines the producer has started
 static dev_t            f_ev, o_ev;     // the event a stage is in (async: may take steps)
 static bool             f_busy, o_busy;
 static atomic_flag      f_lock = ATOMIC_FLAG_INIT, o_lock = ATOMIC_FLAG_INIT;
@@ -838,6 +847,7 @@ AMIGA_HOT static bool f_step(int step) {
         if (h > r_hf + step) { f_to(r_hf + step); return true; }
         f_to(h);
         if (e->kind < EV_LINE) f_apply(e->kind, e->v);
+        else atomic_store_explicit(&f_lines_done, f_lines, memory_order_release);
     } else if (e->kind == EV_LINE) {
         f_vpos = e->h; f_dmacon = e->v;
         f_line_start(f_lines++);
@@ -950,6 +960,12 @@ void amiga_render_async(bool on) {
 AMIGA_HOT void denise_frame_start(void) { push(EV_FRAME, 0, 0, 0); }
 
 AMIGA_HOT void denise_line_start(void) {
+    if (is_async() && p_lines - atomic_load_explicit(&f_lines_done, memory_order_acquire) > LEAD_LINES) {
+        const int prof = prof_switch(AMIGA_PROF_RWAIT);       // too far ahead of the fetch stage
+        while (p_lines - atomic_load_explicit(&f_lines_done, memory_order_acquire) > LEAD_LINES) c_help();
+        prof_switch(prof);
+    }
+    p_lines++;
     push(EV_LINE, A.dmacon, (uint16_t)A.vpos, (uint16_t)((A.lof ? 1 : 0) | (A.lines << 1)));
 }
 
@@ -968,7 +984,8 @@ void denise_reset(void) {
     const uint32_t hd = atomic_load(&ev_head);
     atomic_store(&f_tail, hd);
     atomic_store(&o_tail, hd);
-    f_lines = o_lines = 0;
+    f_lines = o_lines = p_lines = 0;
+    atomic_store(&f_lines_done, 0);
     atomic_store(&o_lines_done, 0);
     p_bplcon0 = 0;
     c_reset();
