@@ -125,16 +125,28 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   write-back XIP cache, so it reads stale chip RAM.
 - Firmware: PSRAM init runs QMI direct mode — nothing may fetch from flash on
   either core meanwhile, so it runs before core 1 starts and before USB.
+- **A frame starts when the scanout is 70% into its picture** (main.c,
+  `video_lines()`): there is one framebuffer, and started at the top, a frame
+  of 18-20 ms crossed the beam mid-screen (a moving cut). From 70%, Denise paints
+  every row after the scanout showed it and before it shows it again.
+- **Colour writes must stay cheap**: Spaceballs' State of the Art runs 12,800
+  copper MOVEs a frame, two thirds repeats. A write equal to the queued colour
+  is dropped (`denise_q_color`, tested in the copper loop itself); the others
+  patch LUT entries n and n+32 instead of rebuilding the LUT.
+- **Check where AMIGA_HOT code lands** (`arm-none-eabi-nm`): a static AMIGA_HOT
+  function inlined into a flash caller runs from flash. run_line sat inside
+  amiga_run_frame that way (now noinline), the blits inside blitter.c's start().
 
 ## Measured
 
 - Host profile with AROS idling at its boot screen (hires, 4 planes): bitplane
   fetch/c2p ~50%, output ~20%, CPU ~10%. The renderer is the first thing to move
   to core 1 / optimize on the RP2350 (docs/PLAN.md, section 2).
-- Firmware RAM: ~100 KB left for the heap on MURM2, ~50 KB on PICO_DV
-  (framebuffer 245 KB, colour map 12 KB, track buffer 12.4 KB, audio ring 16 KB,
-  ~45 KB of SRAM code incl. 17 KB of Musashi handlers; DV adds TMDS tables/line
-  buffers) of 520 KB.
+- Firmware RAM (framebuffer 245 KB, colour map 12 KB, track buffer 12.4 KB, audio
+  ring 16 KB, ~45 KB of SRAM code incl. 17 KB of Musashi handlers; DV adds TMDS
+  tables/line buffers, of 520 KB): PICO_DV has ~8 KB between the end of .bss and
+  __HeapLimit (2026-10-28, `nm` `end`); the old "~50 KB" was stale. MURM2 not
+  re-measured (was ~100 KB).
 - PICO_DV core 1 before the lookup scanout (Cannon Fodder, 504 MHz, ms per
   frame): CPU TMDS encoding 6.5, line IRQ 1.6, leaving Denise ~6 (the PERF
   line's `core1 render/irq/enc`).
