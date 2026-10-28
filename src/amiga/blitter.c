@@ -22,6 +22,14 @@ static uint64_t done_cyc;
 static uint32_t nblits;
 
 static inline uint16_t minterm(uint16_t a, uint16_t b, uint16_t c, uint8_t lf) {
+    switch (lf) {                       // the common ones (State of the Art: clear, copy)
+    case 0x00: return 0;
+    case 0xF0: return a;
+    case 0xCC: return b;
+    case 0xCA: return (uint16_t)((a & b) | (~a & c));           // cookie cut
+    case 0xFF: return 0xFFFF;
+    default: break;
+    }
     uint16_t r = 0;
     if (lf & 0x80) r |=  a &  b &  c;
     if (lf & 0x40) r |=  a &  b & ~c;
@@ -36,17 +44,14 @@ static inline uint16_t minterm(uint16_t a, uint16_t b, uint16_t c, uint8_t lf) {
 
 // Fill runs from bit 0 upwards (right to left on screen); the carry flips on
 // every set bit.  Inclusive keeps both edges, exclusive drops the left one.
+// The whole word at once: bit i is inside when the carry in, XOR the bits below
+// i, is set - a prefix XOR (checked against the bit loop on every input).
 static inline uint16_t fill(uint16_t d, bool *carry, bool excl) {
-    uint16_t out = 0;
-    bool c = *carry;
-    for (int i = 0; i < 16; i++) {
-        bool in = (d >> i) & 1;
-        bool o = excl ? (c ^ in) : (c | in);
-        c ^= in;
-        out |= (uint16_t)o << i;
-    }
-    *carry = c;
-    return out;
+    uint32_t x = (uint32_t)d << 1;
+    x ^= x << 1; x ^= x << 2; x ^= x << 4; x ^= x << 8;
+    const uint16_t inside = (uint16_t)(x ^ (*carry ? 0xFFFF : 0));
+    *carry ^= ((x >> 15) ^ (d >> 15)) & 1;
+    return excl ? (uint16_t)(inside ^ d) : (uint16_t)(inside | d);
 }
 
 static inline uint16_t shift_asc(uint16_t nw, uint16_t old, int sh) {
@@ -56,7 +61,9 @@ static inline uint16_t shift_desc(uint16_t nw, uint16_t old, int sh) {
     return (uint16_t)((((uint32_t)nw << 16) | old) >> (16 - sh));
 }
 
-static uint32_t area_blit(void) {
+// In SRAM: run from flash, the blits competed with chip RAM (PSRAM) for the XIP
+// cache (State of the Art's intro clears and fills ~12,000 words a frame).
+AMIGA_HOT static uint32_t area_blit(void) {
     const bool useA = con0 & 0x0800, useB = con0 & 0x0400, useC = con0 & 0x0200, useD = con0 & 0x0100;
     const bool desc = con1 & 0x0002;
     const bool dofill = con1 & 0x0018, excl = con1 & 0x0010;
@@ -99,7 +106,8 @@ static uint32_t area_blit(void) {
     return (uint32_t)(w * h * ch);          // colour clocks, roughly
 }
 
-static uint32_t line_blit(void) {
+// Flash: lines are a few hundred pixels a frame, not worth the SRAM.
+__attribute__((noinline)) static uint32_t line_blit(void) {
     const bool useA = con0 & 0x0800, useB = con0 & 0x0400, useC = con0 & 0x0200;
     const bool sing = con1 & 0x0002;
     const bool sud = con1 & 0x0010, sul = con1 & 0x0008, aul = con1 & 0x0004;
@@ -147,7 +155,7 @@ static uint32_t line_blit(void) {
     return (uint32_t)h * 4;
 }
 
-static void start(void) {
+AMIGA_HOT static void start(void) {       // the blits are inlined here
     pending = false;
     const int prof = prof_switch(AMIGA_PROF_BLIT);
     uint32_t cc = (con1 & 1) ? line_blit() : area_blit();

@@ -1,5 +1,6 @@
 // Internal interfaces between the chip modules. Not for the platform side.
 #pragma once
+#include <string.h>
 #include "amiga.h"
 
 #ifndef AMIGA_HOT
@@ -111,13 +112,16 @@ void     mem_init(void);
 void     mem_set_overlay(bool on);
 bool     mem_overlay(void);
 // DMA-side chip RAM access (word address, already masked by the caller).
+// One halfword access each (the address is even): two byte accesses cost
+// twice on PSRAM.  Chip RAM is big-endian, the hosts are little-endian.
 static inline uint16_t chip_rw(uint32_t addr) {
-    const uint8_t *p = A.cfg.chip_ram + (addr & A.chip_mask & ~1u);
-    return U16BE(p);
+    uint16_t v;
+    memcpy(&v, A.cfg.chip_ram + (addr & A.chip_mask & ~1u), 2);
+    return __builtin_bswap16(v);
 }
 static inline void chip_ww(uint32_t addr, uint16_t v) {
-    uint8_t *p = A.cfg.chip_ram + (addr & A.chip_mask & ~1u);
-    p[0] = (uint8_t)(v >> 8); p[1] = (uint8_t)v;
+    v = __builtin_bswap16(v);
+    memcpy(A.cfg.chip_ram + (addr & A.chip_mask & ~1u), &v, 2);
 }
 
 // ---- custom chip register dispatch (custom.c) ------------------------------
