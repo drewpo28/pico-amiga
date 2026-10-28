@@ -27,6 +27,7 @@ enum SettingFlags : uint16_t {
     F_PREVIEW = 1u << 0,   // hook is idempotent + allocation-free: apply it live so the
                            //   user sees the change at once
     F_PALETTE = 1u << 1,   // changes the menu's own colours: re-install them
+    F_VMODE   = 1u << 3,   // the video mode: the commit writes the vmode_pending rollback
     F_MODAL   = 1u << 7,   // the edit changes the whole screen (or draws boxes): the nav
                            //   redraws everything afterwards
 };
@@ -59,7 +60,9 @@ enum SettingFlags : uint16_t {
     /* Video > Capture card compatibility: the PIO HDMI tables are built at boot */ \
     X(SET_HDMI_CAPTURE, AC_REBOOT, 0,                          get_hdmicapture, put_hdmicapture, nullptr) \
     X(SET_VCENTRE,     AC_LIVE, 0,                             get_vcentre,   put_vcentre,   hook_hpos) \
-    X(SET_DISK_LED,    AC_LIVE, 0,                             get_diskled,   put_diskled,   nullptr)
+    X(SET_DISK_LED,    AC_LIVE, 0,                             get_diskled,   put_diskled,   nullptr) \
+    /* Video > Mode: the live display's (HDMI or VGA) */ \
+    X(SET_VIDEO_MODE,  AC_REBOOT, F_VMODE,                     get_vmode,     put_vmode,     nullptr)
 
 #define NM_X_ENUM(id, cls, flags, g, p, h) id,
 enum SettingId : uint16_t {

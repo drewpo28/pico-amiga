@@ -455,6 +455,12 @@ static const char* sysInfoText() {
     const char* hdmi = "HDMI (HSTX)";
 #endif
     add(" Firmware       : %s / %s [v%s]\n", CONFIG_BOARD_TAG, video_is_vga() ? "VGA" : hdmi, PORT_VERSION);
+    const video_timing_t* vt = video_timing();
+    const uint32_t vtot = (uint32_t)(vt->h_fp + vt->h_sync + vt->h_bp + vt->h_active) *
+                          (vt->v_fp + vt->v_sync + vt->v_bp + vt->v_active);
+    const uint32_t hz100 = (uint32_t)((uint64_t)vt->pixel_hz * 100 / vtot);
+    add(" Video mode     : %ux%u @%u.%02u Hz, %u.%u MHz\n", vt->h_active, vt->v_active, (unsigned)(hz100 / 100),
+        (unsigned)(hz100 % 100), (unsigned)(vt->pixel_hz / 1000000), (unsigned)(vt->pixel_hz / 100000 % 10));
     const int mv = board_vreg_mv(), t = board_temp_x10();
     add(" Chip           : RP2350%c, %u MHz\n", board_chip_package(), (unsigned)board_cpu_mhz());
     add(" Chip VREG/TEMP : %d.%02d V / %d.%d C\n", mv / 1000, mv % 1000 / 10, t / 10, (t < 0 ? -t : t) % 10);
@@ -535,7 +541,27 @@ static bool p_pioHdmi() {
 #endif
 }
 
+// Video > Mode: the modes this display's scanout runs at the staged CPU clock
+// (video_modes.c), and the staged one whatever it is (the radio needs its row).
+static const Option* videoModeOpts(uint8_t& cnt) {
+    static const Option k[] = {
+        { "720x576 @50 Hz",          VM_720x576_50, "720x576 @50" },
+        { "800x600 @50 Hz, framed",  VM_800x600_X2, "800x600 @50" },
+        { "640x480 @60 Hz, cropped", VM_640x480_60, "640x480 @60" },
+    };
+    static Option opts[NM_COUNT(k)];
+    const int32_t staged = Stage::get(SET_VIDEO_MODE);
+    const int mhz = (int)Stage::get(SET_CPU_MHZ);
+    video_timing_t t;
+    uint8_t n = 0;
+    for (const Option& o : k)
+        if (o.value == staged || video_mode_timing((int)o.value, video_out(), mhz, &t)) opts[n++] = o;
+    cnt = n;
+    return opts;
+}
+
 static const Node kVideo[] = {
+    NM_RADIO_D("Mode", SET_VIDEO_MODE, videoModeOpts, nullptr),
     NM_RADIO("Picture position", SET_HPOS, opt_hpos, nullptr),
     NM_BOOL("Centre short pictures vertically", SET_VCENTRE, nullptr),
     NM_BOOL("Disk activity icon", SET_DISK_LED, nullptr),

@@ -181,6 +181,15 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   build-host/tmds_test decodes all 4096 colours like a receiver and checks the
   lookup lines against the CPU encoder word for word. Re-run it after touching
   tmds_pio.h, tmds_pair.h or tmds_lut.h.
+- **Video > Mode** (video_modes.c, pico-speccy's VM_* numbers and timings in
+  storage.nvs hdmi_vmode / vga_vmode): 720x576 @50 (default), 800x600 @50 (the
+  picture framed in black: the line buffers' ends), 640x480 @60 (a 320 x 240 window
+  on the standard screen; Picture position moves it; the menu's surface Sf is the
+  window). HSTX only so far (PIO and VGA list 720x576 alone): a pixel clock must be
+  clk_sys / 5, 10, 15 or 20. A 50 Hz mode paces the emulation by its frames, 60 Hz
+  by 630 lines (20 ms): a moving cut, as pico-speccy's V-Sync off. A new mode is
+  kept only once confirmed: the commit writes the old ones to vmode_pending.nvs
+  (F_VMODE) and the boot that finds it asks for 15 s, then reverts and reboots.
 - **No DMA reads from PSRAM while the PIO TMDS scanout runs** (PICO_DV): the DMA
   has one read master, a PSRAM read stalls it for hundreds of ns, the video
   channel starves and HDMI drops (tried: a per-line bitplane prefetch, hires

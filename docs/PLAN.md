@@ -56,6 +56,11 @@ verified on the host bench; "hw" means verified on a board.
 - [ ] A600 profile: ECS Agnus/Denise, 1 MB chip RAM, KS 2.05, Gayle IDE with HDF images
       (builds on the A500+ steps below)
 - [x] PIO TMDS back-end (PICO_DV); MURM1 / ZERO2 board entries still to add; VGA
+- [ ] Video > Mode (pico-speccy's modes, video_modes.c): HSTX 720x576@50, 800x600@50
+      framed, 640x480@60 cropped, with the keep-or-revert boot question [x];
+      800x600@50 on the PIO TMDS (33.6 MHz at 504, parameterised tmds_lut.h);
+      VGA 800x600@60 / 640x480@60 (VESA); 1440x576@50 (VIC 29) for super-hires 1:1
+      (a 1440-pixel row format, 54 MHz = clk_sys 540)
 - [ ] HDMI audio, I2S DAC
 - [ ] Save states
 - [ ] LHA archives (later, with WHDLoad below): most .lha games on the net are

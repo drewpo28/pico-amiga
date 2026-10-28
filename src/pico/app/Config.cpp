@@ -33,6 +33,8 @@ uint8_t  Config::audio_out    = 0;
 uint8_t  Config::volume       = 16;
 bool     Config::hdmi_audio   = true;
 bool     Config::hdmi_capture = false;
+uint8_t  Config::hdmi_vmode   = 3;      // VM_720x576_50
+uint8_t  Config::vga_vmode    = 3;
 uint8_t  Config::hpos         = 0;
 bool     Config::vcentre      = true;
 bool     Config::disk_led     = true;
@@ -137,6 +139,8 @@ void Config::load() {
     nvs_get_u8 ("df0_disk",      df0_disk,     sts);
     nvs_get_u8 ("drives",        drives,       sts);
     if (drives > 4) drives = 0;
+    nvs_get_u8 ("hdmi_vmode",    hdmi_vmode,   sts);
+    nvs_get_u8 ("vga_vmode",     vga_vmode,    sts);
     nvs_get_u8 ("hpos",          hpos,         sts);
     if (hpos > 1) hpos = 0;
     nvs_get_b  ("vcentre",       vcentre,      sts);
@@ -219,6 +223,8 @@ bool Config::save() {
     nvs_set_b(buf, "df0_wp",        df0_wp);
     nvs_set_i(buf, "df0_disk",      df0_disk);
     nvs_set_i(buf, "drives",        drives);
+    nvs_set_i(buf, "hdmi_vmode",    hdmi_vmode);
+    nvs_set_i(buf, "vga_vmode",     vga_vmode);
     nvs_set_i(buf, "hpos",          hpos);
     nvs_set_b(buf, "vcentre",       vcentre);
     nvs_set_b(buf, "disk_led",      disk_led);
@@ -236,3 +242,31 @@ bool Config::save() {
     loaded = true;
     return true;
 }
+
+// ---- the unconfirmed video mode --------------------------------------------------------
+#define VMODE_PENDING CONFIG_DIR_BOARD "/vmode_pending.nvs"
+
+void Config::savePendingVideoMode() {
+    if (!mkdir_parents(CONFIG_DIR_BOARD)) return;
+    FIL f;
+    if (f_open(&f, VMODE_PENDING, FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) return;
+    NvsWriter buf;
+    buf.f = &f;
+    nvs_set_i(buf, "hdmi_vmode", hdmi_vmode);
+    nvs_set_i(buf, "vga_vmode",  vga_vmode);
+    f_close(&f);
+}
+
+bool Config::loadPendingVideoMode(uint8_t& hdmi_vm, uint8_t& vga_vm) {
+    FIL f;
+    if (f_open(&f, VMODE_PENDING, FA_READ) != FR_OK) return false;
+    NvsLines sts;
+    const bool ok = sts.read(&f);
+    f_close(&f);
+    if (!ok) return false;
+    nvs_get_u8("hdmi_vmode", hdmi_vm, sts);
+    nvs_get_u8("vga_vmode",  vga_vm,  sts);
+    return true;
+}
+
+void Config::clearPendingVideoMode() { f_unlink(VMODE_PENDING); }

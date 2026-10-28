@@ -72,8 +72,11 @@ int main(int argc, char **argv) {
         return 1;
     }
     SDL_RenderSetLogicalSize(ren, AMIGA_OUT_W, AMIGA_FB_H * 2);
+    // The largest Video > Mode (800x600); a mode uses its top left.
+    enum { OUT_W = 800, OUT_H = 600 };
     SDL_Texture *tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
-                                         AMIGA_OUT_W, AMIGA_FB_H * 2);
+                                         OUT_W, OUT_H);
+    int out_w = AMIGA_OUT_W, out_h = AMIGA_FB_H * 2;
 
     std::thread([] { firmware_main(); }).detach();
 
@@ -164,23 +167,34 @@ int main(int argc, char **argv) {
 
         const amiga_row_t *fb = host_fb;
         if (fb) {
-            // The picture as the HDMI scanout shows it: every row is two 720-pixel lines.
-            static uint32_t argb[AMIGA_FB_H * 2][AMIGA_OUT_W];
+            // The picture as the HDMI scanout shows it: every row is two 720-pixel
+            // lines, framed in black or cropped by the mode (video_window()).
+            const video_timing_t *t = video_timing();
+            const video_window_t *w = video_window();
+            const int W = t->h_active, H = t->v_active;
+            if (W != out_w || H != out_h) {
+                out_w = W; out_h = H;
+                SDL_RenderSetLogicalSize(ren, W, H);
+            }
+            static uint32_t argb[OUT_H][OUT_W];
             uint16_t line[AMIGA_OUT_W];
-            for (int y = 0; y < AMIGA_FB_H * 2; y++) {
-                amiga_fb_line(&fb[y >> 1], y & 1, line);
-                for (int x = 0; x < AMIGA_OUT_W; x++) {
-                    const uint32_t c = line[x];
-                    argb[y][x] = 0xFF000000u | ((c >> 8) & 15) * 0x110000u | ((c >> 4) & 15) * 0x1100u |
-                                 (c & 15) * 0x11u;
+            for (int y = 0; y < H; y++) {
+                for (int x = 0; x < W; x++) argb[y][x] = 0xFF000000u;
+                const int i = y - w->y;
+                if (i < 0 || i >= 2 * w->rows) continue;
+                amiga_fb_line(&fb[w->row + (i >> 1)], i & 1, line);
+                for (int x = 0; x < 2 * w->cols; x++) {
+                    const uint32_t c = line[2 * w->col + x];
+                    argb[y][w->x + x] = 0xFF000000u | ((c >> 8) & 15) * 0x110000u | ((c >> 4) & 15) * 0x1100u |
+                                        (c & 15) * 0x11u;
                 }
             }
             SDL_UpdateTexture(tex, NULL, argb, (int)sizeof argb[0]);
             for (Shot &sh : shots) {
                 if (sh.frame < 0 || vf < sh.frame) continue;
-                SDL_Surface *sf = SDL_CreateRGBSurfaceWithFormat(0, AMIGA_OUT_W, AMIGA_FB_H * 2, 32, SDL_PIXELFORMAT_ARGB8888);
-                for (int y = 0; y < AMIGA_FB_H * 2; y++)
-                    memcpy((uint8_t *)sf->pixels + y * sf->pitch, argb[y], sizeof argb[y]);
+                SDL_Surface *sf = SDL_CreateRGBSurfaceWithFormat(0, W, H, 32, SDL_PIXELFORMAT_ARGB8888);
+                for (int y = 0; y < H; y++)
+                    memcpy((uint8_t *)sf->pixels + y * sf->pitch, argb[y], (size_t)W * 4);
                 SDL_SaveBMP(sf, sh.file.c_str());
                 SDL_FreeSurface(sf);
                 fprintf(stderr, "host: frame %ld saved to %s\n", sh.frame, sh.file.c_str());
@@ -188,7 +202,8 @@ int main(int argc, char **argv) {
             }
         }
         SDL_RenderClear(ren);
-        SDL_RenderCopy(ren, tex, NULL, NULL);
+        const SDL_Rect src = { 0, 0, out_w, out_h };
+        SDL_RenderCopy(ren, tex, &src, NULL);
         SDL_RenderPresent(ren);   // V-Sync paces this loop
     }
 }

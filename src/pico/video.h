@@ -2,15 +2,31 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "amiga.h"
+#include "video_modes.h"
 
-// Video output of the AMIGA_FB_H framebuffer rows (amiga.h) at 720x576: HDMI at
-// 50.06 Hz (video_hstx.c, or video_pio.c on boards without HSTX pins), or VGA at
-// 49.97 Hz (video_vga.c) when a VGA resistor ladder is on the same pins.
+// Video output of the AMIGA_FB_H framebuffer rows (amiga.h), at 720x576 or in
+// another Video > Mode (video_modes.h): HDMI (video_hstx.c, or video_pio.c on
+// boards without HSTX pins), or VGA (video_vga.c) when a VGA resistor ladder is
+// on the same pins.  720x576 is 50.06 Hz on HDMI, 49.97 Hz on VGA.
 
 // Probe the display pins (VGA ladder or HDMI connector, as pico-speccy decides it).
 // Call once at boot, before video_start(); takes ~130 ms.
 void video_select(void);
 bool video_is_vga(void);
+int  video_out(void);               // VIDEO_OUT_* of this board and display
+
+// The mode to start in (after video_select()): `vm` if this scanout runs it at
+// clk_sys `mhz`, else 720x576.  Returns the mode taken.
+int  video_set_mode(int vm, int mhz);
+int  video_mode(void);
+// Video > Picture position (0 / 1): where a window smaller than the picture
+// sits in it (640x480).  Takes hold from the next output line.
+void video_set_hpos(int hpos);
+// The running mode's timing and window.  Read by the scanout IRQs: plain data.
+extern video_timing_t video_cur_timing;
+extern video_window_t video_cur_window;
+static inline const video_timing_t *video_timing(void) { return &video_cur_timing; }
+static inline const video_window_t *video_window(void) { return &video_cur_window; }
 
 // Start scanout. Call on the core that will own the DMA IRQ (core 1).  HDMI also
 // carries the sound in its data islands, fed by audio_out.c's tick (hdmi_audio.c).

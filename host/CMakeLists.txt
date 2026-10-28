@@ -48,6 +48,7 @@ if(SDL2_FOUND)
         ${ROOT}/src/pico/dms.c
         ${ROOT}/src/pico/roms.c
         ${ROOT}/src/pico/perf_log.c
+        ${ROOT}/src/pico/video_modes.c
         ${ROOT}/src/pico/drivers/input/keyboard.cpp
         ${ROOT}/src/pico/drivers/input/codepages.cpp
         ${ROOT}/src/pico/app/Config.cpp

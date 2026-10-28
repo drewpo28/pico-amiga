@@ -1,12 +1,12 @@
 // DVI/HDMI output through the RP2350 HSTX serializer and its TMDS encoder.
 //
-// Mode: 720x576 @ 50.06 Hz from a 25.2 MHz pixel clock (832 x 605 total) -
-// the hw-proven 576-line timing of pico-speccy's video_mode_table.h [5]/[6],
-// chosen because 25.2 MHz is clk_sys/15 at 378 and /20 at 504, the clocks the
-// rest of the firmware runs at.  The 288 framebuffer rows (amiga.h) become
-// 720x576: each FB row feeds two output lines (two different ones for an
-// interlaced row), and each FIFO word carries two output pixels that the
-// expander shifts out in turn (a doubled lowres pixel or a hires pair).
+// Mode: Video > Mode (video_modes.c; 720x576 @ 50.06 Hz from a 25.2 MHz pixel
+// clock, 832 x 605, by default - pico-speccy's hw-proven 576-line timing).  The
+// 288 framebuffer rows (amiga.h) become 720x576: each FB row feeds two output
+// lines (two different ones for an interlaced row), and each FIFO word carries
+// two output pixels that the expander shifts out in turn (a doubled lowres
+// pixel or a hires pair).  A larger mode (800x600) frames that in black, which
+// the line buffers keep at their ends; a smaller one (640x480) shows a window.
 //
 // Colours are the Amiga's 12-bit 0x0RGB (direct, or via the row palette).  The TMDS lanes take
 // their top four bits straight from those nibbles (NBITS = 3), so colour
@@ -33,16 +33,10 @@
 #define HDMI_BASE_PIN 12
 #endif
 
-// ---- timing ----------------------------------------------------------------------
-#define H_FP       12
-#define H_SYNC     64
-#define H_BP       36
-#define H_ACTIVE   720
-#define V_FP       5
-#define V_SYNC     5
-#define V_BP       19
-#define V_ACTIVE   576
-#define V_TOTAL    (V_FP + V_SYNC + V_BP + V_ACTIVE)   // 605
+// ---- timing (video_timing(), fixed while the scanout runs) ------------------------
+static uint32_t H_FP, H_SYNC, H_BP, H_ACTIVE;
+static uint32_t V_FP, V_SYNC, V_ACTIVE, V_TOTAL;
+static uint32_t pace_lines;          // output lines per emulated frame (hdmi_frame_lines)
 
 #define TMDS_CTRL_00 0x354u
 #define TMDS_CTRL_01 0x0abu
@@ -55,6 +49,7 @@
 
 #define HSTX_CMD_RAW_REPEAT (0x1u << 12)
 #define HSTX_CMD_TMDS       (0x2u << 12)
+#define HSTX_CMD_TMDS_REPEAT (0x3u << 12)
 #define HSTX_CMD_NOP        (0xfu << 12)
 
 #define HSTX_CMD_RAW        (0x0u << 12)
@@ -66,11 +61,15 @@ static const uint32_t sync_word[4] = { SYNC_V0_H0, SYNC_V0_H1, SYNC_V1_H0, SYNC_
 #define DMACH_PONG 1
 
 static const amiga_row_t *fb;
-static uint32_t linebuf[2][AMIGA_FB_W];
+// Two pixels a word, the widest mode's line (800); the black either side of a
+// framebuffer row is never written.
+#define LINE_WORDS 400
+static uint32_t linebuf[2][LINE_WORDS];
 // Command lists, by line parity: the one for line L is written while line L-1
-// plays from the other.  Longest (active line): 12 FP, the island in the sync
-// pulse, the rest of it, BP up to the video lead, the lead, the TMDS command.
-#define CMD_WORDS (2 + 1 + HDMI_ISLAND_PX + 2 + 2 + 1 + HDMI_VLEAD_PX + 1)
+// plays from the other.  Longest (active line): FP, the island in the sync
+// pulse, the rest of it, BP up to the video lead, the lead, the TMDS command
+// (or a black line: a repeated pixel).
+#define CMD_WORDS (2 + 1 + HDMI_ISLAND_PX + 2 + 2 + 1 + HDMI_VLEAD_PX + 2)
 static uint32_t cmdbuf[2][CMD_WORDS];
 static volatile uint32_t frames;
 static volatile uint32_t lines;              // v_line advances (v_line = lines + 2)
@@ -78,27 +77,29 @@ static bool     dma_pong;
 static uint32_t v_line;              // next output line to post
 static bool     cmd_posted;
 
-// One output line of a row (amiga.h formats) as 360 FIFO words, two output
-// pixels each: p | p << 16 doubles a lowres pixel, two indices give a hires pair.
-static void __not_in_flash_func(expand_line)(uint32_t *dst, const amiga_row_t *row, int sub) {
+// One output line of a row (amiga.h formats) as FIFO words, two output pixels
+// each: p | p << 16 doubles a lowres pixel, two indices give a hires pair.  The
+// window's columns from its col.
+static void __not_in_flash_func(expand_line)(uint32_t *dst, const amiga_row_t *row, int sub,
+                                             int col, int cols) {
     switch (row->mode) {
     case AMIGA_ROW_IDX8: {
-        const uint8_t *ix = row->px.idx;
+        const uint8_t *ix = row->px.idx + 2 * col;
         const uint16_t *pal = row->pal;
-        for (int x = 0; x < AMIGA_FB_W; x++)
+        for (int x = 0; x < cols; x++)
             dst[x] = pal[ix[2 * x] & 63] | ((uint32_t)pal[ix[2 * x + 1] & 63] << 16);
         break;
     }
     case AMIGA_ROW_LACE4: {
-        const uint8_t *n = row->px.nib[sub];
+        const uint8_t *n = row->px.nib[sub] + col;
         const uint16_t *pal = row->pal + 16 * sub;
-        for (int x = 0; x < AMIGA_FB_W; x++)
+        for (int x = 0; x < cols; x++)
             dst[x] = pal[n[x] >> 4] | ((uint32_t)pal[n[x] & 15] << 16);
         break;
     }
     default: {
-        const uint16_t *src = row->px.rgb;
-        for (int x = 0; x < AMIGA_FB_W; x += 4) {
+        const uint16_t *src = row->px.rgb + col;
+        for (int x = 0; x < cols; x += 4) {
             uint32_t a = src[x], b = src[x + 1], c = src[x + 2], d = src[x + 3];
             dst[x]     = a | (a << 16);
             dst[x + 1] = b | (b << 16);
@@ -108,6 +109,17 @@ static void __not_in_flash_func(expand_line)(uint32_t *dst, const amiga_row_t *r
         break;
     }
     }
+}
+
+// The framebuffer row output line `l` shows (sub = its upper / lower line), or
+// -1: a black line, or not a picture line at all.
+static inline int __not_in_flash_func(fb_out)(uint32_t l, int *sub) {
+    if (l < V_TOTAL - V_ACTIVE) return -1;
+    const video_window_t *w = video_window();
+    const int out = (int)(l - (V_TOTAL - V_ACTIVE)) - w->y;
+    if (out < 0 || out >= 2 * w->rows) return -1;
+    *sub = out & 1;
+    return w->row + (out >> 1);
 }
 
 // The command list of line `l`: sync, its data island and, on an active line,
@@ -125,7 +137,12 @@ static uint32_t __not_in_flash_func(build_cmd)(uint32_t *d, uint32_t l) {
         *p++ = HSTX_CMD_RAW_REPEAT | (H_BP - HDMI_VLEAD_PX); *p++ = SYNC_V1_H1;
         *p++ = HSTX_CMD_RAW | HDMI_VLEAD_PX;
         for (int i = 0; i < HDMI_VLEAD_PX; i++) *p++ = hdmi_video_lead[i];
-        *p++ = HSTX_CMD_TMDS | H_ACTIVE;
+        int sub;
+        if (fb_out(l, &sub) >= 0) {
+            *p++ = HSTX_CMD_TMDS | H_ACTIVE;
+        } else {
+            *p++ = HSTX_CMD_TMDS_REPEAT | H_ACTIVE; *p++ = 0;
+        }
     } else {
         *p++ = HSTX_CMD_RAW_REPEAT | (H_BP + H_ACTIVE); *p++ = sync_word[vs << 1 | 1];
         *p++ = HSTX_CMD_NOP;
@@ -139,7 +156,9 @@ static void __not_in_flash_func(dma_irq)(void) {
     dma_hw->intr = 1u << ch;
     dma_pong = !dma_pong;
 
-    if (v_line < V_TOTAL - V_ACTIVE) {
+    int sub;
+    const int row = fb_out(v_line, &sub);
+    if (row < 0) {
         uint32_t *d = cmdbuf[v_line & 1];
         c->read_addr = (uintptr_t)d;
         c->transfer_count = build_cmd(d, v_line);
@@ -150,12 +169,11 @@ static void __not_in_flash_func(dma_irq)(void) {
         cmd_posted = true;
         // Prepare the pixels this command list leads into.  The previous line's
         // pixels are being sent from the other buffer meanwhile.
-        uint32_t out = v_line - (V_TOTAL - V_ACTIVE);
-        expand_line(linebuf[out & 1], &fb[out >> 1], (int)(out & 1));
+        const video_window_t *w = video_window();
+        expand_line(linebuf[v_line & 1] + w->x / 2, &fb[row], sub, w->col, w->cols);
     } else {
-        uint32_t out = v_line - (V_TOTAL - V_ACTIVE);
-        c->read_addr = (uintptr_t)linebuf[out & 1];
-        c->transfer_count = AMIGA_FB_W;
+        c->read_addr = (uintptr_t)linebuf[v_line & 1];
+        c->transfer_count = H_ACTIVE / 2;
         cmd_posted = false;
     }
     if (!cmd_posted) {
@@ -164,9 +182,9 @@ static void __not_in_flash_func(dma_irq)(void) {
     }
 }
 
-static void hstx_setup(void) {
+static void hstx_setup(uint32_t pixel_hz) {
     const uint32_t sys = clock_get_hz(clk_sys);
-    const uint32_t want = 126000000;                 // 5 clk_hstx per 25.2 MHz pixel
+    const uint32_t want = 5 * pixel_hz;              // 5 clk_hstx per pixel
     uint32_t div = (sys + want / 2) / want;
     if (div < 1) div = 1;
     clock_configure_int_divider(clk_hstx, 0, CLOCKS_CLK_HSTX_CTRL_AUXSRC_VALUE_CLK_SYS, sys, div);
@@ -215,11 +233,19 @@ static void hstx_setup(void) {
 
 void hdmi_start(const amiga_row_t *framebuffer) {
     fb = framebuffer;
-    hdmi_audio_init(25200000u, H_FP + H_SYNC + H_BP + H_ACTIVE, V_TOTAL);
+    const video_timing_t *t = video_timing();
+    H_FP = t->h_fp; H_SYNC = t->h_sync; H_BP = t->h_bp; H_ACTIVE = t->h_active;
+    V_FP = t->v_fp; V_SYNC = t->v_sync; V_ACTIVE = t->v_active;
+    V_TOTAL = t->v_fp + t->v_sync + t->v_bp + t->v_active;
+    const uint32_t h_total = H_FP + H_SYNC + H_BP + H_ACTIVE;
+    // A 50 Hz mode paces the emulation by its frames; another by the 20 ms of a
+    // PAL frame in its lines (640x480 @60: 630, a whole number).
+    pace_lines = t->hz == 50 ? V_TOTAL : t->pixel_hz / h_total / 50;
+    hdmi_audio_init(t->pixel_hz, h_total, V_TOTAL);
     v_line = 2;                      // the two channels below are pre-loaded with lines 0 and 1
     cmd_posted = false;
     dma_pong = false;
-    hstx_setup();
+    hstx_setup(t->pixel_hz);
 
     // Lines 0 and 1 (vertical front porch) go out from the static list until the
     // IRQ takes over at line 2.
@@ -243,9 +269,10 @@ void hdmi_start(const amiga_row_t *framebuffer) {
 }
 
 uint32_t hdmi_frames(void) { return frames; }
-// The picture begins at v_line V_TOTAL - V_ACTIVE.
-uint32_t hdmi_lines(void) { return lines + 2 + V_ACTIVE; }
-uint32_t hdmi_frame_lines(void) { return V_TOTAL; }
+// Framebuffer row 0 begins at v_line V_TOTAL - V_ACTIVE + the window's y (a
+// smaller mode's first row is no row 0: main.c's 70% then lands a little early).
+uint32_t hdmi_lines(void) { return lines + 2 + V_ACTIVE - (uint32_t)video_window()->y; }
+uint32_t hdmi_frame_lines(void) { return pace_lines; }
 uint32_t hdmi_late_lines(void) { return 0; }
 uint32_t hdmi_stalled_lines(void) { return 0; }
 void hdmi_core1_cycles(uint32_t *irq, uint32_t *enc) { *irq = *enc = 0; }

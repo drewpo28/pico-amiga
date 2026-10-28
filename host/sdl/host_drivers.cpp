@@ -50,21 +50,51 @@ extern "C" uint32_t psram_size(void) { return HOST_PSRAM_SIZE; }
 extern "C" int clock_overclock(int mhz, int flash_mhz) { (void)flash_mhz; return mhz; }
 
 // ---- video.h ----------------------------------------------------------------------
-// One output frame every 832 x 605 pixels at 25.2 MHz, as the HDMI back-ends run;
-// the main thread presents host_fb whenever it changes.
+// The Video > Mode timing as the HSTX scanout runs it (video_modes.c): one output
+// frame every h_total x v_total pixels at its pixel clock; the main thread
+// presents host_fb whenever it changes, framed or cropped as the mode shows it.
 const amiga_row_t *volatile host_fb;
 static std::atomic<uint32_t> s_frames{0};
 // The output clock's origin: the program's start, so that video_lines() never
 // goes back (main.c may read it before core 1 calls video_start()).
 static const std::chrono::steady_clock::time_point s_t0 = std::chrono::steady_clock::now();
+video_timing_t video_cur_timing;
+video_window_t video_cur_window;
+static int s_vmode, s_hpos;
+
+static uint32_t h_total() {
+    const video_timing_t &t = video_cur_timing;
+    return t.h_fp + t.h_sync + t.h_bp + t.h_active;
+}
+static uint32_t v_total() {
+    const video_timing_t &t = video_cur_timing;
+    return t.v_fp + t.v_sync + t.v_bp + t.v_active;
+}
 
 extern "C" void video_select(void) {}
 extern "C" bool video_is_vga(void) { return false; }
+extern "C" int video_out(void) { return VIDEO_OUT_HSTX; }
+extern "C" int video_set_mode(int vm, int mhz) {
+    if (!video_mode_timing(vm, VIDEO_OUT_HSTX, mhz, &video_cur_timing)) {
+        vm = VM_720x576_50;
+        video_mode_timing(vm, VIDEO_OUT_HSTX, mhz, &video_cur_timing);
+    }
+    s_vmode = vm;
+    video_mode_window(&video_cur_timing, s_hpos, &video_cur_window);
+    return vm;
+}
+extern "C" int video_mode(void) { return s_vmode; }
+extern "C" void video_set_hpos(int hpos) {
+    s_hpos = hpos;
+    video_window_t w;
+    video_mode_window(&video_cur_timing, hpos, &w);
+    video_cur_window.col = w.col;
+}
 extern "C" void video_start(const amiga_row_t *framebuffer) {
     host_fb = framebuffer;
     std::thread([] {
         using clk = std::chrono::steady_clock;
-        const auto period = std::chrono::nanoseconds(1000000000ull * 832 * 605 / 25200000);
+        const auto period = std::chrono::nanoseconds(1000000000ull * h_total() * v_total() / video_cur_timing.pixel_hz);
         auto next = s_t0 + period;
         for (;;) {
             std::this_thread::sleep_until(next);
@@ -74,13 +104,16 @@ extern "C" void video_start(const amiga_row_t *framebuffer) {
     }).detach();
 }
 extern "C" uint32_t video_frames(void) { return s_frames; }
-// The HDMI line clock (832 pixels at 25.2 MHz), from the same start; the picture
-// begins 29 lines into a frame there.
+// The line clock, from the same start; framebuffer row 0 begins v_total -
+// v_active + the window's y lines into a frame there (video_hstx.c).
 extern "C" uint32_t video_lines(void) {
     const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - s_t0).count();
-    return (uint32_t)((uint64_t)ns * 25200000ull / (832ull * 1000000000ull)) + 576;
+    return (uint32_t)((uint64_t)ns * video_cur_timing.pixel_hz / ((uint64_t)h_total() * 1000000000ull)) +
+           video_cur_timing.v_active - (uint32_t)video_cur_window.y;
 }
-extern "C" uint32_t video_frame_lines(void) { return 605; }
+extern "C" uint32_t video_frame_lines(void) {
+    return video_cur_timing.hz == 50 ? v_total() : video_cur_timing.pixel_hz / h_total() / 50;
+}
 extern "C" uint32_t video_late_lines(void) { return 0; }
 extern "C" uint32_t video_stalled_lines(void) { return 0; }
 extern "C" void video_core1_cycles(uint32_t *irq, uint32_t *enc) { *irq = *enc = 0; }

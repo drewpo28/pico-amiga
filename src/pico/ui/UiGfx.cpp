@@ -149,8 +149,13 @@ static inline uint16_t rgb444(uint32_t c) {
 
 void gfxComputeSurface() {
     memset(&Sf, 0, sizeof(Sf));
-    Sf.w = AMIGA_FB_W;
-    Sf.h = AMIGA_FB_H;
+    // What the display shows of the framebuffer (Video > Mode: all of it, or
+    // 320 x 240 of it at 640x480).
+    const video_window_t* w = video_window();
+    Sf.fbx = w->col;
+    Sf.oy  = w->row;
+    Sf.w   = w->cols;
+    Sf.h   = w->rows;
     Sf.glyphScale = 1;
 }
 

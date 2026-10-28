@@ -34,6 +34,8 @@ public:
     static bool     hdmi_capture;   // Video > Capture card compatibility (PIO HDMI, tmds_pio.h)
 
     // Video
+    static uint8_t  hdmi_vmode;     // Video > Mode on HDMI / on VGA (video_modes.h VM_*, pico-speccy's
+    static uint8_t  vga_vmode;      //   numbers); read at boot, a change reboots
     static uint8_t  hpos;           // picture position: 0 centred, 1 left overscan
     static bool     vcentre;        // centre short pictures vertically (amiga_set_vcentre)
     static bool     disk_led;       // Video > Disk activity icon (UiStats.cpp)
@@ -49,6 +51,12 @@ public:
 
     static void load();
     static bool save();
+    // A new video mode is kept only once the user has seen it: before the reboot
+    // into it the modes it replaces go to vmode_pending.nvs, and the boot that finds
+    // the file asks (pico-speccy's savePendingVideoMode).
+    static void savePendingVideoMode();
+    static bool loadPendingVideoMode(uint8_t& hdmi_vm, uint8_t& vga_vm);
+    static void clearPendingVideoMode();
     static bool loaded;             // storage.nvs was read (or written) this session
 };
 

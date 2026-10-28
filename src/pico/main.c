@@ -125,6 +125,7 @@ int main(void) {
     dma_channel_claim(0);            // video_hstx.c / video_pio.c scanout ping-pong
     dma_channel_claim(1);
     video_select();                  // VGA or HDMI on the display pins
+    video_set_mode(settings_video_mode(), mhz);
     // Core 1's stack in main RAM: the SDK's default puts it in SCRATCH_X, right
     // under core 0's 4 KB stack (SCRATCH_Y), where a deep menu call on core 0
     // overwrote it (an .m3u pick crashed core 1).  Now core 0 can spill into
@@ -167,6 +168,7 @@ int main(void) {
     settings_apply_sound();
     settings_apply_video();
     printf("%s, kickstart %s, audio %s\n", machine_name(), machine_rom_name(), audio_out_name());
+    if (card) ui_video_mode_confirm();
 
     // A frame starts when the scanout is 70% into its picture.  There is one
     // framebuffer: Denise (core 1) paints row r while the scanout reads it, and

@@ -12,6 +12,8 @@ extern "C" {
 }
 #include "ui.h"
 #include "UiGfx.h"
+#include "UiDialog.h"
+#include "OSDNewMenu.h"
 #include "app/Config.h"
 
 char shiftSymUS(char c) {
@@ -55,7 +57,26 @@ extern "C" int settings_flash_mhz(void) { return Config::max_flash_freq; }
 extern "C" int settings_psram_mhz(void) { return Config::max_psram_freq; }
 extern "C" bool settings_hdmi_capture(void) { return Config::hdmi_capture; }
 
+extern "C" int settings_video_mode(void) { return video_is_vga() ? Config::vga_vmode : Config::hdmi_vmode; }
+
+// Booted into a video mode the user has not kept yet (Config::savePendingVideoMode):
+// keep it, or go back to the old one and reboot - also when nobody answers, the
+// picture may not be there at all.
+extern "C" void ui_video_mode_confirm(void) {
+    uint8_t h = Config::hdmi_vmode, v = Config::vga_vmode;
+    if (!Config::loadPendingVideoMode(h, v)) return;
+    sleep_ms(500);                       // let the display lock on
+    const bool keep = nm::uiConfirmTimeout("Keep this video mode?", "Video mode", 15);
+    Config::clearPendingVideoMode();
+    if (keep) return;
+    Config::hdmi_vmode = h;
+    Config::vga_vmode = v;
+    Config::save();
+    OSD::esp_hard_reset();
+}
+
 extern "C" void settings_apply_video(void) {
+    video_set_hpos(Config::hpos);
     amiga_set_fb_x0(Config::hpos ? AMIGA_FB_X0_WIDE : AMIGA_FB_X0_CENTRE);
     amiga_set_vcentre(Config::vcentre);
     amiga_render_async(Config::render_c1);

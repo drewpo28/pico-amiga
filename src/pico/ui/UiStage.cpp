@@ -14,6 +14,9 @@
 #include "machine.h"
 #include "ui.h"
 #include "UiPlatform.h"
+extern "C" {
+#include "video.h"
+}
 
 namespace nm {
 
@@ -85,6 +88,9 @@ NM_INT_ACCESS (hpos,      hpos,       uint8_t)
 NM_BOOL_ACCESS(renderc1,  render_c1)
 NM_BOOL_ACCESS(vcentre,   vcentre)
 NM_BOOL_ACCESS(diskled,   disk_led)
+// Video > Mode edits the mode of the display in use.
+static int32_t get_vmode() { return video_is_vga() ? Config::vga_vmode : Config::hdmi_vmode; }
+static void    put_vmode(int32_t v) { (video_is_vga() ? Config::vga_vmode : Config::hdmi_vmode) = (uint8_t)v; }
 // Picture position, render core: from the next frame on.
 static bool hook_hpos(int32_t, int32_t) { settings_apply_video(); return true; }
 // Volume and HDMI audio reach the outputs at once (heard while editing).
@@ -231,6 +237,10 @@ void commit(CommitReport& rep) {
         }
     }
     if (!anyDirty()) return;
+
+    // A new video mode: the ones it replaces go to the rollback file first.
+    for (uint16_t id = 1; id < SET_COUNT; id++)
+        if (bmGet(g_dirty, id) && (kDesc[id].flags & F_VMODE)) { Config::savePendingVideoMode(); break; }
 
     // Write the staged values (emulation is suspended while the menu is open).
     for (uint16_t id = 1; id < SET_COUNT; id++) {

@@ -50,6 +50,7 @@ add_executable(pico-amiga
     src/pico/dbg_uart.c
     src/pico/perf_log.c
     src/pico/video.c
+    src/pico/video_modes.c
     src/pico/video_vga.c
     src/pico/hdmi_audio.c
     src/pico/clock.c

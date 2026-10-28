@@ -20,6 +20,10 @@ int  settings_psram_mhz(void);
 int  settings_audio_out(void);
 bool settings_dbg_uart(void);          // 0 auto, 1 PWM, 2 I2S
 bool settings_hdmi_capture(void);      // Video > Capture card compatibility (PIO HDMI)
+int  settings_video_mode(void);        // Video > Mode of the display in use (video_modes.h)
+// After a reboot into a new video mode: ask whether to keep it (15 s, then the old
+// one comes back with another reboot).  Call with the scanout running.
+void ui_video_mode_confirm(void);
 // Push the live sound settings (volume, HDMI audio) to the outputs.
 void settings_apply_sound(void);
 void settings_apply_video(void);     // picture position, centring (Video), render core (Debug)
