@@ -10,8 +10,10 @@ extern "C" {
 #endif
 
 // The PSRAM buffers a Kickstart / extended ROM read from the card goes into
-// (512 KB each).
-void machine_init(uint8_t *rom_buf, uint8_t *ext_buf);
+// (512 KB each), and the area DMS images are unpacked into (the decoder's ~100 KB
+// work area, then 880 KB per drive: DF0..DF3 need 3.6 MB, a smaller area serves
+// the first drives only).
+void machine_init(uint8_t *rom_buf, uint8_t *ext_buf, uint8_t *dms_area, uint32_t dms_size);
 
 // Fill cfg->rom / ext_rom from Config::kick: a built-in ROM (roms.h, read in
 // place from flash), or "sd" = /amiga/kick.rom (+ /amiga/ext.rom) from the card,
@@ -24,8 +26,9 @@ const char *machine_rom_name(void);
 
 // DF0..DF3 (only DF0 is wired in the core so far).  insert: open the ADF at
 // `path` (card path) and put it in the drive; false (and the drive left empty)
-// when the file cannot be opened or is not an 880 KB ADF.  The choice is kept in
-// Config (df0, df0_wp) by the caller's save.
+// when the file cannot be opened or is not an 880 KB ADF.  A .dms is unpacked
+// into the drive's PSRAM slot instead and is always write-protected.  The choice
+// is kept in Config (df0, df0_wp) by the caller's save.
 bool machine_insert(int drive, const char *path, bool write_protect);
 void machine_eject(int drive);
 const char *machine_disk(int drive);   // card path, "" when empty

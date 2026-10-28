@@ -55,6 +55,7 @@ add_executable(pico-amiga
     src/pico/usb_disk_stub.c
     src/pico/input.cpp
     src/pico/machine.cpp
+    src/pico/dms.c
     src/pico/roms.c
     src/pico/input_devices.cpp
     # The menu (pico-speccy's nm:: UI) and the settings.

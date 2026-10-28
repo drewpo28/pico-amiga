@@ -10,7 +10,8 @@ endif()
 set(ROOT ${CMAKE_CURRENT_LIST_DIR}/..)
 include(${ROOT}/cmake/amiga_core.cmake)
 
-add_executable(pico-amiga-host main.c)
+add_executable(pico-amiga-host main.c ${ROOT}/src/pico/dms.c)
+target_include_directories(pico-amiga-host PRIVATE ${ROOT}/src/pico)
 target_link_libraries(pico-amiga-host PRIVATE amiga_core pthread m)
 target_compile_options(pico-amiga-host PRIVATE -Wall -Wextra)
 
@@ -39,6 +40,7 @@ if(SDL2_FOUND)
         ${ROOT}/src/pico/main.c
         ${ROOT}/src/pico/input.cpp
         ${ROOT}/src/pico/machine.cpp
+        ${ROOT}/src/pico/dms.c
         ${ROOT}/src/pico/roms.c
         ${ROOT}/src/pico/perf_log.c
         ${ROOT}/src/pico/drivers/input/keyboard.cpp

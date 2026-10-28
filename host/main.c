@@ -5,7 +5,7 @@
 // as PNG, Paula output as WAV, SERDAT bytes to stdout.  It is the test bench:
 // everything the core does can be checked here before it goes near a board.
 //
-//   pico-amiga-host --rom kick.rom [--ext ext.rom] [--adf disk.adf]... (DF0, DF1, ...)
+//   pico-amiga-host --rom kick.rom [--ext ext.rom] [--adf disk.adf|.dms]... (DF0, DF1, ...)
 //                   [--frames N] [--shot N:file.png]... [--wav out.wav]
 //                   [--slow] [--key N:code:down]... [--status K]
 //                   [--joy N:dirs:fire]... [--mouse N:dx:dy:buttons]...
@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <time.h>
 #include "amiga.h"
+#include "dms.h"
 #include "m68k.h"
 
 static amiga_row_t fb[AMIGA_FB_H];
@@ -35,6 +36,29 @@ static uint8_t *load(const char *path, uint32_t *size) {
     fclose(f);
     *size = (uint32_t)n;
     return p;
+}
+
+// A DMS (--adf x.dms) is unpacked to an ADF in memory, as the firmware does.
+typedef struct { const uint8_t *p, *end; } dms_src_t;
+static uint32_t dms_src_read(void *ctx, void *dst, uint32_t len) {
+    dms_src_t *s = ctx;
+    if (len > (uint32_t)(s->end - s->p)) len = (uint32_t)(s->end - s->p);
+    memcpy(dst, s->p, len);
+    s->p += len;
+    return len;
+}
+static uint8_t *load_disk(const char *path, uint32_t *size) {
+    uint8_t *p = load(path, size);
+    if (*size < 4 || memcmp(p, "DMS!", 4)) return p;
+    dms_src_t src = { p, p + *size };
+    uint8_t *adf = malloc(DMS_ADF_SIZE);
+    void *work = malloc(dms_work_size());
+    const int err = dms_unpack(dms_src_read, &src, adf, work);
+    if (err != DMS_OK) { fprintf(stderr, "%s: %s\n", path, dms_error(err)); exit(1); }
+    free(work);
+    free(p);
+    *size = DMS_ADF_SIZE;
+    return adf;
 }
 
 // ---- tiny PNG writer (stored deflate blocks) -------------------------------------
@@ -242,7 +266,7 @@ int main(int argc, char **argv) {
 
     static mem_disk_t md[4];
     for (int k = 0; k < nadf; k++) {
-        md[k].data = load(adf_path[k], &md[k].size);
+        md[k].data = load_disk(adf_path[k], &md[k].size);
         amiga_disk_t d = { disk_read, disk_write, &md[k], md[k].size };
         amiga_insert_disk(k, &d);
     }

@@ -160,7 +160,7 @@ static bool df0SwapPick() {
     return true;
 }
 
-// Browse for an ADF and put it in DF0; true when a disk went in. Shared by the
+// Browse for an ADF (or DMS) and put it in DF0; true when a disk went in. Shared by the
 // menu row and the Ctrl+F12 hotkey (runDiskInsert).
 static bool df0PickAndInsert() {
     // Start where the last disk came from, else in /amiga/.
@@ -183,7 +183,7 @@ static bool df0PickAndInsert() {
     if (set ? !machine_load_set(path.c_str(), 0) : !machine_insert(0, path.c_str(), Config::df0_wp)) {
         gfxBegin();
         uiToast(set ? "The disk set's first disk cannot be opened"
-                    : "Not an 880 KB ADF, or it cannot be opened", true, 2000);
+                    : "Not an 880 KB ADF or DMS, or it cannot be opened", true, 2000);
         gfxEnd();
         return false;
     }

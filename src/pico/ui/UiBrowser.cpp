@@ -56,7 +56,7 @@ struct BrowseTypeState {
 };
 static BrowseTypeState s_types[BROWSE_COUNT] = {
     { "" },                                      // BROWSE_ALL
-    { ".adf,.m3u" },                             // BROWSE_ADF (an .m3u is a disk set)
+    { ".adf,.dms,.m3u" },                        // BROWSE_ADF (an .m3u is a disk set)
     { ".rom,.bin" },                             // BROWSE_ROM
     { "" },                                      // BROWSE_CFG
 };
@@ -263,7 +263,8 @@ static bool extMatches(const string& name) {
 
 static const char* typeLabel(const string& lcext) {
     if (lcext == "adf")                                     return "Amiga disk";
-    if (lcext == "adz" || lcext == "dms" || lcext == "ipf") return "Disk (unsupported)";
+    if (lcext == "dms")                                     return "Amiga disk (DMS)";
+    if (lcext == "adz" || lcext == "ipf")                   return "Disk (unsupported)";
     if (lcext == "rom" || lcext == "bin")                   return "ROM image";
     if (lcext == "hdf")                                     return "Hard disk image";
     if (lcext == "lha" || lcext == "lzh" || lcext == "zip") return "Archive";

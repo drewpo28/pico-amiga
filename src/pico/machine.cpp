@@ -1,19 +1,26 @@
 // The machine around the core (machine.h): Kickstart selection and the drives.
 #include "machine.h"
+#include <stdio.h>
 #include <string.h>
+#include <strings.h>
 #include <string>
 #include "ff.h"
+#include "dms.h"
 #include "roms.h"
 #include "app/Config.h"
 
 #define KB 1024u
 
 static uint8_t *s_rom_buf, *s_ext_buf;
+static uint8_t *s_dms_area;
+static uint32_t s_dms_size;
 static const char *s_rom_name = "";
 
-void machine_init(uint8_t *rom_buf, uint8_t *ext_buf) {
+void machine_init(uint8_t *rom_buf, uint8_t *ext_buf, uint8_t *dms_area, uint32_t dms_size) {
     s_rom_buf = rom_buf;
     s_ext_buf = ext_buf;
+    s_dms_area = dms_area;
+    s_dms_size = dms_size;
 }
 
 static uint32_t load_file(const char *path, uint8_t *dst, uint32_t max) {
@@ -63,10 +70,12 @@ const char *machine_rom_name(void) { return s_rom_name; }
 
 // ---- drives ------------------------------------------------------------------------
 // An ADF is streamed from the card: the core reads and writes whole tracks through
-// these callbacks, the FIL stays open while the disk is in.
+// these callbacks, the FIL stays open while the disk is in.  A DMS is unpacked
+// into PSRAM when it goes in (dms.c) and read from there, write-protected.
 struct Drive {
     FIL f;
-    bool open;
+    bool open;              // f is open (ADF)
+    uint8_t *img;           // the unpacked DMS (PSRAM), or null
     std::string path;
 };
 static Drive s_drv[4];
@@ -83,12 +92,37 @@ static int adf_write(void *ctx, uint32_t off, const void *src, uint32_t len) {
     return 0;
 }
 
+static int img_read(void *ctx, uint32_t off, void *dst, uint32_t len) {
+    if (off + len > DMS_ADF_SIZE) return -1;
+    memcpy(dst, (const uint8_t *)ctx + off, len);
+    return 0;
+}
+
+// The DMS area (machine_init): the decoder's work area, then one 880 KB image per
+// drive, as many as the PSRAM holds.
+static uint8_t *dms_slot(int drive) {
+    const uint32_t off = ((dms_work_size() + 4095) & ~4095u) + (uint32_t)drive * DMS_ADF_SIZE;
+    return s_dms_area && off + DMS_ADF_SIZE <= s_dms_size ? s_dms_area + off : nullptr;
+}
+
+static uint32_t dms_fread(void *ctx, void *dst, uint32_t len) {
+    UINT n = 0;
+    if (f_read((FIL *)ctx, dst, len, &n) != FR_OK) return 0;
+    return n;
+}
+
+static bool has_ext(const char *path, const char *ext) {
+    const char *dot = strrchr(path, '.');
+    return dot && strcasecmp(dot, ext) == 0;
+}
+
 static void eject_adf(int drive) {
     if (drive < 0 || drive > 3) return;
     Drive &d = s_drv[drive];
     amiga_eject_disk(drive);
     if (d.open) f_close(&d.f);
     d.open = false;
+    d.img = nullptr;
     d.path.clear();
 }
 
@@ -109,9 +143,30 @@ bool machine_insert(int drive, const char *path, bool write_protect) {
 }
 
 
+static bool insert_dms(int drive, const char *path) {
+    Drive &d = s_drv[drive];
+    uint8_t *img = dms_slot(drive);
+    if (!img) return false;                                 // not enough PSRAM for this drive
+    // Static: this runs from the menu, deep in core 0's 4 KB stack.
+    static FIL f;
+    if (f_open(&f, path, FA_READ) != FR_OK) return false;
+    const int err = dms_unpack(dms_fread, &f, img, s_dms_area);
+    f_close(&f);
+    if (err != DMS_OK) {
+        printf("DF%d: %s: %s\n", drive, path, dms_error(err));
+        return false;
+    }
+    d.img = img;
+    d.path = path;
+    amiga_disk_t disk = { img_read, NULL, img, DMS_ADF_SIZE };
+    amiga_insert_disk(drive, &disk);
+    return true;
+}
+
 static bool insert_adf(int drive, const char *path, bool write_protect) {
     if (drive < 0 || drive > 3 || !path || !*path) return false;
     eject_adf(drive);
+    if (has_ext(path, ".dms")) return insert_dms(drive, path);
     Drive &d = s_drv[drive];
     bool rw = !write_protect && f_open(&d.f, path, FA_READ | FA_WRITE) == FR_OK;
     if (!rw && f_open(&d.f, path, FA_READ) != FR_OK) return false;
@@ -184,7 +239,7 @@ bool machine_set_select(int i) {
     const std::string old = s_drv[0].path;
     int other = 0;
     for (int d = 1; d < 4; d++)
-        if (s_drv[d].open && s_drv[d].path == s_set[i]) other = d;
+        if (!s_drv[d].path.empty() && s_drv[d].path == s_set[i]) other = d;
     if (other) eject_adf(other);
     if (!insert_adf(0, s_set[i].c_str(), Config::df0_wp)) return false;
     if (other && !old.empty()) insert_adf(other, old.c_str(), Config::df0_wp);
@@ -206,7 +261,7 @@ bool machine_apply_drives(void) {
     // DF1.. hold the set's disks 2.. (PUAE's multi-drive), DF0 the chosen one.
     for (int d = 1; d < 4; d++) {
         const bool want = d < n && d < s_set_count && s_set[d] != s_drv[0].path;
-        if (want && s_drv[d].open && s_drv[d].path == s_set[d]) continue;
+        if (want && s_drv[d].path == s_set[d]) continue;
         eject_adf(d);
         if (want) insert_adf(d, s_set[d].c_str(), Config::df0_wp);
     }

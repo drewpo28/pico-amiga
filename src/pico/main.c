@@ -8,11 +8,14 @@
 // PSRAM layout (2 MB minimum):
 //   +0.0 MB  chip RAM 512 KB      +0.5 MB  slow RAM 512 KB ($C00000)
 //   +1.0 MB  Kickstart ROM        +1.5 MB  extended ROM (AROS) if present
+//   +2.0 MB  DMS images: the decoder's work area, then 880 KB per drive
+//            (machine.cpp; DF0..DF3 fit in 8 MB, a 2 MB PSRAM takes no DMS)
 //
 // ROMs: the built-in ones (roms.h, picked in Machine > Kickstart), or from the card:
 //   /amiga/kick.rom   256 or 512 KB Kickstart (Kickstart = "SD card"; AROS works)
 //   /amiga/ext.rom    512 KB extended ROM at $E00000 (optional, AROS needs it)
-// Disks: Disks > DF0 picks an ADF on the card (streamed from it); without a pick,
+// Disks: Disks > DF0 picks an ADF on the card (streamed from it) or a DMS (unpacked
+//   into PSRAM, write-protected); without a pick,
 //   /amiga/df0.adf goes into DF0 by itself.
 // Settings: /.config/pico-amiga/<board>/storage.nvs (app/Config.h).
 //
@@ -135,7 +138,7 @@ int main(void) {
     memset(&cfg, 0, sizeof cfg);
     cfg.chip_ram = ps;              cfg.chip_size = 512 * KB;
     cfg.slow_ram = ps + 512 * KB;   cfg.slow_size = 512 * KB;
-    machine_init(ps + 1 * MB, ps + 1 * MB + 512 * KB);
+    machine_init(ps + 1 * MB, ps + 1 * MB + 512 * KB, ps + 2 * MB, psram - 2 * MB);
 
     // The card holds the settings, the disks and an optional kick.rom; with a
     // built-in ROM the machine also boots without one.

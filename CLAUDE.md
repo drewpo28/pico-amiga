@@ -37,7 +37,9 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   reuse one. The firmware targets 16 MB flash; the core reads the ROM in place
   (XIP). `machine.cpp` owns ROM selection and the drives: DF0..DF3 (Machine > Floppy
   drives, Auto = one per disk of an `.m3u` set; Kickstart finds DF1+ by drive ID
-  at reset).
+  at reset). An ADF streams from the card; a `.dms` is unpacked at insert time by
+  `src/pico/dms.c` (xDMS port, its ~100 KB work area in PSRAM) into a per-drive
+  880 KB PSRAM slot above 2 MB, write-protected. The bench takes `--adf x.dms` too.
 - `src/pico/drivers/` are pico-speccy's drivers (USB HID/XInput, fabgl VK keyboard
   queue, PS/2, NES pad, SD); local changes are marked `PICO-AMIGA:`, and
   `drivers/input_glue.h` stands in for pico-speccy's Config/Debug/ESPectrum.
