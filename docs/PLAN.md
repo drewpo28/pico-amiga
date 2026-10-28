@@ -54,6 +54,43 @@ verified on the host bench; "hw" means verified on a board.
 - [ ] On-screen menu: pick ADFs from the SD card, swap disks, reset, settings
 - [ ] Joystick: USB gamepads, NES/SNES pads (pico-speccy drivers)
 - [ ] A600 profile: ECS Agnus/Denise, 1 MB chip RAM, KS 2.05, Gayle IDE with HDF images
+      (builds on the A500+ steps below)
 - [x] PIO TMDS back-end (PICO_DV); MURM1 / ZERO2 board entries still to add; VGA
 - [ ] HDMI audio, I2S DAC
 - [ ] Save states
+
+## 5. A500+ (ECS)
+
+Not "an A500 with 1 MB": Kickstart 2.04 (37.175, already built in as ks204 -
+kick37175.A500 is the A500+ ROM), 1 MB of chip RAM and no slow RAM, and the ECS
+chipset (Agnus 8375, Denise 8373), plus a battery clock at $DC0000. The core is
+OCS today: every DMA pointer keeps 19 bits (512 KB), VPOSR reports an OCS Agnus,
+DENISEID reads $FFFF. A500 keeps KS 2.04 and 3.1 in its list (real A500s took
+them too); A500+ lists the same two.
+
+Step 1 - an A500 with 1 MB chip RAM (what most A500+ software needs):
+
+- [ ] Machine menu: an A500+ row (cmake/roms.cmake: ks204 and ks31 under A500+
+      as well, or a per-ROM machine list), Config keeps the machine
+- [ ] main.c / machine.cpp: chip_size 1 MB, no slow RAM, for the A500+ (PSRAM
+      layout: chip RAM grows into the slow RAM's 512 KB)
+- [ ] DMA pointers to 21 bits (`v & 0x1F` in the PTH writes): copper.c (COPxLC),
+      blitter.c (set_ptr), paula.c (AUDxLC), floppy.c (DSKPT), denise.c (BPLxPT,
+      SPRxPT). Safe for the A500: chip_mask still wraps them at 512 KB, as the
+      OCS Agnus ignores the bits
+- [ ] VPOSR: the ECS Agnus ID ($20 for the PAL 8372/8375) when the machine is ECS
+- [ ] Check: KS 2.04 reports 1 MB chip (Workbench's memory gauge), a 1 MB-chip
+      game or demo, the A500 screens unchanged (smoke, the State of the Art set)
+
+Step 2 - ECS Agnus proper (the few programs that test for ECS):
+
+- [ ] BLTSIZV / BLTSIZH (blits up to 32768 x 32768), BLTCON0L
+- [ ] BEAMCON0 (stored; PAL only), DIWHIGH (DIW high bits), DDF and DIW as ECS
+      computes them
+- [ ] The $DC0000 clock (MSM6242B: date/time from the board, writes ignored)
+
+Step 3 - ECS Denise (Workbench in the high modes):
+
+- [ ] DENISEID ($FC), BPLCON3, BRDRBLNK
+- [ ] Super-hires (1280+ wide: 2 pixels per output pixel of the 720) and productivity;
+      needs a framebuffer row format and scanout path of its own
