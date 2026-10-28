@@ -1,16 +1,24 @@
-// pico-amiga — the performance band (Alt+F12), after pico-speccy's F8 stats
+// pico-amiga — the performance band (Win+F8), after pico-speccy's F8 stats
 // (OSD::drawStats): a few short lines in the UI face over the bottom of the
 // picture, refreshed every 25 frames (~0.5 s).  The Amiga repaints the whole
 // framebuffer each frame, so the band is kept as pixels and put back into each
 // of its rows by the core's row_done hook (ui_stats_row) before the row reaches
 // the framebuffer (amiga_set_overlay_rows): drawn after the frame it flickered,
-// and put back after Denise's repaint a line could still slip through.  Alt+F12 steps
+// and put back after Denise's repaint a line could still slip through.  Win+F8 steps
 // off -> summary -> breakdown -> off.
 //
 // Summary:
 //   EMU 14.2ms  141%    time amiga_run_frame() took, and the speed that makes
 //                       (100% = exactly the 20 ms of a PAL frame)
 //   FPS 50.0  378MHz    emulated frames per wall-clock second, the CPU clock
+//   DF0 TR40.1 SEC05 RD the drive (pico-speccy's TR/SEC line): cylinder.head, the
+//                       sector under the head (-- in the gap), RD / WR = disk DMA,
+//                       ON = motor, refreshed every 5 frames
+//
+// The drive icon (pico-speccy's FDD lamp, Video > Disk activity icon): a floppy
+// in the top right corner while the disk DMA runs and a moment after; blue =
+// read, red = write. Its rows go through the same row_done hook as the band's
+// (the core's second overlay range).
 // Breakdown (amiga_get_profile, ms per Amiga frame):
 //   CPU  9.1 REN 22.3   the 68000 (blits excluded), the Denise render (on core 1
 //                       when it renders there)
@@ -35,6 +43,7 @@ static int      s_lines;
 static uint32_t s_frames, s_emu_sum, s_t0;
 static amiga_profile_t s_prof;       // the profile at the last refresh (perf_log.c keeps its own)
 static bool     s_dirty;            // the text changed: draw the band again
+static char     s_disk[24];         // the summary's disk line as last drawn
 
 // The band as drawn: framebuffer rectangle and its pixels.
 enum { BAND_COLS = 19, BAND_W = (BAND_COLS + 2) * UI_FONT_W + 4, BAND_H = 3 * UI_FONT_H + 6 };
@@ -68,7 +77,35 @@ static void drawBand() {
         if (!src) { s_bh = 0; break; }
         for (int i = 0; i < s_bw; i++) s_px[r][i] = src[s_bx + i];
     }
-    amiga_set_overlay_rows(s_by, s_by + s_bh);
+}
+
+// The drive icon: 8 x 8 lowres pixels, B = body (the state's colour), L = label.
+static const char* const kFloppy[8] = {
+    "BBBBBBB.", "BB...BBB", "BB...BBB", "BBBBBBBB",
+    "BLLLLLLB", "BLLLLLLB", "BLLLLLLB", "BBBBBBBB",
+};
+static volatile bool     s_lamp;              // shown
+static volatile uint16_t s_lamp_col;          // body colour
+static int               s_lx, s_ly;          // framebuffer column / row of its top left
+static int               s_ov[2][2];          // the overlay ranges as last set
+
+static void setOverlay(int which, int y0, int y1) {
+    if (s_ov[which][0] == y0 && s_ov[which][1] == y1) return;
+    s_ov[which][0] = y0; s_ov[which][1] = y1;
+    amiga_set_overlay_rows(which, y0, y1);
+}
+
+// The rows row_done must see: the band's (range 0) and the icon's (range 1).
+static void updateOverlay() {
+    if (s_page && s_bh) setOverlay(0, s_by, s_by + s_bh); else setOverlay(0, 0, 0);
+    if (s_lamp) setOverlay(1, s_ly, s_ly + 8); else setOverlay(1, 0, 0);
+}
+
+// Where the icon goes: the top right corner.
+static void placeLamp() {
+    gfxComputeSurface();
+    s_lx = Sf.fbx + Sf.w - 8 - 4;
+    s_ly = Sf.oy + 4;
 }
 
 }  // namespace nm
@@ -84,19 +121,33 @@ extern "C" void ui_stats_toggle(void) {
     s_frames = s_emu_sum = 0;
     s_t0 = time_us_32();
     amiga_get_profile(&s_prof, false);
-    s_lines = s_page == 2 ? 3 : 2;
+    s_lines = 3;
     for (int i = 0; i < 3; i++) snprintf(s_l[i], sizeof s_l[i], "  --");
+    s_disk[0] = 0;
     s_dirty = true;
     s_bh = 0;
-    amiga_set_overlay_rows(0, 0);
+    updateOverlay();
 }
 
 extern "C" void ui_stats_row(void*, int row, amiga_row_t* r) {
     using namespace nm;
-    if (!s_page || row < s_by || row >= s_by + s_bh) return;
+    const bool band = s_page && row >= s_by && row < s_by + s_bh;
+    const bool lamp = s_lamp && row >= s_ly && row < s_ly + 8;
+    if (!band && !lamp) return;
     uint16_t* d = gfxRowToDirect(r);
-    const uint16_t* s = s_px[row - s_by];
-    for (int i = 0; i < s_bw; i++) d[s_bx + i] = s[i];
+    if (band) {
+        const uint16_t* s = s_px[row - s_by];
+        for (int i = 0; i < s_bw; i++) d[s_bx + i] = s[i];
+    }
+    if (lamp) {
+        const char* g = kFloppy[row - s_ly];
+        const uint16_t body = s_lamp_col;
+        for (int i = 0; i < 8; i++) {
+            const int x = s_lx + i;
+            if (x < 0 || x >= AMIGA_FB_W || g[i] == '.') continue;
+            d[x] = g[i] == 'B' ? body : 0xEEE;
+        }
+    }
 }
 
 // ticks per frame as "mm.m" milliseconds
@@ -105,10 +156,36 @@ static void ms(char* out, size_t n, const char* tag, uint64_t ticks, uint32_t fr
     snprintf(out, n, "%s%3u.%01u", tag, (unsigned)(us / 1000), (unsigned)(us % 1000 / 100));
 }
 
+// The summary's disk line: "DF0 TR40.1 SEC05 RD".
+static void diskLine(const amiga_floppy_t& f, char* out, size_t n) {
+    if (f.drive < 0) { snprintf(out, n, "DF- no disk access"); return; }
+    char sec[4];
+    if (f.sector < 11) snprintf(sec, sizeof sec, "%02u", (unsigned)f.sector);
+    else snprintf(sec, sizeof sec, "--");
+    snprintf(out, n, "DF%d TR%02u.%u SEC%s %s", f.drive, (unsigned)f.cyl, (unsigned)f.side, sec,
+             f.dma == 2 ? "WR" : f.dma == 1 ? "RD" : f.motor ? "ON" : "--");
+}
+
 extern "C" void ui_stats_frame(uint32_t emu_us) {
     using namespace nm;
+    amiga_floppy_t fl;
+    amiga_floppy_status(&fl);
+    // The icon: while the DMA runs and 10 frames after (track by track reads
+    // leave short gaps; it should not blink through them).
+    const bool lamp = Config::disk_led && fl.drive >= 0 && fl.idle <= 10;
+    if (lamp) s_lamp_col = fl.wrote ? 0xE22 : 0x28F;
+    if (lamp != s_lamp) {
+        if (lamp) placeLamp();
+        s_lamp = lamp;
+        updateOverlay();
+    }
     if (!s_page) return;
     s_frames++;
+    if (s_page == 1 && s_frames % 5 == 0) {
+        char l[24];
+        diskLine(fl, l, sizeof l);
+        if (strcmp(l, s_disk)) { snprintf(s_disk, sizeof s_disk, "%s", l); snprintf(s_l[2], sizeof s_l[2], "%s", l); s_dirty = true; }
+    }
     s_emu_sum += emu_us;
     if (s_frames >= 25) {
         const uint32_t now = time_us_32();
@@ -140,5 +217,9 @@ extern "C" void ui_stats_frame(uint32_t emu_us) {
         s_t0 = now;
         s_dirty = true;
     }
-    if (s_dirty) { drawBand(); s_dirty = false; }
+    if (s_dirty) {
+        drawBand();
+        s_dirty = false;
+        updateOverlay();
+    }
 }

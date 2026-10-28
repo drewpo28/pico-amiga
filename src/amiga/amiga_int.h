@@ -186,6 +186,7 @@ void     floppy_line(void);                         // per-line: DMA completion,
 void     floppy_insert(int drive, const amiga_disk_t *d);
 void     floppy_eject(int drive);
 void     floppy_set_drives(int n);
+void     floppy_status(amiga_floppy_t *st);
 
 // ---- battery clock (rtc.c) ---------------------------------------------------
 uint8_t  rtc_read(int reg);                         // reg 0..15: the nibble

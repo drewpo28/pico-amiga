@@ -67,6 +67,8 @@ static uint16_t dsklen, dsklen_prev, dsksync = 0x4489;
 static bool     dma_on, dma_write;
 static int      dma_drive;
 static uint32_t dma_lines_left;
+static uint32_t dma_end_frame;           // A.frame when the last DMA ended (amiga_floppy_status)
+static int      last_drive = -1;
 static uint32_t index_lines;
 
 // ---- MFM --------------------------------------------------------------------
@@ -173,6 +175,7 @@ static void dma_start(void) {
 static void dma_start_(void) {
     uint32_t words = dsklen & 0x3FFF;
     dma_drive = sel;
+    if (sel >= 0) last_drive = sel;
     dma_write = (dsklen & 0x4000) != 0;
     dma_on = true;
     dma_lines_left = words / (2 * FLOPPY_TURBO) + 1;
@@ -202,6 +205,7 @@ static void dma_finish(void) {
     if (dma_write && dma_drive >= 0) decode_write(dma_drive, dskpt, words);
     dskpt += words * 2;
     dma_on = false;
+    dma_end_frame = A.frame;
     amiga_set_intreq(INTF_DSKBLK);
 }
 
@@ -213,7 +217,7 @@ void floppy_write(uint32_t reg, uint16_t v) {
     case R_DSKLEN:
         dsklen_prev = dsklen;
         dsklen = v;
-        if (!(v & 0x8000)) { dma_on = false; break; }
+        if (!(v & 0x8000)) { if (dma_on) dma_end_frame = A.frame; dma_on = false; break; }
         if ((dsklen_prev & 0x8000) && (A.dmacon & (DMAF_MASTER | DMAF_DISK)) == (DMAF_MASTER | DMAF_DISK))
             dma_start();
         break;
@@ -271,6 +275,18 @@ void floppy_cia_prb(uint8_t prb) {
     prb_last = prb;
 }
 
+void floppy_status(amiga_floppy_t *st) {
+    const int d = sel >= 0 ? sel : last_drive;
+    st->drive = (int8_t)d;
+    st->cyl = d >= 0 ? drv[d].cyl : 0;
+    st->side = (uint8_t)side;
+    st->sector = (uint8_t)(rot_pos % TRACK_WORDS / SECTOR_WORDS);   // 11: the gap
+    st->motor = d >= 0 && drv[d].motor;
+    st->dma = dma_on ? (dma_write ? 2 : 1) : 0;
+    st->wrote = dma_write;
+    st->idle = dma_on ? 0 : A.frame - dma_end_frame + 1;
+}
+
 void floppy_set_drives(int n) {
     ndrives = n < 1 ? 1 : n > NDRIVES ? NDRIVES : n;
 }
@@ -323,5 +339,6 @@ void floppy_reset(void) {
     }
     prb_last = 0xFF; sel = -1; side = 0;
     dma_on = false; dsklen = dsklen_prev = 0; dsksync = 0x4489;
+    dma_end_frame = A.frame - 1000;             // no recent activity
     trk_drive = -1;
 }

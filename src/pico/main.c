@@ -9,10 +9,10 @@
 //   +0.0 MB  chip RAM 512 KB      +0.5 MB  slow RAM 512 KB ($C00000)
 //            (A500+: 1 MB of chip RAM over both, no slow RAM)
 //   +1.0 MB  Kickstart ROM        +1.5 MB  extended ROM (AROS) if present
-//   +2.0 MB  16 KB: the Alt+F12 band's pixels (UiStats.cpp)
+//   +2.0 MB  16 KB: the Win+F8 band's pixels (UiStats.cpp)
 //   +2.0 MB + 16 KB  DMS images: the decoder's work area, then 880 KB per drive
 //            (machine.cpp; DF0..DF3 fit in 8 MB, a 2 MB PSRAM takes no DMS
-//            and has no Alt+F12 band)
+//            and has no Win+F8 band)
 //
 // ROMs: the built-in ones (roms.h, picked in the Machine menu), or from the card:
 //   Machine > Custom ROM picks a 256 or 512 KB Kickstart image on the card
@@ -158,8 +158,8 @@ int main(void) {
     cfg.framebuffer = fb;
     cfg.audio_ring = audio_ring;
     cfg.audio_frames = AUDIO_FRAMES;
-    cfg.row_done = ui_stats_row;     // the Alt+F12 band, drawn on its rows before they are shown
-    cfg.prof_clock = board_cycles;   // where the frame time goes (Alt+F12, second page)
+    cfg.row_done = ui_stats_row;     // the Win+F8 band and the drive icon, drawn on their rows before they are shown
+    cfg.prof_clock = board_cycles;   // where the frame time goes (Win+F8, second page)
     amiga_init(&cfg);
     if (card) machine_restore_disks();
 

@@ -12,9 +12,10 @@
 //     game port 2; cursor keys are not passed on as keys while CursorAsJoy is on
 //   - the HID mouse -> port 1 mouse
 // Hotkeys (WinUAE's layout): F12 opens the menu (ui/, from pico-speccy), Ctrl+F12
-// the DF0 disk browser, Shift+F12 resets the Amiga, Alt+F12 the performance band; Ctrl+J toggles CursorAsJoy (as
+// the DF0 disk browser, Shift+F12 resets the Amiga; Ctrl+J toggles CursorAsJoy (as
 // on pico-speccy). Win+F1 is the System info page (pico-speccy's Alt+F1: Alt is
-// the Amiga's), Win+F5 the Open file browser (pico-speccy's F5). F1..F10 are the Amiga's, F11 and Insert its Help key.
+// the Amiga's), Win+F5 the Open file browser (pico-speccy's F5), Win+F8 the
+// performance band (pico-speccy's F8; it runs over the picture, the Amiga runs on). F1..F10 are the Amiga's, F11 and Insert its Help key.
 #include "input.h"
 #include <string.h>
 #include "pico/stdlib.h"
@@ -428,9 +429,7 @@ void input_frame(void) {
             if (!item.down) continue;
             const bool ctrl  = kbd.isVKDown(fabgl::VirtualKey::VK_LCTRL) || kbd.isVKDown(fabgl::VirtualKey::VK_RCTRL);
             const bool shift = kbd.isVKDown(fabgl::VirtualKey::VK_LSHIFT) || kbd.isVKDown(fabgl::VirtualKey::VK_RSHIFT);
-            const bool alt = kbd.isVKDown(fabgl::VirtualKey::VK_LALT) || kbd.isVKDown(fabgl::VirtualKey::VK_RALT);
             if (shift) { reset_req = true; continue; }
-            if (alt)   { ui_stats_toggle(); continue; }
             // The Amiga must not see keys held across the menu (the Ctrl of
             // Ctrl+F12 included): release what it thinks is down, then hand
             // the screen over.
@@ -440,6 +439,12 @@ void input_frame(void) {
             else      nm::run();
             menu_open = false;
             kbd.emptyVirtualKeyQueue();
+            continue;
+        }
+        // Win+F8: the performance band, over the running Amiga.
+        if (item.vk == fabgl::VirtualKey::VK_F8 && item.down &&
+            (kbd.isVKDown(fabgl::VirtualKey::VK_LGUI) || kbd.isVKDown(fabgl::VirtualKey::VK_RGUI))) {
+            ui_stats_toggle();
             continue;
         }
         // Win+F1: the System info page; Win+F5: Open file (the Amiga saw Win as

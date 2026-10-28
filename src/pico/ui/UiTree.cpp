@@ -408,10 +408,11 @@ static void page_hotkeys() {
         "F12         This menu (Esc goes back, F12 closes)\n"
         "Ctrl+F12    Insert a disk into DF0 (an .m3u set: swap disks)\n"
         "Shift+F12   Reset the Amiga\n"
-        "Alt+F12     Performance band: summary, breakdown, off\n"
         "Win+F1      System info: board, memory, chip temperature\n"
         "Win+F5      Open file: disks, disk sets, Kickstarts; F5 on a\n"
         "            disk picks the drive (DF0..DF3)\n"
+        "Win+F8      Performance band (with the drive's track and\n"
+        "            sector): summary, breakdown, off\n"
         "Ctrl+J      Cursor keys as joystick on/off\n"
         "F1..F10     Amiga function keys\n"
         "\n"
@@ -528,6 +529,7 @@ static bool p_pioHdmi() {
 static const Node kVideo[] = {
     NM_RADIO("Picture position", SET_HPOS, opt_hpos, nullptr),
     NM_BOOL("Centre short pictures vertically", SET_VCENTRE, nullptr),
+    NM_BOOL("Disk activity icon", SET_DISK_LED, nullptr),
     NM_BOOL("Capture card compatibility", SET_HDMI_CAPTURE, p_pioHdmi),
 };
 

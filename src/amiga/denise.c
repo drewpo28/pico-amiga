@@ -111,7 +111,7 @@ static bool     vwin;
 static amiga_row_t *fbrow;              // row being written, or NULL
 static amiga_row_t *fbdest;             // overlay row: where fbrow (the scratch) goes at line end
 static amiga_row_t  scratch_row;
-static int          ov_y0, ov_y1;       // amiga_set_overlay_rows
+static int          ov_y0[2], ov_y1[2]; // amiga_set_overlay_rows
 static int          fb_x0 = AMIGA_FB_X0_CENTRE;            // DIW x of column 0, this line
 static volatile int fb_x0_next = AMIGA_FB_X0_CENTRE;       // amiga_set_fb_x0
 
@@ -119,7 +119,10 @@ static int          fb_y0 = AMIGA_FB_Y0;                   // beam line of row 0
 
 void amiga_set_fb_x0(int x0) { fb_x0_next = x0; }
 
-void amiga_set_overlay_rows(int y0, int y1) { ov_y0 = y0; ov_y1 = y1; }
+void amiga_set_overlay_rows(int which, int y0, int y1) {
+    if (which < 0 || which > 1) return;
+    ov_y0[which] = y0; ov_y1[which] = y1;
+}
 static uint16_t ham_col;
 static bool     ham_in;
 
@@ -808,7 +811,7 @@ AMIGA_HOT static void c_line_start(uint32_t seq) {
     int row = c_vpos - fb_y0;
     fbrow = (A.cfg.framebuffer && row >= 0 && row < AMIGA_FB_H) ? A.cfg.framebuffer + row : NULL;
     fbdest = NULL;
-    if (fbrow && row >= ov_y0 && row < ov_y1) {
+    if (fbrow && ((row >= ov_y0[0] && row < ov_y1[0]) || (row >= ov_y0[1] && row < ov_y1[1]))) {
         // Built off-screen (the interlace writer keeps the other field: start
         // from the row as it is).
         fbdest = fbrow;

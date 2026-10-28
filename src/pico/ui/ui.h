@@ -24,9 +24,9 @@ bool settings_hdmi_capture(void);      // Video > Capture card compatibility (PI
 void settings_apply_sound(void);
 void settings_apply_video(void);     // picture position, centring (Video), render core (Debug)
 
-// The performance band (UiStats.cpp, Alt+F12): toggle it; after every emulated
+// The performance band (UiStats.cpp, Win+F8): toggle it; after every emulated
 // frame, the time amiga_run_frame() took (draws the band when it is on).
-// The band's pixels (ui_stats_buffer_size() bytes, PSRAM); without one Alt+F12 does nothing.
+// The band's pixels (ui_stats_buffer_size() bytes, PSRAM); without one Win+F8 does nothing.
 size_t ui_stats_buffer_size(void);
 void ui_stats_buffer(void *p);
 void ui_stats_toggle(void);

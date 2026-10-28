@@ -35,6 +35,7 @@ bool     Config::hdmi_audio   = true;
 bool     Config::hdmi_capture = false;
 uint8_t  Config::hpos         = 0;
 bool     Config::vcentre      = true;
+bool     Config::disk_led     = true;
 uint8_t  Config::machine      = 0;
 std::string Config::kick      = "ks13";
 std::string Config::kick_file = "/amiga/kick.rom";
@@ -139,6 +140,7 @@ void Config::load() {
     nvs_get_u8 ("hpos",          hpos,         sts);
     if (hpos > 1) hpos = 0;
     nvs_get_b  ("vcentre",       vcentre,      sts);
+    nvs_get_b  ("disk_led",      disk_led,     sts);
 }
 
 // ---- writing -------------------------------------------------------------------------
@@ -219,6 +221,7 @@ bool Config::save() {
     nvs_set_i(buf, "drives",        drives);
     nvs_set_i(buf, "hpos",          hpos);
     nvs_set_b(buf, "vcentre",       vcentre);
+    nvs_set_b(buf, "disk_led",      disk_led);
     // f_sync before the rename, so a stalled card cannot leave a half-written file
     // under the real name.
     const FRESULT sy = buf.ok ? f_sync(&f) : FR_DISK_ERR;

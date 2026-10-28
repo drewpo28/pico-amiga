@@ -69,7 +69,9 @@ void amiga_set_fb_x0(int x0);
 // not make the picture jump.
 void amiga_set_vcentre(bool on);
 // Framebuffer rows [y0, y1) carry a platform overlay (row_done); y1 <= y0: none.
-void amiga_set_overlay_rows(int y0, int y1);
+// Two ranges (`which` 0 or 1), so two overlays far apart (a band at the bottom,
+// an icon at the top) do not send every row between them through row_done.
+void amiga_set_overlay_rows(int which, int y0, int y1);
 // Denise on another core: with async on, the emulation queues the display
 // work and that core runs it by calling amiga_render_pump() (one small step
 // per call; false when there is nothing queued) until amiga_run_frame() has
@@ -148,6 +150,20 @@ void amiga_eject_disk(int drive);
 // How many drives are connected (1..4, DF0 first; default 1). Kickstart looks for
 // them at reset, so a change wants one.
 void amiga_set_drives(int n);
+
+// Floppy activity, for the platform's disk line (Win+F8) and drive icon: the
+// drive selected (or the last one a DMA used), its head, and what the disk DMA
+// does.  `idle` counts frames since the last disk DMA ended (0 while one runs).
+typedef struct {
+    int8_t   drive;          // -1: none yet
+    uint8_t  cyl, side;
+    uint8_t  sector;         // 0..10 under the head, 11 = the gap after them
+    bool     motor;
+    uint8_t  dma;            // 0 none, 1 read, 2 write (running now)
+    bool     wrote;          // the last DMA was a write
+    uint32_t idle;
+} amiga_floppy_t;
+void amiga_floppy_status(amiga_floppy_t *st);
 
 // Input. Keycodes are Amiga raw keycodes ($00-$67); see src/amiga/keymap.h.
 void amiga_key(uint8_t amiga_code, bool down);

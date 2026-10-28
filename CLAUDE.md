@@ -27,7 +27,11 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   on a disk picks DF0..DF3, F9 makes a blank ADF, F1 on a disk shows what is on it
   (machine_disk_info: volume, filesystem, boot block, root, startup-sequence; a
   DMS is unpacked into the spare PSRAM slot after DF3's); a disk put into DF1..DF3 by hand
-  survives set and DF0 changes, Drive::manual). Its
+  survives set and DF0 changes, Drive::manual; Win+F8 = the performance band,
+  pico-speccy's F8, its summary with the drive's TR/SEC line). The drive icon
+  (pico-speccy's FDD lamp, Video > Disk activity icon, top right) and the band
+  (bottom) take the core's two overlay row ranges (amiga_set_overlay_rows(which,
+  ..): one range spanning both would send every row through row_done). Its
   root follows pico-speccy's: Help, Machine, Devices (Disks, Input), Video, ... The engine (UiNav, UiRender,
   UiDialog, UiFont, UiModel, the Stage mechanism) is kept close to pico-speccy, with
   `PICO-AMIGA:` notes; `UiGfx.cpp` draws 0x0RGB straight into the Amiga framebuffer,
@@ -191,7 +195,7 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   __HeapLimit (2026-10-28, `nm` `end`); the old "~50 KB" was stale. That gap
   is the whole C/C++ heap (the menu's strings, the file browser): with ECS it
   fell to 5.4 KB and Devices > Disks > DF0 panicked "Out of memory" on the board; the
-  colour map's tag and index tables merged into one (-4 KB), the Alt+F12
+  colour map's tag and index tables merged into one (-4 KB), the Win+F8
   band's pixels moved to PSRAM (16 KB at +2 MB, before the DMS area; a 2 MB
   PSRAM has no band) and the .m3u read through 256 bytes: 20.5 KB; System
   info's flash JEDEC read (hardware_flash) took 0.9 KB of it: 19.5 KB

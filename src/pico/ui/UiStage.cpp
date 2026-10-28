@@ -84,6 +84,7 @@ static bool hook_drives(int32_t, int32_t) {
 NM_INT_ACCESS (hpos,      hpos,       uint8_t)
 NM_BOOL_ACCESS(renderc1,  render_c1)
 NM_BOOL_ACCESS(vcentre,   vcentre)
+NM_BOOL_ACCESS(diskled,   disk_led)
 // Picture position, render core: from the next frame on.
 static bool hook_hpos(int32_t, int32_t) { settings_apply_video(); return true; }
 // Volume and HDMI audio reach the outputs at once (heard while editing).

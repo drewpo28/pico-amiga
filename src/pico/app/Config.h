@@ -36,6 +36,7 @@ public:
     // Video
     static uint8_t  hpos;           // picture position: 0 centred, 1 left overscan
     static bool     vcentre;        // centre short pictures vertically (amiga_set_vcentre)
+    static bool     disk_led;       // Video > Disk activity icon (UiStats.cpp)
 
     // Machine (machine.cpp)
     static uint8_t  machine;        // 0 A500 (OCS, 512 KB chip + 512 KB slow), 1 A500+ (ECS, 1 MB chip)
