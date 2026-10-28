@@ -785,8 +785,20 @@ AMIGA_HOT static void f_apply(uint32_t reg, uint16_t v) { a_apply(&fetch_st, reg
 // Output stage:
 AMIGA_HOT static void c_apply(uint32_t reg, uint16_t v) {
     if (reg >= R_COLOR00 && reg < R_COLOR00 + 64) {
-        color[(reg - R_COLOR00) >> 1] = v & 0xFFF;
-        lut_dirty = true;
+        // Copper colour bars and "chunky" backgrounds write a colour every few
+        // pixels (Spaceballs' State of the Art: thousands a frame): a write
+        // changes its one or two LUT entries, not the whole LUT (pico-speccy's
+        // Next copper does the same per palette write).
+        const int n = (reg - R_COLOR00) >> 1;
+        const uint16_t c = v & 0xFFF;
+        if (color[n] == c) return;
+        color[n] = c;
+        if (lut_dirty || (bplcon0 & 0x0400)) { lut_dirty = true; return; }   // dual playfield: rebuild
+        // Single playfield: pf values n and n + 32 (EHB's half-bright) use it.
+        lut[n] = c;
+        lut[n + 32] = (uint16_t)((c >> 1) & 0x777);
+        ilut[n] = ilut[n + 32] = 0xFF;
+        if (n < 16) ilut_ident = false;
         return;
     }
     if (reg >= R_SPR0POS && reg < R_SPR0POS + 64) {
@@ -1028,8 +1040,20 @@ AMIGA_HOT void denise_line_end(void) {
     push(EV_END, 0, 0, 0);
 }
 
+// The colours as queued: a write that repeats one changes nothing on screen
+// and is not queued.  State of the Art's copper backgrounds write COLOR00 and
+// two zeros every 12 colour clocks, 12,800 MOVEs a frame, two thirds of them
+// repeats - each one a trip through both stages.  The copper tests it itself.
+uint16_t denise_q_color[32];
+
 AMIGA_HOT void denise_write(uint32_t reg, uint16_t v, int hpos) {
     const uint16_t h = (uint16_t)(hpos < 0 ? 0 : hpos);
+    if (reg >= R_COLOR00) {                                   // the last display registers
+        const int n = (reg - R_COLOR00) >> 1;
+        const uint16_t c = v & 0xFFF;
+        if (denise_q_color[n] == c) return;
+        denise_q_color[n] = c;
+    }
     if (reg >= R_SPR0PTH && reg < R_SPR0PTH + 32) {
         const int s = (reg - R_SPR0PTH) >> 2;
         if (reg & 2) sprpt[s] = (sprpt[s] & 0xFFFF0000) | (v & 0xFFFE);
@@ -1067,5 +1091,6 @@ void denise_reset(void) {
     atomic_store(&o_lines_done, 0);
     atomic_store(&ws_head, 0);
     atomic_store(&ws_tail, 0);
+    memset(denise_q_color, 0, sizeof denise_q_color);         // c_reset clears color[]
     c_reset();
 }

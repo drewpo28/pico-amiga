@@ -9,12 +9,23 @@
 // Timing: 4 colour clocks per instruction (two word fetches on the copper's
 // even slots), plus 2 to wake up from a WAIT.  Bitplane DMA stealing copper
 // slots is not modelled yet.
+#include <string.h>
 #include "amiga_int.h"
 
 enum { COP_RUN, COP_WAIT, COP_STOP };
 
 static uint32_t lc[2];
 static uint32_t pc;
+
+// Both words of an instruction in one read: the list is in PSRAM, and a copper
+// background runs ~13,000 instructions a frame (State of the Art).
+AMIGA_HOT static inline uint32_t fetch(uint32_t addr) {
+    const uint32_t a = addr & A.chip_mask & ~1u;
+    if (a + 4 > A.chip_mask + 1) return ((uint32_t)chip_rw(a) << 16) | chip_rw(a + 2);
+    uint32_t w;
+    memcpy(&w, A.cfg.chip_ram + a, 4);
+    return __builtin_bswap32(w);
+}
 static int      state = COP_STOP;
 static int      cop_h;
 static uint16_t ir1, ir2;
@@ -67,13 +78,20 @@ AMIGA_HOT void copper_run(int until) {
             state = COP_RUN;
             continue;
         }
-        ir1 = chip_rw(pc);
-        ir2 = chip_rw(pc + 2);
+        const uint32_t w = fetch(pc);
+        ir1 = (uint16_t)(w >> 16);
+        ir2 = (uint16_t)w;
         pc += 4;
         if (!(ir1 & 1)) {                                  // MOVE
             uint32_t reg = ir1 & 0x1FE;
             if (reg < 0x40 || (reg < 0x80 && !(A.copcon & 2))) { state = COP_STOP; return; }
-            custom_write(reg, ir2, cop_h, true);
+            // Colours straight to Denise, and not even that when the colour is
+            // the one already queued (denise_write would drop it).
+            if (reg >= R_COLOR00 && reg < R_COLOR00 + 64) {
+                if (denise_q_color[(reg - R_COLOR00) >> 1] != (ir2 & 0xFFF)) denise_write(reg, ir2, cop_h);
+            } else {
+                custom_write(reg, ir2, cop_h, true);
+            }
             cop_h += 4;
         } else if (!(ir2 & 1)) {                           // WAIT
             cop_h += 4;

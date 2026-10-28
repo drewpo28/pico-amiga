@@ -147,6 +147,7 @@ uint32_t blitter_count(void);
 // ---- denise / bitplane + sprite DMA (denise.c) -----------------------------
 void     denise_reset(void);
 void     denise_write(uint32_t reg, uint16_t v, int hpos);
+extern uint16_t denise_q_color[32];                 // the colours as queued (denise_write)
 void     denise_line_start(void);
 void     denise_line_end(void);
 void     denise_frame_start(void);
