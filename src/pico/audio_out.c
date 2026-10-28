@@ -59,9 +59,14 @@ static uint32_t ring_frames;
 static au_reader_t reader;
 
 static int      au_alarm = -1;
+// The period is 1e6 / AMIGA_AUDIO_RATE us exactly (whole us + a remainder in
+// 1/AMIGA_AUDIO_RATE us): HDMI announces 48 kHz against the pixel clock, and a
+// rounded period (it was 1/256 us, +112 ppm) feeds the sink more samples than it
+// plays - its FIFO overflows now and then and it mutes for a quarter second.
 static uint32_t au_target;        // next alarm, microseconds (the 32-bit timer)
-static uint32_t au_frac;          // its fraction, 1/256 us
-static uint32_t au_period_q8;     // 1/AMIGA_AUDIO_RATE in 1/256 us
+static uint32_t au_frac;          // its fraction, 1/AMIGA_AUDIO_RATE us
+#define AU_PERIOD_US  (1000000u / AMIGA_AUDIO_RATE)
+#define AU_PERIOD_REM (1000000u % AMIGA_AUDIO_RATE)
 
 static inline void __not_in_flash_func(output)(int32_t sL, int32_t sR) {
     const int32_t vol = audio_volume_q8;
@@ -97,9 +102,9 @@ static void __not_in_flash_func(au_alarm_isr)(void) {
     const uint32_t bit = 1u << au_alarm;
     timer_hw->intr = bit;
     hw_clear_bits(&timer_hw->intf, bit);
-    au_frac += au_period_q8;
-    au_target += au_frac >> 8;
-    au_frac &= 0xFF;
+    au_target += AU_PERIOD_US;
+    au_frac += AU_PERIOD_REM;
+    if (au_frac >= AMIGA_AUDIO_RATE) { au_frac -= AMIGA_AUDIO_RATE; au_target++; }
     const uint32_t target = au_target;
     timer_hw->alarm[au_alarm] = target;
 
@@ -182,8 +187,7 @@ void audio_out_start(const int16_t *audio_ring, uint32_t frames, int mode) {
     const uint irq = hardware_alarm_get_irq_num(au_alarm);
     irq_set_exclusive_handler(irq, au_alarm_isr);
     irq_set_enabled(irq, true);
-    au_period_q8 = (uint32_t)((1000000ull << 8) / AMIGA_AUDIO_RATE);
-    au_target = timer_hw->timerawl + (au_period_q8 >> 8);
+    au_target = timer_hw->timerawl + AU_PERIOD_US;
     au_frac = 0;
     const uint32_t bit = 1u << au_alarm;
     timer_hw->intr = bit;

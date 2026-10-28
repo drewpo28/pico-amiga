@@ -197,9 +197,12 @@ static volatile uint32_t aq_wr, aq_rd;
 
 static volatile bool active;          // an HDMI back-end is running (hdmi_audio_init)
 static volatile bool enabled = true;
-// Producer (core 0): linear-interpolating 31.3 -> 48 kHz upsampler.
-static uint32_t up_step;              // input samples per output sample, Q16
-static uint32_t up_pos;               // output position between prev (0) and the new input (1), Q16
+// Producer (core 0): linear-interpolating 31.3 -> 48 kHz upsampler, in exact
+// steps (pico-speccy's Bresenham): an input interval is UP_IN units, an output
+// step UP_OUT. A Q16 step rounded down was +22 ppm (see audio_out.c's period).
+#define UP_IN  FS                     // up_pos << 16 stays within 32 bits
+#define UP_OUT AMIGA_AUDIO_RATE
+static uint32_t up_pos;               // output position between prev (0) and the new input (UP_IN)
 static int16_t  up_l, up_r;           // the previous input
 static aq_pkt_t up_pkt;
 static int      up_n;
@@ -221,8 +224,8 @@ void hdmi_audio_counts(uint32_t *full, uint32_t *starve, uint32_t *min_depth) {
 
 void __not_in_flash_func(hdmi_audio_push)(int16_t l, int16_t r) {
     if (!active || !enabled) return;
-    while (up_pos <= 0x10000u) {
-        const int32_t f = (int32_t)up_pos;
+    while (up_pos <= UP_IN) {
+        const int32_t f = (int32_t)((up_pos << 16) / UP_IN);
         up_pkt.l[up_n] = (int16_t)(up_l + (((l - up_l) * f) >> 16));
         up_pkt.r[up_n] = (int16_t)(up_r + (((r - up_r) * f) >> 16));
         if (++up_n == 4) {
@@ -236,9 +239,9 @@ void __not_in_flash_func(hdmi_audio_push)(int16_t l, int16_t r) {
                 au_full++;
             }
         }
-        up_pos += up_step;
+        up_pos += UP_OUT;
     }
-    up_pos -= 0x10000u;
+    up_pos -= UP_IN;
     up_l = l;
     up_r = r;
 }
@@ -276,7 +279,6 @@ static void __not_in_flash_func(audio_packet)(packet_t *p, const aq_pkt_t *q) {
 void hdmi_audio_init(uint32_t pixel_hz, uint32_t h_total, uint32_t v_total) {
     build_spread();
     build_static_packets(pixel_hz);
-    up_step = (uint32_t)(((uint64_t)AMIGA_AUDIO_RATE << 16) / FS);
     // The two rates must straddle the producer's with margin: the tick runs on
     // the 1 MHz timer, the lines on the pixel clock, and they need not agree.
     const uint64_t nom = ((uint64_t)FS * h_total << 24) / pixel_hz;
