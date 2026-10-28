@@ -77,6 +77,7 @@ static uint32_t next_build;                          // the line to build next
 static int      v_build;                             // ...and its vertical position
 static bool     prev_lace;                           // the row of the line before was LACE4
 static volatile uint32_t late;                       // lines begun before they were built
+static volatile uint32_t stalls;                     // lines the serializer ran dry in (FDEBUG TXSTALL)
 static volatile uint32_t irq_cyc, enc_cyc;           // core 1 cycles: line IRQ, building
 
 static void __not_in_flash_func(line_irq)(void) {
@@ -84,6 +85,11 @@ static void __not_in_flash_func(line_irq)(void) {
     dma_hw->ints0 = 1u << CH_LINE_CTRL;
     const uint32_t l = started;
     if (built[l & 3] != l) late++;
+    // The serializer waited on an empty FIFO since the last line: the picture
+    // tore, and so did the island if it was in it (the sink mutes on a torn
+    // packet). The flag is sticky, write 1 clears it.
+    const uint32_t txstall = 1u << (PIO_FDEBUG_TXSTALL_LSB + VSM);
+    if (VPIO->fdebug & txstall) { VPIO->fdebug = txstall; stalls++; }
     started = l + 1;
     if (++v_isr == V_TOTAL) { v_isr = 0; frames++; }
     irq_cyc += board_cycles() - t0;
@@ -247,4 +253,5 @@ void hdmi_start(const amiga_row_t *framebuffer) {
 
 uint32_t hdmi_frames(void) { return frames; }
 uint32_t hdmi_late_lines(void) { return late; }
+uint32_t hdmi_stalled_lines(void) { return stalls; }
 void hdmi_core1_cycles(uint32_t *irq, uint32_t *enc) { *irq = irq_cyc; *enc = enc_cyc; }
