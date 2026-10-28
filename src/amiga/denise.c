@@ -94,7 +94,7 @@ static _Atomic uint32_t ws_head, ws_tail;
 static uint32_t sprpt[8];
 static uint16_t dma_sprpos[8], dma_sprctl[8], spr_vstart[8], spr_vstop[8];
 static uint8_t  spr_dma[8];
-enum { SPR_IDLE, SPR_FETCH_CTL, SPR_WAIT, SPR_DATA };
+enum { SPR_FETCH_CTL, SPR_WAIT, SPR_DATA };
 static uint16_t sprpos[8], sprctl[8], sprdata[8], sprdatb[8];
 static bool     spr_armed[8];
 static bool     spl_dirty;                  // spl[] is stale: compose before the next pixels
@@ -706,13 +706,23 @@ AMIGA_HOT static int spr_x(int s) {   // DIW x of the sprite's first pixel
     return (((sprpos[s] & 0xFF) << 1) | (sprctl[s] & 1)) + 1;
 }
 
-// DMA side, at a line start.
+// DMA side, at a line start.  Agnus compares the beam with each sprite's VSTART
+// and VSTOP every line, wherever they came from: the control words it fetched,
+// or SPRxPOS / SPRxCTL written by the copper or the CPU (denise_write).  So a
+// sprite whose control words were 0 (the end of its list) only waits: a later
+// POS/CTL write with a VSTART ahead of the beam starts its data DMA there.
+// The frame's first control words are fetched on line 25 alone, and only with
+// sprite DMA on then: RoboCop 2 writes POS/CTL and pointers straight at the
+// data in the vertical blank and turns sprite DMA on later - fetched as control
+// words on the first DMA line, RoboCop's pixels became garbage and he vanished.
+#define SPR_FIRST_LINE 25
 AMIGA_HOT static void sprite_dma(void) {
     const int vpos = A.vpos;
     bool on = (A.dmacon & (DMAF_MASTER | DMAF_SPRITE)) == (DMAF_MASTER | DMAF_SPRITE);
-    if (!on || vpos < 25 || vpos >= A.lines - 1) return;
+    if (vpos == SPR_FIRST_LINE && !on)
+        for (int s = 0; s < 8; s++) if (spr_dma[s] == SPR_FETCH_CTL) spr_dma[s] = SPR_WAIT;
+    if (!on || vpos < SPR_FIRST_LINE || vpos >= A.lines - 1) return;
     for (int s = 0; s < 8; s++) {
-        if (spr_dma[s] == SPR_IDLE) continue;
         if (spr_dma[s] == SPR_WAIT && vpos == spr_vstart[s]) spr_dma[s] = SPR_DATA;
         if (spr_dma[s] == SPR_DATA && vpos == spr_vstop[s]) spr_dma[s] = SPR_FETCH_CTL;
         if (spr_dma[s] == SPR_FETCH_CTL) {
@@ -721,8 +731,7 @@ AMIGA_HOT static void sprite_dma(void) {
             sprpt[s] += 4;
             spr_decode(s);
             push((uint16_t)(EV_SPR + s), dma_sprpos[s], 0, dma_sprctl[s]);
-            spr_dma[s] = (dma_sprpos[s] | dma_sprctl[s]) ? SPR_WAIT : SPR_IDLE;
-            if (spr_dma[s] == SPR_WAIT && vpos == spr_vstart[s]) spr_dma[s] = SPR_DATA;
+            spr_dma[s] = vpos == spr_vstart[s] ? SPR_DATA : SPR_WAIT;
             if (spr_dma[s] != SPR_DATA) continue;
         }
         if (spr_dma[s] == SPR_DATA) {

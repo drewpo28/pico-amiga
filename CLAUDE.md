@@ -136,6 +136,12 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
 - **Every connected drive costs Kickstart memory**: Dune II (1 MB) reports a
   "Memory Allocation Error" with 4 drives (Floppy drives Auto on its 5-disk
   set) and runs with 1 or 2; the message is drawn while its palette is black.
+- **Sprite DMA follows VSTART/VSTOP from any source** (denise.c sprite_dma): the
+  first control words are fetched on line 25 only, with sprite DMA on then; a
+  sprite otherwise waits for its VSTART, also one written to SPRxPOS/CTL by the
+  CPU or copper. RoboCop 2 writes POS/CTL and data pointers in the vertical blank
+  and turns sprite DMA on later; fetching control words at the first DMA line
+  made RoboCop invisible (and the title's icons garbage).
 - Single playfield sprite priority uses **PF2P**, not PF1P (vAmiga agrees).
 - Byte writes to custom registers put the byte on both halves of the word.
 - Area blits with B DMA off use BLTBDAT (shifted on the CPU write), not 0:
