@@ -32,12 +32,12 @@
 // (denise_sync).  Whichever core holds c_lock replays: the emulation, when it
 // would wait (the frame end, a full queue), replays events itself instead, so
 // the other core takes what it has time for (its scanout comes first) and
-// the work is never slower than doing it all on one core.  Chip RAM is read
-// live, so a write the CPU or blitter makes before the fetch stage reached that
-// line shows early: the emulation keeps at most LEAD_LINES lines ahead of the
-// fetch stage (denise_line_start waits, helping), which is the margin a game
-// drawing behind the beam must leave.  IK+ erases and redraws its fighters
-// right after the beam passed them: with a frame's lead they flickered.
+// the work is never slower than doing it all on one core.  The chip RAM reads
+// (bitplane and sprite DMA) are the emulation's own, at the event's time, as
+// the hardware's: the words go to the stages through a ring (ws[]) and as
+// events.  Read by the stages instead, they saw what the CPU or blitter wrote
+// after the beam had passed: IK+ erases and redraws its fighters ~50 lines
+// behind the beam, and with the stages a frame behind they flickered.
 #include <stdatomic.h>
 #include <string.h>
 #include "amiga_int.h"
@@ -51,19 +51,46 @@
 // The output stage's registers.
 static uint16_t bplcon0, bplcon2;
 static uint16_t diwstrt = 0x2C81, diwstop = 0xF4C1;
-// The fetch stage's: the bitplane DMA side of Agnus.
-static uint16_t f_bplcon0, bplcon1;
-static uint16_t f_diwstrt = 0x2C81, f_diwstop = 0xF4C1, ddfstrt = 0x38, ddfstop = 0xD0;
-static uint32_t bplpt[6];
+// The bitplane DMA side of Agnus, twice: the emulation runs it as it goes
+// (dma_st: the pointers and modulos, the chip RAM reads into the word ring)
+// and the fetch stage replays it (fetch_st: spreads the words into pf_ring).
+// Both apply the same register writes at the same points, so they walk the
+// same fetch units in the same order.
+typedef struct {
+    uint16_t bplcon0, bplcon1;
+    uint16_t diwstrt, diwstop, ddfstrt, ddfstop;
+    bool     bpl_dma;                       // this line fetches
+    int      fetch_k, nunits, ds, unit_cc;
+    int      r_h;                           // done up to this colour clock
+    int      vpos;
+    uint16_t dmacon;
+} agnus_t;
+#define AGNUS_INIT { .diwstrt = 0x2C81, .diwstop = 0xF4C1, .ddfstrt = 0x38, .ddfstop = 0xD0 }
+static agnus_t  dma_st = AGNUS_INIT, fetch_st = AGNUS_INIT;
+static uint32_t bplpt[6];                   // the DMA side's
 static int16_t  bplmod[2];
 static uint16_t color[32];
 
+// Bitplane words from the DMA side to the fetch stage, in fetch-unit order.
+// The emulation waits at a line start while the ring has no room for a
+// worst-case line (WS_LINE: 25 units x 4 planes x 2 words), helping.
+#ifndef WS_SIZE
+#define WS_SIZE 8192                        // words, a power of two: 16 KB, 40-80 lines
+#endif
+#define WS_LINE 200
+static uint16_t ws[WS_SIZE];
+static _Atomic uint32_t ws_head, ws_tail;
+
+// Sprites.  The DMA side (the emulation): pointers, the per-line state
+// machine, the positions it needs; what it reads goes to the output stage as
+// events, like the CPU's writes.  The output stage: what sprite_compose draws.
 static uint32_t sprpt[8];
-static uint16_t sprpos[8], sprctl[8], sprdata[8], sprdatb[8];
-static uint16_t spr_vstart[8], spr_vstop[8];
-static bool     spr_armed[8];
+static uint16_t dma_sprpos[8], dma_sprctl[8], spr_vstart[8], spr_vstop[8];
 static uint8_t  spr_dma[8];
 enum { SPR_IDLE, SPR_FETCH_CTL, SPR_WAIT, SPR_DATA };
+static uint16_t sprpos[8], sprctl[8], sprdata[8], sprdatb[8];
+static bool     spr_armed[8];
+static bool     spl_dirty;                  // spl[] is stale: compose before the next pixels
 
 // Per-line render state.  pf[] is the line's playfield, written by the fetch
 // stage and read by the output stage a line or more behind: a ring.
@@ -73,9 +100,7 @@ static uint8_t *pf_f = pf_ring[0], *pf_o = pf_ring[0];
 static uint8_t  spl[SPL_SIZE];
 static int      spl_lo, spl_hi;           // dirty range of spl[]
 static int      r_h;                      // output: rendered up to this colour clock
-static int      r_hf;                     // fetch: fetched up to this colour clock
-static bool     vwin, bpl_dma;
-static int      fetch_k, nunits, ds, unit_cc;
+static bool     vwin;
 static amiga_row_t *fbrow;              // row being written, or NULL
 static amiga_row_t *fbdest;             // overlay row: where fbrow (the scratch) goes at line end
 static amiga_row_t  scratch_row;
@@ -90,12 +115,10 @@ static uint16_t ham_col;
 static bool     ham_in;
 
 // The line being replayed: the producer's state when it started (output
-// stage; the fetch stage keeps its own two).
+// stage; the fetch stage's are in fetch_st).
 static int      c_vpos, c_lines;
 static uint16_t c_dmacon;
 static bool     c_lof;
-static int      f_vpos;
-static uint16_t f_dmacon;
 
 // Profile buckets only in sync mode: in async mode the consumer is another
 // core, and the profile is core 0's (its time shows as AMIGA_PROF_CORE1).
@@ -113,20 +136,16 @@ AMIGA_HOT static int planes(uint16_t con0) {
 
 // Bit-spread tables: one plane word -> per-pixel bytes holding 0/1.
 static uint32_t spread4[16];     // nibble -> 4 bytes (hires: 1 byte per pixel)
-static uint64_t spread4x2[16];   // nibble -> 8 bytes (lowres: each pixel twice)
 static uint32_t spread8[256][2]; // byte -> 8 bytes, pixels 0-3 and 4-7
 
 static void tables_init(void) {
     for (int n = 0; n < 16; n++) {
-        uint32_t v = 0; uint64_t w = 0;
+        uint32_t v = 0;
         for (int i = 0; i < 4; i++) {
             int bit = (n >> (3 - i)) & 1;     // MSB is the leftmost pixel
             v |= (uint32_t)bit << (8 * i);
-            w |= (uint64_t)bit << (16 * i);
-            w |= (uint64_t)bit << (16 * i + 8);
         }
         spread4[n] = v;
-        spread4x2[n] = w;
     }
     for (int b = 0; b < 256; b++) {
         spread8[b][0] = spread4[b >> 4];
@@ -148,111 +167,111 @@ static inline void fill_bytes(uint8_t *p, uint8_t v, int n) {
 static inline void clear_bytes(uint8_t *p, int n) { fill_bytes(p, 0, n); }
 
 static inline void or32(uint8_t *p, uint32_t v) { uint32_t t; memcpy(&t, p, 4); t |= v; memcpy(p, &t, 4); }
-static inline void or64(uint8_t *p, uint64_t v) { uint64_t t; memcpy(&t, p, 8); t |= v; memcpy(p, &t, 8); }
 
 // Fetch units are 8 colour clocks in both resolutions (hires fetches two words
 // per plane per unit).  Units start at DDFSTRT + 8k; the unit that begins at
 // or after DDFSTOP is the last one, as in the OCS sequencer.  So lowres
 // $38/$D0 gives 20 units (20 words), hires $3C/$D4 and $3C/$D0 both 20 units
 // (40 words) - the latter is what AROS programs for a 640-pixel screen.
-AMIGA_HOT static void compute_ddf(void) {
-    int a = ddfstrt & 0xFC, b = ddfstop & 0xFC;
+AMIGA_HOT static void compute_ddf(agnus_t *f) {
+    int a = f->ddfstrt & 0xFC, b = f->ddfstop & 0xFC;
     if (a < 0x18) a = 0x18;
     if (b > 0xD8) b = 0xD8;
-    ds = a;
-    unit_cc = 8;
-    nunits = b < a ? 0 : ((b - a + 7) >> 3) + 1;
+    f->ds = a;
+    f->unit_cc = 8;
+    f->nunits = b < a ? 0 : ((b - a + 7) >> 3) + 1;
 }
 
-AMIGA_HOT static void fetch_unit(int k) {
-    int t = ds + k * unit_cc;
-    bool hires = f_bplcon0 & 0x8000;
-    int np = planes(f_bplcon0);
-    int x = hires ? 2 * (2 * t + 9) : 2 * (2 * t + 17);       // hires-pixel coordinate
-    int d1 = 2 * (bplcon1 & 15), d2 = 2 * ((bplcon1 >> 4) & 15);
-    // The chip RAM reads first, as a bucket of their own (PSRAM latency).  A
-    // hires plane's two words are one 32-bit read when they share a word.
-    uint16_t wd[6][2];
-    const int prof = dprof(AMIGA_PROF_BPLRD);
+// DMA side: unit k's chip RAM reads (PSRAM latency: the BPLRD bucket), into
+// the word ring.  A hires plane's two words are one 32-bit read when they
+// share a word.
+AMIGA_HOT static void dma_unit(int k) {
+    const bool hires = dma_st.bplcon0 & 0x8000;
+    const int np = planes(dma_st.bplcon0);
     const uint8_t *cr = A.cfg.chip_ram;
     const uint32_t cm = A.chip_mask & ~1u;
+    uint32_t hd = atomic_load_explicit(&ws_head, memory_order_relaxed);
     for (int p = 0; p < np; p++) {
         const uint32_t a = bplpt[p] & cm;
         if (hires && !(a & 2)) {
             uint32_t v;
             memcpy(&v, cr + a, 4);
             v = __builtin_bswap32(v);
-            wd[p][0] = (uint16_t)(v >> 16);
-            wd[p][1] = (uint16_t)v;
+            ws[hd++ & (WS_SIZE - 1)] = (uint16_t)(v >> 16);
+            ws[hd++ & (WS_SIZE - 1)] = (uint16_t)v;
         } else {
-            wd[p][0] = U16BE(cr + a);
-            if (hires) wd[p][1] = U16BE(cr + ((bplpt[p] + 2) & cm));
+            ws[hd++ & (WS_SIZE - 1)] = U16BE(cr + a);
+            if (hires) ws[hd++ & (WS_SIZE - 1)] = U16BE(cr + ((bplpt[p] + 2) & cm));
         }
         bplpt[p] += hires ? 4 : 2;
     }
-    dprof(prof);
-    // Same scroll for odd and even planes (the usual case): every plane lands on
-    // the same pixels, so a group of pixels is built in a register and ORed in
-    // once (OR, not store: a scroll or DDF change mid-line may overlap units).
-    if (d1 == d2 && np > 0) {
-        // Eight pixels at a time: one byte of every plane through spread8.
-        if (hires) {
-            for (int j = 0, pos = x + d1; j < 2; j++, pos += 16) {
-                if (pos < 0 || pos + 16 > PF_SIZE) continue;
-                for (int s = 8, o = 0; s >= 0; s -= 8, o += 8) {
-                    uint32_t lo = 0, hi = 0;
-                    for (int p = 0; p < np; p++) {
-                        const uint32_t *t = spread8[(wd[p][j] >> s) & 0xFF];
-                        lo |= t[0] << p;
-                        hi |= t[1] << p;
-                    }
-                    or32(pf_f + pos + o, lo);
-                    or32(pf_f + pos + o + 4, hi);
-                }
-            }
-        } else {
-            const int pos = x + d1;
-            if (pos >= 0 && pos + 32 <= PF_SIZE) {
-                for (int s = 8, o = 0; s >= 0; s -= 8, o += 16) {
-                    uint32_t q[2] = { 0, 0 };
-                    for (int p = 0; p < np; p++) {
-                        const uint32_t *t = spread8[(wd[p][0] >> s) & 0xFF];
-                        q[0] |= t[0] << p;
-                        q[1] |= t[1] << p;
-                    }
-                    // Each lowres pixel twice: bytes abcd -> aabb ccdd.
-                    for (int h = 0; h < 2; h++) {
-                        const uint32_t v = q[h];
-                        or32(pf_f + pos + o + 8 * h,
-                             (v & 0xFF) | (v & 0xFF) << 8 | (v & 0xFF00) << 8 | (v & 0xFF00) << 16);
-                        or32(pf_f + pos + o + 8 * h + 4,
-                             (v >> 16 & 0xFF) | (v >> 16 & 0xFF) << 8 | (v >> 8 & 0xFF0000) | (v & 0xFF000000));
-                    }
-                }
-            }
-        }
-        if (k == nunits - 1)
-            for (int p = 0; p < np; p++) bplpt[p] += (uint32_t)(int32_t)bplmod[p & 1];
-        return;
-    }
-    for (int p = 0; p < np; p++) {
-        int pos = x + ((p & 1) ? d2 : d1);
-        if (hires) {
-            for (int j = 0; j < 2; j++, pos += 16) {
-                uint16_t w = wd[p][j];
-                if (pos < 0 || pos + 16 > PF_SIZE) continue;
-                for (int n = 0; n < 4; n++)
-                    or32(pf_f + pos + 4 * n, spread4[(w >> (12 - 4 * n)) & 15] << p);
-            }
-        } else {
-            uint16_t w = wd[p][0];
-            if (pos < 0 || pos + 32 > PF_SIZE) continue;
-            for (int n = 0; n < 4; n++)
-                or64(pf_f + pos + 8 * n, spread4x2[(w >> (12 - 4 * n)) & 15] << p);
-        }
-    }
-    if (k == nunits - 1) {
+    atomic_store_explicit(&ws_head, hd, memory_order_release);
+    if (k == dma_st.nunits - 1)
         for (int p = 0; p < np; p++) bplpt[p] += (uint32_t)(int32_t)bplmod[p & 1];
+}
+
+// Planes first, first + step, ... of a unit's words, at hires-pixel position pos:
+// eight pixels at a time, one byte of every plane through spread8.
+AMIGA_HOT static void spread_planes(const uint16_t wd[6][2], int np, int first, int step, int pos, bool hires) {
+    if (hires) {
+        for (int j = 0; j < 2; j++, pos += 16) {
+            if (pos < 0 || pos + 16 > PF_SIZE) continue;
+            for (int s = 8, o = 0; s >= 0; s -= 8, o += 8) {
+                uint32_t lo = 0, hi = 0;
+                for (int p = first; p < np; p += step) {
+                    const uint32_t *t = spread8[(wd[p][j] >> s) & 0xFF];
+                    lo |= t[0] << p;
+                    hi |= t[1] << p;
+                }
+                or32(pf_f + pos + o, lo);
+                or32(pf_f + pos + o + 4, hi);
+            }
+        }
+    } else {
+        if (pos < 0 || pos + 32 > PF_SIZE) return;
+        for (int s = 8, o = 0; s >= 0; s -= 8, o += 16) {
+            uint32_t q[2] = { 0, 0 };
+            for (int p = first; p < np; p += step) {
+                const uint32_t *t = spread8[(wd[p][0] >> s) & 0xFF];
+                q[0] |= t[0] << p;
+                q[1] |= t[1] << p;
+            }
+            // Each lowres pixel twice: bytes abcd -> aabb ccdd.
+            for (int h = 0; h < 2; h++) {
+                const uint32_t v = q[h];
+                or32(pf_f + pos + o + 8 * h,
+                     (v & 0xFF) | (v & 0xFF) << 8 | (v & 0xFF00) << 8 | (v & 0xFF00) << 16);
+                or32(pf_f + pos + o + 8 * h + 4,
+                     (v >> 16 & 0xFF) | (v >> 16 & 0xFF) << 8 | (v >> 8 & 0xFF0000) | (v & 0xFF000000));
+            }
+        }
+    }
+}
+
+// Fetch stage: unit k's words, from the ring, spread into the playfield.
+AMIGA_HOT static void fetch_unit(int k) {
+    const agnus_t *f = &fetch_st;
+    int t = f->ds + k * f->unit_cc;
+    bool hires = f->bplcon0 & 0x8000;
+    int np = planes(f->bplcon0);
+    int x = hires ? 2 * (2 * t + 9) : 2 * (2 * t + 17);       // hires-pixel coordinate
+    int d1 = 2 * (f->bplcon1 & 15), d2 = 2 * ((f->bplcon1 >> 4) & 15);
+    uint16_t wd[6][2];
+    uint32_t tl = atomic_load_explicit(&ws_tail, memory_order_relaxed);
+    for (int p = 0; p < np; p++) {
+        wd[p][0] = ws[tl++ & (WS_SIZE - 1)];
+        if (hires) wd[p][1] = ws[tl++ & (WS_SIZE - 1)];
+    }
+    atomic_store_explicit(&ws_tail, tl, memory_order_release);
+    // The planes with one scroll land on the same pixels, so a group of pixels
+    // is built in a register and ORed in once (OR, not store: a scroll or DDF
+    // change mid-line may overlap units).  Odd and even planes (PF1H, PF2H)
+    // usually share the scroll: one group of all planes; a dual-playfield
+    // scroller shifts them apart: two groups.
+    if (d1 == d2) spread_planes(wd, np, 0, 1, x + d1, hires);
+    else {
+        spread_planes(wd, np, 0, 2, x + d1, hires);
+        spread_planes(wd, np, 1, 2, x + d2, hires);
     }
 }
 
@@ -542,65 +561,90 @@ AMIGA_HOT static void output(int x0, int x1) {
     }
 }
 
-// Fetch stage: the fetch units that start before colour clock h.
+// The fetch units that start before colour clock h: the DMA side reads them,
+// the fetch stage spreads them.
+static inline bool units_due(const agnus_t *f, int h) {
+    return f->bpl_dma && f->fetch_k < f->nunits && f->ds + f->fetch_k * f->unit_cc < h;
+}
+
+AMIGA_HOT static void units_to(agnus_t *f, int h, void (*unit)(int)) {
+    while (units_due(f, h)) {
+        unit(f->fetch_k);
+        f->fetch_k++;
+    }
+    f->r_h = h;
+}
+
+AMIGA_HOT static void dma_to(int h) {
+    if (h > AMIGA_CC_PER_LINE) h = AMIGA_CC_PER_LINE;
+    if (h <= dma_st.r_h) return;
+    if (!units_due(&dma_st, h)) { dma_st.r_h = h; return; }
+    const int prof = prof_switch(AMIGA_PROF_BPLRD);
+    units_to(&dma_st, h, dma_unit);
+    prof_switch(prof);
+}
+
 AMIGA_HOT static void f_to(int h) {
     if (h > AMIGA_CC_PER_LINE) h = AMIGA_CC_PER_LINE;
-    if (h <= r_hf) return;
-    if (bpl_dma && fetch_k < nunits && ds + fetch_k * unit_cc < h) {
-        const int prof = dprof(AMIGA_PROF_BPL);
-        while (fetch_k < nunits && ds + fetch_k * unit_cc < h) {
-            fetch_unit(fetch_k);
-            fetch_k++;
-        }
-        dprof(prof);
-    }
-    r_hf = h;
+    if (h <= fetch_st.r_h) return;
+    if (!units_due(&fetch_st, h)) { fetch_st.r_h = h; return; }
+    const int prof = dprof(AMIGA_PROF_BPL);
+    units_to(&fetch_st, h, fetch_unit);
+    dprof(prof);
 }
 
 // Output stage: the pixels before colour clock h.  Their playfield is complete
 // once the fetch stage got to h: a unit starting at h or later puts its first
 // pixel at DIW x 2h + 9 at the earliest.
+static void sprite_compose(void);
 AMIGA_HOT static void o_to(int h) {
     if (h > AMIGA_CC_PER_LINE) h = AMIGA_CC_PER_LINE;
     if (h <= r_h) return;
     const int prof = dprof(AMIGA_PROF_RENDER);
+    if (spl_dirty) { sprite_compose(); spl_dirty = false; }
     output(2 * r_h, 2 * h);
     r_h = h;
     dprof(prof);
 }
 
 // ---- sprites -----------------------------------------------------------------
-AMIGA_HOT static void spr_decode(int s) {
-    spr_vstart[s] = (uint16_t)((sprpos[s] >> 8) | ((sprctl[s] & 4) << 6));
-    spr_vstop[s]  = (uint16_t)((sprctl[s] >> 8) | ((sprctl[s] & 2) << 7));
+// The event queue's kinds (below): a sprite's DMA goes to the output stage as
+// EV_SPR + s (POS, CTL) and EV_SPR + 8 + s (DATA, DATB).
+enum { EV_LINE = 0x8000, EV_END = 0x8001, EV_FRAME = 0x8002, EV_SPR = 0x8010 };
+static void push(uint16_t kind, uint16_t v, uint16_t h, uint16_t x);
+
+AMIGA_HOT static void spr_decode(int s) {       // DMA side
+    spr_vstart[s] = (uint16_t)((dma_sprpos[s] >> 8) | ((dma_sprctl[s] & 4) << 6));
+    spr_vstop[s]  = (uint16_t)((dma_sprctl[s] >> 8) | ((dma_sprctl[s] & 2) << 7));
 }
 
 AMIGA_HOT static int spr_x(int s) {   // DIW x of the sprite's first pixel
     return (((sprpos[s] & 0xFF) << 1) | (sprctl[s] & 1)) + 1;
 }
 
+// DMA side, at a line start.
 AMIGA_HOT static void sprite_dma(void) {
-    bool on = (c_dmacon & (DMAF_MASTER | DMAF_SPRITE)) == (DMAF_MASTER | DMAF_SPRITE);
-    if (!on || c_vpos < 25 || c_vpos >= c_lines - 1) return;
+    const int vpos = A.vpos;
+    bool on = (A.dmacon & (DMAF_MASTER | DMAF_SPRITE)) == (DMAF_MASTER | DMAF_SPRITE);
+    if (!on || vpos < 25 || vpos >= A.lines - 1) return;
     for (int s = 0; s < 8; s++) {
         if (spr_dma[s] == SPR_IDLE) continue;
-        if (spr_dma[s] == SPR_WAIT && c_vpos == spr_vstart[s]) spr_dma[s] = SPR_DATA;
-        if (spr_dma[s] == SPR_DATA && c_vpos == spr_vstop[s]) spr_dma[s] = SPR_FETCH_CTL;
+        if (spr_dma[s] == SPR_WAIT && vpos == spr_vstart[s]) spr_dma[s] = SPR_DATA;
+        if (spr_dma[s] == SPR_DATA && vpos == spr_vstop[s]) spr_dma[s] = SPR_FETCH_CTL;
         if (spr_dma[s] == SPR_FETCH_CTL) {
-            sprpos[s] = chip_rw(sprpt[s]);
-            sprctl[s] = chip_rw(sprpt[s] + 2);
+            dma_sprpos[s] = chip_rw(sprpt[s]);
+            dma_sprctl[s] = chip_rw(sprpt[s] + 2);
             sprpt[s] += 4;
             spr_decode(s);
-            spr_armed[s] = false;
-            spr_dma[s] = (sprpos[s] | sprctl[s]) ? SPR_WAIT : SPR_IDLE;
-            if (spr_dma[s] == SPR_WAIT && c_vpos == spr_vstart[s]) spr_dma[s] = SPR_DATA;
+            push((uint16_t)(EV_SPR + s), dma_sprpos[s], 0, dma_sprctl[s]);
+            spr_dma[s] = (dma_sprpos[s] | dma_sprctl[s]) ? SPR_WAIT : SPR_IDLE;
+            if (spr_dma[s] == SPR_WAIT && vpos == spr_vstart[s]) spr_dma[s] = SPR_DATA;
             if (spr_dma[s] != SPR_DATA) continue;
         }
         if (spr_dma[s] == SPR_DATA) {
-            sprdata[s] = chip_rw(sprpt[s]);
-            sprdatb[s] = chip_rw(sprpt[s] + 2);
+            const uint16_t a = chip_rw(sprpt[s]), b = chip_rw(sprpt[s] + 2);
             sprpt[s] += 4;
-            spr_armed[s] = true;
+            push((uint16_t)(EV_SPR + 8 + s), a, 0, b);
         }
     }
 }
@@ -612,6 +656,7 @@ static inline int spr_px(int x, int x0, uint16_t a, uint16_t b) {
     return ((a >> (15 - i)) & 1) | (((b >> (15 - i)) & 1) << 1);
 }
 
+// Output stage: spl[] from the sprites as they are now.
 AMIGA_HOT static void sprite_compose(void) {
     if (spl_hi > spl_lo) clear_bytes(spl + spl_lo, spl_hi - spl_lo);
     spl_lo = SPL_SIZE; spl_hi = 0;
@@ -646,8 +691,9 @@ AMIGA_HOT static void sprite_compose(void) {
 }
 
 // ---- line / frame hooks ------------------------------------------------------
-AMIGA_HOT static void c_frame_start(void) {
-    for (int s = 0; s < 8; s++) { spr_dma[s] = SPR_FETCH_CTL; spr_armed[s] = false; }
+AMIGA_HOT static void c_frame_start(void) {       // output stage
+    for (int s = 0; s < 8; s++) spr_armed[s] = false;
+    spl_dirty = true;
 }
 
 static inline bool in_vwin(int vpos, uint16_t strt, uint16_t stop) {
@@ -656,13 +702,18 @@ static inline bool in_vwin(int vpos, uint16_t strt, uint16_t stop) {
     return vpos >= vstart && vpos < vstop;
 }
 
+// A line start on the DMA side / the fetch stage.
+AMIGA_HOT static void a_line_start(agnus_t *f) {
+    f->bpl_dma = in_vwin(f->vpos, f->diwstrt, f->diwstop) &&
+                 (f->dmacon & (DMAF_MASTER | DMAF_RASTER)) == (DMAF_MASTER | DMAF_RASTER);
+    compute_ddf(f);
+    f->fetch_k = 0;
+    f->r_h = 0;
+}
+
 // Fetch stage: line `seq`.
 AMIGA_HOT static void f_line_start(uint32_t seq) {
-    bpl_dma = in_vwin(f_vpos, f_diwstrt, f_diwstop) &&
-              (f_dmacon & (DMAF_MASTER | DMAF_RASTER)) == (DMAF_MASTER | DMAF_RASTER);
-    compute_ddf();
-    fetch_k = 0;
-    r_hf = 0;
+    a_line_start(&fetch_st);
     pf_f = pf_ring[seq % PF_RING];
     clear_bytes(pf_f, PF_SIZE);
 }
@@ -690,12 +741,11 @@ AMIGA_HOT static void c_line_start(uint32_t seq) {
         else if (bplcon0 & 0x8000) w_begin(fbrow, AMIGA_ROW_IDX8, 0);
         else                       w_begin(fbrow, AMIGA_ROW_DIRECT, 0);
     }
-    sprite_dma();
-    sprite_compose();
 #ifdef DENISE_DEBUG
     if (c_vpos == 120 && A.frame % 100 == 99) {
-        printf("[denise] f%u con0=%04X con1=%04X con2=%04X diw=%04X/%04X ddf=%02X/%02X mod=%d/%d units=%d pt0=%06X dma=%d\n",
-               A.frame, bplcon0, bplcon1, bplcon2, diwstrt, diwstop, ddfstrt, ddfstop, bplmod[0], bplmod[1], nunits, bplpt[0], bpl_dma);
+        printf("[denise] f%u con0=%04X con1=%04X con2=%04X diw=%04X/%04X ddf=%02X/%02X units=%d dma=%d\n",
+               A.frame, bplcon0, fetch_st.bplcon1, bplcon2, diwstrt, diwstop, fetch_st.ddfstrt, fetch_st.ddfstop,
+               fetch_st.nunits, fetch_st.bpl_dma);
     }
 #endif
 }
@@ -716,26 +766,21 @@ AMIGA_HOT static void c_line_finish(void) {
 }
 
 // ---- registers ---------------------------------------------------------------
-// A register write, once the stage got to its hpos.  Fetch stage:
-AMIGA_HOT static void f_apply(uint32_t reg, uint16_t v) {
-    if (reg >= R_BPL1PTH && reg < R_BPL1PTH + 24) {
-        int p = (reg - R_BPL1PTH) >> 2;
-        if (reg & 2) bplpt[p] = (bplpt[p] & 0xFFFF0000) | (v & 0xFFFE);
-        else         bplpt[p] = (bplpt[p] & 0x0000FFFF) | ((uint32_t)(v & 7) << 16);
-        return;
-    }
+// A register write, once the side got to its hpos.  The DMA side and the
+// fetch stage (the pointers and modulos are the DMA side's: denise_write):
+AMIGA_HOT static void a_apply(agnus_t *f, uint32_t reg, uint16_t v) {
     switch (reg) {
-    case R_BPLCON0: f_bplcon0 = v; break;
-    case R_BPLCON1: bplcon1 = v; break;
-    case R_BPL1MOD: bplmod[0] = (int16_t)(v & 0xFFFE); break;
-    case R_BPL2MOD: bplmod[1] = (int16_t)(v & 0xFFFE); break;
-    case R_DIWSTRT: f_diwstrt = v; break;
-    case R_DIWSTOP: f_diwstop = v; break;
-    case R_DDFSTRT: ddfstrt = v; if (fetch_k == 0) compute_ddf(); break;
-    case R_DDFSTOP: ddfstop = v; if (fetch_k == 0) compute_ddf(); break;
+    case R_BPLCON0: f->bplcon0 = v; break;
+    case R_BPLCON1: f->bplcon1 = v; break;
+    case R_DIWSTRT: f->diwstrt = v; break;
+    case R_DIWSTOP: f->diwstop = v; break;
+    case R_DDFSTRT: f->ddfstrt = v; if (f->fetch_k == 0) compute_ddf(f); break;
+    case R_DDFSTOP: f->ddfstop = v; if (f->fetch_k == 0) compute_ddf(f); break;
     default: break;
     }
 }
+
+AMIGA_HOT static void f_apply(uint32_t reg, uint16_t v) { a_apply(&fetch_st, reg, v); }
 
 // Output stage:
 AMIGA_HOT static void c_apply(uint32_t reg, uint16_t v) {
@@ -744,21 +789,15 @@ AMIGA_HOT static void c_apply(uint32_t reg, uint16_t v) {
         lut_dirty = true;
         return;
     }
-    if (reg >= R_SPR0PTH && reg < R_SPR0PTH + 32) {
-        int s = (reg - R_SPR0PTH) >> 2;
-        if (reg & 2) sprpt[s] = (sprpt[s] & 0xFFFF0000) | (v & 0xFFFE);
-        else         sprpt[s] = (sprpt[s] & 0x0000FFFF) | ((uint32_t)(v & 7) << 16);
-        return;
-    }
     if (reg >= R_SPR0POS && reg < R_SPR0POS + 64) {
         int s = (reg - R_SPR0POS) >> 3;
         switch (reg & 6) {
-        case 0: sprpos[s] = v; spr_decode(s); break;
-        case 2: sprctl[s] = v; spr_decode(s); spr_armed[s] = false; break;
+        case 0: sprpos[s] = v; break;
+        case 2: sprctl[s] = v; spr_armed[s] = false; break;
         case 4: sprdata[s] = v; spr_armed[s] = true; break;
         default: sprdatb[s] = v; break;
         }
-        sprite_compose();
+        spl_dirty = true;
         return;
     }
     switch (reg) {
@@ -772,14 +811,20 @@ AMIGA_HOT static void c_apply(uint32_t reg, uint16_t v) {
 
 static void c_reset(void) {
     tables_init();
-    bplcon0 = f_bplcon0 = bplcon1 = bplcon2 = 0;
-    diwstrt = f_diwstrt = 0x2C81; diwstop = f_diwstop = 0xF4C1; ddfstrt = 0x38; ddfstop = 0xD0;
+    bplcon0 = bplcon2 = 0;
+    diwstrt = 0x2C81; diwstop = 0xF4C1;
+    const agnus_t init = AGNUS_INIT;
+    dma_st = fetch_st = init;
     memset(bplpt, 0, sizeof bplpt);
     bplmod[0] = bplmod[1] = 0;
     memset(color, 0, sizeof color);
     lut_dirty = true;
     memset(sprpt, 0, sizeof sprpt);
+    memset(dma_sprpos, 0, sizeof dma_sprpos); memset(dma_sprctl, 0, sizeof dma_sprctl);
+    memset(spr_vstart, 0, sizeof spr_vstart); memset(spr_vstop, 0, sizeof spr_vstop);
+    for (int s = 0; s < 8; s++) spr_dma[s] = SPR_FETCH_CTL;
     memset(sprpos, 0, sizeof sprpos); memset(sprctl, 0, sizeof sprctl);
+    memset(sprdata, 0, sizeof sprdata); memset(sprdatb, 0, sizeof sprdatb);
     memset(spr_armed, 0, sizeof spr_armed);
     memset(spl, 0, sizeof spl);
     memset(pf_ring, 0, sizeof pf_ring);
@@ -795,31 +840,26 @@ static void c_reset(void) {
 // fetch stage has (its pixels before that hpos are then fetched), and the fetch
 // stage starts line L only once the output stage has finished line L -
 // PF_RING.  Each stage has its own lock, so the two can run on two cores at
-// once; in sync mode one core replays both right away.
-enum { EV_LINE = 0x8000, EV_END = 0x8001, EV_FRAME = 0x8002 };   // below: a register write
+// once; in sync mode one core replays both right away.  The chip RAM reads
+// are the producer's (the DMA side, dma_*: at the event's time, as the
+// hardware's DMA), so what the stages show does not depend on when they run.
 typedef struct {
-    uint16_t kind;          // EV_*, or the register written (< $200)
-    uint16_t v;             // the value; EV_LINE: DMACON
+    uint16_t kind;          // EV_* (the enum above sprite_dma), or the register written (< $200)
+    uint16_t v;             // the value; EV_LINE: DMACON; EV_SPR: POS / DATA
     uint16_t h;             // a write: hpos; EV_LINE: vpos
-    uint16_t x;             // EV_LINE: LOF | lines << 1
+    uint16_t x;             // EV_LINE: LOF | lines << 1; EV_SPR: CTL / DATB
 } dev_t;
 
 #define EVQ 1024                        // power of two
 #define STEP_CC 32                      // async: colour clocks per pump step
-#ifndef LEAD_LINES
-#define LEAD_LINES 8                    // async: lines the producer may be ahead of the fetch stage
-#endif
 static dev_t            evq[EVQ];
 static _Atomic uint32_t ev_head;        // producer
 static _Atomic uint32_t f_tail, o_tail; // next event of each stage
-static _Atomic uint32_t f_lines_done;   // lines the fetch stage has finished
 static _Atomic uint32_t o_lines_done;   // lines the output stage has finished
 static uint32_t         f_lines, o_lines;   // lines each stage has started
-static uint32_t         p_lines;        // lines the producer has started
 static dev_t            f_ev, o_ev;     // the event a stage is in (async: may take steps)
 static bool             f_busy, o_busy;
 static atomic_flag      f_lock = ATOMIC_FLAG_INIT, o_lock = ATOMIC_FLAG_INIT;
-static uint16_t         p_bplcon0;      // the producer's BPLCON0, for denise_lace()
 
 static inline int ev_hpos(const dev_t *e) {
     const int h = e->kind == EV_END ? AMIGA_CC_PER_LINE : e->h;
@@ -844,12 +884,11 @@ AMIGA_HOT static bool f_step(int step) {
     const dev_t *e = &f_ev;
     if (e->kind < EV_LINE || e->kind == EV_END) {
         const int h = ev_hpos(e);
-        if (h > r_hf + step) { f_to(r_hf + step); return true; }
+        if (h > fetch_st.r_h + step) { f_to(fetch_st.r_h + step); return true; }
         f_to(h);
         if (e->kind < EV_LINE) f_apply(e->kind, e->v);
-        else atomic_store_explicit(&f_lines_done, f_lines, memory_order_release);
     } else if (e->kind == EV_LINE) {
-        f_vpos = e->h; f_dmacon = e->v;
+        fetch_st.vpos = e->h; fetch_st.dmacon = e->v;
         f_line_start(f_lines++);
     }
     f_busy = false;
@@ -879,8 +918,13 @@ AMIGA_HOT static bool o_step(int step) {
     } else if (e->kind == EV_LINE) {
         c_vpos = e->h; c_dmacon = e->v; c_lof = e->x & 1; c_lines = e->x >> 1;
         c_line_start(o_lines++);
-    } else {
+    } else if (e->kind == EV_FRAME) {
         c_frame_start();
+    } else {                                                  // EV_SPR: a sprite's DMA
+        const int s = (e->kind - EV_SPR) & 7;
+        if (e->kind < EV_SPR + 8) { sprpos[s] = e->v; sprctl[s] = e->x; spr_armed[s] = false; }
+        else                      { sprdata[s] = e->v; sprdatb[s] = e->x; spr_armed[s] = true; }
+        spl_dirty = true;
     }
     o_busy = false;
     tail_next(&o_tail);
@@ -956,27 +1000,62 @@ void amiga_render_async(bool on) {
     atomic_store(&async_on, on);
 }
 
-// ---- the scheduler's side --------------------------------------------------------
-AMIGA_HOT void denise_frame_start(void) { push(EV_FRAME, 0, 0, 0); }
+// ---- the scheduler's side: the DMA side runs here -----------------------------------
+static inline uint32_t ws_used(void) {
+    return atomic_load_explicit(&ws_head, memory_order_relaxed) -
+           atomic_load_explicit(&ws_tail, memory_order_acquire);
+}
+
+AMIGA_HOT void denise_frame_start(void) {
+    for (int s = 0; s < 8; s++) spr_dma[s] = SPR_FETCH_CTL;
+    push(EV_FRAME, 0, 0, 0);
+}
 
 AMIGA_HOT void denise_line_start(void) {
-    if (is_async() && p_lines - atomic_load_explicit(&f_lines_done, memory_order_acquire) > LEAD_LINES) {
-        const int prof = prof_switch(AMIGA_PROF_RWAIT);       // too far ahead of the fetch stage
-        while (p_lines - atomic_load_explicit(&f_lines_done, memory_order_acquire) > LEAD_LINES) c_help();
+    if (ws_used() > WS_SIZE - WS_LINE) {                      // the fetch stage is a ring behind
+        const int prof = prof_switch(AMIGA_PROF_RWAIT);
+        while (ws_used() > WS_SIZE - WS_LINE) c_help();
         prof_switch(prof);
     }
-    p_lines++;
+    dma_st.vpos = A.vpos; dma_st.dmacon = A.dmacon;
+    a_line_start(&dma_st);
     push(EV_LINE, A.dmacon, (uint16_t)A.vpos, (uint16_t)((A.lof ? 1 : 0) | (A.lines << 1)));
+    sprite_dma();
 }
 
-AMIGA_HOT void denise_line_end(void) { push(EV_END, 0, 0, 0); }
+AMIGA_HOT void denise_line_end(void) {
+    dma_to(AMIGA_CC_PER_LINE);
+    push(EV_END, 0, 0, 0);
+}
 
 AMIGA_HOT void denise_write(uint32_t reg, uint16_t v, int hpos) {
-    if (reg == R_BPLCON0) p_bplcon0 = v;
-    push((uint16_t)reg, v, (uint16_t)(hpos < 0 ? 0 : hpos), 0);
+    const uint16_t h = (uint16_t)(hpos < 0 ? 0 : hpos);
+    if (reg >= R_SPR0PTH && reg < R_SPR0PTH + 32) {
+        const int s = (reg - R_SPR0PTH) >> 2;
+        if (reg & 2) sprpt[s] = (sprpt[s] & 0xFFFF0000) | (v & 0xFFFE);
+        else         sprpt[s] = (sprpt[s] & 0x0000FFFF) | ((uint32_t)(v & 7) << 16);
+        return;                                               // the output stage has no use for it
+    }
+    if (reg >= R_SPR0POS && reg < R_SPR0POS + 64) {
+        const int s = (reg - R_SPR0POS) >> 3;
+        if ((reg & 6) == 0) { dma_sprpos[s] = v; spr_decode(s); }
+        if ((reg & 6) == 2) { dma_sprctl[s] = v; spr_decode(s); }
+    } else {
+        dma_to(h);                                            // the units before the write read first
+        if (reg >= R_BPL1PTH && reg < R_BPL1PTH + 24) {
+            const int p = (reg - R_BPL1PTH) >> 2;
+            if (reg & 2) bplpt[p] = (bplpt[p] & 0xFFFF0000) | (v & 0xFFFE);
+            else         bplpt[p] = (bplpt[p] & 0x0000FFFF) | ((uint32_t)(v & 7) << 16);
+            return;
+        }
+        if (reg == R_BPL1MOD) { bplmod[0] = (int16_t)(v & 0xFFFE); return; }
+        if (reg == R_BPL2MOD) { bplmod[1] = (int16_t)(v & 0xFFFE); return; }
+        a_apply(&dma_st, reg, v);
+    }
+    push((uint16_t)reg, v, h, 0);
 }
 
-AMIGA_HOT bool denise_lace(void) { return (p_bplcon0 & 0x0004) != 0; }
+AMIGA_HOT bool denise_lace(void) { return (dma_st.bplcon0 & 0x0004) != 0; }
 
 void denise_reset(void) {
     denise_sync();
@@ -984,9 +1063,9 @@ void denise_reset(void) {
     const uint32_t hd = atomic_load(&ev_head);
     atomic_store(&f_tail, hd);
     atomic_store(&o_tail, hd);
-    f_lines = o_lines = p_lines = 0;
-    atomic_store(&f_lines_done, 0);
+    f_lines = o_lines = 0;
     atomic_store(&o_lines_done, 0);
-    p_bplcon0 = 0;
+    atomic_store(&ws_head, 0);
+    atomic_store(&ws_tail, 0);
     c_reset();
 }

@@ -77,11 +77,14 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   once (host bench, smoke); the firmware turns on `amiga_render_async`, core 1
   pumps (`amiga_render_pump()`, 32-cc steps, between line builds on PICO_DV)
   and core 0 takes a stage itself whenever it would wait;
-  `amiga_run_frame()` waits for both at frame end. Chip RAM is read live
-  (ThreadSanitizer reports only those races), so the emulation stays at most
-  `LEAD_LINES` (8) lines ahead of the fetch stage: IK+ erases its fighters
-  ~32-64 lines behind the beam and with a frame's lead they flickered
-  (`--render-thread` screens differed from the sync ones; up to 32 they match). `pico-amiga-host --render-thread`
+  `amiga_run_frame()` waits for both at frame end. The chip RAM reads (bitplane
+  and sprite DMA) are the emulation's, at the event's time (`dma_*` in denise.c):
+  the words reach the fetch stage through a 16 KB ring (`ws[]`, 40-80 lines of
+  lead) and the sprites' through events. Read by the stages instead, they showed
+  what the game wrote after the beam: IK+ erases its fighters ~50 lines behind
+  it and flickered. Bounding the emulation's lead instead (8 lines) cost the
+  overlap and slowed Cannon Fodder's intro scroll. `--render-thread` screens must
+  match the sync ones (IK+, Cannon Fodder, Exolon checked frame for frame). `pico-amiga-host --render-thread`
   runs the async path on a thread; its screens must match the sync ones.
 - Single playfield sprite priority uses **PF2P**, not PF1P (vAmiga agrees).
 - Byte writes to custom registers put the byte on both halves of the word.
