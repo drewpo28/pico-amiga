@@ -114,7 +114,11 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   lead) and the sprites' through events. Read by the stages instead, they showed
   what the game wrote after the beam: IK+ erases its fighters ~50 lines behind
   it and flickered. Bounding the emulation's lead instead (8 lines) cost the
-  overlap and slowed Cannon Fodder's intro scroll. `--render-thread` screens must
+  overlap and slowed Cannon Fodder's intro scroll. Every queued write first runs
+  the DMA side up to its hpos (`dma_to` in denise_write): the event lets the fetch
+  stage go that far, and the ring must hold those words by then (sprite register
+  writes skipped it: RoboCop 2's last playfield line got stale words in sync mode,
+  and could in async). `--render-thread` screens must
   match the sync ones (IK+, Cannon Fodder, Exolon checked frame for frame). `pico-amiga-host --render-thread`
   runs the async path on a thread; its screens must match the sync ones.
 - **ECS super-hires** (denise.c): a pf entry is a pixel pair (left bits 0-1,

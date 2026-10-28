@@ -1183,12 +1183,17 @@ AMIGA_HOT void denise_write(uint32_t reg, uint16_t v, int hpos) {
         else         sprpt[s] = (sprpt[s] & 0x0000FFFF) | ((uint32_t)(v & 0x1F) << 16);
         return;                                               // the output stage has no use for it
     }
+    // Every queued write first has the DMA side read the units before it: the
+    // event lets the fetch stage go up to h, and the words must be in the ring by
+    // then.  The sprite registers skipped this, and RoboCop 2's SPR0CTL write at
+    // h 226 had the fetch stage (at once in sync mode, when caught up in async)
+    // spread stale ring words over its playfield's last line.
+    dma_to(h);
     if (reg >= R_SPR0POS && reg < R_SPR0POS + 64) {
         const int s = (reg - R_SPR0POS) >> 3;
         if ((reg & 6) == 0) { dma_sprpos[s] = v; spr_decode(s); }
         if ((reg & 6) == 2) { dma_sprctl[s] = v; spr_decode(s); }
     } else {
-        dma_to(h);                                            // the units before the write read first
         if (reg >= R_BPL1PTH && reg < R_BPL1PTH + 24) {
             const int p = (reg - R_BPL1PTH) >> 2;
             if (reg & 2) bplpt[p] = (bplpt[p] & 0xFFFF0000) | (v & 0xFFFE);
