@@ -18,7 +18,7 @@
 //   Machine > Custom ROM picks a 256 or 512 KB Kickstart image on the card
 //   (default /amiga/kick.rom; AROS works); an ext.rom in its folder is the 512 KB
 //   extended ROM at $E00000 (optional, AROS needs it)
-// Disks: Disks > DF0 picks an ADF on the card (streamed from it) or a DMS (unpacked
+// Disks: Devices > Disks > DF0 picks an ADF on the card (streamed from it) or a DMS (unpacked
 //   into PSRAM, write-protected); without a pick,
 //   /amiga/df0.adf goes into DF0 by itself.
 // Settings: /.config/pico-amiga/<board>/storage.nvs (app/Config.h).
@@ -107,6 +107,7 @@ static void __attribute__((noreturn)) fail(uint16_t colour) {
 void sdcard_reclock(void);
 
 int main(void) {
+    board_flash_probe();             // first: it leaves XIP and boot2 resets the flash timing
     led_init();
     // The card first, at the boot clock: storage.nvs says which clock to run at.
     const bool card = f_mount(&fs, "", 1) == FR_OK;

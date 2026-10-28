@@ -21,7 +21,9 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   `PICO_AMIGA_SHOT=f.bmp:N` saves output frame N; `SDL_VIDEODRIVER=offscreen` runs it
   headless. `build-host/pico-amiga-host` remains the headless test bench.
 - `src/pico/ui/` is pico-speccy's nm:: menu (F12, WinUAE's key: F1..F10 are the
-  Amiga's; Ctrl+F12 = DF0 browser, Shift+F12 = reset). The engine (UiNav, UiRender,
+  Amiga's; Ctrl+F12 = DF0 browser, Shift+F12 = reset; Win+F1 = System info, the
+  board/memory/temperature page, pico-speccy's Alt+F1 - Alt is the Amiga's). Its
+  root follows pico-speccy's: Help, Machine, Devices (Disks, Input), Video, ... The engine (UiNav, UiRender,
   UiDialog, UiFont, UiModel, the Stage mechanism) is kept close to pico-speccy, with
   `PICO-AMIGA:` notes; `UiGfx.cpp` draws 0x0RGB straight into the Amiga framebuffer,
   turning each row it touches into a DIRECT one (the scanout keeps showing it; the emulator is stopped while the menu runs, and its
@@ -48,13 +50,13 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   git-ignored: the Kickstarts are Commodore's and must never be committed).
   `cmake/roms.cmake` lists them; an id there is what storage.nvs keeps, never
   reuse one. The firmware targets 16 MB flash; the core reads the ROM in place
-  (XIP). `machine.cpp` owns ROM selection and the drives: DF0..DF3 (Disks > Floppy
+  (XIP). `machine.cpp` owns ROM selection and the drives: DF0..DF3 (Devices > Disks > Floppy
   drives, Auto = one per disk of an `.m3u` set; Kickstart finds DF1+ by drive ID
   at reset). An ADF streams from the card; a `.dms` is unpacked at insert time by
   `src/pico/dms.c` (xDMS port, its ~100 KB work area in PSRAM) into a per-drive
   880 KB PSRAM slot above 2 MB, write-protected. The bench takes `--adf x.dms` too,
   up to 8 `--adf` (DF0..DF3, the rest for `--swap`), `--drives N` and `--write-back`
-  (written disks saved to their files). Disks > New blank disk formats an empty
+  (written disks saved to their files). Devices > Disks > New blank disk formats an empty
   OFS ADF on the card (`machine_new_disk`); with an .m3u set loaded it is appended
   to the set (games' own save-disk formatters: swap it in with Ctrl+F12).
 - `src/pico/drivers/` are pico-speccy's drivers (USB HID/XInput, fabgl VK keyboard
@@ -183,10 +185,11 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   tables/line buffers, of 520 KB): PICO_DV has ~8 KB between the end of .bss and
   __HeapLimit (2026-10-28, `nm` `end`); the old "~50 KB" was stale. That gap
   is the whole C/C++ heap (the menu's strings, the file browser): with ECS it
-  fell to 5.4 KB and Disks > DF0 panicked "Out of memory" on the board; the
+  fell to 5.4 KB and Devices > Disks > DF0 panicked "Out of memory" on the board; the
   colour map's tag and index tables merged into one (-4 KB), the Alt+F12
   band's pixels moved to PSRAM (16 KB at +2 MB, before the DMS area; a 2 MB
-  PSRAM has no band) and the .m3u read through 256 bytes: 20.5 KB
+  PSRAM has no band) and the .m3u read through 256 bytes: 20.5 KB; System
+  info's flash JEDEC read (hardware_flash) took 0.9 KB of it: 19.5 KB
   (2026-10-28). Check `end` after adding SRAM code or tables. MURM2 not
   re-measured (was ~100 KB).
 - PICO_DV core 1 before the lookup scanout (Cannon Fodder, 504 MHz, ms per

@@ -31,6 +31,16 @@ extern "C" uint32_t board_cycles(void) {
         std::chrono::steady_clock::now().time_since_epoch()).count();
 }
 extern "C" uint32_t board_cycles_per_us(void) { return 1000; }
+// System info (Win+F1): what a PC can say for the board.
+static const uint8_t host_jedec[3] = { 0, 0, 0 };
+extern "C" void board_flash_probe(void) {}
+extern "C" const uint8_t *board_flash_jedec(void) { return host_jedec; }
+extern "C" uint32_t board_flash_size(void) { return 0; }
+extern "C" char board_chip_package(void) { return '-'; }
+extern "C" uint32_t board_cpu_mhz(void) { return 0; }
+extern "C" int board_vreg_mv(void) { return 0; }
+extern "C" int board_temp_x10(void) { return 0; }
+extern "C" uint32_t board_free_heap(void) { return 0; }
 
 void __wfi(void) { std::this_thread::sleep_for(std::chrono::milliseconds(1)); }
 

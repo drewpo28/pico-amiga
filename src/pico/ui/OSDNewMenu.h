@@ -22,6 +22,10 @@ void run();
 // outside the menu; the disk goes in when one is picked.
 void runDiskInsert(int drive);
 
+// The Win+F1 hotkey (pico-speccy's Alt+F1; Alt is the Amiga's): the System info
+// page, live at 1 Hz, outside the menu. Also Help > System info.
+void runSysInfo();
+
 // A yes/no question in THIS UI, asked from outside the menu while the machine
 // runs (the SD automount's "settings found on the card — reboot?"). Owns its
 // own gfx session like the game page above. `body` may carry '\n'. True = the

@@ -17,6 +17,18 @@ int board_test_pins(uint32_t pin0, uint32_t pin1);
 uint32_t board_cycles(void);
 uint32_t board_cycles_per_us(void);
 
+// System info (Win+F1).  The flash's JEDEC ID is read once, by
+// board_flash_probe() first thing in main(): the command leaves XIP and boot2
+// restores it, which would undo the overclocked flash timing and the PSRAM's.
+void     board_flash_probe(void);
+const uint8_t *board_flash_jedec(void);   // manufacturer, type, capacity (2^n bytes)
+uint32_t board_flash_size(void);          // bytes, from the ID; 0 = unknown
+char     board_chip_package(void);        // 'A' (QFN60) or 'B' (QFN80)
+uint32_t board_cpu_mhz(void);
+int      board_vreg_mv(void);             // core voltage, mV
+int      board_temp_x10(void);            // the chip's sensor (uncalibrated), 0.1 C
+uint32_t board_free_heap(void);           // malloc's free blocks + the heap not yet taken, bytes
+
 #ifdef __cplusplus
 }
 #endif

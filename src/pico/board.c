@@ -8,6 +8,12 @@
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
 #include "hardware/clocks.h"
+#include "hardware/adc.h"
+#include "hardware/flash.h"
+#include "hardware/vreg.h"
+#include "hardware/structs/sysinfo.h"
+#include <malloc.h>
+#include <unistd.h>
 
 // connection is possible 00->00 (external pull down)
 static int test_0000_case(uint32_t pin0, uint32_t pin1, int res) {
@@ -94,3 +100,62 @@ uint32_t __not_in_flash_func(board_cycles)(void) {   // the audio tick IRQ calls
 }
 
 uint32_t board_cycles_per_us(void) { return clock_get_hz(clk_sys) / 1000000u; }
+
+// ---- system info (Win+F1) -------------------------------------------------------------
+static uint8_t flash_jedec[4];
+
+void board_flash_probe(void) {
+    uint8_t tx[4] = { 0x9F };
+    flash_do_cmd(tx, flash_jedec, 4);           // [0] is the command's echo slot
+}
+const uint8_t *board_flash_jedec(void) { return flash_jedec + 1; }
+uint32_t board_flash_size(void) {
+    const uint8_t n = flash_jedec[3];
+    return n >= 16 && n <= 28 ? 1u << n : 0;
+}
+
+char board_chip_package(void) { return (sysinfo_hw->package_sel & 1u) ? 'A' : 'B'; }
+uint32_t board_cpu_mhz(void) { return clock_get_hz(clk_sys) / 1000000u; }
+
+int board_vreg_mv(void) {
+    static const uint16_t mv[] = { 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000,
+                                   1050, 1100, 1150, 1200, 1250, 1300, 1350, 1400, 1500,
+                                   1600, 1650, 1700, 1800, 1900, 2000, 2350, 2500, 2650,
+                                   2800, 3000, 3150, 3300 };
+    const int v = (int)vreg_get_voltage();
+    return v >= 0 && v < 32 ? mv[v] : 0;
+}
+
+// pico-speccy's chipTempX10(): T = 27 - (V - 0.706) / 0.001721.
+int board_temp_x10(void) {
+    static bool up;
+    if (!up) {
+        adc_init();
+        adc_set_temp_sensor_enabled(true);
+        busy_wait_us(500);                      // first-time bias settle
+        up = true;
+    }
+#ifdef ZERO2
+    // pico-speccy: the Pi Zero form factor puts HDMI DDC/CEC (pulled up to 3V3)
+    // on GPIO44-46, and a high level there leaks into the sensor node (60-90 C
+    // low). Held low for the conversions; this firmware never speaks DDC/CEC.
+    for (uint p = 44; p <= 46; p++) { gpio_init(p); gpio_set_dir(p, GPIO_OUT); }
+    busy_wait_us(15);
+#endif
+    adc_select_input(board_chip_package() == 'A' ? 4 : 8);
+    (void)adc_read();                           // the first conversion is stale
+    int raw = 0;
+    for (int i = 0; i < 4; i++) raw += adc_read();
+#ifdef ZERO2
+    for (uint p = 44; p <= 46; p++) gpio_deinit(p);
+#endif
+    const int uv10 = (raw / 4) * 33000 / 4096;  // volts * 10000
+    return 270 - (uv10 - 7060) * 1000 / 1721;
+}
+
+uint32_t board_free_heap(void) {
+    extern char __HeapLimit;
+    const struct mallinfo mi = mallinfo();
+    const char *top = (const char *)sbrk(0);
+    return (uint32_t)mi.fordblks + (top < &__HeapLimit ? (uint32_t)(&__HeapLimit - top) : 0);
+}

@@ -13,7 +13,8 @@
 //   - the HID mouse -> port 1 mouse
 // Hotkeys (WinUAE's layout): F12 opens the menu (ui/, from pico-speccy), Ctrl+F12
 // the DF0 disk browser, Shift+F12 resets the Amiga, Alt+F12 the performance band; Ctrl+J toggles CursorAsJoy (as
-// on pico-speccy). F1..F10 are the Amiga's, F11 and Insert its Help key.
+// on pico-speccy). Win+F1 is the System info page (pico-speccy's Alt+F1: Alt is
+// the Amiga's). F1..F10 are the Amiga's, F11 and Insert its Help key.
 #include "input.h"
 #include <string.h>
 #include "pico/stdlib.h"
@@ -437,6 +438,16 @@ void input_frame(void) {
             menu_open = true;
             if (ctrl) nm::runDiskInsert(0);
             else      nm::run();
+            menu_open = false;
+            kbd.emptyVirtualKeyQueue();
+            continue;
+        }
+        // Win+F1: the System info page (the Amiga saw Win as an Amiga key: released).
+        if (item.vk == fabgl::VirtualKey::VK_F1 && item.down &&
+            (kbd.isVKDown(fabgl::VirtualKey::VK_LGUI) || kbd.isVKDown(fabgl::VirtualKey::VK_RGUI))) {
+            release_amiga_keys();
+            menu_open = true;
+            nm::runSysInfo();
             menu_open = false;
             kbd.emptyVirtualKeyQueue();
             continue;

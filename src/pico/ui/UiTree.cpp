@@ -8,6 +8,7 @@
 #include "OSDNewMenu.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "ff.h"
 
@@ -24,6 +25,11 @@
 #include "machine.h"
 extern "C" {
 #include "video.h"
+#include "audio_out.h"
+#include "board.h"
+#include "psram.h"
+#include "ui.h"
+#include "pico/time.h"
 }
 #include <string>
 
@@ -120,13 +126,13 @@ static const char* baseName(const char* p) {
     return s ? s + 1 : p;
 }
 
-// Disks > DF0: the file name of what is in the drive.
+// Devices > Disks > DF0: the file name of what is in the drive.
 static const char* df0Label() {
     const char* p = machine_disk(0);
     return *p ? baseName(p) : "empty";
 }
 
-// Disks > DF0 with an .m3u disk set loaded: the row shows the set, the right
+// Devices > Disks > DF0 with an .m3u disk set loaded: the row shows the set, the right
 // pane its disks (the one in DF0 marked; a disk in another drive says which),
 // Enter swaps the chosen one into DF0.
 static bool p_diskSet() { return machine_set_count() > 1; }
@@ -209,7 +215,7 @@ static bool df0PickAndInsert() {
     std::string ext = dot == std::string::npos ? "" : path.substr(dot);
     for (char& c : ext) c = (char)(c | 0x20);
     // An .m3u is a disk set (RetroArch's playlist): disk 1 goes in, the rest
-    // wait in Disks > DF0 (the right pane) / Ctrl+F12.
+    // wait in Devices > Disks > DF0 (the right pane) / Ctrl+F12.
     const bool set = ext == ".m3u";
     if (set ? !machine_load_set(path.c_str(), 0) : !machine_insert(0, path.c_str(), Config::df0_wp)) {
         gfxBegin();
@@ -275,7 +281,7 @@ void runDiskInsert(int drive) {
     gfxEnd();
 }
 
-// Disks > New blank disk: a formatted empty ADF on the card. With a disk set
+// Devices > Disks > New blank disk: a formatted empty ADF on the card. With a disk set
 // loaded it joins the set (Ctrl+F12 swaps it in, e.g. when a game's own
 // save-disk formatter asks for a disk); otherwise it goes into DF0.
 static void act_new_disk() {
@@ -325,6 +331,7 @@ static void page_hotkeys() {
         "Ctrl+F12    Insert a disk into DF0 (an .m3u set: swap disks)\n"
         "Shift+F12   Reset the Amiga\n"
         "Alt+F12     Performance band: summary, breakdown, off\n"
+        "Win+F1      System info: board, memory, chip temperature\n"
         "Ctrl+J      Cursor keys as joystick on/off\n"
         "F1..F10     Amiga function keys\n"
         "\n"
@@ -340,10 +347,58 @@ static void page_hotkeys() {
         "Mouse: port 1. A USB/XInput/NES pad drives port 2.");
 }
 
+// System info (Help, Win+F1): the board, its memories and the machine running.
+// Rebuilt every second (the temperature, the free heap and the uptime move), into
+// a buffer taken from the heap while the page is open (SRAM is the heap).
+#define SYSINFO_BUF 768
+static char* s_sysinfo;
+
+static const char* sysInfoText() {
+    char* const buf = s_sysinfo;
+    int pos = 0;
+    const auto add = [&](const char* fmt, auto... a) {
+        if (pos < SYSINFO_BUF) pos += snprintf(buf + pos, SYSINFO_BUF - pos, fmt, a...);
+    };
+#ifdef VIDEO_PIO
+    const char* hdmi = "HDMI (PIO)";
+#else
+    const char* hdmi = "HDMI (HSTX)";
+#endif
+    add(" Firmware       : %s / %s [v%s]\n", CONFIG_BOARD_TAG, video_is_vga() ? "VGA" : hdmi, PORT_VERSION);
+    const int mv = board_vreg_mv(), t = board_temp_x10();
+    add(" Chip           : RP2350%c, %u MHz\n", board_chip_package(), (unsigned)board_cpu_mhz());
+    add(" Chip VREG/TEMP : %d.%02d V / %d.%d C\n", mv / 1000, mv % 1000 / 10, t / 10, (t < 0 ? -t : t) % 10);
+    add(" Chip RAM       : 520 KB, %u KB free (heap)\n", (unsigned)(board_free_heap() / 1024));
+    const uint8_t* j = board_flash_jedec();
+    add(" Flash          : %u MB, JEDEC %02X-%02X-%02X\n", (unsigned)(board_flash_size() >> 20), j[0], j[1], j[2]);
+    add(" PSRAM          : %u MB, SCK <= %d MHz\n", (unsigned)(psram_size() >> 20), settings_psram_mhz());
+    add(" Machine        : %s, %s\n", machine_name(), machine_rom_name());
+    add(" Amiga RAM      : %s\n", Config::machine == 1 ? "1 MB chip (ECS)" : "512 KB chip + 512 KB slow (OCS)");
+    add(" Floppy drives  : %d\n", machine_drives());
+    add(" Audio          : %s\n", audio_out_name());
+    const unsigned s = (unsigned)(time_us_64() / 1000000);
+    add(" Uptime         : %u:%02u:%02u\n", s / 3600, s / 60 % 60, s % 60);
+    return buf;
+}
+
+static void page_sysinfo() {
+    s_sysinfo = (char*)malloc(SYSINFO_BUF);
+    if (!s_sysinfo) { uiToast("Out of memory", true, 1500); return; }
+    uiTextPageLive("System info", sysInfoText, 1000);
+    free(s_sysinfo);
+    s_sysinfo = nullptr;
+}
+
+void runSysInfo() {
+    gfxBegin();
+    page_sysinfo();
+    gfxEnd();
+}
+
 static void page_about() {
     uiTextPage("About",
         "Pico-Amiga " PORT_VERSION "\n"
-        "Amiga 500 (OCS, PAL) for RP2350 + PSRAM\n"
+        "Amiga 500 / 500+ (OCS / ECS, PAL) for RP2350 + PSRAM\n"
         "\n"
         "CPU: Musashi 68000\n"
         "Drivers, menu and host build after pico-speccy");
@@ -432,8 +487,9 @@ static const Node kDebug[] = {
 };
 
 static const Node kHelp[] = {
-    NM_PAGE("Hotkeys", page_hotkeys, nullptr),
-    NM_PAGE("About",   page_about,   nullptr),
+    NM_PAGE("Hotkeys",     page_hotkeys, nullptr),
+    NM_PAGE("About",       page_about,   nullptr),
+    NM_PAGE("System info", page_sysinfo, nullptr),
 };
 
 static const Node kReset[] = {
@@ -441,16 +497,22 @@ static const Node kReset[] = {
     NM_ACTION("Reboot the board", act_reboot,      nullptr),
 };
 
-static const Node kRoot[] = {
+// Devices: what is plugged into the Amiga (pico-speccy's Devices row).
+static const Node kDevices[] = {
     NM_SUB("Disks",     kDisks,     nullptr),
-    NM_SUB("Machine",   kMachine,   nullptr),
     NM_SUB("Input",     kInput,     nullptr),
-    NM_SUB("Audio",     kAudio,     nullptr),
-    NM_SUB("Video",     kVideo,     nullptr),
-    NM_SUB("Options",   kOptions,   nullptr),
-    NM_SUB("Debug",     kDebug,     nullptr),
+};
+
+// pico-speccy's order: Help first, Devices after Machine.
+static const Node kRoot[] = {
     NM_SUB("Help",      kHelp,      nullptr),
+    NM_SUB("Machine",   kMachine,   nullptr),
+    NM_SUB("Devices",   kDevices,   nullptr),
+    NM_SUB("Video",     kVideo,     nullptr),
+    NM_SUB("Audio",     kAudio,     nullptr),
+    NM_SUB("Options",   kOptions,   nullptr),
     NM_SUB("Reset",     kReset,     nullptr),
+    NM_SUB("Debug",     kDebug,     nullptr),
 };
 
 const Node* rootNodes()     { return kRoot; }
