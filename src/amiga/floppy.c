@@ -210,7 +210,13 @@ uint16_t floppy_read(uint32_t reg) {
 }
 
 void floppy_line(void) {
-    rot_pos += 2;                               // 32 us per word, 64 us per line
+    // 32 us per word, 64 us per line.  Not while a read DMA is running: its words
+    // were handed over at the start and rot_pos is already at their end, where the
+    // head is when the transfer completes.  Turning on meanwhile (the wait is
+    // FLOPPY_TURBO-scaled, the turning was not) carried the head past the gap:
+    // Hero Quest's loader reads a sector header, then "the sectors up to the gap",
+    // then "the next sector" - expected to be sector 0 - and kept getting 2.
+    if (!(dma_on && !dma_write)) rot_pos += 2;
     if (dma_on && dma_drive >= 0 && drv[dma_drive].inserted && drv[dma_drive].motor) {
         if (dma_lines_left && --dma_lines_left == 0) dma_finish();
     }
