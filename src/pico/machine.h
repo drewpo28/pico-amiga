@@ -58,6 +58,13 @@ bool machine_set_select(int i);         // swap disk i into DF0
 // (or DF0's disk, else in /amiga/disks/). With a set loaded it joins the set
 // (machine_set_add); otherwise it goes into DF0. Its path goes to path_out.
 bool machine_new_disk(const char *volume, char *path_out, unsigned path_size);
+// The ADF itself: an empty formatted volume at `path` (which must not exist).
+bool machine_format_adf(const char *path, const char *volume);
+// The browser's F1 on a disk image: what is on it, as text for a page - the
+// volume and its filesystem, whether it boots, its dates and free space, the
+// root directory and the start of s/startup-sequence; a custom (non-DOS)
+// format says so. A DMS is unpacked into a spare PSRAM slot first (8 MB boards).
+void machine_disk_info(const char *path, char *out, unsigned size);
 // Add a disk to the loaded set: to the .m3u on the card and to the swap list.
 bool machine_set_add(const char *path);
 

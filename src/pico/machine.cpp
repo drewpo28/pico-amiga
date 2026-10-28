@@ -1,9 +1,12 @@
 // The machine around the core (machine.h): Kickstart selection and the drives.
 #include "machine.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include <string>
+#include <algorithm>
+#include <vector>
 #include "ff.h"
 #include "dms.h"
 #include "roms.h"
@@ -97,6 +100,7 @@ struct Drive {
     bool open;              // f is open (ADF)
     uint8_t *img;           // the unpacked DMS (PSRAM), or null
     std::string path;
+    bool manual;            // DF1..DF3: put there by hand (Open file), not by a set
 };
 static Drive s_drv[4];
 
@@ -144,6 +148,7 @@ static void eject_adf(int drive) {
     d.open = false;
     d.img = nullptr;
     d.path.clear();
+    d.manual = false;
 }
 
 // The disk set (machine_load_set); s_set_index is the disk in DF0.
@@ -159,7 +164,9 @@ void machine_eject(int drive) {
 
 bool machine_insert(int drive, const char *path, bool write_protect) {
     if (drive == 0) s_set_count = 0;
-    return insert_adf(drive, path, write_protect);
+    if (!insert_adf(drive, path, write_protect)) return false;
+    s_drv[drive].manual = drive > 0;
+    return true;
 }
 
 
@@ -297,22 +304,14 @@ static bool file_exists(const std::string &p) {
     return f_stat(p.c_str(), &fi) == FR_OK;
 }
 
-bool machine_new_disk(const char *volume, char *path_out, unsigned path_size) {
-    // Where: beside the set's .m3u, else beside DF0's disk, else /amiga/disks/.
-    std::string dir = s_set_count ? Config::df0 : s_drv[0].path;
-    dir = dir.substr(0, dir.find_last_of('/') + 1);
-    if (dir.empty()) { dir = "/amiga/disks/"; if (!file_exists("/amiga/disks")) dir = "/amiga/"; }
-    std::string base = volume;
-    for (char &c : base)
-        if (strchr(":/\\*?\"<>|", c) || (unsigned char)c < 32) c = '_';
-    std::string path = dir + base + ".adf";
-    for (int n = 2; file_exists(path) && n < 100; n++) path = dir + base + " " + std::to_string(n) + ".adf";
+bool machine_format_adf(const char *path, const char *volume) {
     FIL &f = s_job;
-    if (f_open(&f, path.c_str(), FA_WRITE | FA_CREATE_NEW) != FR_OK) return false;
+    if (f_open(&f, path, FA_WRITE | FA_CREATE_NEW) != FR_OK) return false;
     // The volume's dates tell it from other volumes of the same name (two
     // "Empty" disks in two drives): the creation time is the board's clock.
     const uint32_t t = time_us_32();
     const uint32_t days = 17000 + (t >> 26), mins = (t >> 20) % 1440, ticks = (t >> 10) % 3000;
+    const size_t vlen = strlen(volume) < 30 ? strlen(volume) : 30;
     static uint8_t blk[512];
     bool ok = true;
     for (int n = 0; n < 1760 && ok; n++) {
@@ -328,9 +327,8 @@ bool machine_new_disk(const char *volume, char *path_out, unsigned path_size) {
             for (int o : { 0x1A4, 0x1D8, 0x1E4 }) {         // root, volume, creation dates
                 put32(blk, o, days); put32(blk, o + 4, mins); put32(blk, o + 8, ticks);
             }
-            const size_t len = base.size() < 30 ? base.size() : 30;
-            blk[0x1B0] = (uint8_t)len;
-            memcpy(blk + 0x1B1, volume, len);
+            blk[0x1B0] = (uint8_t)vlen;
+            memcpy(blk + 0x1B1, volume, vlen);
             put32(blk, 0x1FC, 1);                           // ST_ROOT
             block_sum(blk, 0x014);
         } else if (n == 881) {                              // the bitmap: 1 = free
@@ -342,9 +340,193 @@ bool machine_new_disk(const char *volume, char *path_out, unsigned path_size) {
         ok = f_write(&f, blk, sizeof blk, &w) == FR_OK && w == sizeof blk;
     }
     f_close(&f);
-    if (!ok) { f_unlink(path.c_str()); return false; }
+    if (!ok) f_unlink(path);
+    return ok;
+}
+
+bool machine_new_disk(const char *volume, char *path_out, unsigned path_size) {
+    // Where: beside the set's .m3u, else beside DF0's disk, else /amiga/disks/.
+    std::string dir = s_set_count ? Config::df0 : s_drv[0].path;
+    dir = dir.substr(0, dir.find_last_of('/') + 1);
+    if (dir.empty()) { dir = "/amiga/disks/"; if (!file_exists("/amiga/disks")) dir = "/amiga/"; }
+    std::string base = volume;
+    for (char &c : base)
+        if (strchr(":/\\*?\"<>|", c) || (unsigned char)c < 32) c = '_';
+    std::string path = dir + base + ".adf";
+    for (int n = 2; file_exists(path) && n < 100; n++) path = dir + base + " " + std::to_string(n) + ".adf";
+    if (!machine_format_adf(path.c_str(), volume)) return false;
     snprintf(path_out, path_size, "%s", path.c_str());
     return true;
+}
+
+// ---- disk info (the browser's F1) ------------------------------------------------------
+typedef bool (*blk_fn)(void *ctx, uint32_t n, uint8_t *b);
+
+static bool file_blk(void *ctx, uint32_t n, uint8_t *b) {
+    UINT got = 0;
+    return n < 1760 && f_lseek((FIL *)ctx, n * 512) == FR_OK &&
+           f_read((FIL *)ctx, b, 512, &got) == FR_OK && got == 512;
+}
+static bool mem_blk(void *ctx, uint32_t n, uint8_t *b) {
+    if (n >= 1760) return false;
+    memcpy(b, (const uint8_t *)ctx + n * 512, 512);
+    return true;
+}
+static uint32_t rd32(const uint8_t *p) {
+    return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | p[3];
+}
+static bool sum_ok(const uint8_t *b) {             // header blocks: the longs sum to 0
+    uint32_t s = 0;
+    for (int i = 0; i < 512; i += 4) s += rd32(b + i);
+    return s == 0;
+}
+static std::string bname(const uint8_t *b) {
+    const int n = b[0x1B0] < 30 ? b[0x1B0] : 30;
+    return std::string((const char *)b + 0x1B1, (size_t)n);
+}
+static bool name_eq(const std::string &a, const char *b) {
+    return strcasecmp(a.c_str(), b) == 0;
+}
+
+// Days since 1978-01-01 -> "YYYY-MM-DD".
+static void amiga_date(uint32_t days, char *out, size_t n) {
+    int y = 1978;
+    for (;;) {
+        const int dy = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? 366 : 365;
+        if (days < (uint32_t)dy || y > 2200) break;
+        days -= (uint32_t)dy; y++;
+    }
+    static const uint8_t ml[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+    int m = 0;
+    for (; m < 12; m++) {
+        const int d = ml[m] + (m == 1 && (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)));
+        if (days < (uint32_t)d) break;
+        days -= (uint32_t)d;
+    }
+    snprintf(out, n, "%04d-%02d-%02d", y % 10000, (m + 1) % 100, (int)(days % 31) + 1);
+}
+
+// b0, b1: two 512-byte buffers.
+static void adf_info(blk_fn rd, void *ctx, uint8_t *b0, uint8_t *b1, std::string &o) {
+    char line[96];
+    // The boot block is blocks 0-1: their longs summed with carry give ~0 when it boots.
+    if (!rd(ctx, 0, b0) || !rd(ctx, 1, b1)) { o += "The image cannot be read.\n"; return; }
+    uint32_t sum = 0;
+    for (int i = 0; i < 1024; i += 4) {
+        const uint32_t v = rd32(i < 512 ? b0 + i : b1 + i - 512), t = sum + v;
+        sum = t < sum ? t + 1 : t;
+    }
+    const bool boots = sum == 0xFFFFFFFFu;
+    const uint8_t dostype = b0[3];
+    const bool dos = !memcmp(b0, "DOS", 3) && dostype <= 7;
+    if (!dos) {
+        snprintf(line, sizeof line, "Format   : not AmigaDOS (%s)\n",
+                 boots ? "its own boot block: a game or demo loader" : "no boot block: a data disk");
+        o += line;
+        return;
+    }
+    static const char *const fs[] = { "OFS", "FFS", "OFS intl", "FFS intl", "OFS dircache", "FFS dircache", "OFS long names", "FFS long names" };
+    const bool ffs = dostype & 1;
+    snprintf(line, sizeof line, "Format   : AmigaDOS %s (DOS\\%u)%s\n", fs[dostype], dostype, boots ? ", bootable" : "");
+    o += line;
+    if (!rd(ctx, 880, b0) || rd32(b0) != 2 || rd32(b0 + 0x1FC) != 1 || !sum_ok(b0)) {
+        o += boots ? "Files    : none - the boot block loads the rest itself\n"
+                   : "Root     : not valid (an unformatted or damaged disk)\n";
+        return;
+    }
+    char date[24];
+    amiga_date(rd32(b0 + 0x1E4), date, sizeof date);
+    snprintf(line, sizeof line, "Volume   : %s\nCreated  : %s\n", bname(b0).c_str(), date);
+    o += line;
+    // Free space: the bitmap's set bits for blocks 2..1759.
+    const uint32_t bm = rd32(b0 + 0x13C);
+    if (bm && rd(ctx, bm, b1)) {
+        int nfree = 0;
+        for (int b = 2; b < 1760; b++) nfree += (rd32(b1 + 4 + (b - 2) / 32 * 4) >> ((b - 2) % 32)) & 1;
+        snprintf(line, sizeof line, "Used     : %d of 1758 blocks, %d KB free\n", 1758 - nfree, nfree * (ffs ? 512 : 488) / 1024);
+        o += line;
+    }
+    // The root directory, sorted, directories first.
+    std::vector<std::string> ents;              // "0name" dirs, "1name<tab>size" files
+    uint32_t s_dir = 0;
+    for (int i = 0; i < 72 && ents.size() < 40; i++) {
+        for (uint32_t h = rd32(b0 + 24 + 4 * i); h && h < 1760 && ents.size() < 40; h = rd32(b1 + 0x1F0)) {
+            if (!rd(ctx, h, b1)) break;
+            const std::string n = bname(b1);
+            if ((int32_t)rd32(b1 + 0x1FC) == 2) {
+                ents.push_back("0" + n);
+                if (name_eq(n, "s")) s_dir = h;
+            } else {
+                ents.push_back("1" + n + "\t" + std::to_string(rd32(b1 + 0x144)));
+            }
+        }
+    }
+    std::sort(ents.begin(), ents.end(), [](const std::string &x, const std::string &y) {
+        return strcasecmp(x.c_str(), y.c_str()) < 0;
+    });
+    o += "\nRoot:\n";
+    for (const std::string &e : ents) {
+        const size_t t = e.find('\t');
+        if (e[0] == '0') snprintf(line, sizeof line, "  %s/\n", e.c_str() + 1);
+        else snprintf(line, sizeof line, "  %-30s %7s\n", e.substr(1, t - 1).c_str(), e.c_str() + t + 1);
+        o += line;
+    }
+    if (ents.size() >= 40) o += "  ...\n";
+    // The start of s/startup-sequence: what the disk runs.
+    if (!s_dir || !rd(ctx, s_dir, b0)) return;
+    uint32_t ss = 0;
+    for (int i = 0; i < 72 && !ss; i++)
+        for (uint32_t h = rd32(b0 + 24 + 4 * i); h && h < 1760; h = rd32(b1 + 0x1F0)) {
+            if (!rd(ctx, h, b1)) break;
+            if (name_eq(bname(b1), "startup-sequence")) { ss = h; break; }
+        }
+    if (!ss || !rd(ctx, ss, b0)) return;
+    o += "\ns/startup-sequence:\n";
+    const uint32_t size = rd32(b0 + 0x144), nblk = rd32(b0 + 8);
+    std::string text;
+    for (uint32_t k = 0; k < nblk && k < 72 && text.size() < 900; k++) {
+        if (!rd(ctx, rd32(b0 + 24 + 4 * (71 - k)), b1)) break;
+        if (ffs) text.append((const char *)b1, 512);
+        else     text.append((const char *)b1 + 24, rd32(b1 + 12) <= 488 ? rd32(b1 + 12) : 488);
+    }
+    if (text.size() > size) text.resize(size);
+    int lines = 0;
+    for (size_t p = 0; p < text.size() && lines < 16; lines++) {
+        size_t e = text.find('\n', p);
+        if (e == std::string::npos) e = text.size();
+        std::string l = text.substr(p, e - p);
+        for (char &c : l) if ((unsigned char)c < 32 || (unsigned char)c > 126) c = ' ';
+        if (l.size() > 44) l.resize(44);
+        o += "  " + l + "\n";
+        p = e + 1;
+    }
+}
+
+void machine_disk_info(const char *path, char *out, unsigned size) {
+    std::string o;
+    uint8_t *buf = (uint8_t *)malloc(1024);
+    if (!buf) { snprintf(out, size, "Out of memory.\n"); return; }
+    FIL &f = s_job;
+    if (has_ext(path, ".dms")) {
+        // Unpacked into the slot after DF3's, where the PSRAM has one.
+        uint8_t *img = dms_slot(4);
+        if (!img) o = "A DMS archive: no spare PSRAM to unpack it for a look.\n";
+        else if (f_open(&f, path, FA_READ) != FR_OK) o = "The file cannot be opened.\n";
+        else {
+            const int err = dms_unpack(dms_fread, &f, img, s_dms_area);
+            f_close(&f);
+            if (err != DMS_OK) o = std::string("DMS: ") + dms_error(err) + "\n";
+            else { o = "A DMS archive, unpacked:\n"; adf_info(mem_blk, img, buf, buf + 512, o); }
+        }
+    } else if (f_open(&f, path, FA_READ) != FR_OK) {
+        o = "The file cannot be opened.\n";
+    } else {
+        if (f_size(&f) != DMS_ADF_SIZE) o = "Not an 880 KB ADF.\n";
+        else adf_info(file_blk, &f, buf, buf + 512, o);
+        f_close(&f);
+    }
+    free(buf);
+    snprintf(out, size, "%s", o.c_str());
 }
 
 bool machine_set_add(const char *path) {
@@ -383,6 +565,7 @@ bool machine_apply_drives(void) {
     for (int d = 1; d < 4; d++) {
         const bool want = d < n && d < s_set_count && s_set[d] != s_drv[0].path;
         if (want && s_drv[d].path == s_set[d]) continue;
+        if (!want && d < n && s_drv[d].manual) continue;     // a disk put there by hand stays
         eject_adf(d);
         if (want) insert_adf(d, s_set[d].c_str(), Config::df0_wp);
     }

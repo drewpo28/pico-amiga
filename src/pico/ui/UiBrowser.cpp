@@ -33,6 +33,7 @@
 #include <vector>
 
 #include "UiBrowser.h"
+#include "machine.h"
 #include "UiGfx.h"
 #include "UiFont.h"
 #include "UiDialog.h"
@@ -265,6 +266,7 @@ static bool extMatches(const string& name) {
 static const char* typeLabel(const string& lcext) {
     if (lcext == "adf")                                     return "Amiga disk";
     if (lcext == "dms")                                     return "Amiga disk (DMS)";
+    if (lcext == "m3u")                                     return "Disk set";      // PICO-AMIGA
     if (lcext == "adz" || lcext == "ipf")                   return "Disk (unsupported)";
     if (lcext == "rom" || lcext == "bin" || lcext == "a500" || lcext == "a600" ||
         lcext == "a1000" || lcext == "cdtv")                return "ROM image";
@@ -470,11 +472,15 @@ static void drawInfo() {
         // Nothing in the config tree is runnable: Enter there reads a text file and
         // does nothing at all for anything else, so it is advertised accordingly.
         { SYM_ENTER, dir ? "Open" : (view ? "View" : "Choose"), dir || pickMode() || view },
-        { "F1", "View",     all && !dir },
+        // PICO-AMIGA: F1 on a disk image tells what is on it (machine_disk_info).
+        { "F1", (lcExt(nm_) == "adf" || lcExt(nm_) == "dms") ? "Info" : "View", all && !dir },
+        // PICO-AMIGA: Win+F5's verb (pico-speccy's "To slot"): a disk image into a drive.
+        { "F5", "To drive", all && !dir && (lcExt(nm_) == "adf" || lcExt(nm_) == "dms") },
         { "F3", "Find",     true },
         { "F6", "Rename",   mng && !up },
         { "F7", "New dir",  mng },
         { "F8", "Delete",   mng && !up },
+        { "F9", "New ADF",  all },   // PICO-AMIGA: pico-speccy's New TRD
     };
     for (const auto& vb : verbs) {
         if (!vb.on) continue;
@@ -1110,6 +1116,18 @@ static string runLoop() {
             // its usual "close" meaning.
             if (all && k.vk == fabgl::VK_F1 && !onDir && s_visTotal) {
                 OSD::clickNoPause();
+                // PICO-AMIGA: a disk image: its volume, files and startup-sequence.
+                if (lcExt(name) == "adf" || lcExt(name) == "dms") {
+                    if (lcExt(name) == "dms") status("Unpacking...", -1);
+                    char* info = (char*)malloc(2048);
+                    if (info) {
+                        machine_disk_info((s_dir + name).c_str(), info, 2048);
+                        uiTextPage(name.c_str(), info);
+                        free(info);
+                    }
+                    drawAll();
+                    continue;
+                }
                 if (viewableExt(lcExt(name)) || looksLikeText(s_dir + name)) {
                     viewTextFile(s_dir + name, name);
                     drawAll();
@@ -1120,6 +1138,10 @@ static string runLoop() {
                 continue;
             }
             if (!all && k.vk == fabgl::VK_F1) return leave("");
+            // PICO-AMIGA: F5 on a disk image = the drive picker (runOpenFile).
+            if (all && k.vk == fabgl::VK_F5 && !onDir && s_visTotal &&
+                    (lcExt(name) == "adf" || lcExt(name) == "dms"))
+                return leave("P" + name);
             if (k.vk == fabgl::VK_ESCAPE) return leave("");
 
             if (mng && k.vk == fabgl::VK_F6 && !onUp && s_visTotal) {   // rename
@@ -1164,7 +1186,27 @@ static string runLoop() {
                 }
                 continue;
             }
-                        // ── typing: search input or first-letter jump ──────────────────────
+                        // PICO-AMIGA: F9 = a new blank ADF here (pico-speccy's New TRD), named
+            // after its volume.
+            if (all && k.vk == fabgl::VK_F9) {
+                OSD::clickNoPause();
+                string nn;
+                if (footerAsk("New ADF:", nn)) {
+                    if (nn.size() > 4 && lcExt(nn) == "adf") nn = nn.substr(0, nn.size() - 4);
+                    const string file = nn + ".adf";
+                    status("Creating ADF...", -1);
+                    if (!machine_format_adf((s_dir + file).c_str(), nn.c_str())) {
+                        uiToast("The disk cannot be created (exists?)", true, 2000);
+                        drawAll();
+                        continue;
+                    }
+                    s_goto = file;
+                    break;
+                }
+                continue;
+            }
+
+            // ── typing: search input or first-letter jump ──────────────────────
             if (k.ASCII >= 32 && k.ASCII < 127) {
                 if (s_search) {
                     if (s_query.size() < 24) {

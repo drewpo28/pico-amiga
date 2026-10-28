@@ -199,24 +199,20 @@ static bool df0SwapPick() {
 
 // Browse for an ADF (or DMS) and put it in DF0; true when a disk went in. Shared by the
 // menu row and the Ctrl+F12 hotkey (runDiskInsert).
-static bool df0PickAndInsert() {
-    // Start where the last disk came from, else in /amiga/.
-    static std::string dir;
-    if (dir.empty()) {
-        const std::string cur = machine_disk(0);
-        dir = cur.empty() ? std::string("/amiga/") : cur.substr(0, cur.find_last_of('/') + 1);
-        FILINFO fi;
-        if (dir != "/" && f_stat(dir.substr(0, dir.size() - 1).c_str(), &fi) != FR_OK) dir = "/";
-    }
-    const std::string r = browseFile(dir, "Insert into DF0", BROWSE_ADF);
-    if (r.size() < 2 || r[0] != 'R') return false;
-    const std::string path = dir + r.substr(1);
-    const size_t dot = path.find_last_of('.');
-    std::string ext = dot == std::string::npos ? "" : path.substr(dot);
-    for (char& c : ext) c = (char)(c | 0x20);
-    // An .m3u is a disk set (RetroArch's playlist): disk 1 goes in, the rest
-    // wait in Devices > Disks > DF0 (the right pane) / Ctrl+F12.
-    const bool set = ext == ".m3u";
+// A file's extension, lower case with its dot ("" when none).
+static std::string extOf(const std::string& path) {
+    const size_t dot = path.find_last_of('.'), slash = path.find_last_of('/');
+    if (dot == std::string::npos || (slash != std::string::npos && dot < slash)) return "";
+    std::string ext = path.substr(dot);
+    for (char& c : ext) c = (char)tolower((unsigned char)c);
+    return ext;
+}
+
+// An ADF or DMS into DF0, or an .m3u set (RetroArch's playlist: disk 1 goes in,
+// the rest wait in Devices > Disks > DF0, the right pane, and Ctrl+F12), as
+// Config keeps it. False, with a toast, when it cannot be opened.
+static bool insertDf0(const std::string& path) {
+    const bool set = extOf(path) == ".m3u";
     if (set ? !machine_load_set(path.c_str(), 0) : !machine_insert(0, path.c_str(), Config::df0_wp)) {
         gfxBegin();
         uiToast(set ? "The disk set's first disk cannot be opened"
@@ -232,10 +228,46 @@ static bool df0PickAndInsert() {
     return true;
 }
 
+static bool df0PickAndInsert() {
+    // Start where the last disk came from, else in /amiga/.
+    static std::string dir;
+    if (dir.empty()) {
+        const std::string cur = machine_disk(0);
+        dir = cur.empty() ? std::string("/amiga/") : cur.substr(0, cur.find_last_of('/') + 1);
+        FILINFO fi;
+        if (dir != "/" && f_stat(dir.substr(0, dir.size() - 1).c_str(), &fi) != FR_OK) dir = "/";
+    }
+    const std::string r = browseFile(dir, "Insert into DF0", BROWSE_ADF);
+    if (r.size() < 2 || r[0] != 'R') return false;
+    return insertDf0(dir + r.substr(1));
+}
+
 // Machine > Custom ROM: a Kickstart image from the card, then the machine to run
 // it on; a cold start, as any ROM change. The row shows the file while it runs.
 static const char* customRomLabel() {
     return Config::kick == "sd" ? machine_rom_name() : "";
+}
+
+// A Kickstart file from the card, then the machine to run it on: a cold start.
+// False (a toast for a wrong file) when nothing changed.
+static bool runRomFile(const std::string& path) {
+    FILINFO fi;
+    gfxBegin();
+    if (f_stat(path.c_str(), &fi) != FR_OK || (fi.fsize != 256 * 1024 && fi.fsize != 512 * 1024)) {
+        uiToast("Not a 256 or 512 KB Kickstart image", true, 2000);
+        gfxEnd();
+        return false;
+    }
+    static const char* const kMachines[] = { "A500", "A500+" };
+    const int m = uiPickList("Run it on", kMachines, 2, Config::machine);
+    gfxEnd();
+    if (m < 0) return false;
+    Config::kick = "sd";
+    Config::kick_file = path;
+    Config::machine = (uint8_t)m;
+    if (!machine_apply_kickstart()) { uiToast("That ROM cannot be read", true, 2000); return false; }
+    Config::save();
+    return true;
 }
 
 static void act_custom_rom() {
@@ -247,24 +279,70 @@ static void act_custom_rom() {
     }
     const std::string r = browseFile(dir, "Custom ROM", BROWSE_ROM);
     if (r.size() < 2 || r[0] != 'R') return;
-    const std::string path = dir + r.substr(1);
-    FILINFO fi;
-    gfxBegin();
-    if (f_stat(path.c_str(), &fi) != FR_OK || (fi.fsize != 256 * 1024 && fi.fsize != 512 * 1024)) {
-        uiToast("Not a 256 or 512 KB Kickstart image", true, 2000);
-        gfxEnd();
-        return;
+    if (runRomFile(dir + r.substr(1))) requestClose();   // back to the Amiga, booting it
+}
+
+// ── Win+F5: Open file (pico-speccy's F5 browser, for the Amiga) ────────────────
+// Every file on the card. Enter: an ADF / DMS goes into DF0, an .m3u loads as a
+// disk set, a Kickstart image runs as the Custom ROM. F5 on a disk image: the
+// drive picker - DF0..DF3 with what is in them; a drive past the connected ones
+// connects that many (Kickstart counts them at reset).
+static bool isDiskExt(const std::string& e) { return e == ".adf" || e == ".dms"; }
+static bool isRomExt(const std::string& e) {
+    return e == ".rom" || e == ".bin" || e == ".a500" || e == ".a600" || e == ".a1000" || e == ".cdtv";
+}
+
+static void driveRow(int i, char* out, size_t n) {
+    const char* p = machine_disk(i);
+    snprintf(out, n, "DF%d  %s%s", i, *p ? baseName(p) : "empty",
+             i >= machine_drives() ? "  (not connected)" : "");
+}
+
+// True when the disk went in.
+static bool toDrive(const std::string& path) {
+    char title[64];
+    snprintf(title, sizeof title, "Put %.40s into", baseName(path.c_str()));
+    const int d = uiPickListCb(title, 4, driveRow, 0, 44);
+    if (d < 0) return false;
+    if (d == 0) return insertDf0(path);
+    const bool more = d >= machine_drives();
+    if (more) {
+        char q[64];
+        snprintf(q, sizeof q, "Connect %d floppy drives?\nThe Amiga is reset.", d + 1);
+        if (!uiConfirm(q)) return false;
+        Config::drives = (uint8_t)(d + 1);
+        machine_apply_drives();
     }
-    static const char* const kMachines[] = { "A500", "A500+" };
-    const int m = uiPickList("Run it on", kMachines, 2, Config::machine);
-    gfxEnd();
-    if (m < 0) return;
-    Config::kick = "sd";
-    Config::kick_file = path;
-    Config::machine = (uint8_t)m;
-    if (!machine_apply_kickstart()) { uiToast("That ROM cannot be read", true, 2000); return; }
-    Config::save();
-    requestClose();                       // back to the Amiga, booting it
+    if (!machine_insert(d, path.c_str(), Config::df0_wp)) {
+        uiToast("Not an 880 KB ADF or DMS, or it cannot be opened", true, 2000);
+        return false;
+    }
+    if (more) { Config::save(); uiAmigaReset(); }
+    return true;
+}
+
+void runOpenFile() {
+    static std::string dir;
+    if (dir.empty()) {
+        const std::string cur = machine_disk(0);
+        dir = cur.empty() ? std::string("/amiga/") : cur.substr(0, cur.find_last_of('/') + 1);
+        FILINFO fi;
+        if (dir != "/" && f_stat(dir.substr(0, dir.size() - 1).c_str(), &fi) != FR_OK) dir = "/";
+    }
+    for (;;) {
+        const std::string r = browseFile(dir, "Open file", BROWSE_ALL);
+        if (r.size() < 2 || (r[0] != 'R' && r[0] != 'P')) return;
+        const std::string path = dir + r.substr(1);
+        const std::string ext = extOf(path);
+        gfxBegin();
+        bool done = false;
+        if (r[0] == 'P') done = toDrive(path);                  // F5: a disk image (the browser checked)
+        else if (isDiskExt(ext) || ext == ".m3u") done = insertDf0(path);
+        else if (isRomExt(ext)) done = runRomFile(path);
+        else uiToast("Not an Amiga disk, disk set or Kickstart", true, 2000);
+        gfxEnd();
+        if (done) return;                                       // back to the Amiga
+    }
 }
 
 static void act_df0_insert() {
@@ -332,6 +410,8 @@ static void page_hotkeys() {
         "Shift+F12   Reset the Amiga\n"
         "Alt+F12     Performance band: summary, breakdown, off\n"
         "Win+F1      System info: board, memory, chip temperature\n"
+        "Win+F5      Open file: disks, disk sets, Kickstarts; F5 on a\n"
+        "            disk picks the drive (DF0..DF3)\n"
         "Ctrl+J      Cursor keys as joystick on/off\n"
         "F1..F10     Amiga function keys\n"
         "\n"

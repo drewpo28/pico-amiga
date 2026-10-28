@@ -26,6 +26,10 @@ void runDiskInsert(int drive);
 // page, live at 1 Hz, outside the menu. Also Help > System info.
 void runSysInfo();
 
+// The Win+F5 hotkey (pico-speccy's F5 browser): every file on the card; Enter
+// opens a disk / disk set / Kickstart, F5 on a disk image picks the drive.
+void runOpenFile();
+
 // A yes/no question in THIS UI, asked from outside the menu while the machine
 // runs (the SD automount's "settings found on the card — reboot?"). Owns its
 // own gfx session like the game page above. `body` may carry '\n'. True = the
