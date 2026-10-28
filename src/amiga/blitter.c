@@ -75,14 +75,59 @@ AMIGA_HOT static uint32_t area_blit(void) {
     uint16_t aold = 0;
     bool z = true;
 
+    // Whole-screen clears and copies (minterm 00 / FF; F0 with A unshifted and
+    // unmasked; Hero Quest's language screen does a 20x1000 of each a frame):
+    // word by word in the order of the loop below, without its shifts, masks
+    // and byte swaps - chip RAM is big-endian on both sides.  BLTADAT ends up
+    // holding the last A word, as after the DMA.
+    if (useD && !useB && !useC && !dofill &&
+        (lf == 0x00 || lf == 0xFF || (lf == 0xF0 && useA && !ash && afwm == 0xFFFF && alwm == 0xFFFF))) {
+        uint8_t *cr = A.cfg.chip_ram;
+        const uint32_t cm = A.chip_mask & ~1u;
+        const bool copy = lf == 0xF0;
+        const uint16_t k = lf ? 0xFFFF : 0;
+        uint16_t any = 0;
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                uint16_t v = k;
+                if (copy) memcpy(&v, cr + (pt[BA] & cm), 2);
+                else if (useA && y == h - 1 && x == w - 1) adat = chip_rw(pt[BA]);
+                if (useA) pt[BA] += inc;
+                any |= v;
+                // A word that is already there is not written: its cache line
+                // stays clean and is not written back to PSRAM (Hero Quest's
+                // language screen copies and clears the same 40,000 words every
+                // frame, 89% of them unchanged).
+                uint8_t *d = cr + (pt[BD] & cm);
+                uint16_t o;
+                memcpy(&o, d, 2);
+                if (o != v) memcpy(d, &v, 2);
+                pt[BD] += inc;
+                if (copy && y == h - 1 && x == w - 1) adat = __builtin_bswap16(v);
+            }
+            if (useA) pt[BA] += desc ? -mod[BA] : mod[BA];
+            pt[BD] += desc ? -mod[BD] : mod[BD];
+        }
+        zero = !any;
+        int ch = useA + useD; if (ch < 2) ch = 2;
+        return (uint32_t)(w * h * ch);
+    }
+
+    // A and C words the minterm does not look at are not read (Hero Quest
+    // clears with A on and minterm 00), except the last: BLTxDAT ends up as
+    // after the DMA.  B is always read, its shifter state outlives the blit.
+    const bool needA = (lf >> 4) != (lf & 15);
+    const bool needC = ((lf >> 1) & 0x55) != (lf & 0x55);
     for (int y = 0; y < h; y++) {
         bool carry = (con1 & 0x0004) != 0;
         uint16_t mask = afwm;
+        const bool last_row = y == h - 1;
         for (int x = 0; x < w; x++) {
             if (x == w - 1) mask &= alwm;
-            if (useA) { adat = chip_rw(pt[BA]); pt[BA] += inc; }
+            const bool last = last_row && x == w - 1;
+            if (useA) { if (needA || last) adat = chip_rw(pt[BA]); pt[BA] += inc; }
             if (useB) { bdat = chip_rw(pt[BB]); pt[BB] += inc; }
-            if (useC) { cdat = chip_rw(pt[BC]); pt[BC] += inc; }
+            if (useC) { if (needC || last) cdat = chip_rw(pt[BC]); pt[BC] += inc; }
             uint16_t am = adat & mask;
             uint16_t ahold = desc ? shift_desc(am, aold, ash) : shift_asc(am, aold, ash);
             aold = am;
@@ -93,7 +138,10 @@ AMIGA_HOT static uint32_t area_blit(void) {
             uint16_t d = minterm(ahold, bhold, cdat, lf);
             if (dofill) d = fill(d, &carry, excl);
             if (d) z = false;
-            if (useD) { chip_ww(pt[BD], d); pt[BD] += inc; }
+            if (useD) {                     // as above: an unchanged word is not written
+                if (chip_rw(pt[BD]) != d) chip_ww(pt[BD], d);
+                pt[BD] += inc;
+            }
             mask = 0xFFFF;
         }
         if (useA) pt[BA] += desc ? -mod[BA] : mod[BA];
