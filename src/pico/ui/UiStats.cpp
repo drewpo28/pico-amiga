@@ -12,7 +12,8 @@
 //                       (100% = exactly the 20 ms of a PAL frame)
 //   FPS 50.0  378MHz    emulated frames per wall-clock second, the CPU clock
 //   DF0 TR40.1 SEC05 RD the drive (pico-speccy's TR/SEC line): cylinder.head, the
-//                       sector under the head (-- in the gap), RD / WR = disk DMA,
+//                       sector the last disk DMA started at (-- for the gap),
+//                       RD / WR = disk DMA,
 //                       ON = motor, refreshed every 5 frames
 //
 // The drive icon (pico-speccy's FDD lamp, Video > Disk activity icon): a floppy

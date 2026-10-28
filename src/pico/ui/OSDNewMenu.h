@@ -30,6 +30,10 @@ void runSysInfo();
 // opens a disk / disk set / Kickstart, F5 on a disk image picks the drive.
 void runOpenFile();
 
+// The Win+F11 hotkey (pico-speccy's F12): reboot the board, asked first (Yes
+// is the default).
+void runRebootAsk();
+
 // A yes/no question in THIS UI, asked from outside the menu while the machine
 // runs (the SD automount's "settings found on the card — reboot?"). Owns its
 // own gfx session like the game page above. `body` may carry '\n'. True = the

@@ -6,16 +6,17 @@
 // VK_DPAD_* / VK_MENU_* into the same queue.  input_frame() drains that queue
 // into the Amiga once per frame:
 //   - keys -> Amiga raw keycodes (amiga_key); PC keys without an Amiga twin:
-//     Insert/F11 -> Help, Home/End -> keypad ( ), PgUp/PgDn -> right/left Amiga,
+//     Insert -> Help, Home/End -> keypad ( ), PgUp/PgDn -> right/left Amiga,
 //     Win -> left/right Amiga, Menu -> right Amiga
 //   - VK_DPAD_* (pads; cursor keys + Left Ctrl while CursorAsJoy) -> joystick in
 //     game port 2; cursor keys are not passed on as keys while CursorAsJoy is on
 //   - the HID mouse -> port 1 mouse
 // Hotkeys (WinUAE's layout): F12 opens the menu (ui/, from pico-speccy), Ctrl+F12
 // the DF0 disk browser, Shift+F12 resets the Amiga; Ctrl+J toggles CursorAsJoy (as
-// on pico-speccy). Win+F1 is the System info page (pico-speccy's Alt+F1: Alt is
+// on pico-speccy). F11 resets the Amiga too, Win+F11 reboots the board (asked;
+// pico-speccy's F12). Win+F1 is the System info page (pico-speccy's Alt+F1: Alt is
 // the Amiga's), Win+F5 the Open file browser (pico-speccy's F5), Win+F8 the
-// performance band (pico-speccy's F8; it runs over the picture, the Amiga runs on). F1..F10 are the Amiga's, F11 and Insert its Help key.
+// performance band (pico-speccy's F8; it runs over the picture, the Amiga runs on). F1..F10 are the Amiga's, Insert its Help key.
 #include "input.h"
 #include <string.h>
 #include "pico/stdlib.h"
@@ -365,7 +366,6 @@ static uint8_t vk_to_amiga(fabgl::VirtualKey vk) {
     case VK_DOWN:         return 0x4D;
     case VK_RIGHT:        return 0x4E;
     case VK_LEFT:         return 0x4F;
-    case VK_F11:          return 0x5F;   // Help
     case VK_INSERT:       return 0x5F;   // Help
     case VK_HOME:         return 0x5A;   // keypad (
     case VK_END:          return 0x5B;   // keypad )
@@ -439,6 +439,20 @@ void input_frame(void) {
             else      nm::run();
             menu_open = false;
             kbd.emptyVirtualKeyQueue();
+            continue;
+        }
+        // F11: reset the Amiga (as Shift+F12); Win+F11: reboot the board, asked.
+        if (item.vk == fabgl::VirtualKey::VK_F11) {
+            if (!item.down) continue;
+            if (kbd.isVKDown(fabgl::VirtualKey::VK_LGUI) || kbd.isVKDown(fabgl::VirtualKey::VK_RGUI)) {
+                release_amiga_keys();
+                menu_open = true;
+                nm::runRebootAsk();
+                menu_open = false;
+                kbd.emptyVirtualKeyQueue();
+            } else {
+                reset_req = true;
+            }
             continue;
         }
         // Win+F8: the performance band, over the running Amiga.

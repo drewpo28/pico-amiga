@@ -21,7 +21,8 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   `PICO_AMIGA_SHOT=f.bmp:N` saves output frame N; `SDL_VIDEODRIVER=offscreen` runs it
   headless. `build-host/pico-amiga-host` remains the headless test bench.
 - `src/pico/ui/` is pico-speccy's nm:: menu (F12, WinUAE's key: F1..F10 are the
-  Amiga's; Ctrl+F12 = DF0 browser, Shift+F12 = reset; Win+F1 = System info, the
+  Amiga's; Ctrl+F12 = DF0 browser, Shift+F12 or F11 = reset, Win+F11 = reboot the
+  board, asked with Yes the default - pico-speccy's F12; Win+F1 = System info, the
   board/memory/temperature page, pico-speccy's Alt+F1 - Alt is the Amiga's; Win+F5
   = Open file, pico-speccy's F5 browser: Enter opens a disk / .m3u / Kickstart, F5
   on a disk picks DF0..DF3, F9 makes a blank ADF, F1 on a disk shows what is on it

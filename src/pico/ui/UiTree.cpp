@@ -403,11 +403,20 @@ static void act_reboot() {
     if (uiConfirm("Reboot the board?", "Reboot", false)) OSD::esp_hard_reset();
 }
 
+void runRebootAsk() {
+    gfxBegin();
+    const bool yes = uiConfirm("Reboot the board?", "Reboot", true);
+    gfxEnd();
+    if (yes) OSD::esp_hard_reset();
+}
+
 static void page_hotkeys() {
     uiTextPage("Hotkeys",
         "F12         This menu (Esc goes back, F12 closes)\n"
         "Ctrl+F12    Insert a disk into DF0 (an .m3u set: swap disks)\n"
+        "F11         Reset the Amiga (as Shift+F12)\n"
         "Shift+F12   Reset the Amiga\n"
+        "Win+F11     Reboot the board (asked, Yes by default)\n"
         "Win+F1      System info: board, memory, chip temperature\n"
         "Win+F5      Open file: disks, disk sets, Kickstarts; F5 on a\n"
         "            disk picks the drive (DF0..DF3)\n"
@@ -422,7 +431,7 @@ static void page_hotkeys() {
         "\n"
         "Amiga keys on a PC keyboard:\n"
         "  Win / PgDn / PgUp   left / left / right Amiga\n"
-        "  F11, Insert         Help\n"
+        "  Insert              Help\n"
         "  Home, End           keypad ( )\n"
         "\n"
         "Mouse: port 1. A USB/XInput/NES pad drives port 2.");

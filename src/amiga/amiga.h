@@ -157,7 +157,7 @@ void amiga_set_drives(int n);
 typedef struct {
     int8_t   drive;          // -1: none yet
     uint8_t  cyl, side;
-    uint8_t  sector;         // 0..10 under the head, 11 = the gap after them
+    uint8_t  sector;         // 0..10: where the last DMA started; 11 = the gap after them
     bool     motor;
     uint8_t  dma;            // 0 none, 1 read, 2 write (running now)
     bool     wrote;          // the last DMA was a write

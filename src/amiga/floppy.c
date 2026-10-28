@@ -69,6 +69,7 @@ static int      dma_drive;
 static uint32_t dma_lines_left;
 static uint32_t dma_end_frame;           // A.frame when the last DMA ended (amiga_floppy_status)
 static int      last_drive = -1;
+static uint8_t  last_sector = 11;        // where the last DMA started (amiga_floppy_status)
 static uint32_t index_lines;
 
 // ---- MFM --------------------------------------------------------------------
@@ -182,6 +183,7 @@ static void dma_start_(void) {
     if (sel < 0 || !drv[sel].inserted || !drv[sel].motor) {
         return;   // nothing spinning: the transfer never completes, as on hardware
     }
+    last_sector = (uint8_t)(rot_pos % TRACK_WORDS / SECTOR_WORDS);
     if (dma_write) return;              // data decoded at completion
     ensure_track(sel);
     uint32_t pos = rot_pos % TRACK_WORDS;
@@ -193,6 +195,7 @@ static void dma_start_(void) {
         pos = (pos + i + 1) % TRACK_WORDS;
         amiga_set_intreq(INTF_DSKSYNC);
     }
+    last_sector = (uint8_t)(pos / SECTOR_WORDS);
     for (uint32_t n = 0; n < words; n++) {
         chip_ww(dskpt + n * 2, track[pos]);
         if (++pos == TRACK_WORDS) pos = 0;
@@ -280,7 +283,7 @@ void floppy_status(amiga_floppy_t *st) {
     st->drive = (int8_t)d;
     st->cyl = d >= 0 ? drv[d].cyl : 0;
     st->side = (uint8_t)side;
-    st->sector = (uint8_t)(rot_pos % TRACK_WORDS / SECTOR_WORDS);   // 11: the gap
+    st->sector = last_sector;                    // where the last DMA started; 11: the gap
     st->motor = d >= 0 && drv[d].motor;
     st->dma = dma_on ? (dma_write ? 2 : 1) : 0;
     st->wrote = dma_write;
