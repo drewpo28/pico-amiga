@@ -40,7 +40,7 @@ def main():
         rows.append((order.get(t, len(order)), mod, name + MODULES.get(mod, ""), hdmi, f))
     rows.sort()
     print("## Downloads\n")
-    print("| Board | HDMI | Firmware |")
+    print("| Board | HDMI / VGA | Firmware |")
     print("|---|---|---|")
     for _, _, name, hdmi, f in rows:
         print(f"| {name} | {hdmi} | [{f}](https://github.com/{repo}/releases/download/{tag}/{f}) |")
