@@ -9,7 +9,7 @@
 #endif
 
 static bool vga;
-static int  vmode = VM_720x576_50, vhpos;
+static int  vmode = VM_640x480_60, vhpos;
 video_timing_t video_cur_timing;
 video_window_t video_cur_window;
 
@@ -34,7 +34,7 @@ int video_out(void) {
 
 int video_set_mode(int vm, int mhz) {
     if (!video_mode_timing(vm, video_out(), mhz, &video_cur_timing)) {
-        vm = VM_720x576_50;
+        vm = VM_640x480_60;
         video_mode_timing(vm, video_out(), mhz, &video_cur_timing);
     }
     vmode = vm;

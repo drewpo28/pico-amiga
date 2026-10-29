@@ -12,6 +12,7 @@
 #include <string.h>
 #include "tmds_pio.h"
 #include "tmds_lut.h"
+#include "video_modes.h"
 
 static int fails;
 #define CHECK(c, ...) do { if (!(c)) { if (fails++ < 20) { printf(__VA_ARGS__); printf("\n"); } } } while (0)
@@ -112,7 +113,7 @@ static int lut_check(const uint32_t tab_r[16][4], const uint32_t tab_gb[256][4],
     tl_init(&t, lut, tab_r, tab_gb, mix, terc4, pre, post, lead, fixed_nib, HDMI_PK_N);
 
     static uint32_t want[2 * 832], got[2 * 832];
-    static uint16_t items[TL_LINE];
+    static uint16_t items[TL_LINE_MAX];
     static amiga_row_t row;
     int lines = 0;
     for (int n = 0; n < 3000; n++, lines++) {
@@ -130,16 +131,88 @@ static int lut_check(const uint32_t tab_r[16][4], const uint32_t tab_gb[256][4],
         else { uint32_t w[2]; tmds_ctrl_words(vsync ? 0 : 1, 1, w); for (int x = 112; x < 832; x++) { want[2 * x] = w[0]; want[2 * x + 1] = w[1]; } }
 
         int used = 0;
-        tl_blank(items, vsync, active);
-        if (id >= 0) tl_island_fixed(items, id, vsync); else tl_island_audio(&t, items, page, &used, nib);
-        if (active) tl_active(&t, items, page, &used, &row, sub); else tl_active_blank(items, vsync);
+        tl_blank(&t, items, vsync, active);
+        if (id >= 0) tl_island_fixed(&t, items, id, vsync); else tl_island_audio(&t, items, page, &used, nib);
+        if (active) tl_active(&t, items, page, &used, &row, sub); else tl_active_blank(&t, items, vsync);
         CHECK(used <= TL_PAGE, "line %d: %d entries", n, used);
-        for (int s = 0; s < TL_LINE; s++) {
+        for (int s = 0; s < t.L.line; s++) {
             CHECK(items[s] < TL_ENTRIES, "line %d slot %d: entry %u", n, s, items[s]);
             memcpy(got + 4 * s, lut[items[s]], 16);
         }
         for (int i = 0; i < 2 * 832; i++)
             if (got[i] != want[i]) { CHECK(0, "line %d (mode %d vs %d act %d id %d): word %d (px %d)", n, mode, vsync, active, id, i, i / 2); break; }
+    }
+    return lines;
+}
+
+// Every Video > Mode the PIO HDMI runs, at every CPU clock, laid out from its
+// timing as video_pio.c does: the picture's slots carry what the 720 line
+// carries from column col, the slots around it black, the blanking the control
+// and island entries in their places (the island inside hsync, the lead in the
+// back porch).
+static int layout_check(const uint32_t tab_r[16][4], const uint32_t tab_gb[256][4], const uint32_t mix[3][16][16][4]) {
+    static tl_entry_t lut[TL_ENTRIES];
+    static tl_t t;
+    tl_init(&t, lut, tab_r, tab_gb, mix, terc4, pre, post, lead, fixed_nib, HDMI_PK_N);
+    static const int vms[] = { VM_640x480_60, VM_720x480_60, VM_720x576_50, VM_800x600_X2, VM_800x600_60 };
+    static const int mhzs[] = { 252, 378, 504 };
+    tl_layout_t layouts[sizeof vms / sizeof vms[0] * 3];
+    int nl = 0;
+    for (unsigned v = 0; v < sizeof vms / sizeof vms[0]; v++)
+        for (unsigned m = 0; m < 3; m++) {
+            video_timing_t tm;
+            if (!video_mode_timing(vms[v], VIDEO_OUT_PIO, mhzs[m], &tm)) continue;
+            video_window_t w;
+            video_mode_window(&tm, 0, &w);
+            const int h_total = tm.h_fp + tm.h_sync + tm.h_bp + tm.h_active;
+            CHECK(!(tm.h_fp & 1) && !(tm.h_sync & 1) && !(tm.h_bp & 1) && !(tm.h_active & 1) && !(w.x & 1),
+                  "mode %d at %d: odd pixel counts", vms[v], mhzs[m]);
+            layouts[nl] = (tl_layout_t){ h_total / 2, tm.h_fp / 2, (tm.h_fp + tm.h_sync) / 2,
+                                         (h_total - tm.h_active) / 2, w.x / 2, w.cols, w.col };
+            const tl_layout_t *L = &layouts[nl++];
+            CHECK(L->line <= TL_LINE_MAX && L->fp + TL_ISLAND_N <= L->sync_end && L->sync_end + 5 <= L->blank &&
+                  L->pic_x + L->pic_w <= L->line - L->blank,
+                  "mode %d at %d: layout %d %d %d %d %d %d", vms[v], mhzs[m], L->line, L->fp, L->sync_end, L->blank, L->pic_x, L->pic_w);
+        }
+    static uint32_t want[2 * 832];
+    static uint16_t items[TL_LINE_MAX];
+    static amiga_row_t row;
+    uint32_t black[4];
+    tl_doubled(tab_r, tab_gb, black, 0);
+    int lines = 0;
+    for (int li = 0; li < nl; li++) {
+        t.L = layouts[li];
+        const tl_layout_t *L = &t.L;
+        for (int n = 0; n < 300; n++, lines++) {
+            const int mode = n % 3, sub = (n >> 2) & 1, page = n & 3;
+            const bool picture = n % 4 != 0;
+            random_row(&row, mode);
+            for (int s = 0; s < L->line; s++) items[s] = 0xFFFF;
+            int used = 0;
+            uint8_t nib[32][3];
+            for (int k = 0; k < 32; k++) for (int l = 0; l < 3; l++) nib[k][l] = (uint8_t)(rnd() & 15);
+            tl_blank(&t, items, false, true);
+            tl_island_audio(&t, items, page, &used, nib);
+            tl_active_black(&t, items, picture);
+            if (picture) tl_active(&t, items, page, &used, &row, sub);
+            CHECK(used <= TL_PAGE, "layout %d line %d: %d entries", li, n, used);
+            old_active(want, &row, sub, tab_r, tab_gb, mix);
+            for (int s = 0; s < L->line; s++) {
+                CHECK(items[s] < TL_ENTRIES, "layout %d line %d slot %d: entry %u", li, n, s, items[s]);
+                if (items[s] >= TL_ENTRIES) break;
+                const uint32_t *e = lut[items[s]];
+                const int x = s - L->blank - L->pic_x;
+                if (s < L->blank) continue;
+                if (!picture || x < 0 || x >= L->pic_w) {
+                    CHECK(!memcmp(e, black, 16), "layout %d line %d slot %d: not black", li, n, s);
+                } else {
+                    CHECK(!memcmp(e, want + 4 * (L->col + x), 16), "layout %d line %d slot %d: picture", li, n, s);
+                }
+            }
+            CHECK(items[L->fp] == TL_E_PRE(0, 0) && items[L->blank - 5] == TL_E_LEAD(0) &&
+                  items[L->sync_end - 1] == TL_E_CTRL(0, 0) && items[L->sync_end] == TL_E_CTRL(0, 1),
+                  "layout %d: blanking", li);
+        }
     }
     return lines;
 }
@@ -220,9 +293,11 @@ int main(void) {
         }
 
     const int lines = lut_check(tab_r, tab_gb, mix);
+    const int layout_lines = layout_check(tab_r, tab_gb, mix);
 
     if (fails) { printf("tmds_test: %d failures\n", fails); return 1; }
     printf("tmds_test: 4096 doubled colours, 3x256 mixed pairs (2nd within +-%d), 4 control states,"
-           " %d lookup lines OK; capture mode: single characters, %d lookup lines OK\n", maxdev, lines, lines_capture);
+           " %d lookup lines OK, %d in the Video > Mode layouts; capture mode: single characters,"
+           " %d lookup lines OK\n", maxdev, lines, layout_lines, lines_capture);
     return 0;
 }

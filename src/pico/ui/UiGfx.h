@@ -86,6 +86,8 @@ void fill(int x, int y, int w, int h, UiColor c);
 void frame(int x, int y, int w, int h, UiColor c);
 // Fill with a raw 0x0RGB colour instead of a UI colour.
 void fillRgb(int x, int y, int w, int h, uint16_t rgb444);
+// One row of raw 0x0RGB pixels (Help > About's logo).
+void rowRgb(int x, int y, const uint16_t* src, int w);
 
 // Transparent glyph run. Returns the advance in logical pixels.
 int  text(int x, int y, const char* s, UiColor ink);

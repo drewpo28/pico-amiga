@@ -472,35 +472,42 @@
 // "\x02<letter>" switches the ink (see UiDialog.cpp textPageRun): W white,
 // M muted, G green, Y yellow, S sky, R red. Letters avoid hex digits on purpose.
 #define TXT_HELP_ABOUT_BODY \
-    "ZX Spectrum family emulator for RP2350\n" \
-    "boards (Murmulator, Pico PC, Pico DV).\n" \
+    "Amiga 500 / 500+ (OCS / ECS, PAL)\n" \
+    "emulator for RP2350 boards with PSRAM\n" \
+    "(Murmulator, Pico PC, Pico DV).\n" \
     "\n" \
-    "\x02G(C) 2025-2026 Drew\n" \
-    "New UI, features and ongoing\n" \
-    "development since November 2025.\n" \
+    "\x02G(C) 2026 Drew\x02T and \x02GClaude\x02T (Anthropic)\n" \
+    "Written together: design, emulation,\n" \
+    "firmware and testing.\n" \
     "\n" \
-    "Based on \x02WPico-Spec\x02T by \x02SMike V73\x02T -\n" \
-    "the original port to the Raspberry\n" \
-    "Pico / Pico 2 (Murmulator) platform.\n" \
-    "\n" \
-    "Pico-Spec builds on \x02WESPectrum\x02T:\n" \
-    "(C) 2023-24 \x02YVictor Iborra \"Eremus\"\n" \
-    "    2023    \x02YDavid Crespo \"dcrespo3d\"\n" \
-    "Based on ZX-ESPectrum-Wiimote\n" \
-    "(C) 2020-23 \x02YDavid Crespo\x02T, inspired by\n" \
-    "projects from \x02YPete Todd\x02T, \x02YRampa & Queru\x02T.\n" \
+    "In the family of \x02WPico-Speccy\x02T: its\n" \
+    "drivers, menu, board code and the\n" \
+    "PC host build are reused here.\n" \
     "\n" \
     "\x02WComponents:\n" \
-    " \x02MZ80 core     \x02GJ.L. Sanchez\n" \
-    " \x02MVGA/HDMI     \x02SMurmulator community\n" \
-    " \x02MAY-3-8912    \x02YA. Sashnov\n" \
-    " \x02MPS/2 driver  \x02GFabrizio di Vittorio\n" \
-    " \x02MUSB host     \x02STinyUSB, Rumbledethumps\n" \
+    " \x02M68000 core   \x02YMusashi\x02T, Karl Stenerud\n" \
+    " \x02MDMS unpack   \x02YxDMS\x02T, A. Rodrigues de la\n" \
+    "              Rocha, Heikki Orsila\n" \
+    " \x02MFile system  \x02YFatFs\x02T, ChaN\n" \
+    " \x02MSD card      \x02SElehobica\n" \
+    " \x02MUSB host     \x02STinyUSB\x02T, Ha Thach\n" \
+    " \x02MXInput pads  \x02SRyan Wendland\x02T (usb64)\n" \
+    " \x02MKeyboard     \x02SFabrizio Di Vittorio\x02T (FabGL)\n" \
+    " \x02MPS/2, VGA    \x02SMurmulator community\n" \
+    " \x02MI2S audio    \x02SVincent Mistler\n" \
+    " \x02MHSTX video   \x02SRaspberry Pi\x02T pico-examples\n" \
     "\n" \
-    "Thanks to the authors of \x02WUnrealSpeccy\n" \
-    "\x02Tand \x02WZXMAK2\x02T emulators, the collaborators,\n" \
-    "testers and Patreons of the \x02WESPectrum\n" \
-    "\x02Tproject, and to the \x02WMurmulator\x02T community.\n"
+    "\x02WReferences:\n" \
+    " Amiga Hardware Reference Manual;\n" \
+    " \x02WvAmiga\x02T (Dirk W. Hoffmann) and\n" \
+    " \x02WWinUAE\x02T (Toni Wilen) where it is vague.\n" \
+    " Tested with \x02WAROS\x02T and \x02WDiagROM\x02T.\n" \
+    "\n" \
+    "Kickstart (C) Commodore-Amiga, Cloanto.\n" \
+    "Amiga is a trademark of its owners.\n" \
+    "\n" \
+    "Licence: GPL-3.0; every component\n" \
+    "keeps its own.\n"
 
 // ── misc ───────────────────────────────────────────────────────────────────────
 #define TXT_TODO_TITLE      "Not implemented yet"

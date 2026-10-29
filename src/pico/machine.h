@@ -39,6 +39,10 @@ const char *machine_rom_name(void);
 bool machine_insert(int drive, const char *path, bool write_protect);
 void machine_eject(int drive);
 const char *machine_disk(int drive);   // card path, "" when empty
+bool machine_disk_ro(int drive);       // the Amiga cannot write the disk in it
+bool machine_disk_dms(int drive);      // it is a DMS (unpacked, read-only)
+// The disk in `drive` again, write-protected or not (a disk set stays loaded).
+bool machine_write_protect(int drive, bool on);
 // At boot: put Config::df0 back (or the legacy /amiga/df0.adf); an .m3u there
 // brings its disk set back with disk Config::df0_disk in the drive.
 void machine_restore_disks(void);

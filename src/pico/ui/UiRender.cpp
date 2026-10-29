@@ -304,12 +304,20 @@ static void drawLeftRow(int visRow) {
     }
 
     const Node& n = lv.nodes[lv.vis[idx]];
+    if (n.kind == K_HEADING) {               // PICO-AMIGA: a group's name, never selected
+        textClip(LY.lx + LY.pad, y + 1, LY.lw - 2 * LY.pad, n.label, C_ACCENT);
+        return;
+    }
     const bool en = nodeEnabled(n);
     const UiColor ink = !en ? C_DISABLED : (sel ? C_WHITE : C_TEXT);
 
     const bool isSub = (n.kind == K_SUB || n.kind == K_DYNAMIC);
     const char* val  = isSub ? nullptr : nodeValueLabel(n);
-    const int rightW = isSub ? chevronW() : ((val && *val) ? textWidth(val) : 0);
+    int rightW = isSub ? chevronW() : ((val && *val) ? textWidth(val) : 0);
+    // PICO-AMIGA: as the dynamic rows, the value never takes more than half the
+    // row, so a disk's long file name cannot push "DF0" out of it.
+    const int maxv = (LY.lw - 2 * LY.pad) / 2;
+    if (!isSub && rightW > maxv) rightW = maxv;
 
     textClip(LY.lx + LY.pad, y + 1,
              LY.lw - 2 * LY.pad - rightW - (rightW ? LY.pad : 0), n.label, ink);
@@ -317,8 +325,8 @@ static void drawLeftRow(int visRow) {
         chevron(LY.lx + LY.lw - LY.pad - chevronW(), y + LY.row_h / 2 - 3,
                 !en ? C_DISABLED : (sel ? C_WHITE : C_DISABLED));
     else if (val && *val)
-        text(LY.lx + LY.lw - LY.pad - rightW, y + 1, val,
-             !en ? C_DISABLED : (sel ? C_WHITE : C_TEXT_DIM));
+        textClip(LY.lx + LY.lw - LY.pad - rightW, y + 1, rightW, val,
+                 !en ? C_DISABLED : (sel ? C_WHITE : C_TEXT_DIM));
 }
 
 // PICO-AMIGA: no palette preview rows (pico-speccy's Video > Palette swatches).
@@ -333,7 +341,7 @@ static bool drawPalPreviewRow(const Node*, int, int) { return false; }
 // parameter (UiDesc.cpp). It describes the option under the cursor while the right
 // pane has focus, the chosen one otherwise. No lines = no block.
 static int descFor(const Node* n, DescLine* out) {
-    if (!n || curLevel().dyn || (n->kind != K_RADIO && n->kind != K_BOOL)) return 0;
+    if (!n || curLevel().dyn || (n->kind != K_RADIO && n->kind != K_BOOL && n->kind != K_PICK)) return 0;
     uint8_t cnt; const Option* os = nodeOptions(*n, cnt);
     if (S.focus == FOCUS_RIGHT && S.rsel < cnt)
         return describe(*n, os[S.rsel].value, out, DESC_MAX_LINES);
@@ -426,15 +434,26 @@ static void drawRightRow(int visRow) {
             const Option& o = os[idx];
             const bool on = (nodeValue(*n) == o.value);
             // Marker on the right, as in the design: hollow ring, filled when chosen.
-            radio(LY.rx + LY.rw - LY.pad - radioW(), y + (LY.row_h - 5) / 2, on,
-                  sel ? C_WHITE : C_DISABLED, C_ACCENT);
+            // PICO-AMIGA: a pick list marks only its current row - its other rows
+            // are verbs (Devices > Disks > DFn), not choices.
+            if (n->kind != K_PICK || on)
+                radio(LY.rx + LY.rw - LY.pad - radioW(), y + (LY.row_h - 5) / 2, on,
+                      sel ? C_WHITE : C_DISABLED, C_ACCENT);
             textClip(LY.rx + LY.pad, y + 1, LY.rw - 3 * LY.pad - radioW(), o.label,
                      sel ? C_WHITE : (on ? C_TEXT : C_TEXT_DIM));
             break;
         }
         case K_SUB: {
             const Node* c = subVisibleChild(n, idx);
-            if (c) textClip(LY.rx + LY.pad, y + 1, LY.rw - 2 * LY.pad, c->label, C_TEXT_DIM);
+            if (!c) break;
+            // PICO-AMIGA: a setting's value beside it (Video > Output / Picture),
+            // so a group shows what is set in it without being entered.
+            const bool cSub = c->kind == K_SUB || c->kind == K_DYNAMIC;
+            const char* cv = cSub ? nullptr : nodeValueLabel(*c);
+            int vw = (cv && *cv) ? textWidth(cv) : 0;
+            if (vw > (LY.rw - 2 * LY.pad) / 2) vw = (LY.rw - 2 * LY.pad) / 2;
+            textClip(LY.rx + LY.pad, y + 1, LY.rw - 2 * LY.pad - vw - (vw ? LY.pad : 0), c->label, C_TEXT_DIM);
+            if (vw) textClip(LY.rx + LY.rw - LY.pad - vw, y + 1, vw, cv, C_DISABLED);
             break;
         }
         case K_INT: {

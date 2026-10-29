@@ -102,6 +102,9 @@ void uiMarkupLine(int x, int y, int maxw, const char* s, int len);
 // showTextDialog. Also installed as OSD::textPageOverride while the new UI is
 // on screen, so every classic info page routes here automatically.
 void uiTextPage(const char* title, const char* text);
+// The same with a 0x0RGB picture (w x h framebuffer pixels) centred above the
+// text, scrolling with it (Help > About's logo, after pico-speccy's About).
+void uiPicturePage(const char* title, const uint16_t* pic, int w, int h, const char* text);
 
 // Live variant: `refresh` is called every `period_ms` while open and may return
 // the (re)built text — the page reparses and repaints, staying pinned to the tail

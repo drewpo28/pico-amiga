@@ -21,7 +21,7 @@ target_include_directories(m68kdis PRIVATE ${ROOT}/external/musashi ${ROOT}/exte
 target_compile_options(m68kdis PRIVATE -w)
 
 # PIO TMDS word tables (src/pico/tmds_pio.h is plain C), decoded like a receiver would.
-add_executable(tmds_test tests/tmds_test.c)
+add_executable(tmds_test tests/tmds_test.c ${ROOT}/src/pico/video_modes.c)
 target_include_directories(tmds_test PRIVATE ${ROOT}/src/pico ${ROOT}/src/amiga)
 target_compile_options(tmds_test PRIVATE -Wall -Wextra)
 
@@ -62,6 +62,7 @@ if(SDL2_FOUND)
         ${ROOT}/src/pico/ui/UiStage.cpp
         ${ROOT}/src/pico/ui/UiTree.cpp
         ${ROOT}/src/pico/ui/UiDesc.cpp
+        ${ROOT}/src/pico/ui/UiLogo.c
         ${ROOT}/src/pico/ui/UiPlatform.cpp
         ${ROOT}/src/pico/ui/UiStats.cpp)
     set_source_files_properties(${ROOT}/src/pico/main.c PROPERTIES COMPILE_DEFINITIONS main=firmware_main)

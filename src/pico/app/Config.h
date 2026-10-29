@@ -31,14 +31,14 @@ public:
     // Sound
     static uint8_t  volume;         // 0..16 (16 = full scale)
     static bool     hdmi_audio;     // retired: HDMI audio is audio_out 0 (with the DAC) or 3
-    static bool     hdmi_capture;   // Video > Capture card compatibility (PIO HDMI, tmds_pio.h)
+    static bool     hdmi_capture;   // Video > Output > Capture card mode (PIO HDMI, tmds_pio.h)
 
     // Video
-    static uint8_t  hdmi_vmode;     // Video > Mode on HDMI / on VGA (video_modes.h VM_*, pico-speccy's
+    static uint8_t  hdmi_vmode;     // Video > Output > Mode on HDMI / on VGA (video_modes.h VM_*, pico-speccy's
     static uint8_t  vga_vmode;      //   numbers); read at boot, a change reboots
     static uint8_t  hpos;           // picture position: 0 centred, 1 left overscan
     static bool     vcentre;        // centre short pictures vertically (amiga_set_vcentre)
-    static bool     disk_led;       // Video > Disk activity icon (UiStats.cpp)
+    static bool     disk_led;       // Video > Picture > Drive icon (UiStats.cpp)
 
     // Machine (machine.cpp)
     static uint8_t  machine;        // 0 A500 (OCS, 512 KB chip + 512 KB slow), 1 A500+ (ECS, 1 MB chip)

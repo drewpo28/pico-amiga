@@ -40,7 +40,7 @@ static inline void tmds_lane_words(int lane, uint16_t sym, uint32_t w[2]) {
 // Nibbles are expanded to 8 bits (n * 17) and kept inside 0x08..0xF6, the
 // level clamp pico-speccy found to steady marginal receivers.
 //
-// `capture` (Video > Capture card compatibility, pico-speccy's option of that
+// `capture` (Video > Output > Capture card mode, pico-speccy's option of that
 // name): a pixel pair normally carries v and v+-1 (a doubled pixel) or a second
 // level shifted up to 4 (a hires pair) to stay DC-balanced.  A monitor cannot
 // tell, but an MS2130 capture card has a pixel-phase stage that turns such

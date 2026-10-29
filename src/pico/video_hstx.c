@@ -1,6 +1,6 @@
 // DVI/HDMI output through the RP2350 HSTX serializer and its TMDS encoder.
 //
-// Mode: Video > Mode (video_modes.c; 720x576 @ 50.06 Hz from a 25.2 MHz pixel
+// Mode: Video > Output > Mode (video_modes.c; 720x576 @ 50.06 Hz from a 25.2 MHz pixel
 // clock, 832 x 605, by default - pico-speccy's hw-proven 576-line timing).  The
 // 288 framebuffer rows (amiga.h) become 720x576: each FB row feeds two output
 // lines (two different ones for an interlaced row), and each FIFO word carries

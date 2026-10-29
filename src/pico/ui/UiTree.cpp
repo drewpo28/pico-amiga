@@ -15,6 +15,9 @@
 #include "UiModel.h"
 #include "UiStage.h"
 #include "UiDialog.h"
+#include "UiDesc.h"
+#include "UiLogo.h"
+#include "UiStrings.h"
 #include "UiPlatform.h"
 #include "UiNav.h"
 #include "UiBrowser.h"
@@ -72,7 +75,7 @@ static const Option opt_drives[] = {
     { "1 (DF0)", 1, "1" }, { "2 (DF0, DF1)", 2, "2" }, { "3", 3 }, { "4", 4 },
 };
 static const Option opt_hpos[] = {
-    { "Centred", 0 }, { "Left overscan (+12 columns)", 1, "Left overscan" },
+    { "Centred", 0 }, { "Wide left (+12 columns)", 1, "Wide left" },
 };
 static const Option opt_theme[] = {
     { "Slate", 0 }, { "ZX Spectrum", 1 },
@@ -126,18 +129,10 @@ static const char* baseName(const char* p) {
     return s ? s + 1 : p;
 }
 
-// Devices > Disks > DF0: the file name of what is in the drive.
-static const char* df0Label() {
-    const char* p = machine_disk(0);
-    return *p ? baseName(p) : "empty";
-}
-
 // Devices > Disks > DF0 with an .m3u disk set loaded: the row shows the set, the right
 // pane its disks (the one in DF0 marked; a disk in another drive says which),
 // Enter swaps the chosen one into DF0.
 static bool p_diskSet() { return machine_set_count() > 1; }
-static bool p_noSet() { return !p_diskSet(); }
-static const char* setDf0Label() { return baseName(Config::df0.c_str()); }
 
 #define SET_ROWS 17                                   // machine.cpp's 16 disks + Other disk...
 static const Option* setOpts(uint8_t& cnt) {
@@ -167,9 +162,6 @@ static void setRowKey(int32_t tag, uint8_t) {
     Config::save();
     requestClose();                                   // back to the Amiga with the disk in
 }
-static const Option opt_set_foot[] = {
-    { SYM_ENTER " Insert into DF0   " SYM_LEFT " Back", 0 },
-};
 
 // Ctrl+F12's popup: the set's disks, then "Other disk..." (the file browser).
 static void setRow(int i, char* out, size_t n) {
@@ -345,10 +337,6 @@ void runOpenFile() {
     }
 }
 
-static void act_df0_insert() {
-    if (df0PickAndInsert()) requestClose();   // back to the Amiga with the disk in
-}
-
 // Ctrl+F12: with a disk set loaded, its disks (one key press to swap, as
 // RetroArch's Disk Control); otherwise the file browser.
 void runDiskInsert(int drive) {
@@ -390,6 +378,115 @@ static void act_df0_eject() {
     Config::df0.clear();
     Config::save();
 }
+
+// ── Devices > Disks: a row per connected drive ─────────────────────────────────
+// The row shows the disk's name; its right pane the drive's list: the disk itself
+// (Enter: what is on it), Insert, Eject, Write protect - and in DF0 with an .m3u
+// set loaded, the set's disks first (Enter swaps one in) in place of the name.
+// Tags below DRV_T_INFO (UiDesc.h) are the set's disk numbers (SET_DF0_DISK marks DF0's).
+
+static const char* driveShort(int d) {
+    const char* p = machine_disk(d);
+    return *p ? baseName(p) : "empty";
+}
+
+static const Option* driveOpts(int d, uint8_t& cnt) {
+    // One buffer: the pane shows one drive's list at a time (SRAM is the heap).
+    static Option o[SET_ROWS + 4];
+    static char name[64], wp[32];
+    uint8_t n = 0;
+    const char* p = machine_disk(d);
+    const bool set = d == 0 && p_diskSet();
+    if (set) {
+        uint8_t sc; const Option* so = setOpts(sc);
+        for (uint8_t i = 0; i + 1 < sc; i++) o[n++] = so[i];        // without "Other disk..."
+    } else if (*p) {
+        snprintf(name, sizeof name, "%s", baseName(p));
+        o[n++] = { name, DRV_T_INFO, nullptr };
+    }
+    o[n++] = { set ? "Other disk..." : "Insert disk...", DRV_T_INSERT, nullptr };
+    if (*p) {
+        if (set) o[n++] = { "What is on it", DRV_T_INFO, nullptr };
+        o[n++] = { "Eject", DRV_T_EJECT, nullptr };
+        snprintf(wp, sizeof wp, "Write protect: %s",
+                 machine_disk_dms(d) ? "On (DMS)" : machine_disk_ro(d) ? "On" : "Off");
+        o[n++] = { wp, DRV_T_WP, nullptr };
+    }
+    cnt = n;
+    return o;
+}
+
+// A disk for DF1..DF3 from the browser (DF0 also takes .m3u sets: df0PickAndInsert).
+static bool drivePickAndInsert(int d) {
+    if (d == 0) return df0PickAndInsert();
+    static std::string dir;
+    if (dir.empty()) {
+        const std::string cur = machine_disk(0);
+        dir = cur.empty() ? std::string("/amiga/") : cur.substr(0, cur.find_last_of('/') + 1);
+        FILINFO fi;
+        if (dir != "/" && f_stat(dir.substr(0, dir.size() - 1).c_str(), &fi) != FR_OK) dir = "/";
+    }
+    char title[24];
+    snprintf(title, sizeof title, "Insert into DF%d", d);
+    const std::string r = browseFile(dir, title, BROWSE_ADF);
+    if (r.size() < 2 || r[0] != 'R') return false;
+    if (extOf(r) == ".m3u") { uiToast("A disk set goes into DF0", true, 2000); return false; }
+    if (!machine_insert(d, (dir + r.substr(1)).c_str(), Config::df0_wp)) {
+        uiToast("Not an 880 KB ADF or DMS, or it cannot be opened", true, 2000);
+        return false;
+    }
+    return true;
+}
+
+static void driveKey(int d, int32_t tag, uint8_t key) {
+    if (key) return;
+    const char* p = machine_disk(d);
+    switch (tag) {
+    case DRV_T_INFO: {
+        if (!*p) return;
+        char* info = (char*)malloc(2048);
+        if (!info) return;
+        machine_disk_info(p, info, 2048);
+        uiTextPage(baseName(p), info);
+        free(info);
+        return;
+    }
+    case DRV_T_INSERT:
+        if (drivePickAndInsert(d)) requestClose();   // back to the Amiga with the disk in
+        return;
+    case DRV_T_EJECT:
+        if (d == 0) act_df0_eject();
+        else machine_eject(d);
+        return;
+    case DRV_T_WP:
+        if (machine_disk_dms(d)) { uiToast("A DMS is always write-protected", true, 2000); return; }
+        if (!machine_write_protect(d, !machine_disk_ro(d))) { uiToast("The disk cannot be opened again", true, 2000); return; }
+        if (d == 0) { Config::df0_wp = machine_disk_ro(0); Config::save(); }
+        return;
+    default:
+        setRowKey(tag, key);                          // a disk of DF0's set
+        return;
+    }
+}
+
+static const Option opt_drive_foot[] = {
+    { SYM_ENTER " Choose   " SYM_LEFT " Back", 0 },
+};
+
+#define DRIVE_ROW(d)                                                                     \
+    static const Option* driveOpts##d(uint8_t& cnt) { return driveOpts(d, cnt); }      \
+    static void driveKey##d(int32_t tag, uint8_t key) { driveKey(d, tag, key); }         \
+    static const char* driveShort##d() { return driveShort(d); }
+#define DRIVE_VIS(d) static bool p_drive##d() { return d < machine_drives(); }
+DRIVE_VIS(1)
+DRIVE_VIS(2)
+DRIVE_VIS(3)
+#undef DRIVE_VIS
+DRIVE_ROW(0)
+DRIVE_ROW(1)
+DRIVE_ROW(2)
+DRIVE_ROW(3)
+#undef DRIVE_ROW
 
 
 static void act_amiga_reset() {
@@ -491,13 +588,9 @@ void runSysInfo() {
     gfxEnd();
 }
 
+// The logo above the credits (UiStrings.h), as pico-speccy's About.
 static void page_about() {
-    uiTextPage("About",
-        "Pico-Amiga " PORT_VERSION "\n"
-        "Amiga 500 / 500+ (OCS / ECS, PAL) for RP2350 + PSRAM\n"
-        "\n"
-        "CPU: Musashi 68000\n"
-        "Drivers, menu and host build after pico-speccy");
+    uiPicturePage("About  v" PORT_VERSION, ui_logo128, UI_LOGO_W, UI_LOGO_H, TXT_HELP_ABOUT_BODY);
 }
 
 // ── the tree ───────────────────────────────────────────────────────────────────
@@ -512,12 +605,12 @@ static const Node kMachine[] = {
 };
 
 static const Node kDisks[] = {
-    NM_ACTIONV("DF0", act_df0_insert, df0Label, p_noSet),
-    NM_PICK   ("DF0", SET_DF0_DISK, setOpts, setRowKey, setDf0Label, opt_set_foot, p_diskSet),
-    NM_ACTION ("Eject DF0", act_df0_eject, nullptr),
-    NM_ACTION ("New blank disk", act_new_disk, nullptr),
-    NM_BOOL   ("DF0 write protect", SET_DF0_WP, nullptr),
-    NM_RADIO  ("Floppy drives", SET_DRIVES, opt_drives, nullptr),
+    NM_PICK  ("DF0", SET_DF0_DISK, driveOpts0, driveKey0, driveShort0, opt_drive_foot, nullptr),
+    NM_PICK  ("DF1", SET_NONE,     driveOpts1, driveKey1, driveShort1, opt_drive_foot, p_drive1),
+    NM_PICK  ("DF2", SET_NONE,     driveOpts2, driveKey2, driveShort2, opt_drive_foot, p_drive2),
+    NM_PICK  ("DF3", SET_NONE,     driveOpts3, driveKey3, driveShort3, opt_drive_foot, p_drive3),
+    NM_RADIO ("Floppy drives", SET_DRIVES, opt_drives, nullptr),
+    NM_ACTION("New blank disk", act_new_disk, nullptr),
 };
 
 static const Node kInterface[] = {
@@ -541,31 +634,46 @@ static bool p_pioHdmi() {
 #endif
 }
 
-// Video > Mode: the modes this display's scanout runs at the staged CPU clock
+// Video > Output > Mode: the modes this display's scanout runs at the staged CPU clock
 // (video_modes.c), and the staged one whatever it is (the radio needs its row).
+// The refresh is the scanout's (800x600 is 50 Hz on HDMI, VESA's 60 on VGA).
 static const Option* videoModeOpts(uint8_t& cnt) {
-    static const Option k[] = {
-        { "720x576 @50 Hz",          VM_720x576_50, "720x576 @50" },
-        { "800x600 @50 Hz, framed",  VM_800x600_X2, "800x600 @50" },
-        { "640x480 @60 Hz, cropped", VM_640x480_60, "640x480 @60" },
+    static const struct { uint8_t vm; uint16_t w, h; const char* how; } k[] = {
+        { VM_640x480_60, 640, 480, ", cropped" },
+        { VM_720x480_60, 720, 480, ", cropped" },
+        { VM_800x600_60, 800, 600, ", framed" },
+        { VM_720x576_50, 720, 576, "" },
+        { VM_800x600_X2, 800, 600, ", framed" },
     };
     static Option opts[NM_COUNT(k)];
+    static char lbl[NM_COUNT(k)][32], slbl[NM_COUNT(k)][16];
     const int32_t staged = Stage::get(SET_VIDEO_MODE);
     const int mhz = (int)Stage::get(SET_CPU_MHZ);
-    video_timing_t t;
     uint8_t n = 0;
-    for (const Option& o : k)
-        if (o.value == staged || video_mode_timing((int)o.value, video_out(), mhz, &t)) opts[n++] = o;
+    for (uint8_t i = 0; i < NM_COUNT(k); i++) {
+        video_timing_t t;
+        const bool ok = video_mode_timing(k[i].vm, video_out(), mhz, &t);
+        if (!ok && k[i].vm != staged) continue;
+        // Staged but not runnable at the staged clock: it boots as 640x480.
+        if (ok) snprintf(lbl[i], sizeof lbl[i], "%ux%u @%u Hz%s", k[i].w, k[i].h, t.hz, k[i].how);
+        else    snprintf(lbl[i], sizeof lbl[i], "%ux%u (not at %d MHz)", k[i].w, k[i].h, mhz);
+        snprintf(slbl[i], sizeof slbl[i], ok ? "%ux%u @%u" : "%ux%u", k[i].w, k[i].h, ok ? t.hz : 0);
+        opts[n++] = { lbl[i], (int32_t)k[i].vm, slbl[i] };
+    }
     cnt = n;
     return opts;
 }
 
+// Video: what goes out to the display, and how the picture sits in it - two
+// groups on one level, their rows indented under the heading.
 static const Node kVideo[] = {
-    NM_RADIO_D("Mode", SET_VIDEO_MODE, videoModeOpts, nullptr),
-    NM_RADIO("Picture position", SET_HPOS, opt_hpos, nullptr),
-    NM_BOOL("Centre short pictures vertically", SET_VCENTRE, nullptr),
-    NM_BOOL("Disk activity icon", SET_DISK_LED, nullptr),
-    NM_BOOL("Capture card compatibility", SET_HDMI_CAPTURE, p_pioHdmi),
+    NM_HEAD   ("Output", nullptr),
+    NM_RADIO_D(NM_IND "Mode", SET_VIDEO_MODE, videoModeOpts, nullptr),
+    NM_BOOL   (NM_IND "Capture card mode", SET_HDMI_CAPTURE, p_pioHdmi),
+    NM_HEAD   ("Picture", nullptr),
+    NM_RADIO  (NM_IND "Position", SET_HPOS, opt_hpos, nullptr),
+    NM_BOOL   (NM_IND "Vertical centring", SET_VCENTRE, nullptr),
+    NM_BOOL   (NM_IND "Drive icon", SET_DISK_LED, nullptr),
 };
 
 static const Node kOverclock[] = {
@@ -580,7 +688,7 @@ static const Node kOptions[] = {
 };
 
 static const Node kInput[] = {
-    NM_BOOL ("Cursor keys as joystick", SET_CURSOR_JOY, nullptr),
+    NM_BOOL ("Arrows as joystick",      SET_CURSOR_JOY, nullptr),
     NM_RADIO("Mouse speed",             SET_MOUSE_SENS, opt_mouse_sens, nullptr),
     NM_RADIO("Swap mouse buttons",      SET_MOUSE_SWAP, opt_mouse_swap, nullptr),
 };

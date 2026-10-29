@@ -73,6 +73,7 @@ add_executable(pico-amiga
     src/pico/ui/UiStage.cpp
     src/pico/ui/UiTree.cpp
     src/pico/ui/UiDesc.cpp
+    src/pico/ui/UiLogo.c
     src/pico/ui/UiPlatform.cpp
     src/pico/ui/UiStats.cpp
     # Input drivers from pico-speccy (PICO-AMIGA: marks local changes).

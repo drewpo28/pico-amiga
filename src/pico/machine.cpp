@@ -5,8 +5,6 @@
 #include <string.h>
 #include <strings.h>
 #include <string>
-#include <algorithm>
-#include <vector>
 #include "ff.h"
 #include "dms.h"
 #include "roms.h"
@@ -101,6 +99,7 @@ struct Drive {
     uint8_t *img;           // the unpacked DMS (PSRAM), or null
     std::string path;
     bool manual;            // DF1..DF3: put there by hand (Open file), not by a set
+    bool ro;                // the Amiga cannot write it: protected, a DMS, a read-only file
 };
 static Drive s_drv[4];
 
@@ -149,6 +148,7 @@ static void eject_adf(int drive) {
     d.img = nullptr;
     d.path.clear();
     d.manual = false;
+    d.ro = false;
 }
 
 // The disk set (machine_load_set); s_set_index is the disk in DF0.
@@ -184,6 +184,7 @@ static bool insert_dms(int drive, const char *path) {
     }
     d.img = img;
     d.path = path;
+    d.ro = true;
     amiga_disk_t disk = { img_read, NULL, img, DMS_ADF_SIZE };
     amiga_insert_disk(drive, &disk);
     return true;
@@ -202,6 +203,7 @@ static bool insert_adf(int drive, const char *path, bool write_protect) {
     }
     d.open = true;
     d.path = path;
+    d.ro = !rw;
     amiga_disk_t disk = { adf_read, rw ? adf_write : NULL, &d.f, (uint32_t)f_size(&d.f) };
     amiga_insert_disk(drive, &disk);
     return true;
@@ -209,6 +211,22 @@ static bool insert_adf(int drive, const char *path, bool write_protect) {
 
 const char *machine_disk(int drive) {
     return (drive >= 0 && drive <= 3) ? s_drv[drive].path.c_str() : "";
+}
+
+bool machine_disk_ro(int drive) {
+    return drive >= 0 && drive <= 3 && !s_drv[drive].path.empty() && s_drv[drive].ro;
+}
+bool machine_disk_dms(int drive) {
+    return drive >= 0 && drive <= 3 && s_drv[drive].img;
+}
+
+bool machine_write_protect(int drive, bool on) {
+    if (drive < 0 || drive > 3 || s_drv[drive].path.empty()) return false;
+    const std::string path = s_drv[drive].path;
+    const bool manual = s_drv[drive].manual;
+    if (!insert_adf(drive, path.c_str(), on)) return false;
+    s_drv[drive].manual = manual;
+    return true;
 }
 
 static bool is_m3u(const std::string &p) {
@@ -380,12 +398,11 @@ static bool sum_ok(const uint8_t *b) {             // header blocks: the longs s
     for (int i = 0; i < 512; i += 4) s += rd32(b + i);
     return s == 0;
 }
-static std::string bname(const uint8_t *b) {
+// A header block's name (BCPL string, at most 30 characters).
+static void bname(const uint8_t *b, char out[31]) {
     const int n = b[0x1B0] < 30 ? b[0x1B0] : 30;
-    return std::string((const char *)b + 0x1B1, (size_t)n);
-}
-static bool name_eq(const std::string &a, const char *b) {
-    return strcasecmp(a.c_str(), b) == 0;
+    memcpy(out, b + 0x1B1, (size_t)n);
+    out[n] = 0;
 }
 
 // Days since 1978-01-01 -> "YYYY-MM-DD".
@@ -406,11 +423,35 @@ static void amiga_date(uint32_t days, char *out, size_t n) {
     snprintf(out, n, "%04d-%02d-%02d", y % 10000, (m + 1) % 100, (int)(days % 31) + 1);
 }
 
-// b0, b1: two 512-byte buffers.
-static void adf_info(blk_fn rd, void *ctx, uint8_t *b0, uint8_t *b1, std::string &o) {
-    char line[96];
+// The text goes straight into the caller's buffer, cut where it is full.
+struct InfoOut {
+    char *p; unsigned size, len;
+    void add(const char *t) {
+        while (*t && len + 1 < size) p[len++] = *t++;
+        p[len] = 0;
+    }
+};
+
+// Its work memory (two blocks, the root's entries, the startup-sequence) is the
+// caller's, not the heap: the menu has a few KB of it and a DF0 info died there.
+struct InfoEnt { char name[31]; bool dir; uint32_t size; };
+struct InfoWork {
+    uint8_t b0[512], b1[512];
+    InfoEnt ents[40];
+    char text[1024];
+};
+
+static int ent_cmp(const void *a, const void *b) {
+    const InfoEnt *x = (const InfoEnt *)a, *y = (const InfoEnt *)b;
+    if (x->dir != y->dir) return x->dir ? -1 : 1;           // directories first
+    return strcasecmp(x->name, y->name);
+}
+
+static void adf_info(blk_fn rd, void *ctx, InfoWork *w, InfoOut &o) {
+    uint8_t *b0 = w->b0, *b1 = w->b1;
+    char line[96], name[31];
     // The boot block is blocks 0-1: their longs summed with carry give ~0 when it boots.
-    if (!rd(ctx, 0, b0) || !rd(ctx, 1, b1)) { o += "The image cannot be read.\n"; return; }
+    if (!rd(ctx, 0, b0) || !rd(ctx, 1, b1)) { o.add("The image cannot be read.\n"); return; }
     uint32_t sum = 0;
     for (int i = 0; i < 1024; i += 4) {
         const uint32_t v = rd32(i < 512 ? b0 + i : b1 + i - 512), t = sum + v;
@@ -422,111 +463,123 @@ static void adf_info(blk_fn rd, void *ctx, uint8_t *b0, uint8_t *b1, std::string
     if (!dos) {
         snprintf(line, sizeof line, "Format   : not AmigaDOS (%s)\n",
                  boots ? "its own boot block: a game or demo loader" : "no boot block: a data disk");
-        o += line;
+        o.add(line);
         return;
     }
     static const char *const fs[] = { "OFS", "FFS", "OFS intl", "FFS intl", "OFS dircache", "FFS dircache", "OFS long names", "FFS long names" };
     const bool ffs = dostype & 1;
     snprintf(line, sizeof line, "Format   : AmigaDOS %s (DOS\\%u)%s\n", fs[dostype], dostype, boots ? ", bootable" : "");
-    o += line;
+    o.add(line);
     if (!rd(ctx, 880, b0) || rd32(b0) != 2 || rd32(b0 + 0x1FC) != 1 || !sum_ok(b0)) {
-        o += boots ? "Files    : none - the boot block loads the rest itself\n"
-                   : "Root     : not valid (an unformatted or damaged disk)\n";
+        o.add(boots ? "Files    : none - the boot block loads the rest itself\n"
+                    : "Root     : not valid (an unformatted or damaged disk)\n");
         return;
     }
     char date[24];
     amiga_date(rd32(b0 + 0x1E4), date, sizeof date);
-    snprintf(line, sizeof line, "Volume   : %s\nCreated  : %s\n", bname(b0).c_str(), date);
-    o += line;
+    bname(b0, name);
+    snprintf(line, sizeof line, "Volume   : %s\nCreated  : %s\n", name, date);
+    o.add(line);
     // Free space: the bitmap's set bits for blocks 2..1759.
     const uint32_t bm = rd32(b0 + 0x13C);
     if (bm && rd(ctx, bm, b1)) {
         int nfree = 0;
         for (int b = 2; b < 1760; b++) nfree += (rd32(b1 + 4 + (b - 2) / 32 * 4) >> ((b - 2) % 32)) & 1;
         snprintf(line, sizeof line, "Used     : %d of 1758 blocks, %d KB free\n", 1758 - nfree, nfree * (ffs ? 512 : 488) / 1024);
-        o += line;
+        o.add(line);
     }
     // The root directory, sorted, directories first.
-    std::vector<std::string> ents;              // "0name" dirs, "1name<tab>size" files
+    const int max_ents = (int)(sizeof w->ents / sizeof w->ents[0]);
+    int nent = 0;
     uint32_t s_dir = 0;
-    for (int i = 0; i < 72 && ents.size() < 40; i++) {
-        for (uint32_t h = rd32(b0 + 24 + 4 * i); h && h < 1760 && ents.size() < 40; h = rd32(b1 + 0x1F0)) {
+    for (int i = 0; i < 72 && nent < max_ents; i++) {
+        for (uint32_t h = rd32(b0 + 24 + 4 * i); h && h < 1760 && nent < max_ents; h = rd32(b1 + 0x1F0)) {
             if (!rd(ctx, h, b1)) break;
-            const std::string n = bname(b1);
-            if ((int32_t)rd32(b1 + 0x1FC) == 2) {
-                ents.push_back("0" + n);
-                if (name_eq(n, "s")) s_dir = h;
-            } else {
-                ents.push_back("1" + n + "\t" + std::to_string(rd32(b1 + 0x144)));
-            }
+            InfoEnt &e = w->ents[nent++];
+            bname(b1, e.name);
+            e.dir = (int32_t)rd32(b1 + 0x1FC) == 2;
+            e.size = rd32(b1 + 0x144);
+            if (e.dir && !strcasecmp(e.name, "s")) s_dir = h;
         }
     }
-    std::sort(ents.begin(), ents.end(), [](const std::string &x, const std::string &y) {
-        return strcasecmp(x.c_str(), y.c_str()) < 0;
-    });
-    o += "\nRoot:\n";
-    for (const std::string &e : ents) {
-        const size_t t = e.find('\t');
-        if (e[0] == '0') snprintf(line, sizeof line, "  %s/\n", e.c_str() + 1);
-        else snprintf(line, sizeof line, "  %-30s %7s\n", e.substr(1, t - 1).c_str(), e.c_str() + t + 1);
-        o += line;
+    qsort(w->ents, (size_t)nent, sizeof w->ents[0], ent_cmp);
+    o.add("\nRoot:\n");
+    for (int k = 0; k < nent; k++) {
+        const InfoEnt &e = w->ents[k];
+        if (e.dir) snprintf(line, sizeof line, "  %s/\n", e.name);
+        else       snprintf(line, sizeof line, "  %-30s %7lu\n", e.name, (unsigned long)e.size);
+        o.add(line);
     }
-    if (ents.size() >= 40) o += "  ...\n";
+    if (nent >= max_ents) o.add("  ...\n");
     // The start of s/startup-sequence: what the disk runs.
     if (!s_dir || !rd(ctx, s_dir, b0)) return;
     uint32_t ss = 0;
     for (int i = 0; i < 72 && !ss; i++)
         for (uint32_t h = rd32(b0 + 24 + 4 * i); h && h < 1760; h = rd32(b1 + 0x1F0)) {
             if (!rd(ctx, h, b1)) break;
-            if (name_eq(bname(b1), "startup-sequence")) { ss = h; break; }
+            bname(b1, name);
+            if (!strcasecmp(name, "startup-sequence")) { ss = h; break; }
         }
     if (!ss || !rd(ctx, ss, b0)) return;
-    o += "\ns/startup-sequence:\n";
+    o.add("\ns/startup-sequence:\n");
     const uint32_t size = rd32(b0 + 0x144), nblk = rd32(b0 + 8);
-    std::string text;
-    for (uint32_t k = 0; k < nblk && k < 72 && text.size() < 900; k++) {
+    unsigned tlen = 0;
+    const unsigned tmax = sizeof w->text;
+    for (uint32_t k = 0; k < nblk && k < 72 && tlen < 900; k++) {
         if (!rd(ctx, rd32(b0 + 24 + 4 * (71 - k)), b1)) break;
-        if (ffs) text.append((const char *)b1, 512);
-        else     text.append((const char *)b1 + 24, rd32(b1 + 12) <= 488 ? rd32(b1 + 12) : 488);
+        const uint8_t *src = ffs ? b1 : b1 + 24;
+        unsigned n = ffs ? 512 : (rd32(b1 + 12) <= 488 ? rd32(b1 + 12) : 488);
+        if (n > tmax - tlen) n = tmax - tlen;
+        memcpy(w->text + tlen, src, n);
+        tlen += n;
     }
-    if (text.size() > size) text.resize(size);
+    if (tlen > size) tlen = size;
     int lines = 0;
-    for (size_t p = 0; p < text.size() && lines < 16; lines++) {
-        size_t e = text.find('\n', p);
-        if (e == std::string::npos) e = text.size();
-        std::string l = text.substr(p, e - p);
-        for (char &c : l) if ((unsigned char)c < 32 || (unsigned char)c > 126) c = ' ';
-        if (l.size() > 44) l.resize(44);
-        o += "  " + l + "\n";
+    for (unsigned p = 0; p < tlen && lines < 16; lines++) {
+        unsigned e = p;
+        while (e < tlen && w->text[e] != '\n') e++;
+        unsigned n = e - p > 44 ? 44 : e - p;
+        char l[48];
+        for (unsigned k = 0; k < n; k++) {
+            const unsigned char c = (unsigned char)w->text[p + k];
+            l[k] = c < 32 || c > 126 ? ' ' : (char)c;
+        }
+        l[n] = 0;
+        snprintf(line, sizeof line, "  %s\n", l);
+        o.add(line);
         p = e + 1;
     }
 }
 
 void machine_disk_info(const char *path, char *out, unsigned size) {
-    std::string o;
-    uint8_t *buf = (uint8_t *)malloc(1024);
-    if (!buf) { snprintf(out, size, "Out of memory.\n"); return; }
+    InfoOut o = { out, size, 0 };
+    if (size) out[0] = 0;
     FIL &f = s_job;
     if (has_ext(path, ".dms")) {
-        // Unpacked into the slot after DF3's, where the PSRAM has one.
+        // Unpacked into the slot after DF3's, where the PSRAM has one; the work
+        // memory is then the unpacker's area, free again.
         uint8_t *img = dms_slot(4);
-        if (!img) o = "A DMS archive: no spare PSRAM to unpack it for a look.\n";
-        else if (f_open(&f, path, FA_READ) != FR_OK) o = "The file cannot be opened.\n";
-        else {
-            const int err = dms_unpack(dms_fread, &f, img, s_dms_area);
-            f_close(&f);
-            if (err != DMS_OK) o = std::string("DMS: ") + dms_error(err) + "\n";
-            else { o = "A DMS archive, unpacked:\n"; adf_info(mem_blk, img, buf, buf + 512, o); }
-        }
-    } else if (f_open(&f, path, FA_READ) != FR_OK) {
-        o = "The file cannot be opened.\n";
-    } else {
-        if (f_size(&f) != DMS_ADF_SIZE) o = "Not an 880 KB ADF.\n";
-        else adf_info(file_blk, &f, buf, buf + 512, o);
+        if (!img) { o.add("A DMS archive: no spare PSRAM to unpack it for a look.\n"); return; }
+        if (f_open(&f, path, FA_READ) != FR_OK) { o.add("The file cannot be opened.\n"); return; }
+        const int err = dms_unpack(dms_fread, &f, img, s_dms_area);
+        f_close(&f);
+        if (err != DMS_OK) { o.add("DMS: "); o.add(dms_error(err)); o.add("\n"); return; }
+        o.add("A DMS archive, unpacked:\n");
+        adf_info(mem_blk, img, (InfoWork *)s_dms_area, o);
+        return;
+    }
+    // An ADF: the work memory in PSRAM too (the unpacker's area, idle now), the
+    // heap only on a board without one.
+    InfoWork *w = s_dms_area && s_dms_size >= sizeof(InfoWork) ? (InfoWork *)s_dms_area
+                                                               : (InfoWork *)malloc(sizeof(InfoWork));
+    if (!w) { o.add("Out of memory.\n"); return; }
+    if (f_open(&f, path, FA_READ) != FR_OK) o.add("The file cannot be opened.\n");
+    else {
+        if (f_size(&f) != DMS_ADF_SIZE) o.add("Not an 880 KB ADF.\n");
+        else adf_info(file_blk, &f, w, o);
         f_close(&f);
     }
-    free(buf);
-    snprintf(out, size, "%s", o.c_str());
+    if ((uint8_t *)w != s_dms_area) free(w);
 }
 
 bool machine_set_add(const char *path) {

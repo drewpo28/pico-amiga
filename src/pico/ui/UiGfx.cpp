@@ -149,7 +149,7 @@ static inline uint16_t rgb444(uint32_t c) {
 
 void gfxComputeSurface() {
     memset(&Sf, 0, sizeof(Sf));
-    // What the display shows of the framebuffer (Video > Mode: all of it, or
+    // What the display shows of the framebuffer (Video > Output > Mode: all of it, or
     // 320 x 240 of it at 640x480).
     const video_window_t* w = video_window();
     Sf.fbx = w->col;
@@ -240,6 +240,15 @@ void fillRgb(int x, int y, int w, int h, uint16_t rgb444) {
         if (!row) continue;
         for (int i = 0; i < w; i++) row[x + i] = rgb444;
     }
+}
+
+void rowRgb(int x, int y, const uint16_t* src, int w) {
+    if (y < 0 || y >= Sf.h) return;
+    if (x < 0) { src -= x; w += x; x = 0; }
+    if (x + w > Sf.w) w = Sf.w - x;
+    uint16_t* row = w > 0 ? fbRow(y) : nullptr;
+    if (!row) return;
+    for (int i = 0; i < w; i++) row[x + i] = src[i];
 }
 
 void frame(int x, int y, int w, int h, UiColor c) {

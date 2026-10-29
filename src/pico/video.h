@@ -5,7 +5,7 @@
 #include "video_modes.h"
 
 // Video output of the AMIGA_FB_H framebuffer rows (amiga.h), at 720x576 or in
-// another Video > Mode (video_modes.h): HDMI (video_hstx.c, or video_pio.c on
+// another Video > Output > Mode (video_modes.h): HDMI (video_hstx.c, or video_pio.c on
 // boards without HSTX pins), or VGA (video_vga.c) when a VGA resistor ladder is
 // on the same pins.  720x576 is 50.06 Hz on HDMI, 49.97 Hz on VGA.
 
@@ -19,7 +19,7 @@ int  video_out(void);               // VIDEO_OUT_* of this board and display
 // clk_sys `mhz`, else 720x576.  Returns the mode taken.
 int  video_set_mode(int vm, int mhz);
 int  video_mode(void);
-// Video > Picture position (0 / 1): where a window smaller than the picture
+// Video > Picture > Position (0 / 1): where a window smaller than the picture
 // sits in it (640x480).  Takes hold from the next output line.
 void video_set_hpos(int hpos);
 // The running mode's timing and window.  Read by the scanout IRQs: plain data.

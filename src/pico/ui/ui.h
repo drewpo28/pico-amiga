@@ -19,8 +19,8 @@ int  settings_flash_mhz(void);          // flash / PSRAM SCK limits (Options)
 int  settings_psram_mhz(void);
 int  settings_audio_out(void);
 bool settings_dbg_uart(void);          // 0 auto, 1 PWM, 2 I2S
-bool settings_hdmi_capture(void);      // Video > Capture card compatibility (PIO HDMI)
-int  settings_video_mode(void);        // Video > Mode of the display in use (video_modes.h)
+bool settings_hdmi_capture(void);      // Video > Output > Capture card mode (PIO HDMI)
+int  settings_video_mode(void);        // Video > Output > Mode of the display in use (video_modes.h)
 // After a reboot into a new video mode: ask whether to keep it (15 s, then the old
 // one comes back with another reboot).  Call with the scanout running.
 void ui_video_mode_confirm(void);

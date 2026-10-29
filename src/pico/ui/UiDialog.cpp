@@ -672,7 +672,8 @@ void uiMarkupLine(int x, int y, int maxw, const char* s, int len) {
 
 static void textPageRun(const char* title, const char* body,
                         const char* (*refresh)(), int period_ms,
-                        const char* hdrRight = nullptr) {
+                        const char* hdrRight = nullptr,
+                        const uint16_t* pic = nullptr, int pic_w = 0, int pic_h = 0) {
     gfxResumePalette();
     // Drain the key that opened this page (F1/Enter may still be held — its
     // auto-repeat would close the page the moment it appears).
@@ -709,9 +710,11 @@ static void textPageRun(const char* title, const char* body,
         }
     };
     parse();
+    // A picture first, in bands of a text row, then a blank row.
+    const int picRows = pic ? (pic_h + lh - 1) / lh + 1 : 0;
 
     int top = 0;
-    int maxTop = nlines > rows ? nlines - rows : 0;
+    int maxTop = picRows + nlines > rows ? picRows + nlines - rows : 0;
 
     // static chrome
     fill(0, 0, Sf.w, Sf.h, C_BG);
@@ -737,14 +740,21 @@ static void textPageRun(const char* title, const char* body,
         for (int r = 0; r < rows; r++) {
             const int y = body_y + r * lh;
             fill(ix, y, iw, lh, C_PANEL);
-            const int li = top + r;
+            const int cr = top + r;
+            if (cr < picRows) {
+                for (int yy = cr * lh; yy < (cr + 1) * lh && yy < pic_h; yy++)
+                    rowRgb((Sf.w - pic_w) / 2, y + yy - cr * lh, pic + yy * pic_w, pic_w);
+                continue;
+            }
+            const int li = cr - picRows;
             if (li >= nlines) continue;
             uiMarkupLine(ix + pad, y + 1, iw - 2 * pad, ls[li], ll[li]);
         }
         if (maxTop) {
+            const int total = picRows + nlines;
             char pos[16];
             snprintf(pos, sizeof(pos), "%d-%d/%d", top + 1,
-                     top + rows < nlines ? top + rows : nlines, nlines);
+                     top + rows < total ? top + rows : total, total);
             const int pw = textWidth(pos);
             fill(ix + iw - pw - 2 * pad, fy + 1, pw + 2 * pad, foot_h - 2, C_FOOT_BG);
             text(ix + iw - pw - pad, fy + 3, pos, C_TEXT_DIM);
@@ -784,7 +794,7 @@ static void textPageRun(const char* title, const char* body,
                 const bool atTail = (top == maxTop);
                 body = nb;
                 parse();
-                maxTop = nlines > rows ? nlines - rows : 0;
+                maxTop = picRows + nlines > rows ? picRows + nlines - rows : 0;
                 // A live log follows its tail unless the user scrolled away.
                 if (atTail || top > maxTop) top = maxTop;
                 drawBody();
@@ -795,6 +805,10 @@ static void textPageRun(const char* title, const char* body,
 
 void uiTextPage(const char* title, const char* body) {
     textPageRun(title, body, nullptr, 0);
+}
+
+void uiPicturePage(const char* title, const uint16_t* pic, int w, int h, const char* body) {
+    textPageRun(title, body, nullptr, 0, nullptr, pic, w, h);
 }
 
 void uiTextPageLive(const char* title, const char* (*refresh)(), int period_ms,

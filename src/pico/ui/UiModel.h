@@ -43,6 +43,8 @@ enum Kind : uint8_t {
                 //   it. Config profiles are the first user: a slot list where the
                 //   verbs (load, save, rename, remove) differ per key, which a radio
                 //   cannot express and a whole level of its own over-serves.
+    K_HEADING,  // PICO-AMIGA: a group's name over the NM_IND rows under it (Video >
+                //   Output, Picture); the cursor steps over it
 };
 
 struct Option {
@@ -120,6 +122,10 @@ struct Node {
 
 #define NM_SUB(lbl, kids_arr, vis) \
     { lbl, nm::K_SUB, NM_COUNT(kids_arr), 0, nullptr, kids_arr, vis, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr }
+#define NM_HEAD(lbl, vis) \
+    { lbl, nm::K_HEADING, 0, 0, nullptr, nullptr, vis, nullptr, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr }
+// The indent of the rows under an NM_HEAD (pico-speccy's NM_IND): left pane only.
+#define NM_IND "  "
 #define NM_ACTION(lbl, f, vis) \
     { lbl, nm::K_ACTION, 0, 0, nullptr, nullptr, vis, f, nullptr, nullptr, nullptr, 0, 0, 0, nullptr, nullptr }
 // Action whose row shows live state via `vl` (e.g. "On <ssid>").

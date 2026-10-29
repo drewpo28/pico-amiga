@@ -16,7 +16,7 @@
 //                       RD / WR = disk DMA,
 //                       ON = motor, refreshed every 5 frames
 //
-// The drive icon (pico-speccy's FDD lamp, Video > Disk activity icon): a floppy
+// The drive icon (pico-speccy's FDD lamp, Video > Picture > Drive icon): a floppy
 // in the top right corner while the disk DMA runs and a moment after; blue =
 // read, red = write. Its rows go through the same row_done hook as the band's
 // (the core's second overlay range).

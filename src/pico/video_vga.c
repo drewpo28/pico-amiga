@@ -7,8 +7,10 @@
 //     and chains to a control channel, which loads the next template's address
 //     and chains back; the control channel's IRQ (one per line) renders the line
 //     after next into the template not being streamed
-//   - timing: pico-speccy's PIO VGA twin of its 720x576@50 mode ([5]): 27 MHz,
-//     880 x 614 (HS 48, BP 96, active 720, FP 16; VSYNC lines 580-586), 49.97 Hz
+//   - timing: Video > Output > Mode (video_modes.c); 720x576 is pico-speccy's PIO VGA
+//     twin of its 720x576@50 mode ([5]): 27 MHz, 880 x 614 (HS 48, BP 96, active
+//     720, FP 16; VSYNC lines 580-586), 49.97 Hz.  Active lines come first in a
+//     frame here, the HDMI back-ends put them last
 //
 // The Amiga framebuffer is 0x0RGB; the 2 bits per channel come from a Bayer 2x2
 // ordered dither (vga.c's vga_bayer4: 13 levels a channel), looked up as one
@@ -28,16 +30,11 @@
 #define VGA_BASE_PIN 6
 #endif
 
-#define PIXEL_HZ   27000000u
-#define H_SYNC     48
-#define H_BP       96
-#define H_ACTIVE   (AMIGA_FB_W * 2)        // 720
-#define H_FP       16
-#define H_TOTAL    (H_SYNC + H_BP + H_ACTIVE + H_FP)   // 880
-#define V_ACTIVE   (AMIGA_FB_H * 2)        // 576
-#define V_TOTAL    614
-#define VS_FIRST   580
-#define VS_LAST    586
+// The mode's timing (video_timing(), fixed while the scanout runs).
+static uint32_t H_SYNC, H_BP, H_TOTAL;
+static uint32_t V_ACTIVE, V_TOTAL, VS_FIRST, VS_LAST;
+static uint32_t pace_lines;                // output lines per emulated frame (vga_frame_lines)
+#define LINE_MAX   1108                    // the longest line: 800x600 @60 (42 MHz)
 
 #define SYNC_IDLE  0xC0u                   // both syncs high (inactive)
 #define BIT_HS     0x40u
@@ -48,7 +45,7 @@
 static const amiga_row_t *fb;
 static uint16_t line_rgb[AMIGA_OUT_W];     // the output line being rendered
 static uint16_t pair[2][4096];             // [line parity][0x0RGB] -> two pin bytes
-static uint8_t  tmpl[4][H_TOTAL] __attribute__((aligned(4)));   // blank, vsync, active x2
+static uint8_t  tmpl[4][LINE_MAX] __attribute__((aligned(4)));   // blank, vsync, active x2
 static uint8_t *tmpl_ptr[4];
 static int      dma_data, dma_ctrl;
 static uint32_t line;                      // line whose template the ctrl channel just loaded
@@ -90,14 +87,24 @@ static void build_tables(void) {
     }
 }
 
-// Fill template `t` with the picture for output line `l`.
+// The framebuffer row output line `l` shows (the window's), or -1: black.
+static inline int __not_in_flash_func(fb_out)(uint32_t l) {
+    const video_window_t *w = video_window();
+    const int out = (int)l - w->y;
+    return out >= 0 && out < 2 * w->rows ? out : -1;
+}
+
+// Fill template `t` with the picture for output line `l` (the window's rows;
+// the black either side of it is never written).
 static void __not_in_flash_func(render)(int t, uint32_t l) {
-    const amiga_row_t *row = &fb[l >> 1];
-    const uint16_t *pal = pair[l & 1];
-    uint16_t *dst = (uint16_t *)(tmpl[t] + H_SYNC + H_BP);
+    const video_window_t *w = video_window();
+    const int out = fb_out(l);
+    const amiga_row_t *row = &fb[w->row + (out >> 1)];
+    const uint16_t *pal = pair[out & 1];
+    uint16_t *dst = (uint16_t *)(tmpl[t] + H_SYNC + H_BP + w->x);
     if (row->mode == AMIGA_ROW_DIRECT) {
-        const uint16_t *src = row->px.rgb;
-        for (int x = 0; x < AMIGA_FB_W; x += 2) {
+        const uint16_t *src = row->px.rgb + w->col;
+        for (int x = 0; x < w->cols; x += 2) {
             dst[x]     = pal[src[x] & 0xFFF];
             dst[x + 1] = pal[src[x + 1] & 0xFFF];
         }
@@ -105,11 +112,12 @@ static void __not_in_flash_func(render)(int t, uint32_t l) {
     }
     // Hires / interlace: one pin byte per output pixel, from the 2x2 Bayer
     // pair of that pixel's colour (even columns take its low byte, odd its high).
-    amiga_fb_line(row, (int)(l & 1), line_rgb);
-    uint8_t *d8 = tmpl[t] + H_SYNC + H_BP;
-    for (int x = 0; x < AMIGA_OUT_W; x += 2) {
-        d8[x]     = (uint8_t)pal[line_rgb[x] & 0xFFF];
-        d8[x + 1] = (uint8_t)(pal[line_rgb[x + 1] & 0xFFF] >> 8);
+    amiga_fb_line(row, out & 1, line_rgb);
+    uint8_t *d8 = tmpl[t] + H_SYNC + H_BP + w->x;
+    const uint16_t *src = line_rgb + 2 * w->col;
+    for (int x = 0; x < 2 * w->cols; x += 2) {
+        d8[x]     = (uint8_t)pal[src[x] & 0xFFF];
+        d8[x + 1] = (uint8_t)(pal[src[x + 1] & 0xFFF] >> 8);
     }
 }
 
@@ -120,7 +128,7 @@ static void __not_in_flash_func(dma_irq)(void) {
     if (++line == V_TOTAL) { line = 0; frames++; }
     const uint32_t next = line + 1 == V_TOTAL ? 0 : line + 1;
     int t;
-    if (next < V_ACTIVE) {
+    if (next < V_ACTIVE && fb_out(next) >= 0) {
         t = 2 + (next & 1);
         render(t, next);
     } else {
@@ -131,8 +139,18 @@ static void __not_in_flash_func(dma_irq)(void) {
 
 void vga_start(const amiga_row_t *framebuffer) {
     fb = framebuffer;
+    const video_timing_t *vt = video_timing();
+    H_SYNC = vt->h_sync; H_BP = vt->h_bp;
+    H_TOTAL = vt->h_fp + vt->h_sync + vt->h_bp + vt->h_active;
+    V_ACTIVE = vt->v_active;
+    V_TOTAL = vt->v_fp + vt->v_sync + vt->v_bp + vt->v_active;
+    VS_FIRST = V_ACTIVE + vt->v_fp;
+    VS_LAST = VS_FIRST + vt->v_sync - 1;
+    // A 50 Hz mode paces the emulation by its frames; another by the 20 ms of a
+    // PAL frame in its lines.
+    pace_lines = vt->hz == 50 ? V_TOTAL : vt->pixel_hz / H_TOTAL / 50;
     build_tables();
-    render(2, 0);
+    if (fb_out(0) >= 0) render(2, 0);
 
 #if VGA_BASE_PIN >= 32
     pio_set_gpio_base(VPIO, 16);           // ZERO2: display on GPIO 32-39
@@ -151,7 +169,7 @@ void vga_start(const amiga_row_t *framebuffer) {
     sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
     sm_config_set_out_shift(&c, true, true, 32);
     sm_config_set_out_pins(&c, VGA_BASE_PIN, 8);
-    sm_config_set_clkdiv(&c, (float)clock_get_hz(clk_sys) / (float)PIXEL_HZ);
+    sm_config_set_clkdiv(&c, (float)clock_get_hz(clk_sys) / (float)vt->pixel_hz);
     pio_sm_init(VPIO, sm, offset, &c);
     pio_sm_set_enabled(VPIO, sm, true);
 
@@ -171,8 +189,11 @@ void vga_start(const amiga_row_t *framebuffer) {
     channel_config_set_write_increment(&k, false);
     channel_config_set_chain_to(&k, dma_data);
     // Line 0 streams first (started below); the ctrl channel then loads line 1.
-    render(3, 1);
-    dma_channel_configure(dma_ctrl, &k, &dma_hw->ch[dma_data].read_addr, &tmpl_ptr[3], 1, false);
+    const int t1 = fb_out(1) >= 0 ? 3 : 0;
+    if (t1 == 3) render(3, 1);
+    // Line 0's template: the picture's, or the black one when the window starts lower.
+    if (fb_out(0) < 0) dma_channel_set_read_addr(dma_data, tmpl[0], false);
+    dma_channel_configure(dma_ctrl, &k, &dma_hw->ch[dma_data].read_addr, &tmpl_ptr[t1], 1, false);
     line = 0;
 
     irq_set_exclusive_handler(DMA_IRQ_0, dma_irq);
@@ -182,5 +203,6 @@ void vga_start(const amiga_row_t *framebuffer) {
 }
 
 uint32_t vga_frames(void) { return frames; }
-uint32_t vga_lines(void) { return lines; }          // the picture is lines 0..V_ACTIVE-1
-uint32_t vga_frame_lines(void) { return V_TOTAL; }
+// Framebuffer row 0 is on line y of the window (0 at 720x576 and 640x480).
+uint32_t vga_lines(void) { return lines - (uint32_t)video_window()->y; }
+uint32_t vga_frame_lines(void) { return pace_lines; }

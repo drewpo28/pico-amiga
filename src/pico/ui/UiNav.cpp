@@ -65,6 +65,11 @@ void buildVisible(Level& L) {
                 L.vis[L.nvis++] = i;
     }
     if (L.sel >= L.nvis) L.sel = L.nvis ? L.nvis - 1 : 0;
+    // PICO-AMIGA: never rest on a heading - the row after it (or before, at the end).
+    if (!L.dyn) {
+        while (L.sel + 1 < L.nvis && L.nodes[L.vis[L.sel]].kind == K_HEADING) L.sel++;
+        while (L.sel > 0 && L.nodes[L.vis[L.sel]].kind == K_HEADING) L.sel--;
+    }
     if (L.top > L.sel)   L.top = L.sel;
     if (L.sel >= L.top + LY.body_rows)
         L.top = L.sel - LY.body_rows + 1;
@@ -213,8 +218,26 @@ static void moveLeft(int delta, bool wrap = false) {
     if (wrap)      s = (s < 0) ? L.nvis - 1 : (s > L.nvis - 1) ? 0 : s;
     if (s < 0) s = 0;
     if (s > L.nvis - 1) s = L.nvis - 1;
+    // PICO-AMIGA: step over headings - on in the direction of travel (round the
+    // end when wrapping), else back the other way (Home lands under the first).
+    if (!L.dyn && L.nodes[L.vis[s]].kind == K_HEADING) {
+        const int dir = delta < 0 ? -1 : 1;
+        int t = s, found = -1;
+        for (int k = 0; k < L.nvis && found < 0; k++) {
+            t += dir;
+            if (t < 0 || t >= L.nvis) { if (!wrap) break; t = t < 0 ? L.nvis - 1 : 0; }
+            if (L.nodes[L.vis[t]].kind != K_HEADING) found = t;
+        }
+        for (t = s; found < 0 && t - dir >= 0 && t - dir < L.nvis; ) {
+            t -= dir;
+            if (L.nodes[L.vis[t]].kind != K_HEADING) found = t;
+        }
+        s = found < 0 ? old : found;
+    }
     L.sel = (uint8_t)s;
     if (L.sel < L.top) L.top = L.sel;
+    if (L.sel > 0 && !L.dyn && L.top == L.sel && L.nodes[L.vis[L.sel - 1]].kind == K_HEADING)
+        L.top = L.sel - 1;
     if (L.sel >= L.top + LY.body_rows) L.top = L.sel - LY.body_rows + 1;
 
     if (L.sel == old && L.top == oldTop) return;
