@@ -112,6 +112,10 @@ cmake --build build -j
 `-DCPU_MHZ` is the clock the board starts at until Options > Overclock says
 otherwise: give it 504 (the build's default, 252, is most likely too slow).
 
+`./build_all.sh` builds every board at 504 MHz into `firmware/` (one UF2 per
+board: HDMI or VGA is picked at boot); `./check-release.sh` then checks each
+image's heap and runs the host tests.
+
 The Kickstarts in the Machine menu (DiagROM; A500: 1.2, 1.3, 2.04, 2.05, 3.1;
 A500+: 2.04, 2.05, 3.1) are linked into the firmware from `-DROMS_DIR` (default
 `debug/`) when their files are there: `cmake/roms.cmake` lists the file names.

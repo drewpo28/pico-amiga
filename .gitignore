@@ -6,3 +6,5 @@ build-*/
 *.wav
 roms/
 debug/
+firmware/# build_all.sh output (build-all/ is under build-*/)
+firmware/
