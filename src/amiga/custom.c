@@ -42,6 +42,9 @@ AMIGA_HOT uint16_t custom_read(uint32_t reg) {
     case R_INTENAR: return A.intena;
     case R_INTREQR: return A.intreq;
     case R_DENISEID: return A.ecs ? 0xFFFC : 0xFFFF;     // ECS 8373: $FC; OCS has no ID register
+    // A read strobes too: Zynaps starts its copper list with move.w $dff088,d0,
+    // and the OS list's last MOVE (BPLCON0 = 0 planes) must not run after it.
+    case R_COPJMP1: case R_COPJMP2: copper_write(reg, 0); return 0;
     default:        return 0;
     }
 }
