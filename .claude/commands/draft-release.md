@@ -5,10 +5,10 @@ argument-hint: [new-version e.g. 0.2.0]
 
 Create a draft GitHub release with auto-generated Change History notes.
 
-Last PUBLISHED release tag (changelog baseline): !`B=$(gh release list -R drewpo28/pico-amiga --json tagName,isDraft,isPrerelease --jq 'map(select(.isDraft==false and .isPrerelease==false)) | .[0].tagName' 2>/dev/null); [ -n "$B" ] || B=$(git tag --sort=-v:refname | grep '^v' | head -1); [ -n "$B" ] || B="(none - first release: describe the whole project)"; echo $B`
+Last PUBLISHED release tag (changelog baseline): !`B=$(gh release list -R drewpo28/pico-amiga --json tagName,isDraft,isPrerelease --jq 'map(select(.isDraft==false and .isPrerelease==false)) | .[0].tagName' 2>/dev/null); V=$(grep -oP 'set\(PORT_VERSION "\K[0-9.]+' CMakeLists.txt); [ -n "$B" ] || B=$(git tag --sort=-v:refname | grep '^v' | grep -vx "v$V" | head -1); [ -n "$B" ] || B="(none - first release: describe the whole project)"; echo $B`
 Current PORT_VERSION: !`grep -oP 'set\(PORT_VERSION "\K[0-9.]+' CMakeLists.txt`
 Release for this version: !`VER=$(grep -oP 'set\(PORT_VERSION "\K[0-9.]+' CMakeLists.txt); gh release view "v$VER" -R drewpo28/pico-amiga --json name,isDraft,isPrerelease,targetCommitish,assets --template '{{.name}} draft={{.isDraft}} prerelease={{.isPrerelease}} target={{.targetCommitish}} assets={{len .assets}}' 2>&1 || true`
-Commits since the PUBLISHED baseline: !`B=$(gh release list -R drewpo28/pico-amiga --json tagName,isDraft,isPrerelease --jq 'map(select(.isDraft==false and .isPrerelease==false)) | .[0].tagName' 2>/dev/null); [ -n "$B" ] || B=$(git tag --sort=-v:refname | grep '^v' | head -1); if [ -n "$B" ]; then git log --oneline $B..HEAD; else git log --oneline | wc -l; echo "commits in all (no release yet)"; fi`
+Commits since the PUBLISHED baseline: !`B=$(gh release list -R drewpo28/pico-amiga --json tagName,isDraft,isPrerelease --jq 'map(select(.isDraft==false and .isPrerelease==false)) | .[0].tagName' 2>/dev/null); V=$(grep -oP 'set\(PORT_VERSION "\K[0-9.]+' CMakeLists.txt); [ -n "$B" ] || B=$(git tag --sort=-v:refname | grep '^v' | grep -vx "v$V" | head -1); if [ -n "$B" ]; then git log --oneline $B..HEAD; else git log --oneline | wc -l; echo "commits in all (no release yet)"; fi`
 
 Steps:
 

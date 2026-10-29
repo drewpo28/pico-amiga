@@ -9,13 +9,13 @@ repository is private, to its collaborators only): the tag and the "Source
 code" archives are made right away, and an unpushed HEAD is pushed by the
 script.
 
-Last PUBLISHED release tag (changelog baseline): !`B=$(gh release list -R drewpo28/pico-amiga --json tagName,isDraft,isPrerelease --jq 'map(select(.isDraft==false and .isPrerelease==false)) | .[0].tagName' 2>/dev/null); [ -n "$B" ] || B=$(git tag --sort=-v:refname | grep '^v' | head -1); [ -n "$B" ] || B="(none - first release: describe the whole project)"; echo $B`
+Last PUBLISHED release tag (changelog baseline): !`B=$(gh release list -R drewpo28/pico-amiga --json tagName,isDraft,isPrerelease --jq 'map(select(.isDraft==false and .isPrerelease==false)) | .[0].tagName' 2>/dev/null); V=$(grep -oP 'set\(PORT_VERSION "\K[0-9.]+' CMakeLists.txt); [ -n "$B" ] || B=$(git tag --sort=-v:refname | grep '^v' | grep -vx "v$V" | head -1); [ -n "$B" ] || B="(none - first release: describe the whole project)"; echo $B`
 Current PORT_VERSION: !`grep -oP 'set\(PORT_VERSION "\K[0-9.]+' CMakeLists.txt`
 Release for this version: !`VER=$(grep -oP 'set\(PORT_VERSION "\K[0-9.]+' CMakeLists.txt); gh release view "v$VER" -R drewpo28/pico-amiga --json name,isDraft,isPrerelease,targetCommitish,assets --template '{{.name}} draft={{.isDraft}} prerelease={{.isPrerelease}} target={{.targetCommitish}} assets={{len .assets}}' 2>&1 || true`
 Repository visibility: !`gh repo view drewpo28/pico-amiga --json visibility --jq .visibility 2>&1`
 Working tree: !`git status --porcelain | head -20`
 HEAD vs origin: !`git fetch origin --quiet; git rev-parse --short HEAD; git branch --show-current; git merge-base --is-ancestor HEAD origin/$(git branch --show-current) && echo "HEAD is pushed" || echo "HEAD is NOT pushed"`
-Commits since the PUBLISHED baseline: !`B=$(gh release list -R drewpo28/pico-amiga --json tagName,isDraft,isPrerelease --jq 'map(select(.isDraft==false and .isPrerelease==false)) | .[0].tagName' 2>/dev/null); [ -n "$B" ] || B=$(git tag --sort=-v:refname | grep '^v' | head -1); if [ -n "$B" ]; then git log --oneline $B..HEAD; else git log --oneline | wc -l; echo "commits in all (no release yet)"; fi`
+Commits since the PUBLISHED baseline: !`B=$(gh release list -R drewpo28/pico-amiga --json tagName,isDraft,isPrerelease --jq 'map(select(.isDraft==false and .isPrerelease==false)) | .[0].tagName' 2>/dev/null); V=$(grep -oP 'set\(PORT_VERSION "\K[0-9.]+' CMakeLists.txt); [ -n "$B" ] || B=$(git tag --sort=-v:refname | grep '^v' | grep -vx "v$V" | head -1); if [ -n "$B" ]; then git log --oneline $B..HEAD; else git log --oneline | wc -l; echo "commits in all (no release yet)"; fi`
 
 Steps:
 
