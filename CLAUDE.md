@@ -206,6 +206,12 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   ms: a moving cut, as pico-speccy's V-Sync off. A new mode is kept only once
   confirmed: the commit writes the old ones to vmode_pending.nvs (F_VMODE) and the
   boot that finds it asks for 15 s, then reverts and reboots.
+- **HSTX lines use no RAW_REPEAT / TMDS_REPEAT** (video_hstx.c): every control
+  period is a RAW run, one word per pixel, as pico-speccy paces its blank lines; a
+  black picture line is TMDS from a zero line. With RAW_REPEAT | 688 (640x480's
+  blank-line back porch + width) the blank lines played ~300 px, the frame ran at
+  63 Hz and no display locked (PCp2, MURM2: HSTX had never shown a picture); split
+  into runs of 255 the stream fell apart. Lines/s per mode is the check.
 - **No DMA reads from PSRAM while the PIO TMDS scanout runs** (PICO_DV): the DMA
   has one read master, a PSRAM read stalls it for hundreds of ns, the video
   channel starves and HDMI drops (tried: a per-line bitplane prefetch, hires
