@@ -53,6 +53,9 @@ static i2s_config_t i2s_config = {
     .program_offset = 0,
 };
 
+static uint32_t i2s_div;          // Q8 PIO divider, as i2s_init sets it (at or above the rate)
+static bool     i2s_slow;         // i2s_div + 1 in use
+
 static const char *out_name = "none";
 static bool analog = true;        // PWM or I2S runs (false: HDMI only)
 
@@ -78,8 +81,26 @@ static inline void __not_in_flash_func(output)(int32_t sL, int32_t sR) {
     hdmi_audio_push((int16_t)sL, (int16_t)sR);    // the HDMI islands take the same stream
     if (!analog) return;
     if (is_i2s_enabled) {
-        if (!pio_sm_is_tx_fifo_full(i2s_config.pio, i2s_config.sm))
-            pio_sm_put(i2s_config.pio, i2s_config.sm, ((uint32_t)(uint16_t)sR << 16) | (uint16_t)sL);
+        // Half scale: Minimig's (MiSTer's) level; the DAC's 2.1 Vrms line out at
+        // Paula's full scale was far louder than PWM and HDMI.
+        const uint32_t w = ((uint32_t)(uint16_t)(sR >> 1) << 16) | (uint16_t)(sL >> 1);
+        PIO pio = i2s_config.pio;
+        const uint sm = i2s_config.sm;
+        const uint level = pio_sm_get_tx_fifo_level(pio, sm);
+        if (level < 8) pio_sm_put(pio, sm, w);
+        if (level < 2) pio_sm_put(pio, sm, w);        // nearly dry (start, a late tick): one more
+        // The PIO keeps its own clock and never waits for the tick: an empty FIFO
+        // stalls BCK/LRCK, and the DAC's PLL (PCM5102 makes its clock from BCK)
+        // turns every stall into a click.  Its rate is steered instead: the
+        // truncated Q8 divider plays a hair fast, one more a hair slow (~15 ppm
+        // each way at 252 MHz), switched to keep the 8-word FIFO about half full.
+        if (level <= 3 && !i2s_slow) {
+            i2s_slow = true;
+            pio_sm_set_clkdiv_int_frac(pio, sm, (uint16_t)((i2s_div + 1) >> 8), (uint8_t)(i2s_div + 1));
+        } else if (level >= 5 && i2s_slow) {
+            i2s_slow = false;
+            pio_sm_set_clkdiv_int_frac(pio, sm, (uint16_t)(i2s_div >> 8), (uint8_t)i2s_div);
+        }
         return;
     }
     // 8-bit PWM with first-order error feedback (dither) on each channel.
@@ -185,6 +206,8 @@ void audio_out_start(const int16_t *audio_ring, uint32_t frames, int mode) {
             i2s_config.pio = pio2;
         i2s_volume(&i2s_config, 0);
         i2s_init(&i2s_config);
+        i2s_div = clock_get_hz(clk_sys) * 4 / AMIGA_AUDIO_RATE;
+        i2s_slow = false;
     } else {
         pwm_pin_init(PWM_PIN0);
         pwm_pin_init(PWM_PIN1);
