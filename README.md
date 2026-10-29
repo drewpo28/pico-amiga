@@ -30,7 +30,7 @@ missing and in which order.
 
 | | |
 |---|---|
-| MCU | RP2350 (A or B) at **504 MHz** (Options > Overclock). 252 and 378 MHz are there, but full speed is not guaranteed at them: most likely they are too slow for the emulation |
+| MCU | RP2350 (A or B). It starts at 252 MHz; set **504 MHz** in Options > Overclock: at 252 and 378 full speed is not guaranteed, most likely they are too slow for the emulation |
 | PSRAM | 8 MB QSPI PSRAM on XIP CS1 |
 | Video | HDMI/DVI through HSTX (display on GPIO 12-19) or a PIO TMDS serializer, with HDMI audio; or VGA, detected at boot |
 | Storage | SD card (FatFs) |
@@ -104,15 +104,15 @@ Devices > Input has the cursor keys as a joystick, the mouse speed and buttons.
 Firmware (Pico SDK 2.x and an Arm toolchain):
 
 ```sh
-cmake -B build -DPICO_SDK_PATH=/path/to/pico-sdk -DBOARD=MURM2 -DCPU_MHZ=504   # MURM, PICO_PC, PICO_DV, ZERO2, ..._W
+cmake -B build -DPICO_SDK_PATH=/path/to/pico-sdk -DBOARD=MURM2   # MURM, PICO_PC, PICO_DV, ZERO2, ..._W
 cmake --build build -j
 # -> build/m2p2-amiga-0.1.0.uf2
 ```
 
-`-DCPU_MHZ` is the clock the board starts at until Options > Overclock says
-otherwise: give it 504 (the build's default, 252, is most likely too slow).
+The board starts at 252 MHz (`-DCPU_MHZ`, the clock of a fresh card); switch to
+504 in Options > Overclock for full speed.
 
-`./build_all.sh` builds every board at 504 MHz into `firmware/` (one UF2 per
+`./build_all.sh` builds every board into `firmware/` (one UF2 per
 board: HDMI or VGA is picked at boot); `./check-release.sh` then checks each
 image's heap and runs the host tests.
 

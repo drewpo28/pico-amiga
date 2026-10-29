@@ -47,9 +47,21 @@ static void __not_in_flash_func(flash_timings_transition)(int from_mhz, int to_m
     flash_timing_write(d, r);
 }
 
-int clock_overclock(int mhz, int flash_mhz) {
+// mV -> the SDK's step (the menu's list; anything else: 1.60 V, the tested one).
+static enum vreg_voltage vreg_for(int mv) {
+    static const struct { uint16_t mv; enum vreg_voltage v; } k[] = {
+        { 1150, VREG_VOLTAGE_1_15 }, { 1200, VREG_VOLTAGE_1_20 }, { 1250, VREG_VOLTAGE_1_25 },
+        { 1300, VREG_VOLTAGE_1_30 }, { 1350, VREG_VOLTAGE_1_35 }, { 1400, VREG_VOLTAGE_1_40 },
+        { 1500, VREG_VOLTAGE_1_50 }, { 1600, VREG_VOLTAGE_1_60 }, { 1650, VREG_VOLTAGE_1_65 },
+        { 1700, VREG_VOLTAGE_1_70 }, { 1800, VREG_VOLTAGE_1_80 },
+    };
+    for (unsigned i = 0; i < sizeof k / sizeof k[0]; i++) if (k[i].mv == mv) return k[i].v;
+    return VREG_VOLTAGE_1_60;
+}
+
+int clock_overclock(int mhz, int flash_mhz, int vreg_mv) {
     vreg_disable_voltage_limit();
-    vreg_set_voltage(VREG_VOLTAGE_1_60);
+    vreg_set_voltage(vreg_for(vreg_mv));
     sleep_ms(100);                              // regulator settles first
     const int boot_mhz = (int)(clock_get_hz(clk_sys) / 1000000);
     int applied = mhz;

@@ -22,6 +22,7 @@ uint32_t board_cycles_per_us(void);
 // restores it, which would undo the overclocked flash timing and the PSRAM's.
 void     board_flash_probe(void);
 const uint8_t *board_flash_jedec(void);   // manufacturer, type, capacity (2^n bytes)
+uint8_t  board_flash_qe(void);            // Puya QE fix: 0 n/a, 1 was set, 2/3/5 set, 4 failed, 6 no raw path
 uint32_t board_flash_size(void);          // bytes, from the ID; 0 = unknown
 char     board_chip_package(void);        // 'A' (QFN60) or 'B' (QFN80)
 uint32_t board_cpu_mhz(void);

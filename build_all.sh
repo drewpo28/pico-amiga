@@ -6,15 +6,15 @@
 #
 #   ./build_all.sh [--clean] [-j JOBS_PER_BUILD] [-p MAX_PARALLEL] [BOARDS...]
 #
-# Release images run at 504 MHz (CPU_MHZ, the clock a fresh card starts at): 252
-# and 378 are most likely too slow for the emulation. The built-in ROMs come
+# Release images start at 252 MHz (CPU_MHZ, the clock of a fresh card): every
+# board runs there; Options > Overclock > 504 MHz is what the emulation needs. The built-in ROMs come
 # from ROMS_DIR (default debug/, cmake/roms.cmake); a missing one is left out
 # and listed at the end.
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_TYPE="${BUILD_TYPE:-Release}"
-CPU_MHZ="${CPU_MHZ:-504}"
+CPU_MHZ="${CPU_MHZ:-252}"
 NPROC="$(nproc)"
 MAX_PARALLEL="${MAX_PARALLEL:-3}"
 JOBS_PER_BUILD="${JOBS_PER_BUILD:-$(( (NPROC + MAX_PARALLEL - 1) / MAX_PARALLEL ))}"
@@ -30,7 +30,7 @@ while [ $# -gt 0 ]; do
             cat <<EOF
 Usage: $0 [--clean] [-j JOBS_PER_BUILD] [-p MAX_PARALLEL] [BOARDS...]
 
-Env vars: BUILD_TYPE (Release), CPU_MHZ (504), ROMS_DIR, MAX_PARALLEL, JOBS_PER_BUILD
+Env vars: BUILD_TYPE (Release), CPU_MHZ (252), ROMS_DIR, MAX_PARALLEL, JOBS_PER_BUILD
 Boards:   MURM MURM2 PICO_PC PICO_DV ZERO2 (default: all; the _W / _WS variants
           build too when named)
 EOF

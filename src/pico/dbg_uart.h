@@ -16,6 +16,10 @@ bool dbg_uart_start(bool want);
 bool dbg_uart_active(void);
 // Move buffered text into the UART FIFO; call from the main loop (never blocks).
 void dbg_uart_pump(void);
+// Boot debugging (a DBG_UART_DEFAULT_ON build): everything out, waiting for it;
+// and the baud rate again after a clock change (clk_peri follows clk_sys).
+void dbg_uart_flush(void);
+void dbg_uart_reclock(void);
 
 // Once a second while the console runs: emulated frame time, FPS and the
 // profiler's split, one line ("PERF ..."). Call after every amiga_run_frame().

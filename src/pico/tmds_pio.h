@@ -8,11 +8,14 @@
 //   word 1 bits 6t..6t+5 = pins at bit time t+5
 // The clock pair is side-set (high for the first 5 bits, low for the last 5).
 //
-// Pin order inside the 6 data bits is pico-speccy's for its non-ZERO2 boards
-// (hdmi.h / hdmi_word.h: HDMI_PIN_RGB_notBGR = 1, invert_diffpairs = 1):
+// Pin order inside the 6 data bits is pico-speccy's (hdmi.h / hdmi_word.h). Its
+// non-ZERO2 boards (HDMI_PIN_RGB_notBGR = 1, invert_diffpairs = 1):
 //   lane 0 (blue, carries sync)  bits 0/1     lane 1 (green) bits 2/3
 //   lane 2 (red)                 bits 4/5
-// and every pair is wired N/P: the first pin carries the inverted bit.
+// every pair wired N/P (the first pin carries the inverted bit), the clock pair
+// below the data. ZERO2 (RGB_notBGR = 0, invert_diffpairs = 0): the lanes the
+// other way round (red bits 0/1, blue 4/5), the pairs P/N, the data on the base
+// pin and the clock pair above it (base + 6, video_pio.c).
 #pragma once
 #include <stdint.h>
 #include "tmds_pair.h"
@@ -22,14 +25,21 @@
 #define TMDS_CTRL_10 0x154u
 #define TMDS_CTRL_11 0x2abu
 
+#ifdef ZERO2
+#define TMDS_PAIR_INVERTED 0
+static const int tmds_lane_shift[3] = { 4, 2, 0 };
+#else
+#define TMDS_PAIR_INVERTED 1
 static const int tmds_lane_shift[3] = { 0, 2, 4 };
+#endif
 
 // The pin bits one lane contributes to the two words of one output pixel.
 static inline void tmds_lane_words(int lane, uint16_t sym, uint32_t w[2]) {
     w[0] = w[1] = 0;
     for (int t = 0; t < 10; t++) {
         uint32_t b = (sym >> t) & 1u;
-        uint32_t pair = (b << 1) | (b ^ 1u);          // first pin inverted
+        uint32_t pair = TMDS_PAIR_INVERTED ? (b << 1) | (b ^ 1u)   // first pin inverted
+                                           : ((b ^ 1u) << 1) | b;
         w[t / 5] |= pair << (6 * (t % 5) + tmds_lane_shift[lane]);
     }
 }

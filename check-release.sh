@@ -50,6 +50,7 @@ echo ""
 echo "=== host tests ==="
 cmake -S host -B build-host >/dev/null && cmake --build build-host -j >/dev/null
 ./build-host/tmds_test || EXIT=1
+./build-host/tmds_test_zero2 || EXIT=1
 if [ -f roms/aros-rom.bin ] && [ -f roms/diagrom-13.bin ]; then
     host/tests/smoke.sh roms || EXIT=1
 else

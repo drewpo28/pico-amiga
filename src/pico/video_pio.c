@@ -41,8 +41,15 @@
 #ifndef HDMI_BASE_PIN
 #define HDMI_BASE_PIN 6
 #endif
+// The clock pair and the 6 data pins (tmds_pio.h): PICO_DV and the rest put the
+// clock first, ZERO2 after the data (pico-speccy's hdmi.h).
+#ifdef ZERO2
+#define PIN_CLK   (HDMI_BASE_PIN + 6)
+#define PIN_DATA  HDMI_BASE_PIN
+#else
 #define PIN_CLK   HDMI_BASE_PIN
 #define PIN_DATA  (HDMI_BASE_PIN + 2)
+#endif
 
 // The mode's vertical timing (video_timing(), fixed while the scanout runs).
 static uint32_t V_FP, V_SYNC, V_ACTIVE, V_TOTAL;

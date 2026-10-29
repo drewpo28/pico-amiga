@@ -36,6 +36,20 @@ static stdio_driver_t drv = {
     .crlf_enabled = true,
 };
 
+void dbg_uart_flush(void) {
+#ifdef DBG_UART_TX_PIN
+    if (!on) return;
+    while (rd != wr) dbg_uart_pump();
+    uart_tx_wait_blocking(DBG_UART_INST);
+#endif
+}
+
+void dbg_uart_reclock(void) {
+#ifdef DBG_UART_TX_PIN
+    if (on) uart_set_baudrate(DBG_UART_INST, 115200);
+#endif
+}
+
 bool dbg_uart_start(bool want) {
 #ifdef DBG_UART_TX_PIN
     if (!want || on) return on;

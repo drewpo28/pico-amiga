@@ -24,6 +24,8 @@ static bool dbg_on;
 extern "C" bool dbg_uart_start(bool want) { dbg_on = want; return want; }
 extern "C" bool dbg_uart_active(void) { return dbg_on; }
 extern "C" void dbg_uart_pump(void) { fflush(stdout); }
+extern "C" void dbg_uart_flush(void) { fflush(stdout); }
+extern "C" void dbg_uart_reclock(void) {}
 
 // board.h: the profiler's clock (nanoseconds on a PC).
 extern "C" uint32_t board_cycles(void) {
@@ -36,6 +38,7 @@ static const uint8_t host_jedec[3] = { 0, 0, 0 };
 extern "C" void board_flash_probe(void) {}
 extern "C" const uint8_t *board_flash_jedec(void) { return host_jedec; }
 extern "C" uint32_t board_flash_size(void) { return 0; }
+extern "C" uint8_t board_flash_qe(void) { return 0; }
 extern "C" char board_chip_package(void) { return '-'; }
 extern "C" uint32_t board_cpu_mhz(void) { return 0; }
 extern "C" int board_vreg_mv(void) { return 0; }
@@ -47,7 +50,7 @@ void __wfi(void) { std::this_thread::sleep_for(std::chrono::milliseconds(1)); }
 // ---- psram.h / clock.h: host_main.cpp maps the window at PSRAM_BASE -------------
 extern "C" uint32_t psram_init(unsigned cs_pin, int max_mhz) { (void)cs_pin; (void)max_mhz; return HOST_PSRAM_SIZE; }
 extern "C" uint32_t psram_size(void) { return HOST_PSRAM_SIZE; }
-extern "C" int clock_overclock(int mhz, int flash_mhz) { (void)flash_mhz; return mhz; }
+extern "C" int clock_overclock(int mhz, int flash_mhz, int vreg_mv) { (void)flash_mhz; (void)vreg_mv; return mhz; }
 
 // ---- video.h ----------------------------------------------------------------------
 // The Video > Mode timing as the HSTX scanout runs it (video_modes.c): one output

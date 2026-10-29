@@ -22,6 +22,7 @@ bool     Config::ui_vga_solid = true;
 #define CPU_MHZ 378
 #endif
 uint16_t Config::cpu_mhz      = CPU_MHZ;
+uint16_t Config::vreg_mv      = 1600;
 uint16_t Config::max_flash_freq = 66;
 #ifndef DBG_UART_DEFAULT
 #define DBG_UART_DEFAULT 0
@@ -116,6 +117,13 @@ void Config::load() {
     nvs_get_b  ("ui_rounded",    ui_rounded,   sts);
     nvs_get_b  ("ui_vga_solid",  ui_vga_solid, sts);
     nvs_get_u16("cpu_mhz",       cpu_mhz,      sts);
+    {   // "1_60" = 1.60 V; anything not on the menu's list keeps the default
+        string vv;
+        if (nvs_get_str("vreq_voltage", vv, sts) && vv.size() == 4 && vv[1] == '_') {
+            const int mv = (vv[0] - '0') * 1000 + atoi(vv.c_str() + 2) * 10;
+            if (mv >= 1150 && mv <= 1800) vreg_mv = (uint16_t)mv;
+        }
+    }
     nvs_get_u16("max_flash_freq", max_flash_freq, sts);
     nvs_get_u16("max_psram_freq", max_psram_freq, sts);
     nvs_get_u8 ("audio_out",     audio_out,    sts);
@@ -208,6 +216,11 @@ bool Config::save() {
     nvs_set_b(buf, "ui_rounded",    ui_rounded);
     nvs_set_b(buf, "ui_vga_solid",  ui_vga_solid);
     nvs_set_i(buf, "cpu_mhz",       cpu_mhz);
+    {
+        char vv[8];
+        snprintf(vv, sizeof vv, "%d_%02d", vreg_mv / 1000, vreg_mv % 1000 / 10);
+        nvs_set_str(buf, "vreq_voltage", vv);
+    }
     nvs_set_i(buf, "max_flash_freq", max_flash_freq);
     nvs_set_i(buf, "max_psram_freq", max_psram_freq);
     nvs_set_i(buf, "audio_out",     audio_out);

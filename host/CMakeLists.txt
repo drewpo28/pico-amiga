@@ -24,6 +24,11 @@ target_compile_options(m68kdis PRIVATE -w)
 add_executable(tmds_test tests/tmds_test.c ${ROOT}/src/pico/video_modes.c)
 target_include_directories(tmds_test PRIVATE ${ROOT}/src/pico ${ROOT}/src/amiga)
 target_compile_options(tmds_test PRIVATE -Wall -Wextra)
+# The same checks on ZERO2's pin order (the lanes reversed, P/N pairs).
+add_executable(tmds_test_zero2 tests/tmds_test.c ${ROOT}/src/pico/video_modes.c)
+target_include_directories(tmds_test_zero2 PRIVATE ${ROOT}/src/pico ${ROOT}/src/amiga)
+target_compile_definitions(tmds_test_zero2 PRIVATE ZERO2=1)
+target_compile_options(tmds_test_zero2 PRIVATE -Wall -Wextra)
 
 # ---- pico-amiga: the firmware on a PC (SDL2), like the UF2 ------------------------
 # src/pico/main.c and the input funnel built against host stand-ins for the Pico SDK

@@ -83,7 +83,7 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   this tree with the CPU type patched to 68000 and run test/mc68000/*.bin
   (59/60 pass; move.bin fails the same way on stock Musashi in 68000 mode).
 - Releases (pico-speccy's scheme): `./build_all.sh` (MURM MURM2 PICO_PC PICO_DV
-  ZERO2, Release, 504 MHz, build-all/<BOARD>, UF2s to firmware/),
+  ZERO2, Release, CPU_MHZ 252 = a fresh card's clock, build-all/<BOARD>, UF2s to firmware/),
   `./check-release.sh` (heap = __HeapLimit - end per image, tmds_test, smoke),
   `./draft-release.sh [ver] [--prerelease] [--skip-build] [--notes f]` (gh
   release with the Downloads table of tools/release_downloads.py). Claude

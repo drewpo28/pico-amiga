@@ -20,7 +20,7 @@
         {
             "label": "Configure and Build",
             "type": "shell",
-            "command": "BOARD=\"${input:boardConfig}\"; if [ \"$BOARD\" = \"HOST\" ]; then ${userHome}/.pico-sdk/cmake/v4.3.4/bin/cmake -S ${workspaceFolder}/host -B ${workspaceFolder}/build-host -G Ninja -DCMAKE_MAKE_PROGRAM=${userHome}/.pico-sdk/ninja/v1.13.2/ninja && ${userHome}/.pico-sdk/ninja/v1.13.2/ninja -C ${workspaceFolder}/build-host; else rm -f ${workspaceFolder}/build/CMakeCache.txt && ${userHome}/.pico-sdk/cmake/v4.3.4/bin/cmake -G Ninja -B ${workspaceFolder}/build -S ${workspaceFolder} -DCMAKE_BUILD_TYPE=Release -DBOARD=$BOARD && ${userHome}/.pico-sdk/ninja/v1.13.2/ninja -C ${workspaceFolder}/build; fi",
+            "command": "BOARD=\"${input:boardConfig}\"; if [ \"$BOARD\" = \"ALL\" ]; then bash ${workspaceFolder}/build_all.sh; elif [ \"$BOARD\" = \"HOST\" ]; then ${userHome}/.pico-sdk/cmake/v4.3.4/bin/cmake -S ${workspaceFolder}/host -B ${workspaceFolder}/build-host -G Ninja -DCMAKE_MAKE_PROGRAM=${userHome}/.pico-sdk/ninja/v1.13.2/ninja && ${userHome}/.pico-sdk/ninja/v1.13.2/ninja -C ${workspaceFolder}/build-host; else rm -f ${workspaceFolder}/build/CMakeCache.txt && ${userHome}/.pico-sdk/cmake/v4.3.4/bin/cmake -G Ninja -B ${workspaceFolder}/build -S ${workspaceFolder} -DCMAKE_BUILD_TYPE=Release -DBOARD=$BOARD && ${userHome}/.pico-sdk/ninja/v1.13.2/ninja -C ${workspaceFolder}/build; fi",
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -140,6 +140,9 @@
                 "PICO_DV",
                 "MURM2",
                 "PICO_PC",
+                "ZERO2",
+                "MURM",
+                "ALL",
                 "HOST"
             ],
             "default": "PICO_DV"

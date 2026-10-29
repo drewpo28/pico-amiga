@@ -22,7 +22,8 @@ static uint16_t lane_sym(const uint32_t w[2], int lane) {
     for (int t = 0; t < 10; t++) {
         uint32_t pins = (w[t / 5] >> (6 * (t % 5) + tmds_lane_shift[lane])) & 3u;
         CHECK(pins == 1 || pins == 2, "lane %d t %d: pins %u not differential", lane, t, pins);
-        s |= (uint16_t)((pins >> 1) << t);             // second pin carries the true bit
+        // The true bit: the second pin of an N/P pair, the first of a P/N one (ZERO2).
+        s |= (uint16_t)((TMDS_PAIR_INVERTED ? pins >> 1 : pins & 1) << t);
     }
     return s;
 }

@@ -62,7 +62,9 @@ enum SettingFlags : uint16_t {
     X(SET_VCENTRE,     AC_LIVE, 0,                             get_vcentre,   put_vcentre,   hook_hpos) \
     X(SET_DISK_LED,    AC_LIVE, 0,                             get_diskled,   put_diskled,   nullptr) \
     /* Video > Output > Mode: the live display's (HDMI or VGA) */ \
-    X(SET_VIDEO_MODE,  AC_REBOOT, F_VMODE,                     get_vmode,     put_vmode,     nullptr)
+    X(SET_VIDEO_MODE,  AC_REBOOT, F_VMODE,                     get_vmode,     put_vmode,     nullptr) \
+    /* Options > Overclock > Core voltage, mV: set at boot, before the clock */ \
+    X(SET_VREG,        AC_REBOOT, 0,                           get_vreg,      put_vreg,      nullptr)
 
 #define NM_X_ENUM(id, cls, flags, g, p, h) id,
 enum SettingId : uint16_t {

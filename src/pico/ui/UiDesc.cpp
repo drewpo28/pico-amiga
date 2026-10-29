@@ -235,6 +235,12 @@ static int describeOther(uint16_t setting, int32_t v, DescLine* out, int max) {
         n = rule(out, n, max, "at one clock only");
         n = sub(out, n, max, "Applies", "after a reboot", DESC_PLAIN);
         break;
+    case SET_VREG:
+        if (v < 1600)       { n = rule(out, n, max, "Cooler, but 504 MHz"); n = rule(out, n, max, "may not hold"); }
+        else if (v == 1600)   n = rule(out, n, max, "The tested one");
+        else                { n = rule(out, n, max, "For a board that hangs"); n = rule(out, n, max, "at 504 MHz; hotter"); }
+        n = sub(out, n, max, "Applies", "after a reboot", DESC_PLAIN);
+        break;
     case SET_FLASH_FREQ:
     case SET_PSRAM_FREQ:
         n = rule(out, n, max, "Lower it if the board");

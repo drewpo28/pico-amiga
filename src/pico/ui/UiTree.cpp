@@ -59,6 +59,13 @@ static const Option* audioOutOpts(uint8_t& cnt) {
 static const Option opt_cpu_mhz[] = {
     { "252 MHz", 252 }, { "378 MHz", 378 }, { "504 MHz", 504 },
 };
+// pico-speccy's Core voltage steps (its 1.90 / 2.00 V are storage.nvs-only there
+// and not offered here); the value is mV (Config::vreg_mv).
+static const Option opt_vreg[] = {
+    { "1.15 V", 1150 }, { "1.20 V", 1200 }, { "1.25 V", 1250 }, { "1.30 V", 1300 },
+    { "1.35 V", 1350 }, { "1.40 V", 1400 }, { "1.50 V", 1500 }, { "1.60 V", 1600 },
+    { "1.65 V", 1650 }, { "1.70 V", 1700 }, { "1.80 V", 1800 },
+};
 // Same steps as pico-speccy's Overclock menu. The QMI divides clk_sys by a whole
 // number, so the SCK is the fastest clk_sys / n at or below the limit (504 MHz:
 // 66 -> 63, 84 -> 84, 100 -> 100.8, 133/166 -> 126); PSRAM never goes past 135.
@@ -564,6 +571,9 @@ static const char* sysInfoText() {
     add(" Chip RAM       : 520 KB, %u KB free (heap)\n", (unsigned)(board_free_heap() / 1024));
     const uint8_t* j = board_flash_jedec();
     add(" Flash          : %u MB, JEDEC %02X-%02X-%02X\n", (unsigned)(board_flash_size() >> 20), j[0], j[1], j[2]);
+    // Puya flash (ZERO2): the QE fix's outcome, board.c (4 and 6 are failures).
+    if (const uint8_t qe = board_flash_qe())
+        add(" Flash QE       : %s\n", qe == 1 ? "was set" : qe == 4 ? "FIX FAILED" : qe == 6 ? "no raw access" : "set at boot");
     add(" PSRAM          : %u MB, SCK <= %d MHz\n", (unsigned)(psram_size() >> 20), settings_psram_mhz());
     add(" Machine        : %s, %s\n", machine_name(), machine_rom_name());
     add(" Amiga RAM      : %s\n", Config::machine == 1 ? "1 MB chip (ECS)" : "512 KB chip + 512 KB slow (OCS)");
@@ -678,6 +688,7 @@ static const Node kVideo[] = {
 
 static const Node kOverclock[] = {
     NM_RADIO("CPU frequency",   SET_CPU_MHZ,    opt_cpu_mhz,    nullptr),
+    NM_RADIO("Core voltage",    SET_VREG,       opt_vreg,       nullptr),
     NM_RADIO("Flash frequency", SET_FLASH_FREQ, opt_flash_freq, nullptr),
     NM_RADIO("PSRAM frequency", SET_PSRAM_FREQ, opt_psram_freq, nullptr),
 };

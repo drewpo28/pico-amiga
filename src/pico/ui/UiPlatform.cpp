@@ -48,6 +48,7 @@ extern "C" void ui_load_settings(void) { Config::load(); }
 extern "C" void ui_init(amiga_row_t *framebuffer) { nm::gfxSetFramebuffer(framebuffer); }
 
 extern "C" int settings_cpu_mhz(void)   { return Config::cpu_mhz; }
+extern "C" int settings_vreg_mv(void)   { return Config::vreg_mv; }
 // Audio > Output: 3 (HDMI only) means nothing on a VGA display - the DAC then.
 extern "C" int settings_audio_out(void) {
     return Config::audio_out == 3 && video_is_vga() ? 0 : Config::audio_out;

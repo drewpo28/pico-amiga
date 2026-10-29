@@ -23,6 +23,8 @@ public:
 
     // Board (read at boot)
     static uint16_t cpu_mhz;        // 252 / 378 / 504
+    static uint16_t vreg_mv;        // Options > Overclock > Core voltage, mV (storage.nvs
+                                    //   vreq_voltage "1_60", pico-speccy's key and format)
     static uint16_t max_flash_freq; // flash SCK limit, MHz (default 66)
     static uint16_t max_psram_freq; // PSRAM SCK limit, MHz (default 166; 135 is the cap)
     static uint8_t  audio_out;      // 0 auto (+ HDMI), 1 PWM, 2 I2S, 3 HDMI only (audio_out.c)

@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
 #include "pico/multicore.h"
+#include "hardware/clocks.h"
 #include "hardware/dma.h"
 #include "hardware/structs/sysinfo.h"
 #include "ff.h"
@@ -106,34 +107,58 @@ static void __attribute__((noreturn)) fail(uint16_t colour) {
 // drivers/sdcard: the SPI divider follows clk_sys, re-derived after a clock change.
 void sdcard_reclock(void);
 
+// A DBG_UART_DEFAULT_ON build logs from the first line, whatever the card says,
+// each boot step flushed before the next: where a board stops is the last line.
+#ifdef DBG_UART_DEFAULT
+#define BOOT_STEP(...) do { printf("boot: " __VA_ARGS__); printf("\n"); dbg_uart_flush(); } while (0)
+#else
+#define BOOT_STEP(...) do {} while (0)
+#endif
+
 int main(void) {
+#ifdef DBG_UART_DEFAULT
+    dbg_uart_start(true);
+    BOOT_STEP("pico-amiga " PORT_VERSION " (" CONFIG_BOARD_TAG "), clk_sys %u MHz", (unsigned)(clock_get_hz(clk_sys) / 1000000));
+#endif
     board_flash_probe();             // first: it leaves XIP and boot2 resets the flash timing
+    BOOT_STEP("flash JEDEC %02X-%02X-%02X, QE %u", board_flash_jedec()[0], board_flash_jedec()[1],
+              board_flash_jedec()[2], board_flash_qe());
     led_init();
     // The card first, at the boot clock: storage.nvs says which clock to run at.
     const bool card = f_mount(&fs, "", 1) == FR_OK;
     if (card) ui_load_settings();
-    const int mhz = clock_overclock(settings_cpu_mhz(), settings_flash_mhz());
+    BOOT_STEP("card %s; overclock to %d MHz, flash <= %d MHz, %d mV", card ? "ok" : "none",
+              settings_cpu_mhz(), settings_flash_mhz(), settings_vreg_mv());
+    const int mhz = clock_overclock(settings_cpu_mhz(), settings_flash_mhz(), settings_vreg_mv());
+    dbg_uart_reclock();
+    BOOT_STEP("clk_sys %d MHz", mhz);
     if (card) sdcard_reclock();
     if (dbg_uart_start(settings_dbg_uart()))
-        printf("\npico-amiga " PORT_VERSION ": %d MHz, flash <= %d MHz, card %s\n",
-               mhz, settings_flash_mhz(), card ? "ok" : "none");
+        printf("\npico-amiga " PORT_VERSION ": %d MHz, flash <= %d MHz, card %s, flash QE %u\n",
+               mhz, settings_flash_mhz(), card ? "ok" : "none", board_flash_qe());
     // PSRAM first: its bring-up runs QMI direct mode, during which nothing on
     // either core may fetch from flash (core 1 is not started yet, USB is off).
     // RP2350A carriers wire CS1 to BUTTER_PSRAM_GPIO, RP2350B modules to 47.
+    BOOT_STEP("psram on CS1 GPIO %d (chip %c)", chip_is_rp2350a() ? BUTTER_PSRAM_GPIO : 47, board_chip_package());
     uint32_t psram = psram_init(chip_is_rp2350a() ? BUTTER_PSRAM_GPIO : 47,
                                 settings_psram_mhz());
+    BOOT_STEP("psram %u KB", (unsigned)(psram / KB));
     dma_channel_claim(0);            // video_hstx.c / video_pio.c scanout ping-pong
     dma_channel_claim(1);
     video_select();                  // VGA or HDMI on the display pins
     video_set_mode(settings_video_mode(), mhz);
+    BOOT_STEP("video %s, mode %d", video_is_vga() ? "VGA" : "HDMI", video_mode());
     // Core 1's stack in main RAM: the SDK's default puts it in SCRATCH_X, right
     // under core 0's 4 KB stack (SCRATCH_Y), where a deep menu call on core 0
     // overwrote it (an .m3u pick crashed core 1).  Now core 0 can spill into
     // SCRATCH_X.
     static uint32_t core1_stack[1024];
     multicore_launch_core1_with_stack(core1_main, core1_stack, sizeof core1_stack);
+    BOOT_STEP("core 1 started");
     audio_out_pcm5122_present();     // probe before the PS/2 keyboard takes GP2/3 (ZERO2)
+    BOOT_STEP("pcm5122 probed");
     input_init();
+    BOOT_STEP("input up");
     printf("psram %u KB (SCK <= %d MHz), video %s\n", (unsigned)(psram / KB), settings_psram_mhz(),
            video_is_vga() ? "VGA" : "HDMI");
     dbg_uart_pump();
@@ -154,6 +179,7 @@ int main(void) {
     // The card holds the settings, the disks and an optional Custom ROM; with a
     // built-in ROM the machine also boots without one.
     ui_init(fb);                     // the menu draws into fb
+    BOOT_STEP("menu up, picking the ROM");
     if (!machine_select_rom(&cfg)) fail(card ? 0x00F : 0xF0F);
 
     cfg.framebuffer = fb;
@@ -162,8 +188,10 @@ int main(void) {
     cfg.row_done = ui_stats_row;     // the Win+F8 band and the drive icon, drawn on their rows before they are shown
     cfg.prof_clock = board_cycles;   // where the frame time goes (Win+F8, second page)
     amiga_init(&cfg);
+    BOOT_STEP("amiga up: %s, %s", machine_name(), machine_rom_name());
     if (card) machine_restore_disks();
 
+    BOOT_STEP("disks restored, audio next");
     audio_out_start(audio_ring, AUDIO_FRAMES, settings_audio_out());
     settings_apply_sound();
     settings_apply_video();
