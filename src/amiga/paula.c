@@ -7,9 +7,13 @@
 // location/length registers are latched and AUDx is raised, which is the
 // software's cue to write the next block's AUDxLC/AUDxLEN.
 //
-// Not modelled yet: ADKCON attach (volume/period modulation), the audio
-// low-pass filter (CIA-A PRA bit 1), and non-DMA "manual" playback beyond
-// holding the last AUDxDAT value.
+// Without DMA a channel plays "manually" (the HRM's states 0, 2, 3): an AUDxDAT
+// write to an idle channel plays that word once and raises AUDx; one written
+// meanwhile is taken at the word's end, otherwise the channel goes idle and
+// holds its last byte (a DC level: silent).
+//
+// Not modelled yet: ADKCON attach (volume/period modulation) and the audio
+// low-pass filter (CIA-A PRA bit 1).
 #include <string.h>
 #include "amiga_int.h"
 
@@ -20,6 +24,8 @@ typedef struct {
     int32_t  per_cnt;        // colour clocks left in the current sample
     bool     dma;            // DMA running
     bool     hi;             // next sample is the high byte of dat
+    uint8_t  man;            // without DMA: 0 idle, 1 playing mbuf, 2 and AUDxDAT written since
+    uint16_t mbuf;           // the word being played manually
     int8_t   sample;
 } chan_t;
 
@@ -48,31 +54,43 @@ void paula_dma_changed(void) {
         bool en = dma_enabled(i);
         if (en && !c->dma) {
             c->dma = true;
+            c->man = 0;
             block_start(c, i);
             fetch(c, i);
             c->hi = true;
             c->per_cnt = 0;
         } else if (!en && c->dma) {
-            c->dma = false;
+            c->dma = false;           // idle: the last sample is held
         }
     }
 }
 
 static void advance(chan_t *c, int i, int cc) {
-    uint16_t per = c->per < 124 && c->dma ? 124 : c->per;
-    if (!per) return;
+    int32_t per = c->per < 124 && c->dma ? 124 : c->per;
+    if (!per) per = 65536;
     c->per_cnt -= cc;
     if (c->per_cnt > 0) return;
     if (!c->dma) {
-        // Without DMA the channel only alternates AUDxDAT's two bytes, so n
-        // periods come down to their parity. Not a loop: replay routines park
-        // the channels at AUDxPER = 1 with DMA off (Cannon Fodder's loader
-        // music), which would be ~110 turns per channel per half line.
-        const uint32_t n = (uint32_t)(-c->per_cnt) / per + 1;
-        c->per_cnt += (int32_t)(n * per);
-        const bool last_hi = (n & 1) ? c->hi : !c->hi;     // the state of the n-th period
-        c->sample = (int8_t)(last_hi ? c->dat >> 8 : c->dat);
-        if (n & 1) c->hi = !c->hi;
+        // At most a few turns: a word without a new AUDxDAT write ends idle.
+        // Replay routines park the channels at AUDxPER = 1 with DMA off (Cannon
+        // Fodder's loader music); counted period by period that was ~110 turns
+        // per channel per half line.
+        while (c->man && c->per_cnt <= 0) {
+            if (!c->hi) {                               // the high byte's period ended
+                c->sample = (int8_t)c->mbuf;
+                c->hi = true;
+            } else if (c->man == 2) {                   // the word written meanwhile
+                c->mbuf = c->dat;
+                c->man = 1;
+                amiga_set_intreq((uint16_t)(INTF_AUD0 << i));
+                c->sample = (int8_t)(c->mbuf >> 8);
+                c->hi = false;
+            } else {
+                c->man = 0;                             // idle, holding the low byte
+                break;
+            }
+            c->per_cnt += per;
+        }
         return;
     }
     while (c->per_cnt <= 0) {
@@ -94,7 +112,7 @@ void paula_half_line(void) {
     int cc = (audio_pos & 1) ? 114 : 113;
     for (int i = 0; i < 4; i++) {
         chan_t *c = &ch[i];
-        if (c->dma || c->per) advance(c, i, cc);
+        if (c->dma || c->man) advance(c, i, cc);
         int v = c->vol > 64 ? 64 : c->vol;
         int32_t s = c->sample * v;              // -8192 .. 8128
         if (i == 0 || i == 3) l += s; else r += s;
@@ -119,7 +137,17 @@ void paula_write(uint32_t reg, uint16_t v) {
     case 0x4: c->len = v; break;
     case 0x6: c->per = v; break;
     case 0x8: c->vol = v & 0x7F; break;
-    case 0xA: c->dat = v; if (!c->dma) amiga_set_intreq((uint16_t)(INTF_AUD0 << i)); break;
+    case 0xA:
+        c->dat = v;
+        if (c->dma) break;
+        if (c->man) { c->man = 2; break; }              // taken at the word's end
+        c->man = 1;
+        c->mbuf = v;
+        c->sample = (int8_t)(v >> 8);
+        c->hi = false;
+        c->per_cnt = c->per ? c->per : 65536;
+        amiga_set_intreq((uint16_t)(INTF_AUD0 << i));
+        break;
     default: break;
     }
 }
