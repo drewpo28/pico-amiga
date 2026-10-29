@@ -191,15 +191,15 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   lookup lines against the CPU encoder word for word. Re-run it after touching
   tmds_pio.h, tmds_pair.h or tmds_lut.h.
 - **Video > Output > Mode** (video_modes.c, pico-speccy's VM_* numbers and timings in
-  storage.nvs hdmi_vmode / vga_vmode): 640x480 @60 (default: not every display
+  storage.nvs hdmi_vmode / vga_vmode): 640x480 at 60 Hz (default: not every display
   takes 50 Hz; a 320 x 240 window on the standard screen; Picture position moves
-  it; the menu's surface Sf is the window), 720x480 @60 (360 x 240: 720x576's
-  line, 504 lines), 800x600 @60 (VM 17, ours: framed, 625 lines at 37.8 / 50.4 /
-  33.6 MHz, HDMI only - VGA's 800x600 is 60 Hz already), 720x576 @50, 800x600
-  @50 (framed). UiDesc.cpp describes each (refresh, how much is cut). Each
+  it; the menu's surface Sf is the window), 720x480 at 60 Hz (360 x 240: 720x576's
+  line, 504 lines), 800x600 at 60 Hz (VM 17, ours: framed, 625 lines at 37.8 / 50.4 /
+  33.6 MHz, HDMI only - VGA's 800x600 is 60 Hz already), 720x576 at 50 Hz, 800x600
+  at 50 Hz (framed). UiDesc.cpp describes each (refresh, how much is cut). Each
   scanout has its rows: HSTX needs a pixel clock of clk_sys / 5, 10, 15 or 20
-  (800x600 @50: 37.8 MHz at 378, 50.4 at 252/504); the PIO HDMI a divider of a
-  whole or half number (800x600 @50: 37.8 at 378, 33.6 at 504, none at 252), its
+  (800x600 at 50 Hz: 37.8 MHz at 378, 50.4 at 252/504); the PIO HDMI a divider of a
+  whole or half number (800x600 at 50 Hz: 37.8 at 378, 33.6 at 504, none at 252), its
   lookup line a runtime tl_layout_t (tmds_lut.h: black borders are TL_E_BLACK,
   tmds_test lays out every mode at every clock from video_modes.c and checks it); VGA runs 800x600 at VESA's 60 Hz (42 MHz, 1108 x
   628). A 50 Hz mode paces the emulation by its frames, 60 Hz by its lines in 20

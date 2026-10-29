@@ -56,11 +56,11 @@ after 15 s):
 
 | Mode | Picture | Notes |
 |---|---|---|
-| 640x480 @60 (default) | 320 x 240 of the screen | every display takes it |
-| 720x480 @60 | 360 x 240 | the full width with its overscan |
-| 800x600 @60 | all of it, framed | HDMI at 378 / 504 MHz (VGA: the 800x600 below) |
-| 720x576 @50 | all of it | the Amiga's own rate: smooth scrolling |
-| 800x600 @50 | all of it, framed | 60 Hz on VGA |
+| 640x480 at 60 Hz (default) | 320 x 240 of the screen | every display takes it |
+| 720x480 at 60 Hz | 360 x 240 | the full width with its overscan |
+| 800x600 at 60 Hz | all of it, framed | HDMI at 378 / 504 MHz (VGA: the 800x600 below) |
+| 720x576 at 50 Hz | all of it | the Amiga's own rate: smooth scrolling |
+| 800x600 at 50 Hz | all of it, framed | 60 Hz on VGA |
 
 The Amiga makes 50 frames a second; a 60 Hz mode shows them with a little
 judder. A 50 Hz mode is the smooth one, if the display takes it. The menu
