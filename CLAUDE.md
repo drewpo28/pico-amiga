@@ -61,7 +61,8 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   `cmake/roms.cmake` lists them; an id there is what storage.nvs keeps, never
   reuse one. The firmware targets 16 MB flash; the core reads the ROM in place
   (XIP). `machine.cpp` owns ROM selection and the drives: DF0..DF3 (Devices > Disks > Floppy
-  drives, Auto = one per disk of an `.m3u` set; Kickstart finds DF1+ by drive ID
+  drives, Auto = one per disk of an `.m3u` set, or its `#DRIVES:n` line - ours:
+  Gobliiins reads DF0 only and hangs short of memory with 3; Kickstart finds DF1+ by drive ID
   at reset). An ADF streams from the card; a `.dms` is unpacked at insert time by
   `src/pico/dms.c` (xDMS port, its ~100 KB work area in PSRAM) into a per-drive
   880 KB PSRAM slot above 2 MB, write-protected. The bench takes `--adf x.dms` too,

@@ -48,7 +48,8 @@ bool machine_write_protect(int drive, bool on);
 void machine_restore_disks(void);
 
 // Disk sets, as RetroArch's .m3u playlists: one ADF per line (relative to the
-// list's folder), '#' lines ignored. Loading one puts disk `index` in DF0; the
+// list's folder), '#' lines ignored but ours, "#DRIVES:n" (1-4: the drives
+// Floppy drives Auto connects for the set). Loading one puts disk `index` in DF0; the
 // others wait to be swapped in (machine_set_select), like RetroArch's Disk
 // Control. Inserting a single ADF with machine_insert() ends the set.
 bool machine_load_set(const char *m3u_path, int index);

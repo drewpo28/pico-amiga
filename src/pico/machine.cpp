@@ -154,6 +154,7 @@ static void eject_adf(int drive) {
 // The disk set (machine_load_set); s_set_index is the disk in DF0.
 static std::string s_set[16];
 static int s_set_count, s_set_index;
+static int s_set_drives;                  // the set's "#DRIVES:n" line, 0 = none
 
 static bool insert_adf(int drive, const char *path, bool write_protect);
 
@@ -248,6 +249,7 @@ bool machine_load_set(const char *m3u_path, int index) {
     int n = 0;
     UINT len = 0;                                           // bytes in buf
     bool eof = false, skip = false;
+    int drives = 0;
     while (n < 16) {
         char *nl = (char *)memchr(buf, '\n', len);
         if (!nl && !eof && len < sizeof buf) {
@@ -268,8 +270,15 @@ bool machine_load_set(const char *m3u_path, int index) {
             l.pop_back();
         if (l.compare(0, 3, "\xEF\xBB\xBF") == 0) l = l.substr(3);   // UTF-8 BOM (before a '#' too)
         size_t s = l.find_first_not_of(" \t");
-        if (s == std::string::npos || l[s] == '#') continue;   // blank, or #SAVEDISK: etc.
+        if (s == std::string::npos) continue;
         l = l.substr(s);
+        if (l[0] == '#') {                                  // #SAVEDISK: etc. skipped
+            // Ours: "#DRIVES:n", the drives Floppy drives Auto connects (Gobliiins
+            // reads DF0 only and hangs short of memory with a volume in each of 3).
+            if (l.size() > 8 && !strncasecmp(l.c_str(), "#DRIVES:", 8) && l[8] >= '1' && l[8] <= '4')
+                drives = l[8] - '0';
+            continue;
+        }
         // RetroArch's "file|label" form: the label is not a path.
         const size_t bar = l.find('|');
         if (bar != std::string::npos) l = l.substr(0, bar);
@@ -282,6 +291,7 @@ bool machine_load_set(const char *m3u_path, int index) {
     for (int i = 0; i < n; i++) s_set[i] = set[i];
     s_set_count = n;
     s_set_index = index;
+    s_set_drives = drives;
     return true;
 }
 
@@ -610,6 +620,7 @@ int machine_drives(void) { return s_drives; }
 
 bool machine_apply_drives(void) {
     int n = Config::drives;
+    if (!n && s_set_count && s_set_drives) n = s_set_drives;                 // Auto, the set's #DRIVES
     if (!n) n = s_set_count > 1 ? (s_set_count < 4 ? s_set_count : 4) : 1;   // Auto
     const bool changed = n != s_drives;
     s_drives = n;

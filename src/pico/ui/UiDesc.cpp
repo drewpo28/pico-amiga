@@ -122,6 +122,7 @@ static int describeDrives(int32_t v, DescLine* out, int max) {
     if (v == 0) {
         n = rule(out, n, max, "One per disk of an .m3u");
         n = rule(out, n, max, "set (up to 4), else one");
+        n = rule(out, n, max, "#DRIVES:n in it: n");
     }
     n = sub(out, n, max, "Kickstart", "", DESC_PLAIN);
     n = rule(out, n, max, "Finds drives at reset:");

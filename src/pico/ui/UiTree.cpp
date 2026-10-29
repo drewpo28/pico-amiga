@@ -79,7 +79,8 @@ static const Option opt_psram_freq[] = {
 };
 static const Option opt_drives[] = {
     { "Auto (one per disk of an .m3u set)", 0, "Auto" },
-    { "1 (DF0)", 1, "1" }, { "2 (DF0, DF1)", 2, "2" }, { "3", 3 }, { "4", 4 },
+    { "1 (DF0)", 1, "1" }, { "2 (DF0, DF1)", 2, "2" },
+    { "3 (DF0, DF1, DF2)", 3, "3" }, { "4 (DF0..DF3)", 4, "4" },
 };
 static const Option opt_hpos[] = {
     { "Centred", 0 }, { "Wide left (+12 columns)", 1, "Wide left" },

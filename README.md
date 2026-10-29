@@ -78,7 +78,9 @@ describes each mode beside the list.
 A Kickstart picked from the card (Machine > Custom ROM) can have a 512 KB
 `ext.rom` beside it (AROS needs one). An `.m3u` is a list of disk files, one per
 line (as RetroArch reads them); Devices > Disks > Floppy drives "Auto" gives
-each disk of a set its own drive, and Ctrl+F12 swaps them.
+each disk of a set its own drive, and Ctrl+F12 swaps them. A `#DRIVES:n` line in
+the `.m3u` (1-4) makes Auto connect n drives instead: for games that read DF0 only
+or run short of memory with more drives (Gobliiins: `#DRIVES:1`).
 
 If the board cannot start, the screen turns one colour and the LED blinks:
 red = no PSRAM, magenta = no ROM and no SD card, blue = no ROM.
