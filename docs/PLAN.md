@@ -124,3 +124,117 @@ Step 3 - ECS Denise (host):
       monitor), also 4 colours: our output is 576p50, so at best it is shown
       scaled, never at its own timing
 - [ ] hw: the A500+ on a board (PICO_DV: SRAM left ~5.6 KB)
+
+## 6. A1200 (AGA)
+
+Nothing of it is there yet: the CPU is a 68000 (m68kconf.h has EC020/020 off,
+amiga.c sets M68K_CPU_TYPE_68000), Denise knows OCS/ECS only (32 colour
+registers, 6 bitplane pointers, a 64-entry LUT) and the frame buffer is 12-bit.
+An A1200 is a 68EC020 at 14.18 MHz (twice the A500's clock, 24-bit addresses),
+2 MB of chip RAM on a 32-bit bus, no slow RAM, Alice (AGA Agnus) + Lisa (AGA
+Denise), Gayle (IDE, PCMCIA) and Kickstart 3.1 A1200 (40.068, 512 KB; 3.0 is
+39.106). It is a third machine (Config::machine = 2, `--a1200` on the bench),
+not AGA on an A500: no real A500 had it, and the ROMs differ.
+
+Scope: PAL, 12-bit output. AGA's 24-bit colours are cut to their top 4 bits
+per gun (every scanout, the TMDS lookups and the menu are 0x0RGB; HAM8's
+262,144 colours become 4,096). A wider output is a separate, later project.
+
+Step 0 - is there room for it (hw, before anything else):
+
+- [ ] Measure the headroom on the board: the A500 core with the CPU given twice
+      the cycles per line (a debug switch) on Cannon Fodder / State of the Art,
+      ms per frame at 378 and 504 MHz. Today a busy frame takes 18-20 ms; if
+      the doubled CPU alone does not fit in 20 ms, AGA runs below full speed
+      (frame skip or a slower emulated clock) and the steps below must say so
+- [ ] The same with 8-plane fetch + c2p simulated (6 planes is today's cost):
+      the renderer is already the larger half on core 1
+
+Step 1 - the CPU: 68EC020 (host):
+
+- [ ] m68kconf.h: M68K_EMULATE_EC020 on (020/040 stay off); re-run
+      tools/gen_musashi.py. New handlers: bit fields, 32-bit MULx/DIVx.L,
+      CAS/CHK2/CMP2, PACK/UNPK, EXTB, scaled index and memory-indirect EA
+      modes, MOVEC (VBR, CACR, CAAR, MSP/ISP), RTD, TRAPcc, BKPT
+- [ ] The 68000 machines must not get slower: check that the runtime
+      CPU_TYPE_IS_* tests stay out of the hot handlers (generate two handler
+      sets if they do not), and that A500 screens and smoke stay unchanged
+- [ ] tools/musashi_hot.txt: a second profile from an AGA game; the SRAM set
+      stays at ~17 KB (PICO_DV's heap is the limit), so the two lists share it
+- [ ] Per-handler cycles: Musashi's 020 table; cycles scale x2 against the
+      colour clock (the scheduler counts CPU cycles per line). The instruction
+      cache (CACR) is not modelled beyond storing CACR; chip-bus contention
+      stays unmodelled as on the A500 (section 3)
+- [ ] Re-check with Musashi's test suite built for 68020 (test/mc68020, if the
+      tree has it) and state.c: the new registers (VBR, CACR, CAAR, MSP) at the
+      end of the CPU block
+
+Step 2 - the machine (host):
+
+- [ ] cmake/roms.cmake: A1200 machine, KS 3.1 A1200 (and 3.0) with new ids;
+      Machine > A1200 row; Custom ROM on it; DiagROM checks the A1200 too
+- [ ] Memory map: 2 MB chip RAM (DMA pointers are already 21 bits), nothing at
+      $C00000 (Kickstart must not find slow RAM), chip_mask 2 MB
+- [ ] PSRAM layout (main.c): chip RAM 0-2 MB pushes the Custom ROM buffers, the
+      band, the MFM track and the DMS area up by 1 MB; an A1200 needs at least
+      a 4 MB PSRAM (2 MB boards: the row is disabled, as the band is today)
+- [ ] VPOSR Alice ID (PAL $22 / $23, check against WinUAE), DENISEID Lisa ($F8)
+- [ ] Gayle: the ID at $DE1000 and an IDE that answers "no drive" at once
+      ($DA0000 status): KS 3.1's scsi.device otherwise waits ~30 s at boot.
+      PCMCIA not fitted. A real IDE (HDF from the card) comes with WHDLoad
+- [ ] Optional fast RAM (none on a stock A1200; WHDLoad and many games want
+      it): 4 MB at $200000 from PSRAM, on boards with 8 MB
+- [ ] Check: KS 3.1 boots to the insert-disk screen, Workbench 3.1 from ADF
+      reports 2 MB chip; AROS (free) for smoke
+
+Step 3 - Alice: AGA bitplane and sprite DMA (host):
+
+- [ ] FMODE ($1FC): bitplane fetch 1x / 2x / 4x (16 / 32 / 64 bits). A fetch
+      unit stays 8 cc but carries 1, 2 or 4 words per plane; DDFSTRT/DDFSTOP
+      round to the wider unit; modulos are added after the wider fetch (games
+      align to 64 bits). dma_* in denise.c reads 2 or 4 words per slot into ws[]
+- [ ] 8 bitplanes: bplpt[8], BPLCON0 BPU3 (bit 4), 7 and 8 planes in every
+      resolution. ws[] (16 KB) holds fewer lines of lead at 8 planes x 4x: check
+      the 40-80 line lead still holds, grow the ring if not (SRAM)
+- [ ] Sprites: FMODE SPR32/SPR64 (16 / 32 / 64 pixels wide, 2 or 4 words per
+      fetch, control words in the wide format), SSCAN2 (sprite scan doubling)
+- [ ] BSCAN2 and the second modulo pair (BPL1MOD/BPL2MOD per line parity):
+      productivity / scan-doubled modes, low priority for PAL games
+
+Step 4 - Lisa: the picture (host):
+
+- [ ] 256 colour registers: BPLCON3 BANK (bits 13-15) picks 32 of them,
+      LOCT (bit 9) picks the low nibbles; a write with LOCT=0 sets both halves,
+      as on the chip. We keep 24 bits per register (for snapshots and a
+      later wider output) but render the top 12 bits, so a LOCT=1 write changes nothing on screen and is dropped before
+      the queue (keeps copper rainbows that write both halves cheap)
+- [ ] lut[] / lut_pf[] grow from 64 to 256 entries (+~400 B); the pf value is
+      already a byte per pixel. The c2p for 7-8 planes (bytewise tables or the
+      SIO interpolators, section 2) - 8 planes is a third more work than 6
+- [ ] BPLCON4: BPLAM (XOR on the bitplane colour index), ESPRM / OSPRM (even /
+      odd sprite colour banks); BPLCON3 PF2OF (dual playfield 2's colour
+      offset), SPRES (sprite resolution), BRDRBLNK / BRDNTRAN / BRDSPRT
+- [ ] HAM8 (6 planes of data, 2 control bits: modify the top 6 bits of a gun)
+      and EHB stays for 6-plane non-AGA modes. HAM6 unchanged
+- [ ] Sprite colours from the selected bank, sprite pixels at SPRES, the 32/64
+      wide shift registers; CLXCON2 (collision of planes 7-8)
+- [ ] Frame buffer rows: lowres rows are DIRECT (360 x 0x0RGB) and take any
+      number of colours already. Hires rows are IDX8 with a 64-colour row
+      palette: a hires AGA line with more colours converts to DIRECT
+      (w_to_direct, pairs averaged as super-hires does). A 256-entry row
+      palette for every row would cost 288 x 384 B = 110 KB of SRAM - not
+      possible; a DIRECT 720-pixel row (1440 B) neither. Count how often games
+      hit it before considering more
+- [ ] LACE4 (16 colours per field line) falls back the same way (section 3)
+- [ ] State: the 256 x 24-bit palette, BPLCON4, FMODE, bplpt[6..7] at the end
+      of the Denise block
+
+Step 5 - checks and the board:
+
+- [ ] Reference screens (docs/screens/): KS 3.1 boot, Workbench 3.1 in
+      256-colour lowres and hires, AROS AGA; a set of AGA games from ADF
+      (owner's: HAM8 titles, 8-plane games, 64-pixel sprites, copper bank
+      rainbows) checked against WinUAE, sync vs `--render-thread`
+- [ ] smoke.sh: an A1200 test with AROS (no Commodore ROM in the repo)
+- [ ] hw: on a board with >= 4 MB PSRAM; `end` / heap after the larger handler
+      set and LUTs (./check-release.sh), ms per frame with the PERF band
