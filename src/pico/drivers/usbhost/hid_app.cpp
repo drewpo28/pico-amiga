@@ -1143,8 +1143,10 @@ static void mouse_apply(bool bl, bool br, bool bm, int32_t dx, int32_t dy, int32
     // (UnrealSpeccy convention — the reason Swap = On is the default): mouseButtonL
     // lands on D1 (the original Kempston layout), so a first press of the PHYSICAL
     // left button needs the swap, a first press of the right one does not.
+    // PICO-AMIGA: Mouse::buttonL is the Amiga's left button (input.cpp), no Kempston
+    // D1: the first button pressed alone becomes left, so a right one swaps.
     if (Config::mouse_swap == 2 && s_auto_swap < 0 && bl != br) {
-        s_auto_swap = bl ? 1 : 0;
+        s_auto_swap = bl ? 0 : 1;
         Debug::log("[MOUSE] Swap buttons auto: %s button is left", bl ? "left" : "right");
     }
     const bool swap = Config::mouse_swap == 1 || (Config::mouse_swap == 2 && s_auto_swap == 1);

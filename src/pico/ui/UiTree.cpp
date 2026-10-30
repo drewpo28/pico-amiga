@@ -44,7 +44,8 @@ static const Option opt_mouse_swap[] = {
     { "Off", 0 }, { "On", 1 }, { "Auto (first single press)", 2, "Auto" },
 };
 static const Option opt_mouse_sens[] = {
-    { "1/4", 64 }, { "1/2", 128 }, { "1:1", 256 }, { "x2", 512 },
+    { "1/8", 32 }, { "1/4", 64 }, { "3/8", 96 }, { "1/2", 128 }, { "3/4", 192 },
+    { "1:1", 256 }, { "x1.5", 384 }, { "x2", 512 },
 };
 // Audio > Output: Auto is the DAC it finds (or PWM) and HDMI as well; HDMI alone
 // is offered on an HDMI display.

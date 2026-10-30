@@ -13,7 +13,7 @@ using std::vector;
 
 uint8_t  Config::secondJoy    = 0;
 uint16_t Config::mouse_sens   = 256;
-uint8_t  Config::mouse_swap   = 0;
+uint8_t  Config::mouse_swap   = 2;
 bool     Config::CursorAsJoy  = true;
 uint8_t  Config::ui_theme     = 0;
 bool     Config::ui_rounded   = true;
@@ -37,7 +37,7 @@ bool     Config::hdmi_capture = false;
 uint8_t  Config::hdmi_vmode   = 0;      // VM_640x480_60: every display takes it, not all take 50 Hz
 uint8_t  Config::vga_vmode    = 0;
 uint8_t  Config::hpos         = 0;
-bool     Config::vcentre      = true;
+bool     Config::vcentre      = false;
 bool     Config::disk_led     = true;
 uint8_t  Config::machine      = 0;
 std::string Config::kick      = "ks13";

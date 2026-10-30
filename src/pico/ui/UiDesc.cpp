@@ -263,7 +263,9 @@ static int describeOther(uint16_t setting, int32_t v, DescLine* out, int max) {
         break;
     case SET_MOUSE_SENS:
         n = rule(out, n, max, "1:1 as the USB mouse");
-        n = rule(out, n, max, "reports it");
+        n = rule(out, n, max, "reports it. Amiga mice");
+        n = rule(out, n, max, "had ~200 dpi: 1/4 for");
+        n = rule(out, n, max, "800 dpi (Gobliiins)");
         break;
     case SET_MOUSE_SWAP:
         if (v == 2) { n = rule(out, n, max, "The first button pushed"); n = rule(out, n, max, "alone becomes the left"); }
