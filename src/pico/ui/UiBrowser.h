@@ -14,7 +14,7 @@ namespace nm {
 
 // What is being picked: which extensions show bright, and where the cursor was last.
 // BROWSE_CFG is housekeeping only (Enter views text, nothing is picked).
-enum BrowseType : uint8_t { BROWSE_ALL = 0, BROWSE_ADF, BROWSE_ROM, BROWSE_CFG, BROWSE_COUNT };
+enum BrowseType : uint8_t { BROWSE_ALL = 0, BROWSE_ADF, BROWSE_ROM, BROWSE_CFG, BROWSE_SNAP, BROWSE_COUNT };
 
 // `root`, when given, is the highest directory this browse may go up to (it must be
 // a prefix of fdir and end with '/').

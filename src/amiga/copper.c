@@ -131,6 +131,12 @@ void copper_write(uint32_t reg, uint16_t v) {
 
 uint32_t copper_pc(void) { return pc; }
 
+void copper_state(st_t *s) {
+    st_u32(s, &lc[0]); st_u32(s, &lc[1]); st_u32(s, &pc);
+    st_int(s, &state); st_int(s, &cop_h);
+    st_u16(s, &ir1); st_u16(s, &ir2);
+}
+
 void copper_reset(void) {
     lc[0] = lc[1] = pc = 0;
     state = COP_STOP;

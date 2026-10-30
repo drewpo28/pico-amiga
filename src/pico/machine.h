@@ -81,4 +81,25 @@ int  machine_drives(void);
 
 #ifdef __cplusplus
 }
+
+// ---- snapshots (snapshot.cpp) ----------------------------------------------------------
+#include <string>
+// What is in the drives, as a snapshot keeps it.
+struct MachineDisks {
+    std::string path[4];       // card paths, "" = empty
+    bool wp[4], manual[4];     // write-protected; DF1..DF3 put there by hand
+    std::string set;           // the .m3u disk set loaded, "" = none
+    int set_index;             // its disk in DF0
+};
+void machine_get_disks(MachineDisks &d);
+// Every drive emptied, then these disks put in (the set loaded first) and the
+// drives Config::drives asks for connected; the disks that cannot be opened are
+// listed in `missing` (their drives stay empty).
+void machine_put_disks(const MachineDisks &d, std::string &missing);
+// The CRC-32s (amiga_crc32) of the ROM and extended ROM a Config::kick /
+// kick_file pair would run, read without loading them; ext 0 = none.  False:
+// no ROM at all.
+bool machine_rom_crcs(const std::string &kick, const std::string &file, uint32_t *rom, uint32_t *ext);
+// "Kickstart 1.3", or a Custom ROM's file name.
+std::string machine_rom_label(const std::string &kick, const std::string &file);
 #endif

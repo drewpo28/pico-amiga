@@ -286,6 +286,20 @@ void blitter_write(uint32_t reg, uint16_t v) {
     }
 }
 
+// Snapshots: a blit is done the moment it starts, so one "in flight" is only its
+// BBUSY time (done_cyc, on the CPU's clock, which the snapshot keeps too).
+void blitter_state(st_t *s) {
+    st_u16(s, &con0); st_u16(s, &con1); st_u16(s, &afwm); st_u16(s, &alwm);
+    ST_ARRAY(s, st_u32, pt);
+    ST_ARRAY(s, st_i16, mod);
+    st_u16(s, &adat); st_u16(s, &bdat); st_u16(s, &cdat);
+    st_u16(s, &bold); st_u16(s, &bhold);
+    st_int(s, &bw); st_int(s, &bh);
+    st_bool(s, &pending); st_bool(s, &busy); st_bool(s, &zero);
+    st_u64(s, &done_cyc);
+    st_u32(s, &nblits);
+}
+
 void blitter_reset(void) {
     con0 = con1 = 0; afwm = alwm = 0xFFFF;
     for (int i = 0; i < 4; i++) { pt[i] = 0; mod[i] = 0; }

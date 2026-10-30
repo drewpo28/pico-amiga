@@ -618,10 +618,17 @@ static int s_drives = 1;
 
 int machine_drives(void) { return s_drives; }
 
-bool machine_apply_drives(void) {
+// The drives Config::drives connects: Auto is one per disk of the set (or its
+// #DRIVES line), up to 4.
+static int drives_wanted(void) {
     int n = Config::drives;
     if (!n && s_set_count && s_set_drives) n = s_set_drives;                 // Auto, the set's #DRIVES
     if (!n) n = s_set_count > 1 ? (s_set_count < 4 ? s_set_count : 4) : 1;   // Auto
+    return n;
+}
+
+bool machine_apply_drives(void) {
+    const int n = drives_wanted();
     const bool changed = n != s_drives;
     s_drives = n;
     amiga_set_drives(n);
@@ -634,6 +641,78 @@ bool machine_apply_drives(void) {
         if (want) insert_adf(d, s_set[d].c_str(), Config::df0_wp);
     }
     return changed;
+}
+
+// ---- snapshots (snapshot.cpp) ----------------------------------------------------------
+void machine_get_disks(MachineDisks &d) {
+    for (int i = 0; i < 4; i++) {
+        d.path[i] = s_drv[i].path;
+        d.wp[i] = s_drv[i].ro;
+        d.manual[i] = s_drv[i].manual;
+    }
+    d.set = s_set_count ? Config::df0 : std::string();
+    d.set_index = s_set_index;
+}
+
+void machine_put_disks(const MachineDisks &d, std::string &missing) {
+    for (int i = 0; i < 4; i++) eject_adf(i);
+    s_set_count = 0;
+    if (!d.set.empty() && !machine_load_set(d.set.c_str(), d.set_index)) {
+        missing += missing.empty() ? "" : ", ";
+        missing += d.set.substr(d.set.find_last_of('/') + 1);
+    }
+    for (int i = 0; i < 4; i++) {
+        if (d.path[i].empty()) continue;
+        if (s_drv[i].path != d.path[i] && !insert_adf(i, d.path[i].c_str(), d.wp[i])) {
+            missing += missing.empty() ? "" : ", ";
+            missing += d.path[i].substr(d.path[i].find_last_of('/') + 1);
+            continue;
+        }
+        s_drv[i].manual = d.manual[i];
+    }
+    s_drives = drives_wanted();
+    amiga_set_drives(s_drives);
+}
+
+// A file's CRC-32 when it is `size` bytes (or either of two sizes), read through
+// a small buffer.  False: no such file, another size.
+static bool file_crc(const char *path, uint32_t size_a, uint32_t size_b, uint32_t *crc) {
+    FIL &f = s_job;
+    if (f_open(&f, path, FA_READ) != FR_OK) return false;
+    const FSIZE_t size = f_size(&f);
+    uint8_t *buf = (size == size_a || size == size_b) ? (uint8_t *)malloc(512) : nullptr;
+    bool ok = buf != nullptr;
+    uint32_t c = 0;
+    for (FSIZE_t at = 0; ok && at < size; at += 512) {
+        UINT n = 0;
+        ok = f_read(&f, buf, 512, &n) == FR_OK && n == 512;
+        c = amiga_crc32(c, buf, n);
+    }
+    free(buf);
+    f_close(&f);
+    *crc = c;
+    return ok;
+}
+
+// The choice machine_select_rom makes, for a kick / kick_file pair.
+bool machine_rom_crcs(const std::string &kick, const std::string &file, uint32_t *rom, uint32_t *ext) {
+    *rom = *ext = 0;
+    if (kick == "sd" && file_crc(file.c_str(), 256 * KB, 512 * KB, rom)) {
+        const std::string dir = file.substr(0, file.find_last_of('/') + 1);
+        if (!file_crc((dir + "ext.rom").c_str(), 512 * KB, 512 * KB, ext)) *ext = 0;
+        return true;
+    }
+    const builtin_rom_t *r = builtin_rom_find(kick.c_str());
+    if (!r && builtin_rom_count) r = &builtin_roms[0];
+    if (!r) return false;
+    *rom = amiga_crc32(0, r->data, r->size);
+    return true;
+}
+
+std::string machine_rom_label(const std::string &kick, const std::string &file) {
+    if (kick == "sd") return file.substr(file.find_last_of('/') + 1);
+    const builtin_rom_t *r = builtin_rom_find(kick.c_str());
+    return r ? r->label : kick;
 }
 
 void machine_restore_disks(void) {

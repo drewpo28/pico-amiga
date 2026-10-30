@@ -70,6 +70,19 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   (written disks saved to their files). Devices > Disks > New blank disk formats an empty
   OFS ADF on the card (`machine_new_disk`); with an .m3u set loaded it is appended
   to the set (games' own save-disk formatters: swap it in with Ctrl+F12).
+- Snapshots (pico-speccy's `.pss` as `.pas`): `src/amiga/state.c` saves and
+  loads the core between frames as blocks (`amiga_state_save/load`); each module's
+  `*_state(st_t*)` moves its fields both ways (ST_SIZE / ST_SAVE / ST_LOAD), fixes
+  up what derives from them under ST_LOAD, and takes a new field at its END (older
+  snapshots read it as 0). MACH comes first (model, ROM CRCs) and is checked before
+  anything changes. `src/pico/snapshot.cpp` is the file: "PAS1" header, NAME
+  (renamed in place), CFG (model, Kickstart, the drives' disks with size and date),
+  then the core's blocks; the disks' contents are not in it. Snapshots > Load from
+  file / Quick slots (40, `/amiga/snapshots/persistN.pas`, `ui/UiSnap.cpp`);
+  Win+F3 / Win+F4 open the slots (Enter loads / saves), Alt+Win+F3 / Alt+Win+F4
+  load / save `Config::persist_slot` at once; a `.pas` opens from Win+F5 (no F2
+  key). The bench: `--state-save N:file` / `--state-load file` (the core's blocks
+  only); smoke checks a round trip mid-boot.
 - `src/pico/drivers/` are pico-speccy's drivers (USB HID/XInput, fabgl VK keyboard
   queue, PS/2, NES pad, SD); local changes are marked `PICO-AMIGA:`, and
   `drivers/input_glue.h` stands in for pico-speccy's Config/Debug/ESPectrum.
@@ -247,7 +260,9 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   band's pixels moved to PSRAM (16 KB at +2 MB, before the DMS area; a 2 MB
   PSRAM has no band) and the .m3u read through 256 bytes: 20.5 KB; System
   info's flash JEDEC read (hardware_flash) took 0.9 KB of it: 19.5 KB
-  (2026-10-28). Check `end` after adding SRAM code or tables. MURM2 not
+  (2026-10-28); 13.9 KB by the 2026-10-30 HEAD before snapshots, 14.5 KB with
+  them (their code is flash, their buffers the heap's while they run). Check
+  `end` after adding SRAM code or tables. MURM2 not
   re-measured (was ~100 KB).
 - PICO_DV core 1 before the lookup scanout (Cannon Fodder, 504 MHz, ms per
   frame): CPU TMDS encoding 6.5, line IRQ 1.6, leaving Denise ~6 (the PERF

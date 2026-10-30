@@ -1209,6 +1209,39 @@ AMIGA_HOT void denise_write(uint32_t reg, uint16_t v, int hpos) {
 
 AMIGA_HOT bool denise_lace(void) { return (dma_st.bplcon0 & 0x0004) != 0; }
 
+// Snapshots, between frames: both stages have replayed everything (denise_sync),
+// so what is left is register state.  The fetch stage's registers equal the DMA
+// side's then; the per-line state is rebuilt by the next line start, the sprites'
+// DMA by the next frame start.
+void denise_state(st_t *s) {
+    st_u16(s, &bplcon0); st_u16(s, &bplcon2); st_u16(s, &bplcon3);
+    st_u16(s, &diwstrt); st_u16(s, &diwstop); st_u16(s, &diwhigh);
+    agnus_t *f = &dma_st;
+    st_u16(s, &f->bplcon0); st_u16(s, &f->bplcon1);
+    st_u16(s, &f->diwstrt); st_u16(s, &f->diwstop); st_u16(s, &f->diwhigh);
+    st_u16(s, &f->ddfstrt); st_u16(s, &f->ddfstop);
+    ST_ARRAY(s, st_u32, bplpt);
+    ST_ARRAY(s, st_i16, bplmod);
+    ST_ARRAY(s, st_u16, color);
+    ST_ARRAY(s, st_u32, sprpt);
+    ST_ARRAY(s, st_u16, dma_sprpos);
+    ST_ARRAY(s, st_u16, dma_sprctl);
+    ST_ARRAY(s, st_u16, sprpos);
+    ST_ARRAY(s, st_u16, sprctl);
+    ST_ARRAY(s, st_u16, sprdata);
+    ST_ARRAY(s, st_u16, sprdatb);
+    st_int(s, &vc_first); st_int(s, &vc_last);
+    st_int(s, &vc_y0); st_int(s, &vc_want); st_int(s, &vc_count);
+    if (s->mode != ST_LOAD) return;
+    fetch_st.bplcon0 = f->bplcon0; fetch_st.bplcon1 = f->bplcon1;
+    fetch_st.diwstrt = f->diwstrt; fetch_st.diwstop = f->diwstop; fetch_st.diwhigh = f->diwhigh;
+    fetch_st.ddfstrt = f->ddfstrt; fetch_st.ddfstop = f->ddfstop;
+    for (int i = 0; i < 32; i++) { color[i] &= 0xFFF; denise_q_color[i] = color[i]; }
+    for (int i = 0; i < 8; i++) spr_decode(i);
+    lut_dirty = true;
+    spl_dirty = true;
+}
+
 void denise_reset(void) {
     denise_sync();
     f_busy = o_busy = false;

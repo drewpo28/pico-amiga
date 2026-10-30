@@ -36,6 +36,14 @@ $BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --slow --adf "$OUT/bo
      --frames 1200 --shot 1200:"$OUT/aros-boot.png" > "$OUT/aros.log" 2>&1
 check "aros bootblock" "BOOTBLOCK OK" "$OUT/aros.log"
 
+# 3b. Snapshots: saved mid-boot (disk DMA running), loaded, the same picture 500
+#     frames on as without the round trip.
+$BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --slow --adf "$OUT/boot.adf" \
+     --frames 900 --state-save 400:"$OUT/state.bin" --shot 900:"$OUT/state-a.png" > /dev/null 2>&1
+$BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --slow --adf "$OUT/boot.adf" \
+     --frames 500 --state-load "$OUT/state.bin" --shot 500:"$OUT/state-b.png" > /dev/null 2>&1
+if cmp -s "$OUT/state-a.png" "$OUT/state-b.png"; then echo "PASS snapshot round trip"; else echo "FAIL snapshot round trip"; fail=1; fi
+
 # 4. AROS boot screen: 640x512 interlace, both fields kept (LOF toggles).
 $BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --slow --frames 1000 --status 1000 \
      --shot 1000:"$OUT/aros-screen.png" > "$OUT/aros-screen.log" 2>&1

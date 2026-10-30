@@ -173,6 +173,29 @@ void amiga_joystick(int port, uint8_t dirs, bool fire);      // dirs: bit0 up 1 
 // Audio ring write position (monotonic frame count; ring index = pos % frames).
 uint32_t amiga_audio_write_pos(void);
 
+// ---- Snapshots ---------------------------------------------------------------
+// The machine's state between two amiga_run_frame() calls: the 68000, the
+// custom chips, the CIAs, the drives' mechanics and DMA, chip and slow RAM, as
+// blocks of id[4] size(u32 LE) data, unknown ids skipped on load.  Not in it:
+// the ROMs (a CRC of each is, and must match), the disks' contents and the
+// platform's buffers.  Before amiga_state_load() the platform sets the model
+// and ROMs the snapshot was taken with (amiga_set_machine / amiga_set_roms)
+// and puts its disks back in their drives (amiga_insert_disk); the load then
+// resets the Amiga and replaces its state.  It fails before touching anything
+// when the model or a ROM differs; a failure after that (a damaged file)
+// leaves a half-loaded machine the platform must reset.
+typedef struct {
+    bool     (*write)(void *ctx, const void *p, uint32_t n);   // save: false = failed
+    uint32_t (*read)(void *ctx, void *p, uint32_t n);          // load: bytes read, 0 at the end
+    void *ctx;
+} amiga_stream_t;
+bool amiga_state_save(const amiga_stream_t *io);
+bool amiga_state_load(const amiga_stream_t *io);
+// The CRC-32 a snapshot keeps of each ROM (0 = no extended ROM), for the
+// platform to check the right one is there before a load.  zlib's crc32():
+// start from 0, feed the data in any number of pieces.
+uint32_t amiga_crc32(uint32_t crc, const void *p, uint32_t n);
+
 // Diagnostics.
 typedef struct {
     uint32_t frame;

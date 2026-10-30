@@ -34,6 +34,7 @@
 
 #include "UiBrowser.h"
 #include "machine.h"
+#include "snapshot.h"
 #include "UiGfx.h"
 #include "UiFont.h"
 #include "UiDialog.h"
@@ -60,6 +61,7 @@ static BrowseTypeState s_types[BROWSE_COUNT] = {
     { ".adf,.dms,.m3u" },                        // BROWSE_ADF (an .m3u is a disk set)
     { ".rom,.bin,.a500,.a600,.a1000,.cdtv" },    // BROWSE_ROM (.A500 etc.: PUAE's names)
     { "" },                                      // BROWSE_CFG
+    { ".pas" },                                  // BROWSE_SNAP (snapshot.cpp)
 };
 
 static string lcExt(const string& name) {
@@ -472,8 +474,10 @@ static void drawInfo() {
         // Nothing in the config tree is runnable: Enter there reads a text file and
         // does nothing at all for anything else, so it is advertised accordingly.
         { SYM_ENTER, dir ? "Open" : (view ? "View" : "Choose"), dir || pickMode() || view },
-        // PICO-AMIGA: F1 on a disk image tells what is on it (machine_disk_info).
-        { "F1", (lcExt(nm_) == "adf" || lcExt(nm_) == "dms") ? "Info" : "View", all && !dir },
+        // PICO-AMIGA: F1 on a disk image tells what is on it (machine_disk_info),
+        // on a snapshot what it ran on (Snap::describe).
+        { "F1", (lcExt(nm_) == "adf" || lcExt(nm_) == "dms" || lcExt(nm_) == "pas") ? "Info" : "View",
+          !dir && (all || (s_ftype == BROWSE_SNAP && lcExt(nm_) == "pas")) },
         // PICO-AMIGA: Win+F5's verb (pico-speccy's "To slot"): a disk image into a drive.
         { "F5", "To drive", all && !dir && (lcExt(nm_) == "adf" || lcExt(nm_) == "dms") },
         { "F3", "Find",     true },
@@ -1114,6 +1118,20 @@ static string runLoop() {
             const bool mng = manageMode();
             // F1 shows a text file in the full browser; everywhere else F1 keeps
             // its usual "close" meaning.
+            // PICO-AMIGA: a snapshot: what it ran on (Snap::describe), here and in
+            // Snapshots > Load from file.
+            if ((all || s_ftype == BROWSE_SNAP) && k.vk == fabgl::VK_F1 && !onDir && s_visTotal &&
+                    lcExt(name) == "pas") {
+                OSD::clickNoPause();
+                char* info = (char*)malloc(1024);
+                if (info) {
+                    Snap::describe(s_dir + name, info, 1024);
+                    uiTextPage(name.c_str(), info);
+                    free(info);
+                }
+                drawAll();
+                continue;
+            }
             if (all && k.vk == fabgl::VK_F1 && !onDir && s_visTotal) {
                 OSD::clickNoPause();
                 // PICO-AMIGA: a disk image: its volume, files and startup-sequence.

@@ -64,6 +64,11 @@ void rtc_write(int reg, uint8_t v) {
     else if (reg == 15) ctl_f = v;
 }
 
+// Snapshots: the control registers (the time is the platform's).
+void rtc_state(st_t *s) {
+    st_u8(s, &ctl_d); st_u8(s, &ctl_e); st_u8(s, &ctl_f);
+}
+
 void rtc_reset(void) {
     ctl_d = ctl_e = 0;
     ctl_f = 4;

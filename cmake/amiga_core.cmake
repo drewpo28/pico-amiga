@@ -12,6 +12,7 @@ set(AMIGA_CORE_SRC
     ${ROOT}/src/amiga/mem.c
     ${ROOT}/src/amiga/paula.c
     ${ROOT}/src/amiga/rtc.c
+    ${ROOT}/src/amiga/state.c
     ${ROOT}/external/musashi/m68kcpu.c
     ${ROOT}/external/musashi/gen/m68kops.c
     ${ROOT}/external/musashi/softfloat/softfloat.c

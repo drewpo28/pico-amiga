@@ -23,9 +23,11 @@
 #include "UiBrowser.h"
 #include "UiGfx.h"
 #include "UiRender.h"
+#include "UiSnap.h"
 #include "app/Config.h"
 #include "roms.h"
 #include "machine.h"
+#include "snapshot.h"
 extern "C" {
 #include "video.h"
 #include "audio_out.h"
@@ -285,7 +287,8 @@ static void act_custom_rom() {
 
 // ── Win+F5: Open file (pico-speccy's F5 browser, for the Amiga) ────────────────
 // Every file on the card. Enter: an ADF / DMS goes into DF0, an .m3u loads as a
-// disk set, a Kickstart image runs as the Custom ROM. F5 on a disk image: the
+// disk set, a Kickstart image runs as the Custom ROM, a .pas snapshot is loaded
+// (pico-speccy's F2 has no key of its own here). F5 on a disk image: the
 // drive picker - DF0..DF3 with what is in them; a drive past the connected ones
 // connects that many (Kickstart counts them at reset).
 static bool isDiskExt(const std::string& e) { return e == ".adf" || e == ".dms"; }
@@ -340,7 +343,8 @@ void runOpenFile() {
         if (r[0] == 'P') done = toDrive(path);                  // F5: a disk image (the browser checked)
         else if (isDiskExt(ext) || ext == ".m3u") done = insertDf0(path);
         else if (isRomExt(ext)) done = runRomFile(path);
-        else uiToast("Not an Amiga disk, disk set or Kickstart", true, 2000);
+        else if (ext == ".pas") done = snapLoadPath(path);
+        else uiToast("Not an Amiga disk, disk set, Kickstart or snapshot", true, 2000);
         gfxEnd();
         if (done) return;                                       // back to the Amiga
     }
@@ -524,8 +528,12 @@ static void page_hotkeys() {
         "Shift+F12   Reset the Amiga\n"
         "Win+F11     Reboot the board (asked, Yes by default)\n"
         "Win+F1      System info: board, memory, chip temperature\n"
-        "Win+F5      Open file: disks, disk sets, Kickstarts; F5 on a\n"
-        "            disk picks the drive (DF0..DF3)\n"
+        "Win+F5      Open file: disks, disk sets, Kickstarts, snapshots;\n"
+        "            F5 on a disk picks the drive (DF0..DF3)\n"
+        "Win+F3      Snapshots: the quick slots, Enter loads\n"
+        "Win+F4      Snapshots: the quick slots, Enter saves\n"
+        "Alt+Win+F3  Load the current quick slot\n"
+        "Alt+Win+F4  Save to the current quick slot\n"
         "Win+F8      Performance band (with the drive's track and\n"
         "            sector): summary, breakdown, off\n"
         "Ctrl+J      Cursor keys as joystick on/off\n"
@@ -735,6 +743,22 @@ static const Node kReset[] = {
     NM_ACTION("Reboot the board", act_reboot,      nullptr),
 };
 
+// Snapshots (UiSnap.cpp): a .pas from the card, and the 40 quick slots as a
+// pick list in the right pane, the verbs on the function keys (pico-speccy's).
+static const Node kSnapshots[] = {
+    NM_ACTION(TXT_SNAP_FROMFILE, loadSnapshotFile, nullptr),
+    NM_PICK  (TXT_SNAP_SLOTS, SET_PERSIST_SLOT, persist_rows, persist_key,
+              persist_vlabel, persist_foot, nullptr),
+};
+
+// Win+F3 / Win+F4 open the menu on the slot list: found by what it is, so the
+// row can move in the tree.
+const Node* persistNodeFor() {
+    for (uint8_t i = 0; i < NM_COUNT(kSnapshots); i++)
+        if (kSnapshots[i].kind == K_PICK) return &kSnapshots[i];
+    return nullptr;
+}
+
 // Devices: what is plugged into the Amiga (pico-speccy's Devices row).
 static const Node kDevices[] = {
     NM_SUB("Disks",     kDisks,     nullptr),
@@ -745,6 +769,7 @@ static const Node kDevices[] = {
 static const Node kRoot[] = {
     NM_SUB("Help",      kHelp,      nullptr),
     NM_SUB("Machine",   kMachine,   nullptr),
+    NM_SUB(TXT_SNAPSHOTS, kSnapshots, nullptr),
     NM_SUB("Devices",   kDevices,   nullptr),
     NM_SUB("Video",     kVideo,     nullptr),
     NM_SUB("Audio",     kAudio,     nullptr),

@@ -58,6 +58,7 @@ add_executable(pico-amiga
     src/pico/usb_disk_stub.c
     src/pico/input.cpp
     src/pico/machine.cpp
+    src/pico/snapshot.cpp
     src/pico/dms.c
     src/pico/roms.c
     src/pico/input_devices.cpp
@@ -72,6 +73,7 @@ add_executable(pico-amiga
     src/pico/ui/UiBrowser.cpp
     src/pico/ui/UiStage.cpp
     src/pico/ui/UiTree.cpp
+    src/pico/ui/UiSnap.cpp
     src/pico/ui/UiDesc.cpp
     src/pico/ui/UiLogo.c
     src/pico/ui/UiPlatform.cpp

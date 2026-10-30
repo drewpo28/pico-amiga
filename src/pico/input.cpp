@@ -15,7 +15,10 @@
 // the DF0 disk browser, Shift+F12 resets the Amiga; Ctrl+J toggles CursorAsJoy (as
 // on pico-speccy). F11 resets the Amiga too, Win+F11 reboots the board (asked;
 // pico-speccy's F12). Win+F1 is the System info page (pico-speccy's Alt+F1: Alt is
-// the Amiga's), Win+F5 the Open file browser (pico-speccy's F5), Win+F8 the
+// the Amiga's), Win+F5 the Open file browser (pico-speccy's F5; it opens snapshots
+// too: pico-speccy's F2 has no key here), Win+F3 / Win+F4 the snapshot slots
+// (pico-speccy's F3 / F4), Alt+Win+F3 / Alt+Win+F4 the current slot at once
+// (its Alt+F3 / Alt+F4), Win+F8 the
 // performance band (pico-speccy's F8; it runs over the picture, the Amiga runs on). F1..F10 are the Amiga's, Insert its Help key.
 #include "input.h"
 #include <string.h>
@@ -469,6 +472,20 @@ void input_frame(void) {
             menu_open = true;
             if (item.vk == fabgl::VirtualKey::VK_F1) nm::runSysInfo();
             else                                     nm::runOpenFile();
+            menu_open = false;
+            kbd.emptyVirtualKeyQueue();
+            continue;
+        }
+        // Win+F3 / Win+F4: Snapshots > Quick slots, Enter loading / saving; with
+        // Alt, the current slot at once.
+        if ((item.vk == fabgl::VirtualKey::VK_F3 || item.vk == fabgl::VirtualKey::VK_F4) && item.down &&
+            (kbd.isVKDown(fabgl::VirtualKey::VK_LGUI) || kbd.isVKDown(fabgl::VirtualKey::VK_RGUI))) {
+            const bool alt = kbd.isVKDown(fabgl::VirtualKey::VK_LALT) || kbd.isVKDown(fabgl::VirtualKey::VK_RALT);
+            const bool save = item.vk == fabgl::VirtualKey::VK_F4;
+            release_amiga_keys();
+            menu_open = true;
+            if (alt) nm::runQuickSnap(save);
+            else     nm::runPersist(save);
             menu_open = false;
             kbd.emptyVirtualKeyQueue();
             continue;

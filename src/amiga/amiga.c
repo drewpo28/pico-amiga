@@ -198,6 +198,29 @@ void amiga_run_frame(void) {
     if (A.cfg.frame_done) A.cfg.frame_done(A.cfg.ctx);
 }
 
+// Snapshots (state.c): the beam and clock, the registers nobody else owns, the
+// keyboard controller.  Taken between frames: vpos is 0.
+void amiga_sys_state(st_t *s) {
+    st_u32(s, &A.frame);
+    st_u16(s, &A.lines);
+    st_bool(s, &A.lof);
+    st_u64(s, &A.line_cyc);
+    st_u64(s, &A.cpu_cyc);
+    st_u16(s, &A.dmacon); st_u16(s, &A.intena); st_u16(s, &A.intreq); st_u16(s, &A.adkcon);
+    st_u16(s, &A.copcon); st_u16(s, &A.potgo); st_u16(s, &A.serper); st_u16(s, &A.beamcon0);
+    st_u8(s, &A.ipl_pending);
+    st_u16(s, &A.joy0dat); st_u16(s, &A.joy1dat);
+    ST_ARRAY(s, st_u8, kq);
+    st_uint(s, &kq_head); st_uint(s, &kq_tail);
+    st_bool(s, &kb_waiting);
+    st_u32(s, &kb_timeout);
+    if (s->mode == ST_LOAD) {
+        A.vpos = 0;
+        A.in_cpu = false;
+        kq_head %= KQ; kq_tail %= KQ;
+    }
+}
+
 void amiga_get_profile(amiga_profile_t *p, bool reset) {
     for (int i = 0; i < AMIGA_PROF_COUNT; i++) p->ticks[i] = prof_acc[i];
     p->ticks[AMIGA_PROF_CORE1] = denise_core1_ticks();

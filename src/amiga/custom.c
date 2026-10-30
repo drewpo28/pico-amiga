@@ -100,6 +100,8 @@ AMIGA_HOT void custom_write(uint32_t reg, uint16_t v, int hpos, bool from_copper
     }
 }
 
+void custom_state(st_t *s) { st_u16(s, &clxcon); }
+
 void custom_reset(void) {
     A.dmacon = 0; A.intena = 0; A.intreq = 0; A.adkcon = 0;
     A.copcon = 0; A.potgo = 0; A.serper = 0;

@@ -75,6 +75,13 @@ void mem_set_overlay(bool on) {
 
 bool mem_overlay(void) { return overlay; }
 
+// Snapshots: the map is the configuration's (mem_init), only the overlay moves.
+void mem_state(st_t *s) {
+    bool ov = overlay;
+    st_bool(s, &ov);
+    if (s->mode == ST_LOAD) mem_set_overlay(ov);
+}
+
 // ---- I/O banks --------------------------------------------------------------
 static uint8_t io_read8(uint32_t a, int io) {
     switch (io) {

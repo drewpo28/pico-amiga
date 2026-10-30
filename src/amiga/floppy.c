@@ -356,6 +356,52 @@ void floppy_insert(int d, const amiga_disk_t *disk) {
     drv[d].pending = true;
 }
 
+// Snapshots.  The disks are the platform's: before the load it put the
+// snapshot's disks back (floppy_reset, run by the load, took any on its way in),
+// so a drive's disk now is the one it held.  A drive that held a disk and has
+// none now (the file is gone) is as if it was just ejected; a disk that was on
+// its way in (a swap) is on its way in again, the time out kept.
+void floppy_state(st_t *s) {
+    for (int d = 0; d < NDRIVES; d++) {
+        drive_t *dv = &drv[d];
+        bool in = dv->inserted, pend = dv->pending;
+        uint32_t empty = dv->empty_lines;
+        st_bool(s, &in); st_bool(s, &pend); st_u32(s, &empty);
+        st_bool(s, &dv->motor); st_bool(s, &dv->changed); st_u8(s, &dv->cyl);
+        if (s->mode != ST_LOAD) continue;
+        const bool have = dv->inserted;
+        if (have && !in) {
+            dv->next = dv->disk;
+            dv->inserted = false;
+            dv->pending = true;
+            dv->empty_lines = empty;
+        } else if (!have) {
+            dv->pending = false;
+            dv->empty_lines = in ? 0 : empty;
+            if (in) dv->changed = true;
+        } else {
+            dv->empty_lines = empty;
+        }
+    }
+    st_int(s, &ndrives);
+    st_u8(s, &prb_last); st_int(s, &side); st_int(s, &sel);
+    st_u32(s, &rot_pos);
+    st_u32(s, &dskpt); st_u16(s, &dsklen); st_u16(s, &dsklen_prev); st_u16(s, &dsksync);
+    st_bool(s, &dma_on); st_bool(s, &dma_write); st_int(s, &dma_drive);
+    st_u32(s, &dma_lines_left);
+    st_u32(s, &rd_pos0); st_u32(s, &rd_words); st_u32(s, &rd_lines); st_bool(s, &rd_active);
+    st_u32(s, &dma_end_frame);
+    st_int(s, &last_drive); st_u8(s, &last_sector);
+    st_u32(s, &index_lines);
+    if (s->mode == ST_LOAD) {
+        trk_drive = -1;                                   // encoded again from the image
+        if (ndrives < 1 || ndrives > NDRIVES) ndrives = 1;
+        if (sel < -1 || sel >= NDRIVES) sel = -1;
+        if (dma_drive < -1 || dma_drive >= NDRIVES) dma_drive = -1;
+        rot_pos %= TRACK_WORDS;
+    }
+}
+
 void floppy_reset(void) {
     for (int d = 0; d < NDRIVES; d++) {
         drv[d].motor = false;

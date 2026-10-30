@@ -64,7 +64,9 @@ enum SettingFlags : uint16_t {
     /* Video > Output > Mode: the live display's (HDMI or VGA) */ \
     X(SET_VIDEO_MODE,  AC_REBOOT, F_VMODE,                     get_vmode,     put_vmode,     nullptr) \
     /* Options > Overclock > Core voltage, mV: set at boot, before the clock */ \
-    X(SET_VREG,        AC_REBOOT, 0,                           get_vreg,      put_vreg,      nullptr)
+    X(SET_VREG,        AC_REBOOT, 0,                           get_vreg,      put_vreg,      nullptr) \
+    /* Snapshots > Quick slots: the current slot (the list's marker; set by its verbs) */ \
+    X(SET_PERSIST_SLOT, AC_PURE, 0,                            get_pslot,     put_pslot,     nullptr)
 
 #define NM_X_ENUM(id, cls, flags, g, p, h) id,
 enum SettingId : uint16_t {

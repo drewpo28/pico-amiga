@@ -50,6 +50,8 @@ public:
     static bool     df0_wp;         // DF0 write-protected
     static uint8_t  drives;         // floppy drives: 0 Auto (one per disk of a set), 1..4
     static uint8_t  df0_disk;       // df0 is an .m3u disk set: the disk in the drive (0-based)
+    // Snapshots (snapshot.cpp)
+    static uint8_t  persist_slot;   // the quick slot Alt+Win+F3 / F4 load and save (1..40)
 
     static void load();
     static bool save();

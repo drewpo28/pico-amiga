@@ -15,6 +15,8 @@
 // --mouse moves the port 1 mouse once at frame N (buttons: bit0 left 1 right).
 // --a500plus: the A500+ (ECS chipset, 1 MB chip RAM, no slow RAM, the battery
 // clock showing the PC's local time).  --vcentre: amiga_set_vcentre(true).
+// --state-save N:file writes the core's snapshot (amiga_state_save) after frame N;
+// --state-load file starts from one instead of the reset (same ROM, model, disks).
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,6 +30,10 @@
 static amiga_row_t fb[AMIGA_FB_H];
 #define AUDIO_FRAMES 65536
 static int16_t audio[AUDIO_FRAMES * 2];
+
+// Snapshot streams over stdio.
+static bool st_fwrite(void *ctx, const void *p, uint32_t n) { return fwrite(p, 1, n, ctx) == n; }
+static uint32_t st_fread(void *ctx, void *p, uint32_t n) { return (uint32_t)fread(p, 1, n, ctx); }
 
 static uint8_t *load(const char *path, uint32_t *size) {
     FILE *f = fopen(path, "rb");
@@ -212,6 +218,8 @@ int main(int argc, char **argv) {
     int frames = 250, status_every = 0, scale = 1, drives_opt = 0;
     bool slow = false, render_thread_on = false, plus = false, vcentre = false, write_back = false;
     shot_t shots[64]; int nshots = 0;
+    shot_t state_save = { -1, "" };
+    const char *state_load = NULL;
     keyev_t keys[256]; int nkeys = 0;
     inev_t joys[256]; int njoys = 0;
     inev_t mice[256]; int nmice = 0;
@@ -240,6 +248,13 @@ int main(int argc, char **argv) {
             shots[nshots].frame = atoi(v);
             snprintf(shots[nshots].path, sizeof shots[nshots].path, "%s", c + 1);
             nshots++; i++;
+        } else if (!strcmp(a, "--state-save") && v) {
+            const char *c = strchr(v, ':');
+            if (!c) { fprintf(stderr, "--state-save N:file\n"); return 2; }
+            state_save.frame = atoi(v);
+            snprintf(state_save.path, sizeof state_save.path, "%s", c + 1);
+            i++;
+        } else if (!strcmp(a, "--state-load") && v) { state_load = v; i++;
         } else if (!strcmp(a, "--key") && v && nkeys < 256) {
             if (sscanf(v, "%d:%i:%d", &keys[nkeys].frame, &keys[nkeys].code, &keys[nkeys].down) == 3) nkeys++;
             i++;
@@ -294,6 +309,12 @@ int main(int argc, char **argv) {
     }
     if (ndrv > 1) { amiga_set_drives(ndrv); amiga_reset(true); }   // Kickstart finds DF1+ at reset
     if (wav_path) wav_open(wav_path);
+    if (state_load) {
+        FILE *f = fopen(state_load, "rb");
+        const amiga_stream_t io = { NULL, st_fread, f };
+        if (!f || !amiga_state_load(&io)) { fprintf(stderr, "%s: cannot load the snapshot\n", state_load); return 1; }
+        fclose(f);
+    }
 
     for (int f = 0; f < frames; f++) {
         for (int k = 0; k < nkeys; k++) if (keys[k].frame == f) amiga_key((uint8_t)keys[k].code, keys[k].down);
@@ -315,6 +336,11 @@ int main(int argc, char **argv) {
             fprintf(stderr, "\n");
         }
         drain_audio();
+        if (state_save.frame == f + 1) {
+            FILE *sf = fopen(state_save.path, "wb");
+            const amiga_stream_t io = { st_fwrite, NULL, sf };
+            if (!sf || !amiga_state_save(&io) || fclose(sf)) { fprintf(stderr, "%s: cannot save the snapshot\n", state_save.path); return 1; }
+        }
         for (int s = 0; s < nshots; s++) if (shots[s].frame == f + 1) write_png(shots[s].path, scale);
         if (status_every && (f + 1) % status_every == 0) {
             amiga_status_t st; amiga_get_status(&st);

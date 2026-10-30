@@ -24,6 +24,7 @@
 #include "UiStrings.h"
 #include "UiDialog.h"
 #include "UiPlatform.h"
+#include "UiSnap.h"
 #include <stdlib.h>
 
 namespace nm {
@@ -665,6 +666,8 @@ static void runInternal(const Node* openAt, bool enterSaves = false) {
     // 2026-09-14, F3/Esc x3 read heap 26152 -> 22896 -> 19640). Keep it across.
     { DynRows* keep = S.dyn; memset(&S, 0, sizeof(S)); S.dyn = keep; }
     Stage::begin();
+    snapSessionBegin();         // the snapshot slots' rows are this session's
+    persistEnterVerb(enterSaves);
     S.depth = 0;
     S.focus = FOCUS_LEFT;
     Level& L = curLevel();
@@ -780,11 +783,18 @@ resume:
     if (rep.needsReboot)
         OSD::esp_hard_reset();              // never returns
 
+    snapSessionEnd();
     if (ownDyn) { free(S.dyn); S.dyn = nullptr; }
     gfxEnd();
 }
 
 void run() { runInternal(nullptr); }
+
+// Win+F3 / Win+F4: the menu opened on Snapshots > Quick slots, Enter loading or saving.
+void runPersist(bool save) {
+    const Node* target = persistNodeFor();
+    if (target) runInternal(target, save);
+}
 
 } // namespace nm
 

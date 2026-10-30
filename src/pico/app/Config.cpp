@@ -45,6 +45,7 @@ std::string Config::kick_file = "/amiga/kick.rom";
 std::string Config::df0       = "";
 bool     Config::df0_wp       = false;
 uint8_t  Config::df0_disk     = 0;
+uint8_t  Config::persist_slot = 1;
 uint8_t  Config::drives       = 0;
 bool     Config::loaded       = false;
 
@@ -145,6 +146,8 @@ void Config::load() {
     if (!nvs_get_str("df0",      df0,          sts)) df0.clear();
     nvs_get_b  ("df0_wp",        df0_wp,       sts);
     nvs_get_u8 ("df0_disk",      df0_disk,     sts);
+    nvs_get_u8 ("persist_slot",  persist_slot, sts);
+    if (persist_slot < 1 || persist_slot > 40) persist_slot = 1;
     nvs_get_u8 ("drives",        drives,       sts);
     if (drives > 4) drives = 0;
     nvs_get_u8 ("hdmi_vmode",    hdmi_vmode,   sts);
@@ -235,6 +238,7 @@ bool Config::save() {
     nvs_set_str(buf, "df0",         df0.c_str());
     nvs_set_b(buf, "df0_wp",        df0_wp);
     nvs_set_i(buf, "df0_disk",      df0_disk);
+    nvs_set_i(buf, "persist_slot",  persist_slot);
     nvs_set_i(buf, "drives",        drives);
     nvs_set_i(buf, "hdmi_vmode",    hdmi_vmode);
     nvs_set_i(buf, "vga_vmode",     vga_vmode);

@@ -152,6 +152,21 @@ void paula_write(uint32_t reg, uint16_t v) {
     }
 }
 
+// Snapshots: the channels.  audio_pos is the platform's ring position, not the
+// Amiga's: it keeps counting.
+void paula_state(st_t *s) {
+    for (int i = 0; i < 4; i++) {
+        chan_t *c = &ch[i];
+        st_u32(s, &c->lc); st_u32(s, &c->ptr);
+        st_u16(s, &c->len); st_u16(s, &c->cnt);
+        st_u16(s, &c->per); st_u16(s, &c->vol); st_u16(s, &c->dat);
+        st_u32(s, (uint32_t *)&c->per_cnt);
+        st_bool(s, &c->dma); st_bool(s, &c->hi);
+        st_u8(s, &c->man); st_u16(s, &c->mbuf);
+        st_i8(s, &c->sample);
+    }
+}
+
 void paula_reset(void) {
     memset(ch, 0, sizeof ch);
 }

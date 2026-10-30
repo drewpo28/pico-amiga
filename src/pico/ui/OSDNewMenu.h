@@ -30,6 +30,13 @@ void runSysInfo();
 // opens a disk / disk set / Kickstart, F5 on a disk image picks the drive.
 void runOpenFile();
 
+// Win+F3 / Win+F4 (pico-speccy's F3 / F4): the menu on Snapshots > Quick slots,
+// Enter loading / saving the chosen slot.
+void runPersist(bool save);
+// Alt+Win+F3 / Alt+Win+F4 (pico-speccy's Alt+F3 / Alt+F4): load / save the
+// current quick slot (Config::persist_slot) with no list.
+void runQuickSnap(bool save);
+
 // The Win+F11 hotkey (pico-speccy's F12): reboot the board, asked first (Yes
 // is the default).
 void runRebootAsk();

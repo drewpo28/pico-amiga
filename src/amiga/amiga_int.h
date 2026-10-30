@@ -111,6 +111,41 @@ static inline int prof_switch(int cat) {
     return old;
 }
 
+// ---- snapshots (state.c) -------------------------------------------------------
+// Each module moves its state through one function, both ways: ST_SAVE writes
+// the fields as they are, ST_LOAD reads them back into the same variables (and
+// then fixes up what derives from them), ST_SIZE counts the bytes (a block's
+// size goes out before its fields).  Little-endian on the card whatever the host.
+enum { ST_SIZE, ST_SAVE, ST_LOAD };
+typedef struct {
+    int      mode;
+    uint32_t n;                 // ST_SIZE: bytes so far; ST_LOAD: bytes left in the block
+    bool     ok;                // ST_LOAD: past the block's end reads 0 and clears it
+    const amiga_stream_t *io;
+} st_t;
+void st_raw(st_t *s, void *p, uint32_t n);
+void st_u8(st_t *s, uint8_t *v);
+void st_i8(st_t *s, int8_t *v);
+void st_bool(st_t *s, bool *v);
+void st_u16(st_t *s, uint16_t *v);
+void st_i16(st_t *s, int16_t *v);
+void st_u32(st_t *s, uint32_t *v);
+void st_int(st_t *s, int *v);
+void st_uint(st_t *s, unsigned *v);
+void st_u64(st_t *s, uint64_t *v);
+#define ST_ARRAY(s, fn, a) do { for (unsigned st_i_ = 0; st_i_ < sizeof(a) / sizeof((a)[0]); st_i_++) fn(s, &(a)[st_i_]); } while (0)
+
+void     amiga_sys_state(st_t *s);      // amiga.c: beam, interrupts, keyboard
+void     mem_state(st_t *s);
+void     custom_state(st_t *s);
+void     cia_state(st_t *s);
+void     rtc_state(st_t *s);
+void     copper_state(st_t *s);
+void     blitter_state(st_t *s);
+void     denise_state(st_t *s);
+void     paula_state(st_t *s);
+void     floppy_state(st_t *s);
+
 // Current horizontal position in colour clocks (0..226), from the CPU's clock.
 uint16_t amiga_hpos(void);
 uint64_t amiga_now(void);              // absolute CPU cycles "now"

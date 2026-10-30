@@ -50,6 +50,7 @@ if(SDL2_FOUND)
         ${ROOT}/src/pico/main.c
         ${ROOT}/src/pico/input.cpp
         ${ROOT}/src/pico/machine.cpp
+        ${ROOT}/src/pico/snapshot.cpp
         ${ROOT}/src/pico/dms.c
         ${ROOT}/src/pico/roms.c
         ${ROOT}/src/pico/perf_log.c
@@ -66,6 +67,7 @@ if(SDL2_FOUND)
         ${ROOT}/src/pico/ui/UiBrowser.cpp
         ${ROOT}/src/pico/ui/UiStage.cpp
         ${ROOT}/src/pico/ui/UiTree.cpp
+        ${ROOT}/src/pico/ui/UiSnap.cpp
         ${ROOT}/src/pico/ui/UiDesc.cpp
         ${ROOT}/src/pico/ui/UiLogo.c
         ${ROOT}/src/pico/ui/UiPlatform.cpp

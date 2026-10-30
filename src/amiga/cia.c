@@ -216,3 +216,19 @@ void cia_keyboard_byte(uint8_t sdr) {
 }
 
 bool cia_keyboard_handshake(void) { return kbd_ack; }
+
+// Snapshots: last_e is on the CPU's clock, which the snapshot keeps too.  The
+// ports' outputs (overlay, floppy lines) are the memory map's and the drives'.
+void cia_state(st_t *s) {
+    for (int w = 0; w < 2; w++) {
+        cia_t *c = &cia[w];
+        st_u8(s, &c->pra); st_u8(s, &c->prb); st_u8(s, &c->ddra); st_u8(s, &c->ddrb);
+        st_u16(s, &c->ta); st_u16(s, &c->tb); st_u16(s, &c->ta_latch); st_u16(s, &c->tb_latch);
+        st_u8(s, &c->cra); st_u8(s, &c->crb);
+        st_u32(s, &c->tod); st_u32(s, &c->tod_latch); st_u32(s, &c->alarm);
+        st_bool(s, &c->tod_latched); st_bool(s, &c->tod_stopped);
+        st_u8(s, &c->sdr); st_u8(s, &c->icr); st_u8(s, &c->imask);
+        st_u64(s, &c->last_e);
+    }
+    st_bool(s, &kbd_ack);
+}
