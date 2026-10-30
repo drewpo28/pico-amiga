@@ -43,9 +43,19 @@ static uint32_t pace_lines;                // output lines per emulated frame (v
 #define VPIO       pio0
 
 static const amiga_row_t *fb;
-static uint16_t line_rgb[AMIGA_OUT_W];     // the output line being rendered
-static uint16_t pair[2][4096];             // [line parity][0x0RGB] -> two pin bytes
-static uint8_t  tmpl[4][LINE_MAX] __attribute__((aligned(4)));   // blank, vsync, active x2
+typedef struct {
+    uint16_t pair[2][4096];                // [line parity][0x0RGB] -> two pin bytes
+    uint8_t  tmpl[4][LINE_MAX] __attribute__((aligned(4)));   // blank, vsync, active x2
+    uint16_t line_rgb[AMIGA_OUT_W];        // the output line being rendered
+} vga_mem_t;
+// 22 KB: on the PIO HDMI boards it is that scanout's entry window (hdmi_spare()),
+// which lies idle with VGA on the pins.
+#ifdef VIDEO_PIO
+static vga_mem_t *m;
+#else
+static vga_mem_t vga_mem;
+static vga_mem_t *const m = &vga_mem;
+#endif
 static uint8_t *tmpl_ptr[4];
 static int      dma_data, dma_ctrl;
 static uint32_t line;                      // line whose template the ctrl channel just loaded
@@ -76,14 +86,14 @@ static void build_tables(void) {
     for (int c = 0; c < 4096; c++) {
         uint8_t p[4];
         bayer4((uint16_t)c, p);
-        pair[0][c] = (uint16_t)((SYNC_IDLE | p[0]) | ((SYNC_IDLE | p[1]) << 8));
-        pair[1][c] = (uint16_t)((SYNC_IDLE | p[2]) | ((SYNC_IDLE | p[3]) << 8));
+        m->pair[0][c] = (uint16_t)((SYNC_IDLE | p[0]) | ((SYNC_IDLE | p[1]) << 8));
+        m->pair[1][c] = (uint16_t)((SYNC_IDLE | p[2]) | ((SYNC_IDLE | p[3]) << 8));
     }
     for (int t = 0; t < 4; t++) {
         const uint8_t idle = (t == 1) ? (SYNC_IDLE & ~BIT_VS) : SYNC_IDLE;
-        memset(tmpl[t], idle, H_TOTAL);
-        memset(tmpl[t], idle & ~BIT_HS, H_SYNC);
-        tmpl_ptr[t] = tmpl[t];
+        memset(m->tmpl[t], idle, H_TOTAL);
+        memset(m->tmpl[t], idle & ~BIT_HS, H_SYNC);
+        tmpl_ptr[t] = m->tmpl[t];
     }
 }
 
@@ -100,8 +110,8 @@ static void __not_in_flash_func(render)(int t, uint32_t l) {
     const video_window_t *w = video_window();
     const int out = fb_out(l);
     const amiga_row_t *row = &fb[w->row + (out >> 1)];
-    const uint16_t *pal = pair[out & 1];
-    uint16_t *dst = (uint16_t *)(tmpl[t] + H_SYNC + H_BP + w->x);
+    const uint16_t *pal = m->pair[out & 1];
+    uint16_t *dst = (uint16_t *)(m->tmpl[t] + H_SYNC + H_BP + w->x);
     if (row->mode == AMIGA_ROW_DIRECT) {
         const uint16_t *src = row->px.rgb + w->col;
         for (int x = 0; x < w->cols; x += 2) {
@@ -112,9 +122,9 @@ static void __not_in_flash_func(render)(int t, uint32_t l) {
     }
     // Hires / interlace: one pin byte per output pixel, from the 2x2 Bayer
     // pair of that pixel's colour (even columns take its low byte, odd its high).
-    amiga_fb_line(row, out & 1, line_rgb);
-    uint8_t *d8 = tmpl[t] + H_SYNC + H_BP + w->x;
-    const uint16_t *src = line_rgb + 2 * w->col;
+    amiga_fb_line(row, out & 1, m->line_rgb);
+    uint8_t *d8 = m->tmpl[t] + H_SYNC + H_BP + w->x;
+    const uint16_t *src = m->line_rgb + 2 * w->col;
     for (int x = 0; x < 2 * w->cols; x += 2) {
         d8[x]     = (uint8_t)pal[src[x] & 0xFFF];
         d8[x + 1] = (uint8_t)(pal[src[x + 1] & 0xFFF] >> 8);
@@ -149,6 +159,10 @@ void vga_start(const amiga_row_t *framebuffer) {
     // A 50 Hz mode paces the emulation by its frames; another by the 20 ms of a
     // PAL frame in its lines.
     pace_lines = vt->hz == 50 ? V_TOTAL : vt->pixel_hz / H_TOTAL / 50;
+#ifdef VIDEO_PIO
+    m = hdmi_spare(sizeof *m);
+    if (!m) panic("VGA: no memory");
+#endif
     build_tables();
     if (fb_out(0) >= 0) render(2, 0);
 
@@ -181,7 +195,7 @@ void vga_start(const amiga_row_t *framebuffer) {
     channel_config_set_write_increment(&d, false);
     channel_config_set_dreq(&d, pio_get_dreq(VPIO, sm, true));
     channel_config_set_chain_to(&d, dma_ctrl);
-    dma_channel_configure(dma_data, &d, &VPIO->txf[sm], tmpl[2], H_TOTAL / 4, false);
+    dma_channel_configure(dma_data, &d, &VPIO->txf[sm], m->tmpl[2], H_TOTAL / 4, false);
 
     dma_channel_config k = dma_channel_get_default_config(dma_ctrl);
     channel_config_set_transfer_data_size(&k, DMA_SIZE_32);
@@ -192,7 +206,7 @@ void vga_start(const amiga_row_t *framebuffer) {
     const int t1 = fb_out(1) >= 0 ? 3 : 0;
     if (t1 == 3) render(3, 1);
     // Line 0's template: the picture's, or the black one when the window starts lower.
-    if (fb_out(0) < 0) dma_channel_set_read_addr(dma_data, tmpl[0], false);
+    if (fb_out(0) < 0) dma_channel_set_read_addr(dma_data, m->tmpl[0], false);
     dma_channel_configure(dma_ctrl, &k, &dma_hw->ch[dma_data].read_addr, &tmpl_ptr[t1], 1, false);
     line = 0;
 

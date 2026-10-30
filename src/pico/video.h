@@ -55,6 +55,8 @@ uint32_t hdmi_frame_lines(void);
 uint32_t hdmi_late_lines(void);
 uint32_t hdmi_stalled_lines(void);
 void hdmi_core1_cycles(uint32_t *irq, uint32_t *enc);
+// PIO HDMI only: `size` bytes of its memory for VGA, which runs instead of it (or NULL).
+void *hdmi_spare(uint32_t size);
 void vga_start(const amiga_row_t *framebuffer);
 uint32_t vga_frames(void);
 uint32_t vga_lines(void);

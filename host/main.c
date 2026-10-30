@@ -288,6 +288,8 @@ int main(int argc, char **argv) {
     if (ext_path) { uint32_t es; cfg.ext_rom = load(ext_path, &es); cfg.ext_size = es; }
     cfg.framebuffer = fb;
     cfg.audio_ring = audio; cfg.audio_frames = AUDIO_FRAMES;
+    static uint16_t track[AMIGA_TRACK_WORDS];
+    cfg.track = track;
     cfg.serial_out = serial_out;
     cfg.prof_clock = prof_clock;            // --status: the core's buckets, ns
     amiga_init(&cfg);

@@ -25,6 +25,7 @@
 //
 // Boot failures paint the screen one colour and blink the LED:
 //   red = no or too little PSRAM, magenta = no ROM and no card, blue = no ROM.
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include "pico/stdlib.h"
@@ -169,10 +170,15 @@ int main(void) {
     memset(&cfg, 0, sizeof cfg);
     cfg.chip_ram = ps;              // sizes and chipset: machine_select_rom (Config::machine)
     cfg.slow_ram = ps + 512 * KB;
-    const uint32_t misc = 16 * KB;
-    if (ui_stats_buffer_size() > misc) fail(0xF00);   // a build error in all but name
+    // Above 2 MB: the Win+F8 band's pixels (16 KB), the floppy's MFM track, then
+    // the DMS area.  A 2 MB PSRAM has no band, and its track comes from the heap.
+    const uint32_t misc = 32 * KB;
+    if (ui_stats_buffer_size() > 16 * KB || AMIGA_TRACK_WORDS * 2 > misc - 16 * KB)
+        fail(0xF00);                 // a build error in all but name
     const bool more = psram > 2 * MB + misc;
     if (more) ui_stats_buffer(ps + 2 * MB);
+    cfg.track = more ? (uint16_t *)(ps + 2 * MB + 16 * KB) : malloc(AMIGA_TRACK_WORDS * 2);
+    if (!cfg.track) fail(0xF00);
     machine_init(ps + 1 * MB, ps + 1 * MB + 512 * KB, more ? ps + 2 * MB + misc : NULL,
                  more ? psram - 2 * MB - misc : 0);
 

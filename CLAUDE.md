@@ -250,8 +250,7 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
 - Host profile with AROS idling at its boot screen (hires, 4 planes): bitplane
   fetch/c2p ~50%, output ~20%, CPU ~10%. The renderer is the first thing to move
   to core 1 / optimize on the RP2350 (docs/PLAN.md, section 2).
-- Firmware RAM (framebuffer 245 KB, colour map 8 KB, track buffer 12.4 KB, audio
-  ring 16 KB, ~45 KB of SRAM code incl. 17 KB of Musashi handlers; DV adds TMDS
+- Firmware RAM (framebuffer 245 KB, colour map 8 KB, audio ring 16 KB, ~45 KB of SRAM code incl. 17 KB of Musashi handlers; DV adds TMDS
   tables/line buffers, of 520 KB): PICO_DV has ~8 KB between the end of .bss and
   __HeapLimit (2026-10-28, `nm` `end`); the old "~50 KB" was stale. That gap
   is the whole C/C++ heap (the menu's strings, the file browser): with ECS it
@@ -261,9 +260,14 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   PSRAM has no band) and the .m3u read through 256 bytes: 20.5 KB; System
   info's flash JEDEC read (hardware_flash) took 0.9 KB of it: 19.5 KB
   (2026-10-28); 13.9 KB by the 2026-10-30 HEAD before snapshots, 14.5 KB with
-  them (their code is flash, their buffers the heap's while they run). Check
-  `end` after adding SRAM code or tables. MURM2 not
-  re-measured (was ~100 KB).
+  them (their code is flash, their buffers the heap's while they run). Then
+  VGA's 22 KB (pair LUT, templates) moved into the idle PIO HDMI entry window
+  (`hdmi_spare()`: one scanout runs after boot) and the floppy's MFM track
+  (12.4 KB, `amiga_config_t.track`) into PSRAM after the band (+2 MB + 16 KB; a
+  2 MB PSRAM mallocs it), and the UART log's 4 KB ring is malloc'ed only when
+  Debug > UART log is on: 52 KB on MURM / PICO_DV / ZERO2, 77 KB on MURM2 /
+  PICO_PC (2026-10-30, ./check-release.sh). Check `end` after adding SRAM code
+  or tables.
 - PICO_DV core 1 before the lookup scanout (Cannon Fodder, 504 MHz, ms per
   frame): CPU TMDS encoding 6.5, line IRQ 1.6, leaving Denise ~6 (the PERF
   line's `core1 render/irq/enc`).

@@ -1,7 +1,8 @@
 // Floppy drives and disk DMA.
 //
-// ADF images are MFM-encoded one track at a time into a 6334-word buffer, the
-// length of a real DD track at 300 rpm / 500 kbit/s: 11 sectors of 544 words
+// ADF images are MFM-encoded one track at a time into a 6334-word buffer (the
+// platform's, amiga_config_t.track), the length of a real DD track at 300 rpm /
+// 500 kbit/s: 11 sectors of 544 words
 // (AAAA AAAA 4489 4489, info, label, two checksums, 512 data bytes split into
 // odd/even halves) followed by a gap.  A read DMA copies DSKLEN words out of
 // that ring starting at the current rotational position (after the next sync
@@ -37,7 +38,7 @@
 #define NDRIVES       4
 #define SECTORS       11
 #define SECTOR_WORDS  544
-#define TRACK_WORDS   6334
+#define TRACK_WORDS   AMIGA_TRACK_WORDS
 #define CYLINDERS     80
 #define SWAP_LINES    (2 * 50 * AMIGA_LINES_LONG)   // a swapped disk stays out 2 s
 
@@ -58,7 +59,6 @@ static uint8_t  prb_last = 0xFF;
 static int      side;                    // 0 = lower head
 static int      sel = -1;                // lowest selected drive or -1
 
-static uint16_t track[TRACK_WORDS];
 static int      trk_drive = -1, trk_num = -1;
 static uint32_t rot_pos;                 // word under the head
 
@@ -82,14 +82,14 @@ static int mfm_prev;   // last data bit emitted
 static int wpos;
 
 static void put_raw(uint16_t w) {
-    track[wpos++] = w;
+    A.cfg.track[wpos++] = w;
     mfm_prev = w & 1;
 }
 
 static void put_data16(uint16_t d) {
     uint16_t w = d & 0x5555;
     uint16_t clk = (uint16_t)(~((w << 1) | (w >> 1) | (mfm_prev << 15)) & 0xAAAA);
-    track[wpos++] = w | clk;
+    A.cfg.track[wpos++] = w | clk;
     mfm_prev = w & 1;
 }
 
@@ -206,6 +206,7 @@ static void dma_start_(void) {
     last_sector = (uint8_t)(rot_pos % TRACK_WORDS / SECTOR_WORDS);
     if (dma_write) return;              // data decoded at completion
     ensure_track(sel);
+    const uint16_t *track = A.cfg.track;
     uint32_t pos = rot_pos % TRACK_WORDS;
     if (A.adkcon & 0x0400) {            // WORDSYNC: start after the next sync word
         uint32_t i;

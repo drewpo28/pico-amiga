@@ -69,6 +69,10 @@ static uint32_t tab_r[16][4];
 static uint32_t tab_gb[256][4];
 static uint32_t tab_mix[3][16][16][4];               // hires pairs of different colours
 
+// VGA's working memory when it runs instead (video_vga.c): one scanout runs
+// after video_select(), and the window is the largest buffer here.
+void *hdmi_spare(uint32_t size) { return size <= sizeof hdmi_lut_window ? (void *)hdmi_lut_window : NULL; }
+
 static uint16_t items[4][TL_LINE_MAX] __attribute__((aligned(4)));
 static const uint16_t *line_ring[4] __attribute__((aligned(16)));   // line_ctrl reads it round
 static uint8_t  slot_kind[4] = { 0xFF, 0xFF, 0xFF, 0xFF };   // vsync | active << 1 | picture << 2

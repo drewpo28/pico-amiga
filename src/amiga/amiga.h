@@ -93,6 +93,7 @@ bool amiga_render_pump(void);
 // DMA pointers, large blits, DIWHIGH, BEAMCON0 stored) and Denise 8373
 // (DENISEID, super-hires, BPLCON3's border blank).
 enum { AMIGA_OCS = 0, AMIGA_ECS = 1 };
+#define AMIGA_TRACK_WORDS 6334   // a DD track at 300 rpm / 500 kbit/s (floppy.c)
 
 typedef struct {
     // Memory supplied by the platform. Contents are big-endian Amiga order.
@@ -106,6 +107,10 @@ typedef struct {
 
     int16_t  *audio_ring;    // interleaved stereo frames, or NULL
     uint32_t  audio_frames;  // ring capacity in stereo frames (power of two)
+
+    // The floppy's MFM track: AMIGA_TRACK_WORDS words the CPU alone touches, at
+    // a disk DMA (the firmware's sits in PSRAM, next to chip RAM).
+    uint16_t *track;
 
     // Optional hooks (may be NULL).
     void (*serial_out)(void *ctx, uint8_t byte);   // SERDAT, for DiagROM / debug

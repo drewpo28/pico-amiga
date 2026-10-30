@@ -1,7 +1,10 @@
 // Debug > UART log (dbg_uart.h). printf goes through a pico_stdio driver into a
 // RAM ring; dbg_uart_pump() feeds the 32-byte UART FIFO from the main loop, so a
-// log line never stalls the emulator (a full ring drops text instead).
+// log line never stalls the emulator (a full ring drops text instead).  The
+// ring comes from the heap when the console starts: with the log off (the
+// default) its 4 KB stay the heap's.
 #include "dbg_uart.h"
+#include <stdlib.h>
 #include "pico/stdlib.h"
 #include "pico/stdio/driver.h"
 #include "hardware/uart.h"
@@ -13,7 +16,7 @@
 #endif
 
 #define RING 4096u
-static char     ring[RING];
+static char    *ring;
 static uint32_t wr, rd;
 static bool     on;
 
@@ -53,6 +56,8 @@ void dbg_uart_reclock(void) {
 bool dbg_uart_start(bool want) {
 #ifdef DBG_UART_TX_PIN
     if (!want || on) return on;
+    ring = malloc(RING);
+    if (!ring) return false;
     uart_init(DBG_UART_INST, 115200);
     gpio_set_function(DBG_UART_TX_PIN, GPIO_FUNC_UART);
     stdio_set_driver_enabled(&drv, true);
