@@ -37,6 +37,7 @@ AMIGA_HOT uint16_t amiga_hpos(void) {
 
 AMIGA_HOT static void cpu_until(uint64_t target) {
     const unsigned mul = A.load_cpu > 1 ? A.load_cpu : 1;
+    if (idle_skip(target)) return;                                 // a busy-wait loop (idle.c)
     while (A.cpu_cyc < target) {
         A.in_cpu = true;
         int used = m68k_execute((int)(target - A.cpu_cyc) * (int)mul);
@@ -137,6 +138,7 @@ void amiga_reset(bool hard) {
     cia_reset();
     rtc_reset();
     gayle_reset();
+    idle_reset();
     copper_reset();
     blitter_reset();
     denise_reset();
@@ -241,6 +243,7 @@ void amiga_get_profile(amiga_profile_t *p, bool reset) {
     for (int i = 0; i < AMIGA_PROF_COUNT; i++) p->ticks[i] = prof_acc[i];
     p->ticks[AMIGA_PROF_CORE1] = denise_core1_ticks();
     p->frames = prof_frames;
+    p->idle_cycles = A.idle_cycles;
     if (reset) {
         for (int i = 0; i < AMIGA_PROF_COUNT; i++) prof_acc[i] = 0;
         prof_frames = 0;

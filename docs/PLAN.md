@@ -34,6 +34,12 @@ verified on the host bench; "hw" means verified on a board.
 - [ ] c2p: byte-wise tables (8 pixels per lookup) or the SIO interpolators
 - [ ] Opcode handler index (128 KB) and cycle table (64 KB) into SRAM - there is room
 - [ ] m68k_execute and the hottest handlers into SRAM; profile with the SysTick sampler
+      (Debug > PC profiler + tools/pcprof.py, 2026-11-05: State of the Art at x3 - the
+      dispatch loop ~11%, custom / CIA reads ~8-12%, the memory callbacks ~9-12%,
+      dma_unit 7-27% with 8-18k XIP misses a frame, prof_switch ~2.6%)
+- [x] Busy-wait loops skipped (idle.c): dbra Dn,* and test + Bcc on an unchanged value
+- [ ] prof_switch only while the PERF line is on (~2.6% of core 0 always)
+- [ ] Instruction fetch without the bank lookup call (a PC page pointer)
 - [ ] PSRAM: check XIP cache behaviour with chip RAM traffic; consider an SRAM
       copy of the most-used chip RAM page(s)
 

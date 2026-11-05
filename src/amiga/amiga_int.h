@@ -67,6 +67,7 @@ typedef struct {
     uint8_t  load_cpu;         // amiga_set_load_test: 68000 work per cycle (1, 2 or 3)
     bool     load_planes;      // ...and two more bitplanes read and spread (8 for 6)
     uint8_t  load_rem;         // CPU cycles left over from the last slice (load_cpu 2)
+    uint64_t idle_cycles;      // CPU cycles idle.c did not run (busy-wait loops)
 
     // Beam / time. One colour clock = 2 CPU cycles.
     uint32_t frame;
@@ -159,6 +160,11 @@ void     amiga_set_intreq(uint16_t bits);
 // ---- memory (mem.c) --------------------------------------------------------
 void     mem_init(void);
 void     mem_set_overlay(bool on);
+bool     mem_peek(uint32_t a, int size, uint32_t *v);   // a read with no side effect (idle.c)
+
+// ---- busy-wait loops (idle.c) ------------------------------------------------
+bool     idle_skip(uint64_t target);        // at a slice's start: true = the slice is done
+void     idle_reset(void);
 bool     mem_overlay(void);
 // DMA-side chip RAM access (word address, already masked by the caller).
 // One halfword access each (the address is even): two byte accesses cost

@@ -382,15 +382,18 @@ int main(int argc, char **argv) {
             int modes[3] = {0, 0, 0};
             for (int r = 0; r < AMIGA_FB_H; r++) if (fb[r].mode < 3) modes[fb[r].mode]++;
             struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts);
+            static uint64_t idle_last;                              // the CPU's busy-wait time skipped (idle.c)
             amiga_profile_t pr; amiga_get_profile(&pr, true);        // since the last status
             const uint32_t nf = pr.frames ? pr.frames : 1;
             fprintf(stderr, "frame %u t=%ld.%06ld pc=%06X dmacon=%04X intena=%04X intreq=%04X ovl=%d cop=%06X blits=%u "
-                    "rows direct=%d idx8=%d lace4=%d | us/frame cpu %u ren %u bpl %u rd %u cop %u blt %u\n",
+                    "rows direct=%d idx8=%d lace4=%d | us/frame cpu %u ren %u bpl %u rd %u cop %u blt %u | idle %u%%\n",
                     st.frame, (long)ts.tv_sec, ts.tv_nsec / 1000, st.pc, st.dmacon, st.intena, st.intreq, st.overlay, st.cop_pc, st.blits,
                     modes[0], modes[1], modes[2],
                     (unsigned)(pr.ticks[AMIGA_PROF_CPU] / nf / 1000), (unsigned)(pr.ticks[AMIGA_PROF_RENDER] / nf / 1000),
                     (unsigned)(pr.ticks[AMIGA_PROF_BPL] / nf / 1000), (unsigned)(pr.ticks[AMIGA_PROF_BPLRD] / nf / 1000),
-                    (unsigned)(pr.ticks[AMIGA_PROF_COPPER] / nf / 1000), (unsigned)(pr.ticks[AMIGA_PROF_BLIT] / nf / 1000));
+                    (unsigned)(pr.ticks[AMIGA_PROF_COPPER] / nf / 1000), (unsigned)(pr.ticks[AMIGA_PROF_BLIT] / nf / 1000),
+                    (unsigned)((pr.idle_cycles - idle_last) * 100 / nf / (2u * AMIGA_CC_PER_LINE * AMIGA_LINES_LONG)));
+            idle_last = pr.idle_cycles;
         }
     }
     if (wav) wav_close();

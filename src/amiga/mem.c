@@ -181,6 +181,38 @@ static void io_write16(uint32_t a, uint16_t v, int io) {
     }
 }
 
+// A read with no side effect (idle.c): RAM / ROM, and the I/O registers that
+// only report state.  False for anything else (CIA ICR, COPJMP, Gayle, ...).
+static bool custom_pure(uint32_t reg) {
+    switch (reg) {
+    case 0x002: case 0x004: case 0x006: case 0x00A: case 0x00C:      // DMACONR VPOSR VHPOSR JOYxDAT
+    case 0x016: case 0x01C: case 0x01E: return true;                  // POTGOR INTENAR INTREQR
+    default: return false;
+    }
+}
+AMIGA_HOT bool mem_peek(uint32_t a, int size, uint32_t *v) {
+    a &= 0xFFFFFF;
+    const bank_t *b = &banks[a >> 16];
+    if (b->rd) {
+        const uint8_t *p = b->rd;
+        const uint32_t m = b->mask;
+        uint32_t x = 0;
+        for (int i = 0; i < size; i++) x = x << 8 | p[(a + (uint32_t)i) & m];
+        *v = x;
+        return true;
+    }
+    for (int i = 0; i < size; i += 2) {
+        const uint32_t w = (a + (uint32_t)i) & ~1u;
+        if (b->io == B_CUSTOM ? !custom_pure(w & 0x1FE)
+          : b->io == B_CIA ? ((w >> 8) & 0xF) > 1                       // the CIAs' PRA / PRB only
+          : true) return false;
+    }
+    if (size == 1) *v = io_read8(a, b->io);
+    else if (size == 2) *v = io_read16(a, b->io);
+    else *v = (uint32_t)io_read16(a, b->io) << 16 | io_read16(a + 2, b->io);
+    return true;
+}
+
 // ---- Musashi callbacks ------------------------------------------------------
 static inline uint16_t ld16(const uint8_t *p) {
     uint16_t v; memcpy(&v, p, 2);

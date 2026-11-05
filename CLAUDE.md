@@ -267,6 +267,14 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   copper MOVEs a frame, two thirds repeats. A write equal to the queued colour
   is dropped (`denise_q_color`, tested in the copper loop itself); the others
   patch LUT entries n and n+32 instead of rebuilding the LUT.
+- **Busy-wait loops are not run** (idle.c, from cpu_until once a slice): `dbra Dn,*`
+  comes off Dn exactly; a test + Bcc back to it (cmpi / btst #n / tst on abs.w, abs.l,
+  (d16,An)) found at two slice ends with its value unchanged skips whole slices while
+  the value (re-read by mem_peek: RAM / ROM and side-effect-free registers only, never
+  CIA ICR or COPJMP) stays and no interrupt is pending. State of the Art spent >40% of
+  its instructions in such loops (the bench's PC histogram); its CPU time fell 2x,
+  3-4x under the A1200 load test, and IK+, Cannon Fodder, Exolon, State of the Art and
+  KS 1.3 stayed byte-identical at frames 500/1500/3000. The bench prints `idle N%`.
 - **Check where AMIGA_HOT code lands** (`arm-none-eabi-nm`): a static AMIGA_HOT
   function inlined into a flash caller runs from flash. run_line sat inside
   amiga_run_frame that way (now noinline), the blits inside blitter.c's start().

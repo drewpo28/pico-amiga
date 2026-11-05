@@ -252,7 +252,9 @@ enum { AMIGA_PROF_OTHER, AMIGA_PROF_CPU, AMIGA_PROF_COPPER, AMIGA_PROF_RENDER,
        AMIGA_PROF_RWAIT,    // waiting for the render core (async rendering)
        AMIGA_PROF_CORE1,    // the render core's time (async rendering; its own clock)
        AMIGA_PROF_COUNT };
-typedef struct { uint32_t ticks[AMIGA_PROF_COUNT]; uint32_t frames; } amiga_profile_t;
+// idle_cycles: CPU cycles not run because the CPU sat in a busy-wait loop (idle.c),
+// a running count since the reset.
+typedef struct { uint32_t ticks[AMIGA_PROF_COUNT]; uint32_t frames; uint64_t idle_cycles; } amiga_profile_t;
 void amiga_get_profile(amiga_profile_t *p, bool reset);
 
 #ifdef __cplusplus

@@ -11,6 +11,7 @@ set(AMIGA_CORE_SRC
     ${ROOT}/src/amiga/floppy.c
     ${ROOT}/src/amiga/gayle.c
     ${ROOT}/src/amiga/ide.c
+    ${ROOT}/src/amiga/idle.c
     ${ROOT}/src/amiga/mem.c
     ${ROOT}/src/amiga/paula.c
     ${ROOT}/src/amiga/rtc.c
