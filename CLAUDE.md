@@ -283,6 +283,10 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   channel starves and HDMI drops (tried: a per-line bitplane prefetch, hires
   screens lost the picture). XIP streaming would not stall it but bypasses the
   write-back XIP cache, so it reads stale chip RAM.
+  Nor CPU copies through the uncached alias (2026-11-05, reverted 35682bb): a
+  line per plane cleaned out of the cache and read uncached at line start cost
+  ~45 ns a byte (4.6 ms a frame for 8 AGA planes), saved 4.5 ms of cached reads,
+  and the cleans slowed the CPU: Roots' heaviest part went 31 -> 25 fps.
 - Firmware: PSRAM init runs QMI direct mode — nothing may fetch from flash on
   either core meanwhile, so it runs before core 1 starts and before USB.
 - **A frame starts when the scanout is 70% into its picture** (main.c,
