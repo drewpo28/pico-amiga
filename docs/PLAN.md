@@ -53,8 +53,7 @@ verified on the host bench; "hw" means verified on a board.
 
 - [ ] On-screen menu: pick ADFs from the SD card, swap disks, reset, settings
 - [ ] Joystick: USB gamepads, NES/SNES pads (pico-speccy drivers)
-- [ ] A600 profile: ECS Agnus/Denise, 1 MB chip RAM, KS 2.05, Gayle IDE with HDF images
-      (builds on the A500+ steps below)
+- [ ] A600 profile: section 6 (before the A1200, which reuses its Gayle)
 - [x] PIO TMDS back-end (PICO_DV); MURM1 / ZERO2 board entries still to add; VGA
 - [ ] Video > Output > Mode (pico-speccy's modes, video_modes.c): 720x576@50, 800x600
       framed (HDMI 50 Hz, VGA VESA 60 Hz), 640x480@60 cropped, with the
@@ -125,7 +124,42 @@ Step 3 - ECS Denise (host):
       scaled, never at its own timing
 - [ ] hw: the A500+ on a board (PICO_DV: SRAM left ~5.6 KB)
 
-## 6. A1200 (AGA)
+## 6. A600 (ECS + Gayle)
+
+An A600 is an A500+ with Gayle: 68000 at 7.09 MHz, 1 MB of chip RAM and no slow
+RAM, ECS (Agnus 8375, Denise 8373), Kickstart 2.05 (37.350 is the built-in ks205,
+kick37350.A600; 37.299 / 37.300 come as Custom ROM), an IDE port and a PCMCIA slot,
+no battery clock. It comes before the A1200 and apart from it: everything but
+Gayle is there already (section 5), and Gayle is checked here on the known 68000 /
+ECS core, so the A1200's step 2 only reuses it. Config::machine = 2, `--a600` on
+the bench (the A1200 becomes 3).
+
+Step 1 - the machine (host):
+
+- [ ] cmake/roms.cmake: an A600 machine; ks205 listed under it (and A500 /
+      A500+ as today), ks31 too (3.1 A500/A600 ROM); Machine > A600 row; Custom
+      ROM on it; DiagROM checks it
+- [ ] Memory map as the A500+ (1 MB chip, nothing at $C00000), but no clock at
+      $DC0000 (a stock A600 has none; KS 2.05 must not find one)
+- [ ] Gayle: the ID at $DE1000 (read by bit, check the sequence against WinUAE),
+      the IDE registers at $DA0000 answering "no drive" at once, so KS 2.05's
+      scsi.device does not wait ~30 s at boot; the Gayle interrupt and status
+      registers ($DA8000-$DAB000) read as idle. PCMCIA not fitted
+- [ ] state.c: the machine id; Gayle's registers at the end of a new block
+- [ ] Check: KS 2.05 boots to the insert-disk screen without a delay, Workbench
+      2.05 from ADF reports 1 MB chip; A500 / A500+ screens unchanged; smoke.sh:
+      an A600 test with AROS
+
+Step 2 - IDE with HDF images (host, shared with the A1200 and WHDLoad):
+
+- [ ] An ATA drive behind Gayle: IDENTIFY, READ/WRITE SECTORS (PIO, LBA and CHS),
+      the IRQ through Gayle; one HDF from the card (RDB or a bare partition),
+      streamed like an ADF; Devices > Disks > Hard disk to pick it
+- [ ] Check: Workbench 2.05 / 3.1 installed on an HDF boots from it
+
+Step 3 - hw: the A600 on a board (heap / `end` with ./check-release.sh).
+
+## 7. A1200 (AGA)
 
 Nothing of it is there yet: the CPU is a 68000 (m68kconf.h has EC020/020 off,
 amiga.c sets M68K_CPU_TYPE_68000), Denise knows OCS/ECS only (32 colour
@@ -133,7 +167,7 @@ registers, 6 bitplane pointers, a 64-entry LUT) and the frame buffer is 12-bit.
 An A1200 is a 68EC020 at 14.18 MHz (twice the A500's clock, 24-bit addresses),
 2 MB of chip RAM on a 32-bit bus, no slow RAM, Alice (AGA Agnus) + Lisa (AGA
 Denise), Gayle (IDE, PCMCIA) and Kickstart 3.1 A1200 (40.068, 512 KB; 3.0 is
-39.106). It is a third machine (Config::machine = 2, `--a1200` on the bench),
+39.106). It is a fourth machine (Config::machine = 3, `--a1200` on the bench),
 not AGA on an A500: no real A500 had it, and the ROMs differ.
 
 Scope: PAL, 12-bit output. AGA's 24-bit colours are cut to their top 4 bits
@@ -179,9 +213,9 @@ Step 2 - the machine (host):
       band, the MFM track and the DMS area up by 1 MB; an A1200 needs at least
       a 4 MB PSRAM (2 MB boards: the row is disabled, as the band is today)
 - [ ] VPOSR Alice ID (PAL $22 / $23, check against WinUAE), DENISEID Lisa ($F8)
-- [ ] Gayle: the ID at $DE1000 and an IDE that answers "no drive" at once
-      ($DA0000 status): KS 3.1's scsi.device otherwise waits ~30 s at boot.
-      PCMCIA not fitted. A real IDE (HDF from the card) comes with WHDLoad
+- [ ] Gayle: from the A600 (section 6, its ID and "no drive" IDE, then the HDF
+      drive); check the A1200's Gayle ID and register differences against WinUAE.
+      PCMCIA not fitted
 - [ ] Optional fast RAM (none on a stock A1200; WHDLoad and many games want
       it): 4 MB at $200000 from PSRAM, on boards with 8 MB
 - [ ] Check: KS 3.1 boots to the insert-disk screen, Workbench 3.1 from ADF
