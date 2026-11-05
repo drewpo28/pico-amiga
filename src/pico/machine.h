@@ -35,7 +35,7 @@ bool machine_apply_kickstart(void);
 // Config::machine.  The A600 runs on the A500+'s memory layout (1 MB of chip RAM
 // over chip_ram and slow_ram) and adds Gayle.
 // The A1200: a 68EC020 at 14 MHz, 2 MB of chip RAM (needs the 2 MB chip area:
-// machine_a600_2mb_ok), Gayle ($D1); ECS chip IDs until AGA is emulated.
+// machine_a600_2mb_ok), Gayle ($D1), AGA (Alice / Lisa).
 enum { MACHINE_A500 = 0, MACHINE_A500P = 1, MACHINE_A600 = 2, MACHINE_A1200 = 3, MACHINE_COUNT = 4 };
 const char *machine_model_name(int m);   // "A600"
 const char *machine_model_desc(int m);   // "A600 (ECS, 1 MB chip RAM, Gayle)"

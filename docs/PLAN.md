@@ -268,9 +268,8 @@ Step 2 - the machine (host):
 - [x] PSRAM layout (main.c, done for the A600's A601): chip RAM 0-2 MB pushes the Custom ROM buffers, the
       band, the MFM track and the DMS area up by 1 MB; an A1200 needs at least
       a 4 MB PSRAM (2 MB boards: the row is disabled, as the band is today)
-- [ ] VPOSR Alice ID (PAL $22 / $23, check against WinUAE), DENISEID Lisa ($F8):
-      with steps 3-4 - the A1200 reports ECS IDs until then, or KS 3.1's graphics
-      would write AGA palettes (LOCT halves) that this Denise misreads
+- [x] VPOSR Alice ID ($23 PAL), DENISEID Lisa ($F8); the firmware's A1200 is AGA
+      since 2026-11-05 (machine.cpp select_model)
 - [x] Gayle: the A600's (IDE with HDF / SD partition included), ID $D1 (WinUAE's
       AGA Gayle). PCMCIA not fitted
 - [ ] Optional fast RAM (none on a stock A1200; WHDLoad and many games want
@@ -294,9 +293,9 @@ Step 3 - Alice: AGA bitplane and sprite DMA (host):
 - [x] Sprites: FMODE SPR32/SPR64 (16 / 32 / 64 pixels wide, 2 or 4 words per
       fetch, control words in the wide format), SSCAN2 (sprite scan doubling)
       [done but SSCAN2; SPRES hires / super-hires sprites show every 2nd / 4th pixel
-      (spl[] is lowres). A-Type (AGA PD): its 64-pixel A-TYPE logo right; the panel's
-      blinking "PUSH RUN BUTTON" shows a second, grey copy of the text and its
-      bottom-left icons look scrambled - unexplained, no reference screen yet]
+      (spl[] is lowres). A-Type (AGA PD): its 64-pixel A-TYPE logo right; the panel
+      matches the owner's reference since bitplane DMA follows DMACON mid-line
+      (the panel turns it off for the line it rewrites the pointers on)]
 - [ ] BSCAN2 and the second modulo pair (BPL1MOD/BPL2MOD per line parity):
       productivity / scan-doubled modes, low priority for PAL games
 
@@ -310,11 +309,12 @@ Step 4 - Lisa: the picture (host):
 - [x] lut[] / lut_pf[] grow from 64 to 256 entries (+~400 B); the pf value is
       already a byte per pixel. The c2p for 7-8 planes (bytewise tables or the
       SIO interpolators, section 2) - 8 planes is a third more work than 6
-- [ ] BPLCON4: BPLAM (XOR on the bitplane colour index), ESPRM / OSPRM (even /
+- [x] BPLCON4: BPLAM (XOR on the bitplane colour index), ESPRM / OSPRM (even /
       odd sprite colour banks); BPLCON3 PF2OF (dual playfield 2's colour
       offset), SPRES (sprite resolution), BRDRBLNK / BRDNTRAN / BRDSPRT
-- [ ] HAM8 (6 planes of data, 2 control bits: modify the top 6 bits of a gun)
-      and EHB stays for 6-plane non-AGA modes. HAM6 unchanged
+- [x] HAM8 (6 planes of data, 2 control bits: modify the top 6 bits of a gun)
+      and EHB stays for 6-plane non-AGA modes. HAM6 unchanged. AGA HAM also in
+      hires (two pixels a colour clock; the row is DIRECT), BPLAM XORed in; smoke 5c
 - [ ] Sprite colours from the selected bank, sprite pixels at SPRES, the 32/64
       wide shift registers; CLXCON2 (collision of planes 7-8)
 - [ ] Frame buffer rows: lowres rows are DIRECT (360 x 0x0RGB) and take any
@@ -325,7 +325,7 @@ Step 4 - Lisa: the picture (host):
       possible; a DIRECT 720-pixel row (1440 B) neither. Count how often games
       hit it before considering more
 - [ ] LACE4 (16 colours per field line) falls back the same way (section 3)
-- [ ] State: the 256 x 24-bit palette, BPLCON4, FMODE, bplpt[6..7] at the end
+- [x] State: the 256 x 24-bit palette, BPLCON4, FMODE, bplpt[6..7] at the end
       of the Denise block
 
 Step 5 - checks and the board:

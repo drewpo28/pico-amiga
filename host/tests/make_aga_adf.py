@@ -12,8 +12,16 @@ fetch: 32-colour-clock units of 4 words a plane) through a copper list that:
 
 So the window is $0F0 with 8 planes, the wide fetch, Lisa's banks, LOCT and
 BPLAM right, black around it.
-smoke.sh checks it."""
+
+With --ham8 the picture is hires HAM8 instead: plane 1 all 0s, planes 2-8 all 1s (one
+buffer),
+so every pixel is $FE - "modify red" with the data $3F - after COLOR00 = $00F at
+the window's start: $F0F inside, the $00F border around it.
+smoke.sh checks both."""
 import struct, sys
+
+HAM8 = "--ham8" in sys.argv
+args = [a for a in sys.argv[1:] if a != "--ham8"]
 
 code = bytearray()
 labels, fixups = {}, []
@@ -57,9 +65,16 @@ br(0x60, "print")
 
 label("show")
 fill_w(0xD0000, 0x10000, 0xFFFF)       # 8 planes of 16 KB, all 1s
+if HAM8: fill_w(0xF0000, 0x4000, 0)    # HAM8: plane 1's 32 KB of 0s
 lea_a0(0xC0000)
 for p in range(8):                     # BPL1PT..BPL8PT = $D0000 + 16 KB x p
-    cop(((0xE0 + 4 * p) << 16) | 0x000D, ((0xE2 + 4 * p) << 16) | (p * 0x4000))
+    a = (0xF0000 if p == 0 else 0xD0000) if HAM8 else 0xD0000 + p * 0x4000   # HAM8: hires
+    cop(((0xE0 + 4 * p) << 16) | (a >> 16), ((0xE2 + 4 * p) << 16) | (a & 0xFFFF))   # planes share the 1s
+if HAM8: cop(0x01008A10,               # BPLCON0: hires, HAM, 8 planes, COLOR
+             0x01020000, 0x01080000, 0x010A0000, 0x01FC0003,
+             0x008E2C81, 0x00902CC1, 0x0092003C, 0x009400D0,
+             0x01060000, 0x0180000F,   # COLOR00 = $00F
+             0x010C0011, 0xFFFFFFFE)
 cop(0x01000210,                        # BPLCON0: 8 planes (BPU3), COLOR
     0x01020000, 0x01080000, 0x010A0000,   # BPLCON1, modulos
     0x01FC0003,                        # FMODE: 64-bit bitplane fetch
@@ -100,4 +115,4 @@ struct.pack_into(">I", boot, 4, (~s) & 0xFFFFFFFF)
 
 adf = bytearray(901120)
 adf[0:1024] = boot
-open(sys.argv[1] if len(sys.argv) > 1 else "ecs-test.adf", "wb").write(adf)
+open(args[0] if args else "aga-test.adf", "wb").write(adf)

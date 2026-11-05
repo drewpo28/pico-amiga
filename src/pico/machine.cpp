@@ -47,10 +47,11 @@ static uint32_t load_file(const char *path, uint8_t *dst, uint32_t max) {
 }
 
 // The A500+ and the A600 are both ECS with 1 MB of chip RAM; the A600 adds Gayle.
+// The A1200 is AGA with 2 MB, a 68EC020 and the AGA Gayle.
 static void select_model(amiga_config_t *cfg) {
     const int m = Config::machine < MACHINE_COUNT ? (int)Config::machine : (int)MACHINE_A500;
     const bool ecs = m != MACHINE_A500;
-    cfg->chipset = ecs ? AMIGA_ECS : AMIGA_OCS;
+    cfg->chipset = m == MACHINE_A1200 ? AMIGA_AGA : ecs ? AMIGA_ECS : AMIGA_OCS;
     // An A600 with an A601 in its trapdoor: 2 MB of chip RAM (the 8375 Agnus
     // addresses it), where the PSRAM layout leaves room (machine_init).
     const bool chip2 = s_chip_area >= 2048 * KB &&
@@ -64,7 +65,7 @@ static void select_model(amiga_config_t *cfg) {
 static const char *const kModelName[MACHINE_COUNT] = { "A500", "A500+", "A600", "A1200" };
 static const char *const kModelDesc[MACHINE_COUNT] = {
     "A500 (OCS, 512 KB chip + 512 KB slow)", "A500+ (ECS, 1 MB chip RAM)", "A600 (ECS, 1 MB chip RAM, Gayle)",
-    "A1200 (68EC020, 2 MB chip RAM, Gayle; ECS for now)" };
+    "A1200 (AGA, 68EC020, 2 MB chip RAM, Gayle)" };
 const char *machine_model_name(int m) { return m >= 0 && m < MACHINE_COUNT ? kModelName[m] : "?"; }
 const char *machine_model_desc(int m) { return m >= 0 && m < MACHINE_COUNT ? kModelDesc[m] : "?"; }
 uint32_t machine_chip_size(void) {

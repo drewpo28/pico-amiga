@@ -650,23 +650,59 @@ AMIGA_HOT static void w_plain(int x0, int x1, bool hires) {
     }
 }
 
-AMIGA_HOT static void output_ham(int x0, int x1) {
-    for (int x = x0; x < x1; x++) {
-        if (!ham_in) { ham_col = color[0]; ham_in = true; }
-        uint8_t v = pf_o[2 * x];
-        int d = v & 15;
-        switch (v >> 4) {
-        case 0: ham_col = color[d]; break;
+// HAM: the previous pixel's colour with one gun modified, or a palette colour.
+// HAM6 takes the control from planes 5-6 and 4 data bits; AGA's HAM8 (8 planes)
+// from planes 1-2 and 6 data bits, the top 4 of which the 12-bit output keeps.
+// AGA has HAM in hires too (two pixels per colour clock) and XORs BPLAM in first.
+AMIGA_HOT static inline void ham_step(unsigned v, bool ham8) {
+    if (ham8) {
+        const int d = (int)(v >> 4);
+        switch (v & 3) {
+        case 0: ham_col = color[v >> 2]; break;
         case 1: ham_col = (uint16_t)((ham_col & 0xFF0) | d); break;
         case 2: ham_col = (uint16_t)((ham_col & 0x0FF) | (d << 8)); break;
         default: ham_col = (uint16_t)((ham_col & 0xF0F) | (d << 4)); break;
         }
+        return;
+    }
+    const int d = v & 15;
+    switch ((v >> 4) & 3) {
+    case 0: ham_col = color[d]; break;
+    case 1: ham_col = (uint16_t)((ham_col & 0xFF0) | d); break;
+    case 2: ham_col = (uint16_t)((ham_col & 0x0FF) | (d << 8)); break;
+    default: ham_col = (uint16_t)((ham_col & 0xF0F) | (d << 4)); break;
+    }
+}
+
+AMIGA_HOT static void output_ham(int x0, int x1, bool hires) {
+    const bool ham8 = A.aga && planes(bplcon0) == 8;
+    const unsigned xr = A.aga ? (unsigned)(bplcon4 >> 8) & (ham8 ? 0xFF : 0x3F) : 0;
+    for (int x = x0; x < x1; x++) {
+        if (!ham_in) { ham_col = color[0]; ham_in = true; }
+        const uint8_t v0 = pf_o[2 * x];
+        ham_step(v0 ^ xr, ham8);
+        uint16_t c0 = ham_col, c1 = c0;
+        uint8_t v1 = 0;
+        if (hires) {
+            v1 = pf_o[2 * x + 1];
+            ham_step(v1 ^ xr, ham8);
+            c1 = ham_col;
+        }
         int fx = x - fb_x0;
         if (fbrow && fx >= 0 && fx < AMIGA_FB_W) {
-            uint16_t c = sprite_mix(x, ham_col, v ? 2 : 0);
-            w_put(fx, c, c);
+            c0 = sprite_mix(x, c0, v0 ? 2 : 0);
+            c1 = hires ? sprite_mix(x, c1, v1 ? 2 : 0) : c0;
+            w_put(fx, c0, c1);
         }
     }
+}
+
+// HAM: lowres with 6 planes; AGA also HAM8 (8 planes) and hires (not super-hires).
+static inline bool ham_mode(uint16_t con0) {
+    if (!(con0 & 0x0800)) return false;
+    const int np = planes(con0);
+    if (A.aga) return res(con0) != SHRES && (np == 6 || np == 8);
+    return res(con0) == LORES && np == 6;
 }
 
 // The border's colour: COLOR00, or black with ECS BPLCON3 BRDRBLNK (ECSENA on).
@@ -679,7 +715,7 @@ AMIGA_HOT static void output(int x0, int x1) {
     if (lut_dirty) build_lut();
     const int hstart = diw_hstart(diwstrt, diwhigh), hstop = diw_hstop(diwstop, diwhigh);
     const bool hires = res(bplcon0) != LORES;
-    const bool ham = (bplcon0 & 0x0800) && !hires && planes(bplcon0) == 6;
+    const bool ham = ham_mode(bplcon0);
 
     // Window part of the range; everything else is border (COLOR00).
     int w0 = x0, w1 = x0;
@@ -689,7 +725,7 @@ AMIGA_HOT static void output(int x0, int x1) {
         if (w1 < w0) w1 = w0;
     }
     if (w0 > x0 || w1 < x1) ham_in = false;
-    if (ham && w1 > w0) output_ham(w0, w1);
+    if (ham && w1 > w0) output_ham(w0, w1, hires);
     if (!fbrow) return;
 
     // Clip to the framebuffer and write border + window.
@@ -927,7 +963,7 @@ AMIGA_HOT static void c_line_start(uint32_t seq) {
     if (fbrow) {
         if (lut_dirty) build_lut();
         if (bplcon0 & 0x0004)      w_begin(fbrow, AMIGA_ROW_LACE4, c_lof ? 0 : 1);
-        else if (res(bplcon0) != LORES) w_begin(fbrow, AMIGA_ROW_IDX8, 0);
+        else if (res(bplcon0) != LORES && !ham_mode(bplcon0)) w_begin(fbrow, AMIGA_ROW_IDX8, 0);
         else                       w_begin(fbrow, AMIGA_ROW_DIRECT, 0);
     }
 #ifdef DENISE_DEBUG

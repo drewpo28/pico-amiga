@@ -55,7 +55,7 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   extension continues the threads that stopped.
 - Built-in ROMs (Machine: DiagROM; A500 > KS 1.2/1.3/2.04/2.05/3.1; A500+ > KS
   2.04/2.05/3.1; A600 > KS 2.05/3.1; A1200 > KS 3.1/3.0 (ks31a12, ks30a12: a 68EC020,
-  2 MB chip, Gayle $D1, ECS chip IDs until AGA; Config::machine 3, `--a1200`);
+  2 MB chip, Gayle $D1, AGA; Config::machine 3, `--a1200 --aga` on the bench);
   Custom ROM = a file from the card, Config::kick_file,
   Config::machine = 1: ECS, 1 MB chip RAM over the slow RAM's PSRAM, 2: the same plus
   Gayle (machine.h MACHINE_*), Machine > A600 chip RAM 1 or 2 MB (an A601, Config::a600_chip;
@@ -187,12 +187,13 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   $C00000-$D7FFFF, no clock. An empty IDE port reads $7F in the status register
   and $FF elsewhere (WinUAE's "IDE killer"): KS 2.05 writes $12 to the cylinder
   register, reads $FF back and boots at once instead of waiting ~30 s.
-- **AGA so far (A.aga, `--aga`; the firmware's A1200 stays ECS until it is whole)**:
+- **AGA (A.aga; the firmware's A1200, the bench's `--aga`)**:
   Alice $23 / Lisa $F8; Lisa's 256 colours - the producer (denise_write) resolves
   BANK, drops LOCT writes (low nibbles: the 12-bit output does not show them) and
   RDRAM, and queues the entry in the event's x; BPLCON4 (BPLAM, ESPRM); FMODE: the
   fetch unit and words per plane from WinUAE's fetchunits[], the pixels at DIW x
-  2t + 2 x fm_maxplane + 1 (17 / 9 / 5 without FMODE; hires FMODE 3 = 17); 8 planes.
+  2t + 2 x fm_maxplane + 1 (17 / 9 / 5 without FMODE; hires FMODE 3 = 17); 8 planes;
+  HAM8 (control in planes 1-2) and HAM in hires. SSCAN2 / BSCAN2 (31 kHz modes) not.
   Workbench 3.1 on AGA writes FMODE 3 at line 43, not at the frame's start.
 - **The A600's IDE (ide.c) hands sector bytes over in order, IDENTIFY as a PC
   holds it** (little-endian words, strings' first character in the high byte -
@@ -325,7 +326,8 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   (12.4 KB, `amiga_config_t.track`) into PSRAM after the band (+2 MB + 16 KB; a
   2 MB PSRAM mallocs it), and the UART log's 4 KB ring is malloc'ed only when
   Debug > UART log is on: 52 KB on MURM / PICO_DV / ZERO2, 77 KB on MURM2 /
-  PICO_PC (2026-10-30, ./check-release.sh). Check `end` after adding SRAM code
+  PICO_PC (2026-10-30, ./check-release.sh). AGA (256 colours, LUTs, 8 plane pointers, the
+  68EC020's handler set in flash) took it to 42 KB on MURM / PICO_DV (2026-11-05). Check `end` after adding SRAM code
   or tables.
 - PICO_DV core 1 before the lookup scanout (Cannon Fodder, 504 MHz, ms per
   frame): CPU TMDS encoding 6.5, line IRQ 1.6, leaving Denise ~6 (the PERF

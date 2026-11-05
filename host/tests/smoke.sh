@@ -99,6 +99,25 @@ px = [tuple(row[3 * x:3 * x + 3]) for x in (39, 40, 360, 679, 680)]
 sys.exit(0 if px == [(0, 0, 0), (0, 0xFF, 0), (0, 0xFF, 0), (0, 0xFF, 0), (0, 0, 0)] else 1)
 PY
 
+# 5c. AGA HAM8 in hires (make_aga_adf.py --ham8): $F0F inside, the $00F border.
+python3 host/tests/make_aga_adf.py "$OUT/ham8.adf" --ham8
+$BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --a1200 --aga --adf "$OUT/ham8.adf" \
+     --frames 1200 --shot 1200:"$OUT/ham8.png" > "$OUT/ham8.log" 2>&1
+python3 - "$OUT/ham8.png" <<'PY' && echo "PASS aga ham8 hires" || { echo "FAIL aga ham8 hires"; fail=1; }
+import sys, struct, zlib
+d = open(sys.argv[1], 'rb').read()
+w, h = struct.unpack('>II', d[16:24])
+raw, p = b'', 8
+while p < len(d):
+    n, t = struct.unpack('>I4s', d[p:p + 8])
+    if t == b'IDAT': raw += d[p + 8:p + 8 + n]
+    p += 12 + n
+raw = zlib.decompress(raw)
+row = raw[300 * (1 + 3 * w) + 1:][:3 * w]              # output line 300, filter 0
+px = [tuple(row[3 * x:3 * x + 3]) for x in (20, 100, 360, 600, 700)]
+sys.exit(0 if px == [(0, 0, 0xFF), (0xFF, 0, 0xFF), (0xFF, 0, 0xFF), (0xFF, 0, 0xFF), (0, 0, 0xFF)] else 1)
+PY
+
 # 6. A600 (Gayle, make_gayle_adf.py): its ID $D0, the empty IDE port, no CIA
 #    mirror at $A00000; the A500+ has none of them.  And a snapshot round trip
 #    on the A600 (the GAYL block, MACH's Gayle).
