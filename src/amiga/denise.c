@@ -488,7 +488,24 @@ static uint8_t  ilut[256];
 static bool     ilut_ident;
 AMIGA_HOT static void ilut_reset(void) { fill_bytes(ilut, 0xFF, (int)sizeof ilut); ilut_ident = false; }
 
+// AGA, a plain single playfield (not EHB, not super-hires): pf value v shows
+// colour v ^ BPLAM, so a colour write changes one LUT entry and the rebuild is a
+// copy.  Roots 2.0 (Sanity) writes BPLCON4 ten times a line and dozens of colours
+// with BPLAM set: each a full pf_color_aga rebuild took the board to 4 fps.
+static inline bool lut_plain_aga(void) {
+    return A.aga && !(bplcon0 & 0x0400) && res(bplcon0) != SHRES && planes(bplcon0) != 6;
+}
+
 AMIGA_HOT static void build_lut(void) {
+    if (lut_plain_aga()) {
+        const unsigned b = bplcon4 >> 8;
+        for (unsigned v = 0; v < 256; v++) lut[v] = color[v ^ b];
+        lut_pf[0] = 0;
+        fill_bytes(lut_pf + 1, 2, 255);
+        lut_dirty = false;
+        ilut_reset();
+        return;
+    }
     const int n = A.aga ? 256 : 64;
     for (int v = 0; v < n; v++) {
         int w;
@@ -1030,12 +1047,12 @@ AMIGA_HOT static void c_apply(uint32_t reg, uint16_t v, uint16_t x) {
         const uint16_t c = v & 0xFFF;
         if (color[x & 255] == c) return;
         color[x & 255] = c;
-        // A plain single playfield (no BPLAM, no EHB, not SHRES): pf value x is it.
-        if (lut_dirty || (bplcon0 & 0x0400) || (bplcon4 & 0xFF00) || res(bplcon0) == SHRES ||
-            planes(bplcon0) == 6) { lut_dirty = true; return; }
-        lut[x] = c;
-        ilut[x] = 0xFF;
-        if (x < 16) ilut_ident = false;
+        // A plain single playfield: pf value x ^ BPLAM shows it.
+        if (lut_dirty || !lut_plain_aga()) { lut_dirty = true; return; }
+        const unsigned i = (x ^ (bplcon4 >> 8)) & 255;
+        lut[i] = c;
+        ilut[i] = 0xFF;
+        if (i < 16) ilut_ident = false;
         return;
     }
     if (reg >= R_COLOR00 && reg < R_COLOR00 + 64) {
@@ -1069,8 +1086,18 @@ AMIGA_HOT static void c_apply(uint32_t reg, uint16_t v, uint16_t x) {
     switch (reg) {
     case R_BPLCON0: bplcon0 = v; lut_dirty = true; break;
     case R_BPLCON2: bplcon2 = v; lut_dirty = true; break;
-    case R_BPLCON3: if (A.ecs) bplcon3 = v; if (A.aga) lut_dirty = true; break;   // AGA: PF2OF
-    case R_BPLCON4: bplcon4 = v; lut_dirty = true; break;
+    case R_BPLCON3: {
+        // AGA: PF2OF (the LUT), SPRES (the sprites); BANK and LOCT are the producer's.
+        const uint16_t d = (uint16_t)(bplcon3 ^ v);
+        if (A.ecs) bplcon3 = v;
+        if (A.aga && (d & 0x1C00)) lut_dirty = true;
+        if (A.aga && (d & 0x00C0)) spl_dirty = true;
+        break;
+    }
+    case R_BPLCON4:                    // ESPRM / OSPRM: sprite_mix reads them as they are
+        if ((bplcon4 ^ v) & 0xFF00) lut_dirty = true;
+        bplcon4 = v;
+        break;
     case R_DIWSTRT: diwstrt = v; diwhigh = 0; break;
     case R_DIWSTOP: diwstop = v; diwhigh = 0; break;
     case R_DIWHIGH: diwhigh = (uint16_t)(v | DIWHIGH_ON); break;
