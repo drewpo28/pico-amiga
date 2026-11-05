@@ -56,7 +56,9 @@
 #define SPL_SIZE 512
 
 // The output stage's registers.
-static uint16_t bplcon0, bplcon2, bplcon3;
+static uint16_t bplcon0, bplcon2, bplcon3, bplcon4 = 0x0011;
+// The producer's BPLCON2 / BPLCON3 (AGA: RDRAM, BANK, LOCT decide a colour write's entry).
+static uint16_t q_bplcon2, q_bplcon3;
 static uint16_t diwstrt = 0x2C81, diwstop = 0xF4C1, diwhigh;
 // The bitplane DMA side of Agnus, twice: the emulation runs it as it goes
 // (dma_st: the pointers and modulos, the chip RAM reads into the word ring)
@@ -66,6 +68,7 @@ static uint16_t diwstrt = 0x2C81, diwstop = 0xF4C1, diwhigh;
 typedef struct {
     uint16_t bplcon0, bplcon1;
     uint16_t diwstrt, diwstop, diwhigh, ddfstrt, ddfstop;
+    uint16_t fmode;                         // AGA: FMODE (bits 0-1 the bitplane bus width)
     bool     bpl_dma;                       // this line fetches
     int      fetch_k, nunits, ds, unit_cc;
     int      r_h;                           // done up to this colour clock
@@ -74,9 +77,13 @@ typedef struct {
 } agnus_t;
 #define AGNUS_INIT { .diwstrt = 0x2C81, .diwstop = 0xF4C1, .ddfstrt = 0x38, .ddfstop = 0xD0 }
 static agnus_t  dma_st = AGNUS_INIT, fetch_st = AGNUS_INIT;
-static uint32_t bplpt[6];                   // the DMA side's
+static uint32_t bplpt[8];                   // the DMA side's (AGA: 8 planes)
 static int16_t  bplmod[2];
-static uint16_t color[32];
+// The palette: 32 colours, or AGA's 256 (Lisa: BPLCON3's BANK picks the 32 a
+// COLORxx write sets).  12 bits each: the output's depth, so an AGA write with
+// LOCT (the low nibbles of 8-bit guns) changes nothing on screen and is dropped
+// before the queue (denise_write); without LOCT it sets both halves, as Lisa.
+static uint16_t color[256];
 
 // Bitplane words from the DMA side to the fetch stage, in fetch-unit order.
 // The emulation waits at a line start while the ring has no room for a
@@ -84,7 +91,7 @@ static uint16_t color[32];
 #ifndef WS_SIZE
 #define WS_SIZE 8192                        // words, a power of two: 16 KB, 40-80 lines
 #endif
-#define WS_LINE 200
+#define WS_LINE 800                         // AGA: 8 planes x 25 units x 4 words
 static uint16_t ws[WS_SIZE];
 static _Atomic uint32_t ws_head, ws_tail;
 
@@ -146,6 +153,10 @@ AMIGA_HOT static inline int res(uint16_t con0) {
 }
 
 AMIGA_HOT static inline int planes(uint16_t con0) {
+    if (A.aga) {                                              // BPU3 (bit 4): 8 planes, any resolution
+        const int n = ((con0 >> 12) & 7) | (con0 & 0x0010 ? 8 : 0);
+        return n > 8 ? 8 : n;
+    }
     const int np = (con0 >> 12) & 7, r = res(con0);
     const int max = r == LORES ? 6 : r == HIRES ? 4 : 2;
     return np > max ? max : np;
@@ -215,30 +226,49 @@ static inline void or32(uint8_t *p, uint32_t v) { uint32_t t; memcpy(&t, p, 4); 
 // or after DDFSTOP is the last one, as in the OCS sequencer.  So lowres
 // $38/$D0 gives 20 units (20 words), hires $3C/$D4 and $3C/$D0 both 20 units
 // (40 words) - the latter is what AROS programs for a 640-pixel screen.
+// AGA's FMODE widens the bus to 32 or 64 bits (WinUAE's fetchunits[]): a unit is
+// then 16 or 32 colour clocks in lowres, 8 or 16 in hires, still 8 in super-
+// hires, and brings 1, 2 or 4 words of each plane (the unit's length times the
+// resolution's pixels per colour clock over 16).  Workbench 3.1 on an A1200 runs
+// its hires screen with FMODE 3 and DDF $38/$D8: 11 units, 88 bytes a plane.
+static const uint8_t fetch_units[3][3] = { { 8, 8, 8 }, { 16, 8, 8 }, { 32, 16, 8 } };
+static const uint8_t fm_maxplane[3][3] = { { 8, 4, 2 }, { 8, 8, 4 }, { 8, 8, 8 } };
+static inline int fmode_i(const agnus_t *f) {
+    const int fm = A.aga ? f->fmode & 3 : 0;
+    return fm == 0 ? 0 : fm == 3 ? 2 : 1;
+}
+static inline int unit_words(const agnus_t *f) {
+    const int r = res(f->bplcon0);
+    return fetch_units[fmode_i(f)][r] * (2 << r) / 16;
+}
 AMIGA_HOT static void compute_ddf(agnus_t *f) {
     int a = f->ddfstrt & 0xFC, b = f->ddfstop & 0xFC;
     if (a < 0x18) a = 0x18;
     if (b > 0xD8) b = 0xD8;
+    const int u = fetch_units[fmode_i(f)][res(f->bplcon0)];
     f->ds = a;
-    f->unit_cc = 8;
-    f->nunits = b < a ? 0 : ((b - a + 7) >> 3) + 1;
+    f->unit_cc = u;
+    f->nunits = b < a ? 0 : (b - a + u - 1) / u + 1;
 }
 
 // DMA side: unit k's chip RAM reads (PSRAM latency: the BPLRD bucket), into
 // the word ring.  A hires plane's two words (super-hires: each pair of its four)
 // are one 32-bit read when they share a word.
 AMIGA_HOT static void dma_unit(int k) {
-    const int nw = 1 << res(dma_st.bplcon0);            // words per plane
+    const int nw = unit_words(&dma_st);                 // words per plane
     const int np = planes(dma_st.bplcon0);
+    // AGA's wide bus reads aligned 32 / 64 bits: the pointers' low bits are not used.
+    const uint32_t align = A.aga && (dma_st.fmode & 3) ? ((dma_st.fmode & 3) == 3 ? 7u : 3u) : 0u;
     const uint8_t *cr = A.cfg.chip_ram;
     const uint32_t cm = A.chip_mask & ~1u;
     uint32_t hd = atomic_load_explicit(&ws_head, memory_order_relaxed);
     for (int p = 0; p < np; p++) {
+        const uint32_t pt = bplpt[p] & ~align;
         if (nw == 1) {
-            ws[hd++ & (WS_SIZE - 1)] = U16BE(cr + (bplpt[p] & cm));
+            ws[hd++ & (WS_SIZE - 1)] = U16BE(cr + (pt & cm));
         } else {
             for (int j = 0; j < nw; j += 2) {
-                const uint32_t a = (bplpt[p] + 2u * (uint32_t)j) & cm;
+                const uint32_t a = (pt + 2u * (uint32_t)j) & cm;
                 if (!(a & 2)) {
                     uint32_t v;
                     memcpy(&v, cr + a, 4);
@@ -251,7 +281,7 @@ AMIGA_HOT static void dma_unit(int k) {
                 }
             }
         }
-        bplpt[p] += 2u * (uint32_t)nw;
+        bplpt[p] = pt + 2u * (uint32_t)nw;
     }
     if (A.load_planes && np && nw <= 2)                 // load test: planes 7 and 8's reads
         for (int p = 0; p < 2; p++)
@@ -264,9 +294,9 @@ AMIGA_HOT static void dma_unit(int k) {
 
 // Planes first, first + step, ... of a unit's words, at hires-pixel position pos:
 // eight pixels at a time, one byte of every plane through spread8.
-AMIGA_HOT static void spread_planes(const uint16_t wd[6][4], int np, int first, int step, int pos, bool hires) {
+AMIGA_HOT static void spread_planes(const uint16_t wd[8][4], int np, int first, int step, int pos, bool hires, int nw) {
     if (hires) {
-        for (int j = 0; j < 2; j++, pos += 16) {
+        for (int j = 0; j < nw; j++, pos += 16) {
             if (pos < 0 || pos + 16 > PF_SIZE) continue;
             for (int s = 8, o = 0; s >= 0; s -= 8, o += 8) {
                 uint32_t lo = 0, hi = 0;
@@ -280,11 +310,12 @@ AMIGA_HOT static void spread_planes(const uint16_t wd[6][4], int np, int first, 
             }
         }
     } else {
-        if (pos < 0 || pos + 32 > PF_SIZE) return;
+      for (int j = 0; j < nw; j++, pos += 32) {               // AGA: up to 4 words a plane
+        if (pos < 0 || pos + 32 > PF_SIZE) continue;
         for (int s = 8, o = 0; s >= 0; s -= 8, o += 16) {
             uint32_t q[2] = { 0, 0 };
             for (int p = first; p < np; p += step) {
-                const uint32_t *t = spread8[(wd[p][0] >> s) & 0xFF];
+                const uint32_t *t = spread8[(wd[p][j] >> s) & 0xFF];
                 q[0] |= t[0] << p;
                 q[1] |= t[1] << p;
             }
@@ -297,11 +328,12 @@ AMIGA_HOT static void spread_planes(const uint16_t wd[6][4], int np, int first, 
                      (v >> 16 & 0xFF) | (v >> 16 & 0xFF) << 8 | (v >> 8 & 0xFF0000) | (v & 0xFF000000));
             }
         }
+      }
     }
 }
 
 // Super-hires: a plane's four words (64 pixels) at pf position pos, 32 entries.
-AMIGA_HOT static void spread_shres(const uint16_t wd[6][4], int np, int first, int step, int pos) {
+AMIGA_HOT static void spread_shres(const uint16_t wd[8][4], int np, int first, int step, int pos) {
     if (pos < 0 || pos + 32 > PF_SIZE) return;
     for (int k = 0; k < 8; k++) {
         uint32_t v = 0;
@@ -317,15 +349,20 @@ AMIGA_HOT static void spread_shres(const uint16_t wd[6][4], int np, int first, i
 AMIGA_HOT static void fetch_unit(int k) {
     const agnus_t *f = &fetch_st;
     int t = f->ds + k * f->unit_cc;
-    const int r = res(f->bplcon0), nw = 1 << r;
+    const int r = res(f->bplcon0), nw = unit_words(f);
     int np = planes(f->bplcon0);
-    int x = 2 * (2 * t + (r == LORES ? 17 : r == HIRES ? 9 : 5));   // hires-pixel coordinate
+    // Pixels start 1.5 colour clocks after the unit's first plane-1 fetch, which
+    // the cycle diagram puts at its slot (maxplane - 1): DIW x 2t + 2 x maxplane + 1,
+    // i.e. 17 / 9 / 5 without FMODE.  A wider bus uses a wider diagram (WinUAE's
+    // fm_maxplanes): hires with FMODE 3 takes lowres's 17 - Workbench 3.1 on AGA
+    // lined up with its ECS screen to the pixel only so.
+    int x = 2 * (2 * t + 2 * fm_maxplane[fmode_i(f)][r] + 1);   // hires-pixel coordinate
     int d1 = 2 * (f->bplcon1 & 15), d2 = 2 * ((f->bplcon1 >> 4) & 15);
-    uint16_t wd[6][4];
+    uint16_t wd[8][4];
     uint32_t tl = atomic_load_explicit(&ws_tail, memory_order_relaxed);
     for (int p = 0; p < np; p++)
         for (int j = 0; j < nw; j++) wd[p][j] = ws[tl++ & (WS_SIZE - 1)];
-    uint16_t wx[6][4];
+    uint16_t wx[8][4];
     const bool extra = A.load_planes && np && nw <= 2;   // load test: dma_unit's two more planes
     if (extra)
         for (int p = 0; p < 2; p++)
@@ -335,7 +372,7 @@ AMIGA_HOT static void fetch_unit(int k) {
         static uint8_t scratch[PF_SIZE];
         uint8_t *const keep = pf_f;
         pf_f = scratch;
-        spread_planes(wx, 2, 0, 1, x + d1, r == HIRES);
+        spread_planes(wx, 2, 0, 1, x + d1, r == HIRES, nw);
         pf_f = keep;
     }
     if (r == SHRES) {
@@ -352,10 +389,10 @@ AMIGA_HOT static void fetch_unit(int k) {
     // change mid-line may overlap units).  Odd and even planes (PF1H, PF2H)
     // usually share the scroll: one group of all planes; a dual-playfield
     // scroller shifts them apart: two groups.
-    if (d1 == d2) spread_planes(wd, np, 0, 1, x + d1, hires);
+    if (d1 == d2) spread_planes(wd, np, 0, 1, x + d1, hires, nw);
     else {
-        spread_planes(wd, np, 0, 2, x + d1, hires);
-        spread_planes(wd, np, 1, 2, x + d2, hires);
+        spread_planes(wd, np, 0, 2, x + d1, hires, nw);
+        spread_planes(wd, np, 1, 2, x + d2, hires, nw);
     }
 }
 
@@ -371,7 +408,29 @@ static inline uint16_t avg(uint16_t a, uint16_t b) {
 static inline uint16_t shres_hi(uint16_t c) { c &= 0xCCC; return (uint16_t)(c | c >> 2); }
 static inline uint16_t shres_lo(uint16_t c) { c &= 0x333; return (uint16_t)(c << 2 | c); }
 
+// AGA (Lisa): dual playfield's PF2 colours start at PF2OF (BPLCON3 bits 10-12),
+// BPLCON4's BPLAM XORs a single playfield's value, EHB only with 6 planes and
+// KILLEHB (BPLCON2 bit 9) clear.
+static inline uint16_t pf_color_aga(uint8_t v, int *which) {
+    if (bplcon0 & 0x0400) {                                   // dual playfield: 4 planes each
+        const int p1 = (v & 1) | ((v >> 1) & 2) | ((v >> 2) & 4) | ((v >> 3) & 8);
+        const int p2 = ((v >> 1) & 1) | ((v >> 2) & 2) | ((v >> 3) & 4) | ((v >> 4) & 8);
+        static const uint8_t pf2of[8] = { 0, 2, 4, 8, 16, 32, 64, 128 };
+        const int o2 = pf2of[(bplcon3 >> 10) & 7];
+        const bool pri2 = bplcon2 & 0x40;
+        if (pri2 ? p2 : !p1 && p2) { *which = 2; return color[(p2 + o2) & 255]; }
+        if (p1) { *which = 1; return color[p1]; }
+        *which = 0;
+        return color[0];
+    }
+    *which = v ? 2 : 0;
+    if ((v & 32) && planes(bplcon0) == 6 && !(bplcon2 & 0x0200) && !(bplcon0 & 0x0800))
+        return (uint16_t)((color[(v & 31) ^ (bplcon4 >> 8 & 31)] >> 1) & 0x777);   // EHB
+    return color[v ^ (bplcon4 >> 8)];
+}
+
 static inline uint16_t pf_color(uint8_t v, int *which) {
+    if (A.aga && res(bplcon0) != SHRES) return pf_color_aga(v, which);
     if (res(bplcon0) == SHRES) {                              // a pixel pair (bits 0-1, 2-3)
         *which = v ? 2 : 0;
         const uint16_t c = color[v & 15];
@@ -407,24 +466,27 @@ static inline uint16_t sprite_mix(int x, uint16_t c, int which) {
         int pri = which == 1 ? (bplcon2 & 7) : ((bplcon2 >> 3) & 7);
         if (pair >= pri) return c;                             // playfield in front
     }
-    return color[16 + (s & 15)];
+    // AGA: the sprites' 16 colours start at ESPRM x 16 (BPLCON4 bits 4-7; the odd
+    // sprites' OSPRM is taken as the same: the pair is all spl[] keeps).
+    return color[(A.aga ? (bplcon4 & 0xF0) : 16) + (s & 15)];
 }
 
 // Colour lookup for the current mode: pf value -> colour, and which playfield
 // owns it (for sprite priority).  Rebuilt lazily after palette/BPLCON writes.
-static uint16_t lut[64];
-static uint8_t  lut_pf[64];
+static uint16_t lut[256];                   // 64 used without AGA (6 planes)
+static uint8_t  lut_pf[256];
 static bool     lut_dirty = true;
 // pf value -> palette index of the row being written (0xFF = not assigned yet);
 // valid for one line and one LUT generation.
-static uint8_t  ilut[64];
+static uint8_t  ilut[256];
 // Hires IDX8 row whose palette starts with lut[0..15] as entries 0..15 (w_begin)
 // and whose LUT has not changed since: a pf value is its own index.
 static bool     ilut_ident;
 AMIGA_HOT static void ilut_reset(void) { fill_bytes(ilut, 0xFF, (int)sizeof ilut); ilut_ident = false; }
 
 AMIGA_HOT static void build_lut(void) {
-    for (int v = 0; v < 64; v++) {
+    const int n = A.aga ? 256 : 64;
+    for (int v = 0; v < n; v++) {
         int w;
         lut[v] = pf_color((uint8_t)v, &w);
         lut_pf[v] = (uint8_t)w;
@@ -878,8 +940,9 @@ AMIGA_HOT static void c_line_finish(void) {
 // fetch stage (the pointers and modulos are the DMA side's: denise_write):
 AMIGA_HOT static void a_apply(agnus_t *f, uint32_t reg, uint16_t v) {
     switch (reg) {
-    case R_BPLCON0: f->bplcon0 = v; break;
+    case R_BPLCON0: f->bplcon0 = v; if (A.aga && f->fetch_k == 0) compute_ddf(f); break;   // AGA: the unit's length
     case R_BPLCON1: f->bplcon1 = v; break;
+    case R_FMODE:   f->fmode = v; if (f->fetch_k == 0) compute_ddf(f); break;
     case R_DIWSTRT: f->diwstrt = v; f->diwhigh = 0; break;
     case R_DIWSTOP: f->diwstop = v; f->diwhigh = 0; break;
     case R_DIWHIGH: f->diwhigh = (uint16_t)(v | DIWHIGH_ON); break;
@@ -892,7 +955,19 @@ AMIGA_HOT static void a_apply(agnus_t *f, uint32_t reg, uint16_t v) {
 AMIGA_HOT static void f_apply(uint32_t reg, uint16_t v) { a_apply(&fetch_st, reg, v); }
 
 // Output stage:
-AMIGA_HOT static void c_apply(uint32_t reg, uint16_t v) {
+AMIGA_HOT static void c_apply(uint32_t reg, uint16_t v, uint16_t x) {
+    if (reg >= R_COLOR00 && reg < R_COLOR00 + 64 && A.aga) {   // x: the palette entry (denise_write)
+        const uint16_t c = v & 0xFFF;
+        if (color[x & 255] == c) return;
+        color[x & 255] = c;
+        // A plain single playfield (no BPLAM, no EHB, not SHRES): pf value x is it.
+        if (lut_dirty || (bplcon0 & 0x0400) || (bplcon4 & 0xFF00) || res(bplcon0) == SHRES ||
+            planes(bplcon0) == 6) { lut_dirty = true; return; }
+        lut[x] = c;
+        ilut[x] = 0xFF;
+        if (x < 16) ilut_ident = false;
+        return;
+    }
     if (reg >= R_COLOR00 && reg < R_COLOR00 + 64) {
         // Copper colour bars and "chunky" backgrounds write a colour every few
         // pixels (Spaceballs' State of the Art: thousands a frame): a write
@@ -924,7 +999,8 @@ AMIGA_HOT static void c_apply(uint32_t reg, uint16_t v) {
     switch (reg) {
     case R_BPLCON0: bplcon0 = v; lut_dirty = true; break;
     case R_BPLCON2: bplcon2 = v; lut_dirty = true; break;
-    case R_BPLCON3: if (A.ecs) bplcon3 = v; break;
+    case R_BPLCON3: if (A.ecs) bplcon3 = v; if (A.aga) lut_dirty = true; break;   // AGA: PF2OF
+    case R_BPLCON4: bplcon4 = v; lut_dirty = true; break;
     case R_DIWSTRT: diwstrt = v; diwhigh = 0; break;
     case R_DIWSTOP: diwstop = v; diwhigh = 0; break;
     case R_DIWHIGH: diwhigh = (uint16_t)(v | DIWHIGH_ON); break;
@@ -935,6 +1011,8 @@ AMIGA_HOT static void c_apply(uint32_t reg, uint16_t v) {
 static void c_reset(void) {
     tables_init();
     bplcon0 = bplcon2 = bplcon3 = 0;
+    bplcon4 = 0x0011;
+    q_bplcon2 = q_bplcon3 = 0;
     diwstrt = 0x2C81; diwstop = 0xF4C1; diwhigh = 0;
     const agnus_t init = AGNUS_INIT;
     dma_st = fetch_st = init;
@@ -1036,7 +1114,7 @@ AMIGA_HOT static bool o_step(int step) {
             c_line_finish();
             atomic_store_explicit(&o_lines_done, o_lines, memory_order_release);
         } else {
-            c_apply(e->kind, e->v);
+            c_apply(e->kind, e->v, e->x);
         }
     } else if (e->kind == EV_LINE) {
         c_vpos = e->h; c_dmacon = e->v; c_lof = e->x & 1; c_lines = e->x >> 1;
@@ -1183,15 +1261,26 @@ AMIGA_HOT void denise_line_end(void) {
 // and is not queued.  State of the Art's copper backgrounds write COLOR00 and
 // two zeros every 12 colour clocks, 12,800 MOVEs a frame, two thirds of them
 // repeats - each one a trip through both stages.  The copper tests it itself.
-uint16_t denise_q_color[32];
+uint16_t denise_q_color[256];
 
 AMIGA_HOT void denise_write(uint32_t reg, uint16_t v, int hpos) {
     const uint16_t h = (uint16_t)(hpos < 0 ? 0 : hpos);
+    uint16_t x = 0;
     if (reg >= R_COLOR00) {                                   // the last display registers
-        const int n = (reg - R_COLOR00) >> 1;
+        int n = (reg - R_COLOR00) >> 1;
+        if (A.aga) {
+            if (q_bplcon2 & 0x0100) return;                  // RDRAM: a read mode, writes ignored
+            if (q_bplcon3 & 0x0200) return;                  // LOCT: low nibbles, not shown
+            n += (q_bplcon3 >> 13) * 32;                     // BANK
+            x = (uint16_t)n;
+        }
         const uint16_t c = v & 0xFFF;
         if (denise_q_color[n] == c) return;
         denise_q_color[n] = c;
+    } else if (reg == R_BPLCON2) {
+        q_bplcon2 = v;
+    } else if (reg == R_BPLCON3) {
+        q_bplcon3 = v;
     }
     if (reg >= R_SPR0PTH && reg < R_SPR0PTH + 32) {
         const int s = (reg - R_SPR0PTH) >> 2;
@@ -1210,7 +1299,7 @@ AMIGA_HOT void denise_write(uint32_t reg, uint16_t v, int hpos) {
         if ((reg & 6) == 0) { dma_sprpos[s] = v; spr_decode(s); }
         if ((reg & 6) == 2) { dma_sprctl[s] = v; spr_decode(s); }
     } else {
-        if (reg >= R_BPL1PTH && reg < R_BPL1PTH + 24) {
+        if (reg >= R_BPL1PTH && reg < R_BPL1PTH + 32) {      // AGA: BPL7PT, BPL8PT
             const int p = (reg - R_BPL1PTH) >> 2;
             if (reg & 2) bplpt[p] = (bplpt[p] & 0xFFFF0000) | (v & 0xFFFE);
             else         bplpt[p] = (bplpt[p] & 0x0000FFFF) | ((uint32_t)(v & 0x1F) << 16);
@@ -1220,7 +1309,7 @@ AMIGA_HOT void denise_write(uint32_t reg, uint16_t v, int hpos) {
         if (reg == R_BPL2MOD) { bplmod[1] = (int16_t)(v & 0xFFFE); return; }
         a_apply(&dma_st, reg, v);
     }
-    push((uint16_t)reg, v, h, 0);
+    push((uint16_t)reg, v, h, x);
 }
 
 AMIGA_HOT bool denise_lace(void) { return (dma_st.bplcon0 & 0x0004) != 0; }
@@ -1236,9 +1325,9 @@ void denise_state(st_t *s) {
     st_u16(s, &f->bplcon0); st_u16(s, &f->bplcon1);
     st_u16(s, &f->diwstrt); st_u16(s, &f->diwstop); st_u16(s, &f->diwhigh);
     st_u16(s, &f->ddfstrt); st_u16(s, &f->ddfstop);
-    ST_ARRAY(s, st_u32, bplpt);
+    for (int i = 0; i < 6; i++) st_u32(s, &bplpt[i]);
     ST_ARRAY(s, st_i16, bplmod);
-    ST_ARRAY(s, st_u16, color);
+    for (int i = 0; i < 32; i++) st_u16(s, &color[i]);
     ST_ARRAY(s, st_u32, sprpt);
     ST_ARRAY(s, st_u16, dma_sprpos);
     ST_ARRAY(s, st_u16, dma_sprctl);
@@ -1248,11 +1337,17 @@ void denise_state(st_t *s) {
     ST_ARRAY(s, st_u16, sprdatb);
     st_int(s, &vc_first); st_int(s, &vc_last);
     st_int(s, &vc_y0); st_int(s, &vc_want); st_int(s, &vc_count);
+    for (int i = 32; i < 256; i++) st_u16(s, &color[i]);        // AGA (at the end: older read 0)
+    st_u16(s, &bplcon4);
+    st_u16(s, &q_bplcon2); st_u16(s, &q_bplcon3);
+    st_u32(s, &bplpt[6]); st_u32(s, &bplpt[7]); st_u16(s, &f->fmode);
     if (s->mode != ST_LOAD) return;
+    if (!bplcon4) bplcon4 = 0x0011;                              // an older snapshot
     fetch_st.bplcon0 = f->bplcon0; fetch_st.bplcon1 = f->bplcon1;
     fetch_st.diwstrt = f->diwstrt; fetch_st.diwstop = f->diwstop; fetch_st.diwhigh = f->diwhigh;
     fetch_st.ddfstrt = f->ddfstrt; fetch_st.ddfstop = f->ddfstop;
-    for (int i = 0; i < 32; i++) { color[i] &= 0xFFF; denise_q_color[i] = color[i]; }
+    fetch_st.fmode = f->fmode;
+    for (int i = 0; i < 256; i++) { color[i] &= 0xFFF; denise_q_color[i] = color[i]; }
     for (int i = 0; i < 8; i++) spr_decode(i);
     lut_dirty = true;
     spl_dirty = true;

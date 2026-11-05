@@ -280,11 +280,15 @@ Step 2 - the machine (host):
 
 Step 3 - Alice: AGA bitplane and sprite DMA (host):
 
-- [ ] FMODE ($1FC): bitplane fetch 1x / 2x / 4x (16 / 32 / 64 bits). A fetch
+- [x] FMODE ($1FC): bitplane fetch 1x / 2x / 4x (16 / 32 / 64 bits). A fetch
       unit stays 8 cc but carries 1, 2 or 4 words per plane; DDFSTRT/DDFSTOP
       round to the wider unit; modulos are added after the wider fetch (games
       align to 64 bits). dma_* in denise.c reads 2 or 4 words per slot into ws[]
-- [ ] 8 bitplanes: bplpt[8], BPLCON0 BPU3 (bit 4), 7 and 8 planes in every
+- [x] (Done 2026-11-05, WinUAE's fetchunits[] / fm_maxplanes[]: a unit is 8/16/32 cc in
+      lowres, 8/8/16 hires, 8 shres, 1-4 words a plane; pixels at DIW x 2t + 2 x
+      maxplane + 1 - hires FMODE 3 takes lowres's 17. Workbench 3.1 on AGA (FMODE 3,
+      DDF $38/$D8, modulo $48) is pixel-identical to its ECS screen; smoke 5b.)
+- [x] 8 bitplanes: bplpt[8], BPLCON0 BPU3 (bit 4), 7 and 8 planes in every
       resolution. ws[] (16 KB) holds fewer lines of lead at 8 planes x 4x: check
       the 40-80 line lead still holds, grow the ring if not (SRAM)
 - [ ] Sprites: FMODE SPR32/SPR64 (16 / 32 / 64 pixels wide, 2 or 4 words per
@@ -294,12 +298,12 @@ Step 3 - Alice: AGA bitplane and sprite DMA (host):
 
 Step 4 - Lisa: the picture (host):
 
-- [ ] 256 colour registers: BPLCON3 BANK (bits 13-15) picks 32 of them,
+- [x] 256 colour registers: BPLCON3 BANK (bits 13-15) picks 32 of them,
       LOCT (bit 9) picks the low nibbles; a write with LOCT=0 sets both halves,
       as on the chip. We keep 24 bits per register (for snapshots and a
       later wider output) but render the top 12 bits, so a LOCT=1 write changes nothing on screen and is dropped before
       the queue (keeps copper rainbows that write both halves cheap)
-- [ ] lut[] / lut_pf[] grow from 64 to 256 entries (+~400 B); the pf value is
+- [x] lut[] / lut_pf[] grow from 64 to 256 entries (+~400 B); the pf value is
       already a byte per pixel. The c2p for 7-8 planes (bytewise tables or the
       SIO interpolators, section 2) - 8 planes is a third more work than 6
 - [ ] BPLCON4: BPLAM (XOR on the bitplane colour index), ESPRM / OSPRM (even /

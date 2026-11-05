@@ -21,7 +21,7 @@
 // 2 MB of chip RAM (an A601 in its trapdoor).  --vcentre: amiga_set_vcentre(true).
 // --cpu020: a 68EC020 at 14 MHz in place of the 68000 (any model).
 // --a1200: the A1200 - a 68EC020, 2 MB of chip RAM, Gayle $D1, no clock; ECS chips
-// until AGA is emulated.
+// until AGA is emulated.  --aga: the AGA chipset (Alice + Lisa, being built).
 // --load-test 1: the A1200 headroom test's CPU x2 (amiga_set_load_test), 2: and 8 planes,
 // 3: CPU x3, 4: and 8 planes.
 // --state-save N:file writes the core's snapshot (amiga_state_save) after frame N;
@@ -237,7 +237,7 @@ int main(int argc, char **argv) {
     const char *hdf_path = NULL;
     int load_test = 0;        // the first 4 go in DF0..DF3, the rest wait for --swap
     int frames = 250, status_every = 0, scale = 1, drives_opt = 0;
-    bool slow = false, render_thread_on = false, plus = false, a600 = false, a601 = false, cpu020 = false, a1200 = false, vcentre = false, write_back = false;
+    bool slow = false, render_thread_on = false, plus = false, a600 = false, a601 = false, cpu020 = false, a1200 = false, aga = false, vcentre = false, write_back = false;
     shot_t shots[64]; int nshots = 0;
     shot_t state_save = { -1, "" };
     const char *state_load = NULL;
@@ -264,6 +264,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--a600")) plus = a600 = true;
         else if (!strcmp(a, "--a601")) plus = a600 = a601 = true;
         else if (!strcmp(a, "--cpu020")) cpu020 = true;
+        else if (!strcmp(a, "--aga")) aga = true;
         else if (!strcmp(a, "--a1200")) plus = a600 = a601 = cpu020 = a1200 = true;
         else if (!strcmp(a, "--write-back")) write_back = true;
         else if (!strcmp(a, "--drives") && v) { drives_opt = atoi(v); i++; }
@@ -312,6 +313,7 @@ int main(int argc, char **argv) {
     if (cpu020) cfg.cpu = AMIGA_CPU_EC020;
     if (plus) { cfg.chipset = AMIGA_ECS; cfg.rtc_time = rtc_time; }
     else if (slow) { cfg.slow_size = 512 * 1024; cfg.slow_ram = calloc(1, cfg.slow_size); }
+    if (aga) cfg.chipset = AMIGA_AGA;          // after the model's ECS
     uint32_t rs; cfg.rom = load(rom_path, &rs); cfg.rom_size = rs;
     if (rs != 256 * 1024 && rs != 512 * 1024) { fprintf(stderr, "ROM must be 256 or 512 KB\n"); return 1; }
     if (ext_path) { uint32_t es; cfg.ext_rom = load(ext_path, &es); cfg.ext_size = es; }

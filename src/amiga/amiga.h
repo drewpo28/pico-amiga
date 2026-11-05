@@ -92,7 +92,9 @@ bool amiga_render_pump(void);
 // Chipsets (amiga_config_t.chipset).  ECS is the A500+'s: Agnus 8375 (21-bit
 // DMA pointers, large blits, DIWHIGH, BEAMCON0 stored) and Denise 8373
 // (DENISEID, super-hires, BPLCON3's border blank).
-enum { AMIGA_OCS = 0, AMIGA_ECS = 1 };
+// AGA is the A1200's: Alice + Lisa (being built: their IDs, Lisa's 256-colour palette
+// and BPLCON4 so far; the 64-bit fetch and 8 planes to come).  It has ECS's features.
+enum { AMIGA_OCS = 0, AMIGA_ECS = 1, AMIGA_AGA = 2 };
 #define AMIGA_GAYLE_A600  0xD0   // Gayle's ID
 #define AMIGA_GAYLE_A1200 0xD1   // the A1200's (AGA) Gayle
 // CPUs (amiga_config_t.cpu): the 68000 at 7.09 MHz, or the A1200's 68EC020 at 14.19 MHz.

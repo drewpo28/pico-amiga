@@ -35,7 +35,7 @@ enum {
     R_AUD0LCH = 0x0A0,          // + 0x10 per channel: LCH LCL LEN PER VOL DAT
     R_BPL1PTH = 0x0E0,          // .. BPL6PTL = 0x0F6
     R_BPLCON0 = 0x100, R_BPLCON1 = 0x102, R_BPLCON2 = 0x104, R_BPLCON3 = 0x106,
-    R_BPL1MOD = 0x108, R_BPL2MOD = 0x10A,
+    R_BPL1MOD = 0x108, R_BPL2MOD = 0x10A, R_BPLCON4 = 0x10C, R_FMODE = 0x1FC,
     R_BPL1DAT = 0x110,          // .. BPL6DAT = 0x11A
     R_SPR0PTH = 0x120,          // .. SPR7PTL = 0x13E
     R_SPR0POS = 0x140,          // + 8 per sprite: POS CTL DATA DATB
@@ -63,7 +63,8 @@ enum {
 typedef struct {
     amiga_config_t cfg;
     uint32_t chip_mask;        // chip_size - 1
-    bool     ecs;              // cfg.chipset == AMIGA_ECS
+    bool     ecs;              // cfg.chipset == AMIGA_ECS or AMIGA_AGA (AGA has ECS's features)
+    bool     aga;              // cfg.chipset == AMIGA_AGA
     uint8_t  cpu_mul;          // CPU cycles per 7 MHz cycle: the clock (2 for the 68EC020's
                                // 14 MHz) times the A1200 load test's (amiga_set_load_test)
     uint8_t  cpu_clock;        // amiga_set_cpu: 1 (7 MHz) or 2 (14 MHz); 0 = 1
@@ -209,7 +210,7 @@ uint32_t blitter_count(void);
 // ---- denise / bitplane + sprite DMA (denise.c) -----------------------------
 void     denise_reset(void);
 void     denise_write(uint32_t reg, uint16_t v, int hpos);
-extern uint16_t denise_q_color[32];                 // the colours as queued (denise_write)
+extern uint16_t denise_q_color[256];                 // the colours as queued (denise_write)
 void     denise_line_start(void);
 void     denise_line_end(void);
 void     denise_frame_start(void);

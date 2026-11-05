@@ -134,7 +134,8 @@ void amiga_set_machine(int chipset, uint32_t chip_size, uint32_t slow_size, uint
 }
 
 void amiga_reset(bool hard) {
-    A.ecs = A.cfg.chipset == AMIGA_ECS;
+    A.ecs = A.cfg.chipset == AMIGA_ECS || A.cfg.chipset == AMIGA_AGA;
+    A.aga = A.cfg.chipset == AMIGA_AGA;
     // The CPU: a 68000 at 7 MHz, or a 68EC020 at 14 MHz (the A1200's: twice the
     // cycles per colour clock).  Musashi's handler set follows (m68k_set_cpu_type).
     m68k_set_cpu_type(A.cfg.cpu == AMIGA_CPU_EC020 ? M68K_CPU_TYPE_68EC020 : M68K_CPU_TYPE_68000);

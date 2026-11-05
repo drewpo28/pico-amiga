@@ -187,6 +187,13 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   $C00000-$D7FFFF, no clock. An empty IDE port reads $7F in the status register
   and $FF elsewhere (WinUAE's "IDE killer"): KS 2.05 writes $12 to the cylinder
   register, reads $FF back and boots at once instead of waiting ~30 s.
+- **AGA so far (A.aga, `--aga`; the firmware's A1200 stays ECS until it is whole)**:
+  Alice $23 / Lisa $F8; Lisa's 256 colours - the producer (denise_write) resolves
+  BANK, drops LOCT writes (low nibbles: the 12-bit output does not show them) and
+  RDRAM, and queues the entry in the event's x; BPLCON4 (BPLAM, ESPRM); FMODE: the
+  fetch unit and words per plane from WinUAE's fetchunits[], the pixels at DIW x
+  2t + 2 x fm_maxplane + 1 (17 / 9 / 5 without FMODE; hires FMODE 3 = 17); 8 planes.
+  Workbench 3.1 on AGA writes FMODE 3 at line 43, not at the frame's start.
 - **The A600's IDE (ide.c) hands sector bytes over in order, IDENTIFY as a PC
   holds it** (little-endian words, strings' first character in the high byte -
   WinUAE's pw/ps): Gayle's wiring makes the 68000 see IDENTIFY's numbers

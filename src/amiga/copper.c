@@ -88,7 +88,8 @@ AMIGA_HOT void copper_run(int until) {
             // Colours straight to Denise, and not even that when the colour is
             // the one already queued (denise_write would drop it).
             if (reg >= R_COLOR00 && reg < R_COLOR00 + 64) {
-                if (denise_q_color[(reg - R_COLOR00) >> 1] != (ir2 & 0xFFF)) denise_write(reg, ir2, cop_h);
+                // AGA: the bank (BPLCON3) picks the entry; denise_write tests it.
+                if (A.aga || denise_q_color[(reg - R_COLOR00) >> 1] != (ir2 & 0xFFF)) denise_write(reg, ir2, cop_h);
             } else {
                 custom_write(reg, ir2, cop_h, true);
             }

@@ -8,10 +8,10 @@ static uint16_t clxcon;
 
 AMIGA_HOT static bool display_reg(uint32_t reg) {
     return (reg >= R_DIWSTRT && reg <= R_DDFSTOP) ||
-           (reg >= R_BPL1PTH && reg < R_BPL1PTH + 24) ||
+           (reg >= R_BPL1PTH && reg < R_BPL1PTH + (A.aga ? 32 : 24)) ||
            (reg >= R_BPLCON0 && reg <= R_BPL2MOD) ||
            (reg >= R_SPR0PTH && reg < R_COLOR00 + 64) ||
-           (reg == R_DIWHIGH && A.ecs);
+           (reg == R_DIWHIGH && A.ecs) || ((reg == R_BPLCON4 || reg == R_FMODE) && A.aga);
 }
 
 AMIGA_HOT uint16_t custom_read(uint32_t reg) {
@@ -20,8 +20,8 @@ AMIGA_HOT uint16_t custom_read(uint32_t reg) {
         return (uint16_t)((A.dmacon & 0x07FF) |
                           (blitter_busy() ? DMAF_BBUSY : 0) |
                           (blitter_zero() ? DMAF_BZERO : 0));
-    case R_VPOSR:   // Agnus ID: 0 = OCS PAL, $20 = ECS PAL (8372A / 8375)
-        return (uint16_t)((A.lof ? 0x8000 : 0) | (A.ecs ? 0x2000 : 0) | ((A.vpos >> 8) & 1));
+    case R_VPOSR:   // Agnus ID: 0 = OCS PAL, $20 = ECS PAL (8372A / 8375), $23 = Alice PAL (WinUAE)
+        return (uint16_t)((A.lof ? 0x8000 : 0) | (A.aga ? 0x2300 : A.ecs ? 0x2000 : 0) | ((A.vpos >> 8) & 1));
     case R_VHPOSR:
         return (uint16_t)(((A.vpos & 0xFF) << 8) | amiga_hpos());
     case R_JOY0DAT: return A.joy0dat;
@@ -41,7 +41,7 @@ AMIGA_HOT uint16_t custom_read(uint32_t reg) {
     case R_DSKBYTR: return floppy_read(reg);
     case R_INTENAR: return A.intena;
     case R_INTREQR: return A.intreq;
-    case R_DENISEID: return A.ecs ? 0xFFFC : 0xFFFF;     // ECS 8373: $FC; OCS has no ID register
+    case R_DENISEID: return A.aga ? 0x00F8 : A.ecs ? 0xFFFC : 0xFFFF;  // Lisa $F8, ECS 8373 $FC; OCS has none
     // A read strobes too: Zynaps starts its copper list with move.w $dff088,d0,
     // and the OS list's last MOVE (BPLCON0 = 0 planes) must not run after it.
     case R_COPJMP1: case R_COPJMP2: copper_write(reg, 0); return 0;
