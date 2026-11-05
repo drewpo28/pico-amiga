@@ -206,8 +206,25 @@ Step 0 - is there room for it (hw, before anything else):
       ms per frame at 378 and 504 MHz. Today a busy frame takes 18-20 ms; if
       the doubled CPU alone does not fit in 20 ms, AGA runs below full speed
       (frame skip or a slower emulated clock) and the steps below must say so
-- [ ] The same with 8-plane fetch + c2p simulated (6 planes is today's cost):
+- [x] The same with 8-plane fetch + c2p simulated (6 planes is today's cost):
       the renderer is already the larger half on core 1
+- Result (2026-11-05, PICO_DV-class board at 504 MHz, ZenerDrive on the A600, ms of
+  emulation per frame of 20; "8 planes" overstates the fetch):
+
+  | scene                  | off  | x2   | x2 + 8 pl | x3 + 8 pl          |
+  |------------------------|------|------|-----------|--------------------|
+  | main part              | 11.5 | 14.0 | 15.4      | 17.7 (0 slow)      |
+  | heavier part           |  -   |  -   | 19.0      | 21.3 (fps 46)      |
+  | CPU only (no planes)   | 11.8 | 19.7 | 19.8      | 28.0 (fps 35.5)    |
+
+  So: an A1200's display and a 2-3x CPU fit in ordinary scenes; the heaviest run
+  ~7% slow; CPU-bound stretches (loading, precalc) at ~70% speed - the CPU, not
+  the renderer (it is idle there), is the limit. Steps 1-5 go ahead, with two
+  conditions: the 020 handlers must not be slower per instruction than today's
+  68000 ones (step 1), and Musashi itself needs ~30% back for the CPU-bound
+  case (section 2: the cycle-table / handler-index items, the hot set in SRAM).
+  Skipping output frames does not help there (render is 0); a slower emulated
+  clock in such stretches is the fallback.
 
 Step 1 - the CPU: 68EC020 (host):
 
