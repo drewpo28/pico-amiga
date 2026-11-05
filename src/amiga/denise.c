@@ -209,6 +209,14 @@ static inline void fill_bytes(uint8_t *p, uint8_t v, int n) {
 static inline void clear_bytes(uint8_t *p, int n) { fill_bytes(p, 0, n); }
 
 static inline void or32(uint8_t *p, uint32_t v) { uint32_t t; memcpy(&t, p, 4); t |= v; memcpy(p, &t, 4); }
+static inline void st32(uint8_t *p, uint32_t v) { memcpy(p, &v, 4); }
+// The fetch stage's line is cleared at its start and units land in it left to
+// right: a unit past everything written so far (pf_end) is stored, not ORed -
+// the read of each word was a third of the spread's time on the board.  Only a
+// scroll or DDF change mid-line, or a dual-playfield scroll, overlaps: OR there.
+static int pf_end;
+static bool pf_store;               // this unit's spread may store (spread_planes)
+static inline void put32(uint8_t *p, uint32_t v) { if (pf_store) st32(p, v); else or32(p, v); }
 
 // Fetch units are 8 colour clocks in both resolutions (hires fetches two words
 // per plane per unit).  Units start at DDFSTRT + 8k; the unit that begins at
@@ -267,9 +275,9 @@ AMIGA_HOT static void dma_unit(int k) {
 static inline __attribute__((always_inline)) void lowres_out(int pos, const uint32_t q[2]) {
     for (int h = 0; h < 2; h++) {
         const uint32_t v = q[h];
-        or32(pf_f + pos + 8 * h,
+        put32(pf_f + pos + 8 * h,
              (v & 0xFF) | (v & 0xFF) << 8 | (v & 0xFF00) << 8 | (v & 0xFF00) << 16);
-        or32(pf_f + pos + 8 * h + 4,
+        put32(pf_f + pos + 8 * h + 4,
              (v >> 16 & 0xFF) | (v >> 16 & 0xFF) << 8 | (v >> 8 & 0xFF0000) | (v & 0xFF000000));
     }
 }
@@ -288,8 +296,8 @@ AMIGA_HOT static void spread_any(const uint16_t wd[6][4], int np, int first, int
                     lo |= t[0] << p;
                     hi |= t[1] << p;
                 }
-                or32(pf_f + pos + o, lo);
-                or32(pf_f + pos + o + 4, hi);
+                put32(pf_f + pos + o, lo);
+                put32(pf_f + pos + o + 4, hi);
             }
         }
     } else {
@@ -322,8 +330,8 @@ void spread_n(const uint16_t wd[6][4], const int np, int pos, bool hires) {
                     lo |= t[0] << p;
                     hi |= t[1] << p;
                 }
-                or32(pf_f + pos + o, lo);
-                or32(pf_f + pos + o + 4, hi);
+                put32(pf_f + pos + o, lo);
+                put32(pf_f + pos + o + 4, hi);
             }
         }
     } else {
@@ -342,6 +350,8 @@ void spread_n(const uint16_t wd[6][4], const int np, int pos, bool hires) {
 }
 
 AMIGA_HOT __attribute__((noinline)) static void spread_planes(const uint16_t wd[6][4], int np, int first, int step, int pos, bool hires) {
+    pf_store = pos >= pf_end;
+    if (pos + 32 > pf_end) pf_end = pos + 32;
     if (first == 0 && step == 1) {                      // hires has at most 4 planes
         if (hires) switch (np) {
             case 1: spread_n(wd, 1, pos, true); return;
@@ -364,6 +374,7 @@ AMIGA_HOT __attribute__((noinline)) static void spread_planes(const uint16_t wd[
 
 // Super-hires: a plane's four words (64 pixels) at pf position pos, 32 entries.
 AMIGA_HOT static void spread_shres(const uint16_t wd[6][4], int np, int first, int step, int pos) {
+    if (pos + 32 > pf_end) pf_end = pos + 32;           // ORs always; later units must too
     if (pos < 0 || pos + 32 > PF_SIZE) return;
     for (int k = 0; k < 8; k++) {
         uint32_t v = 0;
@@ -396,9 +407,11 @@ AMIGA_HOT static void fetch_unit(int k) {
     if (extra) {                                         // spread as planes are, into a scratch line
         static uint8_t scratch[PF_SIZE];
         uint8_t *const keep = pf_f;
+        const int keep_end = pf_end;
         pf_f = scratch;
         spread_planes(wx, 2, 0, 1, x + d1, r == HIRES);
         pf_f = keep;
+        pf_end = keep_end;
     }
     if (r == SHRES) {
         if (d1 == d2) spread_shres(wd, np, 0, 1, x + d1);
@@ -886,6 +899,7 @@ AMIGA_HOT static void f_line_start(uint32_t seq) {
     a_line_start(&fetch_st);
     pf_f = pf_ring[seq % PF_RING];
     clear_bytes(pf_f, PF_SIZE);
+    pf_end = 0;
 }
 
 // Output stage: line `seq`.
