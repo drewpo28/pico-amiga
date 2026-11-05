@@ -8,7 +8,8 @@
 //      bcs.s  T                      beq.s T
 //
 // dbra Dn,* is skipped exactly: as many passes as the slice holds come off Dn
-// (10 cycles each; the last, falling through, is left to the CPU).
+// (10 cycles each; the last, falling through, is left to the CPU), slice after
+// slice while the PC stays on it.
 //
 // A test + Bcc back to it (cmpi / btst #n / tst, on abs.w, abs.l or (d16,An))
 // reads one value and changes nothing.  When the CPU ends two slices in a row
@@ -34,6 +35,9 @@ static struct {
     uint8_t  seen;          // slice ends found in it with the value unchanged
 } lp;
 static uint32_t rej_pc = 1;  // the last PC that is no loop (odd: none)
+static uint32_t dbra_pc = 1;  // a dbra Dn,* being skipped (odd: none), and its Dn
+static uint8_t  dbra_reg;
+static uint16_t probe_line = 0xFFFF;   // the line a new loop was last looked for on
 
 static inline uint16_t op16(uint32_t a) { return (uint16_t)m68k_read_memory_16(a); }
 
@@ -79,30 +83,34 @@ static bool bcc_back(uint32_t b, uint32_t t) {
     return d < 0 && b + 2 + (uint32_t)d == t;
 }
 
+// dbra Dn,* at the PC: as many 10-cycle passes as fit, off Dn.
+AMIGA_HOT static bool dbra_skip(unsigned reg, uint64_t target) {
+    const unsigned mul = A.load_cpu > 1 ? A.load_cpu : 1;
+    uint *dn = &m68ki_cpu.dar[reg];
+    const uint32_t cnt = *dn & 0xFFFF;                              // passes before it falls through
+    const uint64_t avail = (target - A.cpu_cyc) * mul / 10;
+    const uint32_t k = cnt < avail ? cnt : (uint32_t)avail;
+    if (k) {
+        *dn = (*dn & 0xFFFF0000u) | ((cnt - k) & 0xFFFF);
+        const uint32_t c = k * 10 + A.load_rem;
+        A.cpu_cyc += c / mul;
+        A.load_rem = (uint8_t)(c % mul);
+        A.idle_cycles += c / mul;
+    }
+    return A.cpu_cyc >= target;
+}
+
+// Cheap on the slices that find nothing: a loop already known is checked every
+// slice (a value read, an interrupt test), a new one looked for once a line (an
+// opcode read at the PC: PSRAM on the board).
 AMIGA_HOT bool idle_skip(uint64_t target) {
     if (A.cpu_cyc >= target) return true;                           // the last instruction ran past it
     const uint32_t pc = m68ki_cpu.pc & 0xFFFFFF;
     if (m68ki_cpu.stopped || m68ki_cpu.t1_flag) return false;
     const unsigned lvl = m68ki_cpu.int_level;
-    if (lvl == 0x700 || lvl > m68ki_cpu.int_mask) { lp.seen = 0; return false; }
+    if (lvl == 0x700 || lvl > m68ki_cpu.int_mask) { lp.seen = 0; dbra_pc = 1; return false; }
 
-    // dbra Dn,* (51C8+n FFFE): as many 10-cycle passes as fit, off Dn.
-    const uint16_t op = pc == rej_pc ? 0 : op16(pc);
-    if ((op & 0xFFF8) == 0x51C8 && op16(pc + 2) == 0xFFFE) {
-        const unsigned mul = A.load_cpu > 1 ? A.load_cpu : 1;
-        uint *dn = &m68ki_cpu.dar[op & 7];
-        const uint32_t cnt = *dn & 0xFFFF;                          // passes before it falls through
-        const uint64_t avail = (target - A.cpu_cyc) * mul / 10;
-        uint32_t k = cnt < avail ? cnt : (uint32_t)avail;
-        if (k) {
-            *dn = (*dn & 0xFFFF0000u) | ((cnt - k) & 0xFFFF);
-            const uint32_t c = k * 10 + A.load_rem;
-            A.cpu_cyc += c / mul;
-            A.load_rem = (uint8_t)(c % mul);
-            A.idle_cycles += c / mul;
-        }
-        return A.cpu_cyc >= target;
-    }
+    if (pc == dbra_pc) return dbra_skip(dbra_reg, target);
 
     // A test + Bcc loop, at its test or at its branch.
     if (lp.seen && (pc == lp.t || pc == lp.b)) {
@@ -120,7 +128,16 @@ AMIGA_HOT bool idle_skip(uint64_t target) {
         return false;
     }
     lp.seen = 0;
-    if (pc == rej_pc) return false;
+    dbra_pc = 1;
+    if (pc == rej_pc || A.vpos == probe_line) return false;
+    probe_line = A.vpos;
+
+    const uint16_t op = op16(pc);
+    if ((op & 0xFFF8) == 0x51C8 && op16(pc + 2) == 0xFFFE) {       // dbra Dn,* (51C8+n FFFE)
+        dbra_pc = pc;
+        dbra_reg = op & 7;
+        return dbra_skip(dbra_reg, target);
+    }
     uint32_t t = pc, len, addr;
     uint8_t size;
     if ((op & 0xF000) == 0x6000) {                                  // at the branch: the test before it
@@ -138,4 +155,4 @@ AMIGA_HOT bool idle_skip(uint64_t target) {
 }
 
 // Snapshots and resets: start over.
-void idle_reset(void) { lp.seen = 0; rej_pc = 1; }
+void idle_reset(void) { lp.seen = 0; rej_pc = dbra_pc = 1; probe_line = 0xFFFF; }

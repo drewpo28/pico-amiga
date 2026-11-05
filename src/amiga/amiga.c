@@ -239,6 +239,15 @@ void amiga_sys_state(st_t *s) {
     }
 }
 
+static uint32_t (*prof_clock_saved)(void);
+
+void amiga_set_profiling(bool on) {
+    if (!prof_clock_saved) prof_clock_saved = A.cfg.prof_clock;
+    if (!prof_clock_saved || on == (A.cfg.prof_clock != NULL)) return;
+    if (on) prof_t = prof_clock_saved();                 // no time charged for the pause
+    A.cfg.prof_clock = on ? prof_clock_saved : NULL;
+}
+
 void amiga_get_profile(amiga_profile_t *p, bool reset) {
     for (int i = 0; i < AMIGA_PROF_COUNT; i++) p->ticks[i] = prof_acc[i];
     p->ticks[AMIGA_PROF_CORE1] = denise_core1_ticks();

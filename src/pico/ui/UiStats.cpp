@@ -115,6 +115,8 @@ extern "C" size_t ui_stats_buffer_size(void) { return sizeof(uint16_t) * nm::BAN
 
 extern "C" void ui_stats_buffer(void* p) { nm::s_px = (uint16_t (*)[nm::BAND_W])p; }
 
+extern "C" bool ui_stats_active(void) { return nm::s_px && nm::s_page != 0; }
+
 extern "C" void ui_stats_toggle(void) {
     using namespace nm;
     if (!s_px) return;                  // no PSRAM to spare (a 2 MB chip): no band

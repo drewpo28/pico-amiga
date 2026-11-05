@@ -62,8 +62,13 @@ def main():
             continue
         else:
             body = m2.group(1)
-        for a, pm in re.findall(r"([0-9A-F]{8}):(\d+)", body):
-            buckets[int(a, 16)] += cur * int(pm) / 1000.0
+        pairs = [(int(a, 16), int(pm)) for a, pm in re.findall(r"([0-9A-F]{8}):(\d+)", body)]
+        # A line mangled by interleaved UART output (a per mille over 1000, an
+        # address outside flash / SRAM) is dropped whole.
+        if any(pm > 1000 or region(a) == "?" for a, pm in pairs) or sum(pm for _, pm in pairs) > 1000:
+            continue
+        for a, pm in pairs:
+            buckets[a] += cur * pm / 1000.0
     if not total: sys.exit("no PROF samples (Debug > PC profiler on, UART log on?)")
     addrs = sorted(buckets)
     a2l = subprocess.run([addr2line(), "-f", "-e", elf] + [hex(a) for a in addrs],

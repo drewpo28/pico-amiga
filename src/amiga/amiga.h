@@ -256,6 +256,10 @@ enum { AMIGA_PROF_OTHER, AMIGA_PROF_CPU, AMIGA_PROF_COPPER, AMIGA_PROF_RENDER,
 // a running count since the reset.
 typedef struct { uint32_t ticks[AMIGA_PROF_COUNT]; uint32_t frames; uint64_t idle_cycles; } amiga_profile_t;
 void amiga_get_profile(amiga_profile_t *p, bool reset);
+// Count it or not (cfg.prof_clock set): off, the section switches cost nothing
+// (~2% of the emulation's core while counting on the board).  The counts stop
+// while off; the next reader's first period is partial.
+void amiga_set_profiling(bool on);
 
 #ifdef __cplusplus
 }

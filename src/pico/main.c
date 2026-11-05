@@ -230,6 +230,7 @@ int main(void) {
         input_poll();
         input_frame();
         if (input_reset_requested()) amiga_reset(false);
+        amiga_set_profiling(dbg_uart_active() || ui_stats_active());   // the PERF line or Win+F8 reads it
         const uint32_t t_emu = time_us_32();
         amiga_run_frame();
         const uint32_t emu_us = time_us_32() - t_emu;

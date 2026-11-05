@@ -36,6 +36,7 @@ void settings_apply_video(void);     // picture position, centring (Video), rend
 size_t ui_stats_buffer_size(void);
 void ui_stats_buffer(void *p);
 void ui_stats_toggle(void);
+bool ui_stats_active(void);    // the band is shown (it reads the core's profile)
 void ui_stats_frame(uint32_t emu_us);
 void ui_stats_row(void *ctx, int row, amiga_row_t *r);   // amiga_config_t.row_done
 
