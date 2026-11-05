@@ -54,13 +54,16 @@ void perf_log_frame(uint32_t emu_us) {
     const uint32_t dh = hold - hold_last, ds = skip - skip_last, df = full - full_last, dst = starve - starve_last;
     hold_last = hold; skip_last = skip; full_last = full; starve_last = starve;
     const uint32_t emu_avg = emu_sum / frames, emu10 = emu_avg / 100;
+    uint32_t xhit, xacc;                                    // the XIP cache, this second (both cores)
+    board_xip_counts(&xhit, &xacc);
     const uint32_t fps10 = (uint32_t)((uint64_t)frames * 10000000u / (now - t0));
     static const char *const kLoadTest[] = { "", " | LOAD TEST cpu x2", " | LOAD TEST cpu x2 + 8 planes",
                                              " | LOAD TEST cpu x3", " | LOAD TEST cpu x3 + 8 planes" };
 #define MS(i) (unsigned)(ms10[i] / 10), (unsigned)(ms10[i] % 10)
     printf("PERF fps %u.%u emu %u.%u ms (%u%%, %u slow) | cpu %u.%u ren %u.%u+bpl %u.%u+rd %u.%u cop %u.%u blt %u.%u"
            " aud %u.%u line %u.%u dsk %u.%u oth %u.%u wait %u.%u (irq %u.%u) | core1 render %u.%u irq %u.%u enc %u.%u"
-           " | cpu %u flash %u psram %u MHz | late %u stall %u | au hold %u skip %u hdmi starve %u full %u min %u%s\n",
+           " | cpu %u flash %u psram %u MHz | late %u stall %u | au hold %u skip %u hdmi starve %u full %u min %u"
+           " | xip %uk/fr miss %uk/fr%s\n",
            (unsigned)(fps10 / 10), (unsigned)(fps10 % 10),
            (unsigned)(emu10 / 10), (unsigned)(emu10 % 10),
            (unsigned)(emu_avg ? 2000000u / emu_avg : 0), (unsigned)slow,     // 20 ms = 100%
@@ -71,7 +74,9 @@ void perf_log_frame(uint32_t emu_us) {
            (unsigned)settings_cpu_mhz(), sck((unsigned)settings_cpu_mhz(), (unsigned)settings_flash_mhz()),
            sck((unsigned)settings_cpu_mhz(), settings_psram_mhz() < 135 ? (unsigned)settings_psram_mhz() : 135u),
            (unsigned)late, (unsigned)stall, (unsigned)dh, (unsigned)ds, (unsigned)dst, (unsigned)df, (unsigned)qmin,
+           (unsigned)(xacc / nf / 1000), (unsigned)((xacc - xhit) / nf / 1000),
            kLoadTest[settings_load_test() >= 0 && settings_load_test() <= 4 ? settings_load_test() : 0]);
+    board_pcprof_dump();                                    // Debug > PC profiler's lines, if on
     last = p;
     frames = emu_sum = slow = 0;
     t0 = now;

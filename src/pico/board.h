@@ -1,6 +1,7 @@
 // Board probes shared by the drivers (board.c).
 #pragma once
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -16,6 +17,16 @@ int board_test_pins(uint32_t pin0, uint32_t pin1);
 // PC host counts nanoseconds), for the core's profiler, and its rate.
 uint32_t board_cycles(void);
 uint32_t board_cycles_per_us(void);
+
+// The XIP cache's hit and access counters since the last call (both cores, flash
+// and PSRAM together: the RP2350 has one cache and one counter pair).
+void     board_xip_counts(uint32_t *hit, uint32_t *acc);
+// PC-sampling profiler of core 0 (pico-speccy's PcProf): SysTick at 8 kHz counts
+// the interrupted PC in 64-byte buckets (a 2 KB table from the heap while on).
+// board_pcprof_dump() prints the hottest as "PROF" lines and starts over; resolve
+// them with tools/pcprof.py against the same ELF.  Call both from core 0.
+bool     board_pcprof(bool on);           // false: no heap for the table
+void     board_pcprof_dump(void);
 
 // System info (Win+F1).  The flash's JEDEC ID is read once, by
 // board_flash_probe() first thing in main(): the command leaves XIP and boot2

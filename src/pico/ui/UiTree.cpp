@@ -875,6 +875,9 @@ static const Node kDebug[] = {
     // Denise's rendering shared with core 1 (off: all on core 0, as before).
     NM_BOOL("Render on core 1", SET_RENDER_C1, nullptr),
     NM_RADIO("A1200 load test", SET_LOAD_TEST, opt_load_test, nullptr),
+    // Core 0's hot code, sampled 8000 times a second: PROF lines after each PERF
+    // line (with UART log on); tools/pcprof.py names them from the ELF.
+    NM_BOOL("PC profiler", SET_PCPROF, nullptr),
 };
 
 static const Node kHelp[] = {

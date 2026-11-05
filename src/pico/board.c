@@ -15,6 +15,11 @@
 #include "hardware/structs/qmi.h"
 #include "hardware/structs/pads_qspi.h"
 #include "hardware/sync.h"
+#include "hardware/exception.h"
+#include "hardware/structs/systick.h"
+#include "hardware/regs/xip.h"
+#include <stdio.h>
+#include <string.h>
 #include "pico/bootrom.h"
 #include <stdlib.h>
 #include <malloc.h>
@@ -105,6 +110,97 @@ uint32_t __not_in_flash_func(board_cycles)(void) {   // the audio tick IRQ calls
 }
 
 uint32_t board_cycles_per_us(void) { return clock_get_hz(clk_sys) / 1000000u; }
+
+// ---- XIP cache counters, PC profiler (pico-speccy's PcProf) --------------------------
+void board_xip_counts(uint32_t *hit, uint32_t *acc) {
+    volatile uint32_t *h = (volatile uint32_t *)(XIP_CTRL_BASE + XIP_CTR_HIT_OFFSET);
+    volatile uint32_t *a = (volatile uint32_t *)(XIP_CTRL_BASE + XIP_CTR_ACC_OFFSET);
+    *hit = *h; *acc = *a;
+    *h = 0; *a = 0;                  // any write clears
+}
+
+#define PCPROF_HZ    8000u
+#define PCPROF_SLOTS 256u            // power of two
+#define PCPROF_SHIFT 6               // 64-byte buckets
+#define PCPROF_LINES 4               // 14 buckets a line
+static uint32_t *volatile s_pkey;    // [PCPROF_SLOTS] keys, then [PCPROF_SLOTS] counts
+static volatile uint32_t s_ptotal, s_plost;
+static uint32_t s_phz;
+
+void __not_in_flash_func(pcprof_sample)(const uint32_t *frame) {
+    uint32_t *const key = s_pkey;
+    if (!key) return;
+    uint32_t *const cnt = key + PCPROF_SLOTS;
+    const uint32_t k = (frame[6] >> PCPROF_SHIFT) + 1u;      // + 1: 0 means empty
+    uint32_t h = (k * 2654435761u) >> 24;
+    for (uint32_t i = 0; i < 16; i++, h = (h + 1) & (PCPROF_SLOTS - 1)) {
+        if (key[h] == k) { cnt[h]++; s_ptotal++; return; }
+        if (key[h] == 0) { key[h] = k; cnt[h] = 1; s_ptotal++; return; }
+    }
+    s_plost++;
+}
+
+// The interrupted PC is word 6 of the exception frame, on whichever stack it was.
+void __attribute__((naked)) __not_in_flash_func(pcprof_isr)(void) {
+    __asm volatile(
+        "tst lr, #4      \n"
+        "ite eq          \n"
+        "mrseq r0, msp   \n"
+        "mrsne r0, psp   \n"
+        "b pcprof_sample \n");
+}
+
+static void pcprof_reload(void) {
+    s_phz = clock_get_hz(clk_sys);
+    systick_hw->csr = 0;
+    systick_hw->rvr = s_phz / PCPROF_HZ - 1;
+    systick_hw->cvr = 0;
+    systick_hw->csr = 0x7;           // processor clock, interrupt, enable
+}
+
+bool board_pcprof(bool on) {
+    static bool installed;
+    systick_hw->csr = 0;
+    uint32_t *old = s_pkey;
+    s_pkey = NULL;
+    free(old);
+    if (!on) return true;
+    uint32_t *t = (uint32_t *)calloc(2 * PCPROF_SLOTS, sizeof(uint32_t));
+    if (!t) return false;
+    if (!installed) { exception_set_exclusive_handler(SYSTICK_EXCEPTION, pcprof_isr); installed = true; }
+    s_ptotal = s_plost = 0;
+    s_pkey = t;
+    pcprof_reload();
+    printf("PROF: core 0 PC sampling at %u Hz, %u-byte buckets\n", PCPROF_HZ, 1u << PCPROF_SHIFT);
+    return true;
+}
+
+// The 56 hottest buckets in per mille of the samples, then the table starts over.
+void board_pcprof_dump(void) {
+    uint32_t *const key = s_pkey;
+    if (!key) return;
+    uint32_t *const cnt = key + PCPROF_SLOTS;
+    systick_hw->csr &= ~0x2u;        // the tick masked while the table is read
+    const uint32_t total = s_ptotal, lost = s_plost;
+    for (int part = 0; total && part < PCPROF_LINES; part++) {
+        char line[240];
+        int n = part ? snprintf(line, sizeof line, "PROF+") : snprintf(line, sizeof line, "PROF %u smp:", (unsigned)total);
+        for (int k = 0; k < 14 && n < (int)sizeof line - 20; k++) {
+            uint32_t best = 0, bi = 0;
+            for (uint32_t i = 0; i < PCPROF_SLOTS; i++) if (cnt[i] > best) { best = cnt[i]; bi = i; }
+            if (!best) break;
+            n += snprintf(line + n, sizeof line - n, " %08X:%u",
+                          (unsigned)((key[bi] - 1u) << PCPROF_SHIFT), (unsigned)(best * 1000u / total));
+            cnt[bi] = 0;
+        }
+        if (part == PCPROF_LINES - 1 && lost) snprintf(line + n, sizeof line - n, " lost=%u", (unsigned)lost);
+        printf("%s\n", line);
+    }
+    memset(key, 0, 2 * PCPROF_SLOTS * sizeof(uint32_t));
+    s_ptotal = s_plost = 0;
+    if (clock_get_hz(clk_sys) != s_phz) pcprof_reload();
+    else systick_hw->csr |= 0x2u;
+}
 
 // ---- system info (Win+F1) -------------------------------------------------------------
 static uint8_t flash_jedec[4];

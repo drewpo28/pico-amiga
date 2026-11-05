@@ -12,6 +12,7 @@
 #include "app/Config.h"
 #include "roms.h"
 #include "machine.h"
+#include "board.h"
 #include "ui.h"
 #include "UiPlatform.h"
 extern "C" {
@@ -83,6 +84,11 @@ NM_BOOL_ACCESS(dbguart,   dbg_uart)
 NM_INT_ACCESS (drives,    drives,     uint8_t)
 NM_INT_ACCESS (a600chip,  a600_chip,  uint8_t)
 NM_INT_ACCESS (loadtest,  load_test,  uint8_t)
+NM_BOOL_ACCESS(pcprof,    pcprof)
+static bool hook_pcprof(int32_t, int32_t) {
+    if (!board_pcprof(Config::pcprof)) Config::pcprof = false;
+    return true;
+}
 static bool hook_loadtest(int32_t, int32_t) {
     const uint8_t t = Config::load_test;                  // 1, 2: x2 (+ planes); 3, 4: x3 (+ planes)
     amiga_set_load_test(t >= 3 ? 3 : t ? 2 : 1, t == 2 || t == 4);

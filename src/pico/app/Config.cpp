@@ -30,6 +30,7 @@ uint16_t Config::max_flash_freq = 66;
 bool     Config::dbg_uart     = DBG_UART_DEFAULT;
 bool     Config::render_c1    = true;
 uint8_t  Config::load_test    = 0;
+bool     Config::pcprof       = false;
 uint16_t Config::max_psram_freq = 166;
 uint8_t  Config::audio_out    = 0;
 uint8_t  Config::volume       = 16;
