@@ -66,7 +66,9 @@ enum SettingFlags : uint16_t {
     /* Options > Overclock > Core voltage, mV: set at boot, before the clock */ \
     X(SET_VREG,        AC_REBOOT, 0,                           get_vreg,      put_vreg,      nullptr) \
     /* Snapshots > Quick slots: the current slot (the list's marker; set by its verbs) */ \
-    X(SET_PERSIST_SLOT, AC_PURE, 0,                            get_pslot,     put_pslot,     nullptr)
+    X(SET_PERSIST_SLOT, AC_PURE, 0,                            get_pslot,     put_pslot,     nullptr) \
+    /* Machine > A600 chip RAM: 1 MB, or 2 MB (an A601); a cold start of an A600 */ \
+    X(SET_A600_CHIP,   AC_LIVE, 0,                             get_a600chip,  put_a600chip,  hook_a600chip)
 
 #define NM_X_ENUM(id, cls, flags, g, p, h) id,
 enum SettingId : uint16_t {

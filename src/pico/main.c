@@ -7,12 +7,14 @@
 //
 // PSRAM layout (2 MB minimum):
 //   +0.0 MB  chip RAM 512 KB      +0.5 MB  slow RAM 512 KB ($C00000)
-//            (A500+: 1 MB of chip RAM over both, no slow RAM)
+//            (A500+ / A600: 1 MB of chip RAM over both, no slow RAM)
 //   +1.0 MB  Kickstart ROM        +1.5 MB  extended ROM (AROS) if present
-//   +2.0 MB  16 KB: the Win+F8 band's pixels (UiStats.cpp)
-//   +2.0 MB + 16 KB  DMS images: the decoder's work area, then 880 KB per drive
+//   +2.0 MB  16 KB: the Win+F8 band's pixels (UiStats.cpp), the floppy's MFM track
+//   +2.0 MB + 32 KB  DMS images: the decoder's work area, then 880 KB per drive
 //            (machine.cpp; DF0..DF3 fit in 8 MB, a 2 MB PSRAM takes no DMS
 //            and has no Win+F8 band)
+// With 8 MB or more the chip RAM area is 2 MB (the A600 with an A601: Machine >
+// A600 chip RAM) and everything from the Kickstart ROM on sits 1 MB higher.
 //
 // ROMs: the built-in ones (roms.h, picked in the Machine menu), or from the card:
 //   Machine > Custom ROM picks a 256 or 512 KB Kickstart image on the card
@@ -170,17 +172,20 @@ int main(void) {
     memset(&cfg, 0, sizeof cfg);
     cfg.chip_ram = ps;              // sizes and chipset: machine_select_rom (Config::machine)
     cfg.slow_ram = ps + 512 * KB;
-    // Above 2 MB: the Win+F8 band's pixels (16 KB), the floppy's MFM track, then
-    // the DMS area.  A 2 MB PSRAM has no band, and its track comes from the heap.
+    // The chip RAM area (2 MB from 8 MB of PSRAM on), the ROMs after it, then the
+    // Win+F8 band's pixels (16 KB), the floppy's MFM track and the DMS area.  A
+    // 2 MB PSRAM has no band, and its track comes from the heap.
+    const uint32_t chip_area = psram >= 8 * MB ? 2 * MB : 1 * MB;
+    uint8_t *const hi = ps + chip_area + 1 * MB;
     const uint32_t misc = 32 * KB;
     if (ui_stats_buffer_size() > 16 * KB || AMIGA_TRACK_WORDS * 2 > misc - 16 * KB)
         fail(0xF00);                 // a build error in all but name
-    const bool more = psram > 2 * MB + misc;
-    if (more) ui_stats_buffer(ps + 2 * MB);
-    cfg.track = more ? (uint16_t *)(ps + 2 * MB + 16 * KB) : malloc(AMIGA_TRACK_WORDS * 2);
+    const bool more = psram > chip_area + 1 * MB + misc;
+    if (more) ui_stats_buffer(hi);
+    cfg.track = more ? (uint16_t *)(hi + 16 * KB) : malloc(AMIGA_TRACK_WORDS * 2);
     if (!cfg.track) fail(0xF00);
-    machine_init(ps + 1 * MB, ps + 1 * MB + 512 * KB, more ? ps + 2 * MB + misc : NULL,
-                 more ? psram - 2 * MB - misc : 0);
+    machine_init(ps + chip_area, ps + chip_area + 512 * KB, more ? hi + misc : NULL,
+                 more ? psram - (chip_area + 1 * MB) - misc : 0, chip_area);
 
     // The card holds the settings, the disks and an optional Custom ROM; with a
     // built-in ROM the machine also boots without one.
@@ -201,7 +206,7 @@ int main(void) {
     audio_out_start(audio_ring, AUDIO_FRAMES, settings_audio_out());
     settings_apply_sound();
     settings_apply_video();
-    printf("%s, kickstart %s, audio %s\n", machine_name(), machine_rom_name(), audio_out_name());
+    printf("%s (%u KB chip), kickstart %s, audio %s\n", machine_name(), (unsigned)(machine_chip_size() / KB), machine_rom_name(), audio_out_name());
     if (card) ui_video_mode_confirm();
 
     // A frame starts when the scanout is 70% into its picture.  There is one

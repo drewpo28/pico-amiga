@@ -13,7 +13,12 @@ extern "C" {
 // (512 KB each), and the area DMS images are unpacked into (the decoder's ~100 KB
 // work area, then 880 KB per drive: DF0..DF3 need 3.6 MB, a smaller area serves
 // the first drives only).
-void machine_init(uint8_t *rom_buf, uint8_t *ext_buf, uint8_t *dms_area, uint32_t dms_size);
+// chip_area: the PSRAM from cfg.chip_ram on that chip RAM may take (1 or 2 MB;
+// 2 MB lets the A600 have its A601's: Config::a600_chip).
+void machine_init(uint8_t *rom_buf, uint8_t *ext_buf, uint8_t *dms_area, uint32_t dms_size, uint32_t chip_area);
+// The chip RAM the running model has, and whether this board can give the A600 2 MB.
+uint32_t machine_chip_size(void);
+bool machine_a600_2mb_ok(void);
 
 // Fill cfg->rom / ext_rom from Config::kick: a built-in ROM (roms.h, read in
 // place from flash), or "sd" = Config::kick_file from the card (Machine >

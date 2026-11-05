@@ -17,7 +17,8 @@
 // --mouse moves the port 1 mouse once at frame N (buttons: bit0 left 1 right).
 // --a500plus: the A500+ (ECS chipset, 1 MB chip RAM, no slow RAM, the battery
 // clock showing the PC's local time).  --a600: the A600 (as the A500+ but with
-// Gayle - an empty IDE port and PCMCIA slot - and no clock).  --vcentre: amiga_set_vcentre(true).
+// Gayle - an empty IDE port and PCMCIA slot - and no clock); --a601: an A600 with
+// 2 MB of chip RAM (an A601 in its trapdoor).  --vcentre: amiga_set_vcentre(true).
 // --state-save N:file writes the core's snapshot (amiga_state_save) after frame N;
 // --state-load file starts from one instead of the reset (same ROM, model, disks).
 #include <stdio.h>
@@ -230,7 +231,7 @@ int main(int argc, char **argv) {
     const char *adf_path[8] = {0}; int nadf = 0;
     const char *hdf_path = NULL;        // the first 4 go in DF0..DF3, the rest wait for --swap
     int frames = 250, status_every = 0, scale = 1, drives_opt = 0;
-    bool slow = false, render_thread_on = false, plus = false, a600 = false, vcentre = false, write_back = false;
+    bool slow = false, render_thread_on = false, plus = false, a600 = false, a601 = false, vcentre = false, write_back = false;
     shot_t shots[64]; int nshots = 0;
     shot_t state_save = { -1, "" };
     const char *state_load = NULL;
@@ -254,6 +255,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--slow")) slow = true;
         else if (!strcmp(a, "--a500plus")) plus = true;
         else if (!strcmp(a, "--a600")) plus = a600 = true;
+        else if (!strcmp(a, "--a601")) plus = a600 = a601 = true;
         else if (!strcmp(a, "--write-back")) write_back = true;
         else if (!strcmp(a, "--drives") && v) { drives_opt = atoi(v); i++; }
         else if (!strcmp(a, "--vcentre")) vcentre = true;
@@ -290,12 +292,12 @@ int main(int argc, char **argv) {
     }
     if (!rom_path) {
         fprintf(stderr, "usage: %s --rom kick.rom [--ext ext.rom] [--adf disk.adf]... [--frames N]\n"
-                        "       [--shot N:file.png] [--wav out.wav] [--slow] [--a500plus | --a600] [--status K] [--swap frame:drive:disk]\n", argv[0]);
+                        "       [--shot N:file.png] [--wav out.wav] [--slow] [--a500plus | --a600 | --a601] [--status K] [--swap frame:drive:disk]\n", argv[0]);
         return 2;
     }
 
     amiga_config_t cfg = {0};
-    cfg.chip_size = plus ? 1024 * 1024 : 512 * 1024;
+    cfg.chip_size = a601 ? 2048 * 1024 : plus ? 1024 * 1024 : 512 * 1024;
     cfg.chip_ram = calloc(1, cfg.chip_size);
     if (a600) cfg.gayle = AMIGA_GAYLE_A600;
     if (plus) { cfg.chipset = AMIGA_ECS; cfg.rtc_time = rtc_time; }

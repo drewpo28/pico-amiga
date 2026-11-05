@@ -80,6 +80,10 @@ static const Option opt_psram_freq[] = {
     { "66 MHz", 66 }, { "84 MHz", 84 }, { "100 MHz", 100 },
     { "133 MHz", 133 }, { "166 MHz", 166 },
 };
+static const Option opt_a600_chip[] = {
+    { "1 MB (as it came)", 1, "1 MB" }, { "2 MB (an A601 in the trapdoor)", 2, "2 MB" },
+};
+
 static const Option opt_drives[] = {
     { "Auto (one per disk of an .m3u set)", 0, "Auto" },
     { "1 (DF0)", 1, "1" }, { "2 (DF0, DF1)", 2, "2" },
@@ -592,7 +596,8 @@ static const char* sysInfoText() {
         add(" Flash QE       : %s\n", qe == 1 ? "was set" : qe == 4 ? "FIX FAILED" : qe == 6 ? "no raw access" : "set at boot");
     add(" PSRAM          : %u MB, SCK <= %d MHz\n", (unsigned)(psram_size() >> 20), settings_psram_mhz());
     add(" Machine        : %s, %s\n", machine_name(), machine_rom_name());
-    add(" Amiga RAM      : %s\n", Config::machine != MACHINE_A500 ? "1 MB chip (ECS)" : "512 KB chip + 512 KB slow (OCS)");
+    if (Config::machine == MACHINE_A500) add(" Amiga RAM      : 512 KB chip + 512 KB slow (OCS)\n");
+    else add(" Amiga RAM      : %u MB chip (ECS)\n", (unsigned)(machine_chip_size() >> 20));
     add(" Floppy drives  : %d\n", machine_drives());
     add(" Audio          : %s\n", audio_out_name());
     const unsigned s = (unsigned)(time_us_64() / 1000000);
@@ -626,6 +631,7 @@ static const Node kMachine[] = {
     NM_RADIO_D   ("A500",        SET_KICK, a500Opts, nullptr),
     NM_RADIO_D   ("A500+",       SET_KICK, a500pOpts, nullptr),
     NM_RADIO_D   ("A600",        SET_KICK, a600Opts, nullptr),
+    NM_RADIO_EN  ("A600 chip RAM", SET_A600_CHIP, opt_a600_chip, nullptr, machine_a600_2mb_ok),
     NM_ACTIONV_EN("A1200",       act_none, laterLabel, nullptr, p_never),
     NM_ACTIONV   ("Custom ROM",  act_custom_rom, customRomLabel, nullptr),
 };

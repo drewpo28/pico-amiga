@@ -112,6 +112,7 @@ static bool put_block(Io* io, const char* id, const void* data, uint32_t n) {
 // ---- CFG ------------------------------------------------------------------------------
 struct Cfg {
     int machine = 0;
+    int a600_chip = 1;                      // MB (older snapshots: none, i.e. 1)
     std::string kick, kick_file;
     uint32_t rom_crc = 0, ext_crc = 0;
     int drives = 0;
@@ -132,6 +133,7 @@ static std::string cfgText() {
     const auto kv = [&](const char* k, const std::string& v) { t += k; t += '='; t += v; t += '\n'; };
     const auto kn = [&](const char* k, unsigned v) { snprintf(l, sizeof l, "%u", v); kv(k, l); };
     kn("machine", Config::machine);
+    kn("a600_chip", Config::a600_chip);
     kv("kick", Config::kick);
     kv("kick_file", Config::kick_file);
     snprintf(l, sizeof l, "%08X", (unsigned)rom); kv("rom_crc", l);
@@ -173,6 +175,7 @@ static void cfgParse(const std::string& t, Cfg& c) {
         const std::string k = line.substr(0, eq), v = line.substr(eq + 1);
         const unsigned long n = strtoul(v.c_str(), nullptr, 10);
         if (k == "machine") c.machine = (int)n;
+        else if (k == "a600_chip") c.a600_chip = (int)n;
         else if (k == "kick") c.kick = v;
         else if (k == "kick_file") c.kick_file = v;
         else if (k == "rom_crc") c.rom_crc = (uint32_t)strtoul(v.c_str(), nullptr, 16);
@@ -310,7 +313,8 @@ void describe(const std::string& path, char* out, unsigned size) {
         add("Not a pico-amiga snapshot, or a damaged one.\n");
     } else {
         add(" Name      : %s\n", name.empty() ? "(none)" : name.c_str());
-        add(" Machine   : %s\n", machine_model_desc(c->machine));
+        add(" Machine   : %s%s\n", machine_model_desc(c->machine),
+            c->machine == MACHINE_A600 && c->a600_chip == 2 ? ", 2 MB (A601)" : "");
         add(" Kickstart : %s\n", machine_rom_label(c->kick, c->kick_file).c_str());
         if (!c->disks.set.empty())
             add(" Disk set  : %s, disk %d\n", baseName(c->disks.set), c->disks.set_index + 1);
@@ -349,6 +353,7 @@ bool load(const std::string& path, std::string& err, std::string& warn) {
     }
 
     Config::machine = (uint8_t)c->machine;
+    Config::a600_chip = c->a600_chip == 2 ? 2 : 1;
     Config::kick = c->kick;
     Config::kick_file = c->kick_file;
     Config::drives = (uint8_t)c->drives;

@@ -173,6 +173,10 @@ Step 2 - IDE with HDF images (host, shared with the A1200 and WHDLoad):
 - [ ] SD2: browsing the card's other FAT partitions (pico-speccy's SdVolumes:
       a local FatFs patch for logical partitions) - the files, not the IDE window
 - [ ] Writes: an f_sync per sector on HDF files (as the floppies); measure on the board
+- [x] Machine > A600 chip RAM: 2 MB (an A601), the PSRAM layout's chip area 2 MB on 8 MB
+      boards; the bench's --a601. A 2 GB FFS partition validates with it, not with 1 MB
+- [ ] The A601's clock at $DC0000 with 2 MB (the firmware has no time source yet);
+      PCMCIA fast RAM (4 MB at $600000, card.resource's CIS) as the other expansion
 
 Step 3 - hw: the A600 on a board (heap / `end` with ./check-release.sh).
 

@@ -46,6 +46,7 @@ public:
     static std::string hdf;         // the A600's hard disk image (card path), "" = none
     static std::string hdf_raw;     // or an SD window: "mode:part:lba:len" (mode 1 read-only,
                                     // 2 writable; part 1-8, 0 typed; card sectors), "" = none
+    static uint8_t  a600_chip;      // the A600's chip RAM in MB: 1, or 2 (an A601; 8 MB PSRAM)
     static uint8_t  machine;        // 0 A500 (OCS, 512 KB chip + 512 KB slow), 1 A500+ (ECS, 1 MB chip), 2 A600 (A500+ + Gayle)
     static std::string kick;        // built-in ROM id (roms.h), or "sd" = kick_file from the card
     static std::string kick_file;   // Machine > Custom ROM: the Kickstart image on the card

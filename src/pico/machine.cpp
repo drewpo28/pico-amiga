@@ -25,7 +25,10 @@ static uint32_t s_dms_size;
 static const char *s_rom_name = "";
 static std::string s_file_name;          // s_rom_name of a Custom ROM
 
-void machine_init(uint8_t *rom_buf, uint8_t *ext_buf, uint8_t *dms_area, uint32_t dms_size) {
+static uint32_t s_chip_area = 1024 * KB;
+
+void machine_init(uint8_t *rom_buf, uint8_t *ext_buf, uint8_t *dms_area, uint32_t dms_size, uint32_t chip_area) {
+    s_chip_area = chip_area;
     s_rom_buf = rom_buf;
     s_ext_buf = ext_buf;
     s_dms_area = dms_area;
@@ -48,7 +51,10 @@ static void select_model(amiga_config_t *cfg) {
     const int m = Config::machine < MACHINE_COUNT ? (int)Config::machine : (int)MACHINE_A500;
     const bool ecs = m != MACHINE_A500;
     cfg->chipset = ecs ? AMIGA_ECS : AMIGA_OCS;
-    cfg->chip_size = ecs ? 1024 * KB : 512 * KB;
+    // An A600 with an A601 in its trapdoor: 2 MB of chip RAM (the 8375 Agnus
+    // addresses it), where the PSRAM layout leaves room (machine_init).
+    cfg->chip_size = m == MACHINE_A600 && Config::a600_chip == 2 && s_chip_area >= 2048 * KB ? 2048 * KB
+                   : ecs ? 1024 * KB : 512 * KB;
     cfg->slow_size = ecs ? 0 : 512 * KB;
     cfg->gayle = m == MACHINE_A600 ? AMIGA_GAYLE_A600 : 0;
 }
@@ -58,6 +64,14 @@ static const char *const kModelDesc[MACHINE_COUNT] = {
     "A500 (OCS, 512 KB chip + 512 KB slow)", "A500+ (ECS, 1 MB chip RAM)", "A600 (ECS, 1 MB chip RAM, Gayle)" };
 const char *machine_model_name(int m) { return m >= 0 && m < MACHINE_COUNT ? kModelName[m] : "?"; }
 const char *machine_model_desc(int m) { return m >= 0 && m < MACHINE_COUNT ? kModelDesc[m] : "?"; }
+uint32_t machine_chip_size(void) {
+    amiga_config_t c;
+    memset(&c, 0, sizeof c);
+    select_model(&c);
+    return c.chip_size;
+}
+bool machine_a600_2mb_ok(void) { return s_chip_area >= 2048 * KB; }
+
 const char *machine_name(void) { return machine_model_name(Config::machine); }
 
 bool machine_select_rom(amiga_config_t *cfg) {

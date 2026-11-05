@@ -56,7 +56,10 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
 - Built-in ROMs (Machine: DiagROM; A500 > KS 1.2/1.3/2.04/2.05/3.1; A500+ > KS
   2.04/2.05/3.1; A600 > KS 2.05/3.1; Custom ROM = a file from the card, Config::kick_file,
   Config::machine = 1: ECS, 1 MB chip RAM over the slow RAM's PSRAM, 2: the same plus
-  Gayle (machine.h MACHINE_*), `amiga_set_machine()`; the bench: `--a500plus`, `--a600`;
+  Gayle (machine.h MACHINE_*), Machine > A600 chip RAM 1 or 2 MB (an A601, Config::a600_chip;
+  with 8 MB of PSRAM - every board has it - the chip RAM area is 2 MB and the ROM buffers,
+  the Win+F8 band, the MFM track and the DMS area sit 1 MB higher, main.c), `amiga_set_machine()`;
+  the bench: `--a500plus`, `--a600`, `--a601` (2 MB chip);
   the menu's SET_KICK value is the ROM index + 200 x Config::machine) are linked
   into the firmware and the host with `.incbin` from `ROMS_DIR` (default `debug/`,
   git-ignored: the Kickstarts are Commodore's and must never be committed).
@@ -180,6 +183,11 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   track, 1 surface, 2 reserved, the image from block 32). The hard disk can also be
   an SD partition (pico-speccy's raw IDE window, ide_mbr.h; machine.cpp), never
   writable over the card's own FAT volume; the PC firmware takes `--sd card.img`.
+- **FFS validates a new partition in RAM**: Format in 2.x writes the root block with the
+  bitmap flag clear and FFS builds the bitmap at the first mount, holding blocks/8
+  bytes at once. A 2 GB Work (4.17M blocks, ~520 KB) on a 1 MB A600 reports "Volume
+  Work is not validated" and stays so; 100 MB works, and 2 GB does with 2 MB of chip
+  RAM (`--a601`): partitions of ~500 MB at most on a 1 MB machine.
 - **Every connected drive costs Kickstart memory**: Dune II (1 MB) reports a
   "Memory Allocation Error" with 4 drives (Floppy drives Auto on its 5-disk
   set) and runs with 1 or 2; the message is drawn while its palette is black.

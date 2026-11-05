@@ -40,6 +40,7 @@ uint8_t  Config::hpos         = 0;
 bool     Config::vcentre      = false;
 bool     Config::disk_led     = true;
 uint8_t  Config::machine      = 0;
+uint8_t  Config::a600_chip    = 1;
 std::string Config::kick      = "ks13";
 std::string Config::kick_file = "/amiga/kick.rom";
 std::string Config::df0       = "";
@@ -141,6 +142,8 @@ void Config::load() {
     if (max_flash_freq < 33 || max_flash_freq > 166) max_flash_freq = 66;
     if (max_psram_freq < 66 || max_psram_freq > 166) max_psram_freq = 166;
     nvs_get_u8 ("machine",       machine,      sts);
+    nvs_get_u8 ("a600_chip",     a600_chip,    sts);
+    if (a600_chip != 2) a600_chip = 1;
     if (machine > 2) machine = 0;                 // machine.h MACHINE_COUNT
     nvs_get_str("kick",          kick,         sts);
     nvs_get_str("kick_file",     kick_file,    sts);
@@ -237,6 +240,7 @@ bool Config::save() {
     nvs_set_b(buf, "hdmi_audio",    hdmi_audio);
     nvs_set_b(buf, "hdmi_capture",  hdmi_capture);
     nvs_set_i(buf, "machine",       machine);
+    nvs_set_i(buf, "a600_chip",     a600_chip);
     nvs_set_str(buf, "kick",        kick.c_str());
     nvs_set_str(buf, "kick_file",   kick_file.c_str());
     nvs_set_str(buf, "df0",         df0.c_str());
