@@ -967,6 +967,20 @@ AMIGA_HOT static void a_apply(agnus_t *f, uint32_t reg, uint16_t v) {
     case R_DIWHIGH: f->diwhigh = (uint16_t)(v | DIWHIGH_ON); break;
     case R_DDFSTRT: f->ddfstrt = v; if (f->fetch_k == 0) compute_ddf(f); break;
     case R_DDFSTOP: f->ddfstop = v; if (f->fetch_k == 0) compute_ddf(f); break;
+    case R_DMACON: {
+        // Bitplane DMA turned off mid-line fetches no further unit (nor adds the
+        // modulos); turned on, it fetches the units from here on.  A-Type's panel
+        // turns it off at the top of its first line, rewrites the six pointers
+        // after DDFSTRT and turns it on again on the next: fetched anyway, planes
+        // 4 and 5 lagged 1-3 by a word (a grey copy of the text beside it).
+        const bool was = f->bpl_dma;
+        f->dmacon = v;
+        f->bpl_dma = in_vwin(f->vpos, f->diwstrt, f->diwstop, f->diwhigh) &&
+                     (v & (DMAF_MASTER | DMAF_RASTER)) == (DMAF_MASTER | DMAF_RASTER);
+        if (f->bpl_dma && !was)
+            while (f->fetch_k < f->nunits && f->ds + f->fetch_k * f->unit_cc < f->r_h) f->fetch_k++;
+        break;
+    }
     default: break;
     }
 }

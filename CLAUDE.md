@@ -217,6 +217,11 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   CPU or copper. RoboCop 2 writes POS/CTL and data pointers in the vertical blank
   and turns sprite DMA on later; fetching control words at the first DMA line
   made RoboCop invisible (and the title's icons garbage).
+- **Bitplane DMA follows DMACON mid-line** (custom.c -> denise_write(R_DMACON)):
+  off stops the line's fetch (no modulo), on fetches the units from there. A-Type's
+  panel turns it off on its first line, rewrites the pointers after DDFSTRT and turns
+  it on on the next; sampled at line start only, planes 4-5 lagged a word (a grey
+  shifted copy of PUSH RUN BUTTON, scrambled ship icons).
 - **Reading COPJMP1/2 strobes them** (custom_read): Zynaps starts its list with
   `move.w $dff088,d0`; ignored, the OS list ran on and its last MOVE (BPLCON0 =
   0 planes) left the intro and the game black.

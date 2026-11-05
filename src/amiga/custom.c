@@ -62,6 +62,8 @@ AMIGA_HOT void custom_write(uint32_t reg, uint16_t v, int hpos, bool from_copper
             blitter_dma_changed();
             paula_dma_changed();
             copper_dma_changed();
+            // Bitplane DMA on or off mid-line: the fetch follows it from hpos on.
+            if ((old ^ A.dmacon) & (DMAF_MASTER | DMAF_RASTER)) denise_write(R_DMACON, A.dmacon, hpos);
         }
         break;
     }
