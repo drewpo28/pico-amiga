@@ -115,11 +115,16 @@ const char *machine_hdf(void);          // the HDF's path, or "SD partition 3"; 
 // ff_raw_write_notify.  machine_set_hdf("") removes it too.
 bool machine_set_hdf_raw(int part, uint32_t lba, uint32_t len, bool writable);
 bool machine_hdf_is_raw(void);
+// What the hard disk holds for Kickstart: "RDB" or "Amiga partition" mount; anything
+// else ("FAT, not Amiga", "empty", ...) is a drive Workbench shows no icon for.
+const char *machine_hdf_kind(void);
 bool machine_hdf_ro(void);
 // The card's partitions (ide_mbr.h: the four MBR entries, 5-8 the logical ones);
 // `files` marks the one FatFs mounted (the card's files).  Returns how many are
 // usable, 0 = no MBR (a card formatted without one), -1 = the card cannot be read.
-struct MachinePart { uint8_t no, type; uint32_t lba, sectors; bool files; };
+// `kind`: what is on it for the Amiga ("RDB", "Amiga partition", "FAT, not Amiga",
+// "empty", ...: machine_hdf_kind's words).
+struct MachinePart { uint8_t no, type; uint32_t lba, sectors; bool files; const char *kind; };
 int machine_sd_parts(MachinePart out[8]);
 // Every drive emptied, then these disks put in (the set loaded first) and the
 // drives Config::drives asks for connected; the disks that cannot be opened are

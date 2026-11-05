@@ -100,6 +100,7 @@ static bool s_hdf_open, s_hdf_ro;
 static std::string s_hdf_path;          // the file, or the SD window's name
 static bool s_raw;                      // the SD window (machine_set_hdf_raw)
 static uint32_t s_raw_start, s_raw_count;
+static uint32_t s_raw_keep_start, s_raw_keep_count;   // machine_sd_parts borrows the two above
 
 static int raw_read(void *, uint32_t off, void *dst, uint32_t len) {
     const uint32_t s = off / 512, n = len / 512;
@@ -128,13 +129,45 @@ static int hdf_write(void *ctx, uint32_t off, const void *src, uint32_t len) {
 }
 
 // The drive the core gets: the HDF on the A600, nothing elsewhere.
+// What a hard disk holds, as Kickstart will see it: an RDB in blocks 0-15 (its
+// partitions mount), one bare Amiga partition (ide.c puts a virtual RDB in
+// front), or nothing it can mount - a FAT volume, an empty or unknown one: the
+// drive is there, but Workbench shows no icon until it is partitioned (HDToolBox)
+// or an HDF is written onto it.
+static const char *disk_kind(int (*rd)(void *, uint32_t, void *, uint32_t), void *ctx, uint32_t blocks) {
+    uint8_t *b = (uint8_t *)malloc(512);
+    if (!b) return "?";
+    const char *k = "empty";
+    for (uint32_t n = 0; n < 16 && n < blocks; n++) {
+        if (rd(ctx, n * 512u, b, 512) != 0) { k = "unreadable"; break; }
+        if (!memcmp(b, "RDSK", 4)) { k = "RDB"; break; }
+        if (n == 0) {
+            if (!memcmp(b, "DOS", 3)) { k = "Amiga partition"; break; }
+            if (b[510] == 0x55 && b[511] == 0xAA &&
+                (!memcmp(b + 54, "FAT", 3) || !memcmp(b + 82, "FAT", 3) || !memcmp(b + 3, "EXFAT", 5))) { k = "FAT, not Amiga"; break; }
+            if (b[510] == 0x55 && b[511] == 0xAA) { k = "a PC MBR, not Amiga"; break; }
+            if (!memcmp(b, "PFS", 3) || !memcmp(b, "SFS", 3)) { k = "PFS/SFS without an RDB"; break; }
+        }
+        for (int i = 0; i < 512; i++) if (b[i]) { k = "no RDB, unknown"; break; }
+    }
+    free(b);
+    return k;
+}
+static const char *s_hdf_kind = "";
+
 static void hdf_attach(void) {
     if (Config::machine != MACHINE_A600 || (!s_hdf_open && !s_raw)) { amiga_set_hdf(NULL); return; }
     const amiga_disk_t d = s_raw
         ? amiga_disk_t{ raw_read, s_hdf_ro ? NULL : raw_write, NULL, s_raw_count * 512u }
         : amiga_disk_t{ hdf_read, s_hdf_ro ? NULL : hdf_write, &s_hdf->f, (uint32_t)f_size(&s_hdf->f) };
+    s_hdf_kind = disk_kind(d.read, d.ctx, d.size / 512);
+    printf("hard disk: %s, %u MB%s, %s", s_hdf_path.c_str(), (unsigned)(d.size >> 20),
+           s_hdf_ro ? ", read-only" : "", s_hdf_kind);
+    if (s_raw) printf(" (card sectors %u+%u)", (unsigned)s_raw_start, (unsigned)s_raw_count);
+    printf("\n");
     amiga_set_hdf(&d);
 }
+const char *machine_hdf_kind(void) { return s_hdf_kind; }
 
 static void hdf_close(void) {
     if (s_hdf_open) { f_close(&s_hdf->f); s_hdf_open = false; }
@@ -143,6 +176,7 @@ static void hdf_close(void) {
     s_raw = false;
     s_hdf_ro = false;
     s_hdf_path.clear();
+    s_hdf_kind = "";
 }
 
 bool machine_set_hdf(const char *path) {
@@ -210,7 +244,14 @@ int machine_sd_parts(MachinePart out[8]) {
         out[i].lba = p[i].lba;
         out[i].sectors = p[i].sectors;
         out[i].files = fb && p[i].sectors && p[i].lba == fb;
+        out[i].kind = "";
+        if (p[i].sectors) {
+            s_raw_start = p[i].lba; s_raw_count = p[i].sectors;     // raw_read's window, for the look
+            out[i].kind = disk_kind(raw_read, NULL, p[i].sectors);
+        }
     }
+    s_raw_start = s_raw ? s_raw_keep_start : 0;
+    s_raw_count = s_raw ? s_raw_keep_count : 0;
     return n;
 }
 
@@ -233,8 +274,8 @@ bool machine_set_hdf_raw(int part, uint32_t lba, uint32_t len, bool writable) {
             for (const MachinePart &q : parts)
                 if (q.files && q.lba < lba + len && lba < q.lba + q.sectors) over = true;
         s_raw = true;
-        s_raw_start = lba;
-        s_raw_count = len;
+        s_raw_start = s_raw_keep_start = lba;
+        s_raw_count = s_raw_keep_count = len;
         s_hdf_ro = !writable || over;
         char name[32];
         if (part > 0) snprintf(name, sizeof name, "SD partition %d", part);

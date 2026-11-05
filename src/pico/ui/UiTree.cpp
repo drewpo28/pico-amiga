@@ -645,7 +645,7 @@ static const Option* hdOpts(uint8_t& cnt) {
     uint8_t n = 0;
     const char* p = machine_hdf();
     if (*p) {
-        snprintf(name, sizeof name, "%s%s", baseName(p), machine_hdf_ro() ? " (read-only)" : "");
+        snprintf(name, sizeof name, "%s: %s%s", baseName(p), machine_hdf_kind(), machine_hdf_ro() ? ", RO" : "");
         o[n++] = { name, DRV_T_INFO, nullptr };
     }
     o[n++] = { "HDF file...", DRV_T_INSERT, nullptr };
@@ -662,7 +662,7 @@ static void hdKey(int32_t tag, uint8_t key) {
         FILINFO fi;
         char msg[96];
         if (machine_hdf_is_raw()) {
-            snprintf(msg, sizeof msg, "%s: the card's own sectors%s", p, machine_hdf_ro() ? ", read-only" : "");
+            snprintf(msg, sizeof msg, "%s: %s%s", p, machine_hdf_kind(), machine_hdf_ro() ? ", read-only" : "");
             uiToast(msg, false, 2500);
             return;
         }
@@ -708,9 +708,9 @@ static void hdKey(int32_t tag, uint8_t key) {
             if (!parts[i].sectors) continue;
             const uint32_t mb = parts[i].sectors / 2048;
             const bool gb = mb >= 10240;
-            snprintf(labels[k], sizeof labels[k], "%d: type %02X, %u %s%s", parts[i].no, parts[i].type,
-                     (unsigned)(gb ? mb / 1024 : mb), gb ? "GB" : "MB",
-                     parts[i].files ? "  (files: read-only)" : "");
+            snprintf(labels[k], sizeof labels[k], "%d: %02X, %u %s, %s%s", parts[i].no, parts[i].type,
+                     (unsigned)(gb ? mb / 1024 : mb), gb ? "GB" : "MB", parts[i].kind,
+                     parts[i].files ? " (files)" : "");
             items[k] = labels[k];
             map[k++] = i;
         }
