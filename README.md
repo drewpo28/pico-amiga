@@ -17,14 +17,14 @@ picture and sound over HDMI, or picture over VGA.
 |---|---|
 | A500 | 68000 at 7.09 MHz, OCS, 512 KB chip RAM + 512 KB slow RAM |
 | A500+ | ECS (super-hires, the 8375 Agnus / 8373 Denise IDs), 1 MB chip RAM, battery clock |
-| A600 | as the A500+, with Gayle (its ID, an empty IDE port and PCMCIA slot) and no clock |
+| A600 | as the A500+, with Gayle and no clock; IDE hard disk: an HDF (with an RDB or one bare partition) or an SD card partition |
 | Display | lowres, hires at its full 640 pixels, HAM, interlace with both fields, sprites, copper, blitter |
 | Sound | Paula, 4 DMA channels |
 | Disks | DF0-DF3: ADF streamed from the SD card and written back to it; DMS unpacked into PSRAM (write-protected); `.m3u` disk sets |
 | Kickstart | built into the firmware (see [Building](#building)) or any 256 / 512 KB ROM file from the card |
 
-The 68000 is [Musashi](https://github.com/kstenerud/Musashi); the A600's hard
-disk (IDE with HDF images) and the A1200 (AGA, 68020) are not there yet - [docs/PLAN.md](docs/PLAN.md) has what is
+The 68000 is [Musashi](https://github.com/kstenerud/Musashi); the A1200 (AGA,
+68020) is not there yet - [docs/PLAN.md](docs/PLAN.md) has what is
 missing and in which order.
 
 ## Hardware
@@ -155,6 +155,7 @@ src/amiga/     the emulator: platform-independent C11, shared by the firmware an
   floppy.c       drives, ADF <-> MFM track codec, disk DMA
   rtc.c          the A500+ battery clock
   gayle.c        the A600's Gayle: ID, IDE port and PCMCIA registers
+  ide.c          the A600's IDE hard disk (HDF, virtual RDB for a bare partition)
 src/pico/      RP2350 firmware: video (HSTX, PIO HDMI, VGA), HDMI audio, PSRAM,
                clocks, input, disks and DMS, ui/ (the menu, pico-speccy's)
 host/          the PC builds (SDL2 firmware, test bench) and the tests

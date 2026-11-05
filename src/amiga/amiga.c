@@ -95,6 +95,7 @@ void amiga_joystick(int port, uint8_t dirs, bool fire) {
 void amiga_insert_disk(int drive, const amiga_disk_t *disk) { floppy_insert(drive, disk); }
 void amiga_eject_disk(int drive) { floppy_eject(drive); }
 void amiga_set_drives(int n) { floppy_set_drives(n); }
+void amiga_set_hdf(const amiga_disk_t *disk) { ide_insert(disk); ide_reset(); }
 void amiga_floppy_status(amiga_floppy_t *st) { floppy_status(st); }
 // Read from the output IRQs (audio_out.c, hdmi_audio.c), hence AMIGA_HOT.
 AMIGA_HOT uint32_t amiga_audio_write_pos(void) { return paula_audio_pos(); }
@@ -178,6 +179,7 @@ AMIGA_HOT __attribute__((noinline)) static void run_line(void) {
     floppy_line();
     prof_switch(AMIGA_PROF_OTHER);
     cia_line();
+    if (A.cfg.gayle) gayle_line();
     keyboard_line();
     A.line_cyc += 2u * AMIGA_CC_PER_LINE;
 }

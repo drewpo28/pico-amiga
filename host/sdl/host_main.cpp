@@ -36,18 +36,22 @@ extern "C" {
 extern "C" int firmware_main(void);
 extern std::string host_root;           // host_fatfs.cpp
 char **host_argv;                       // host_platform.cpp: a firmware reboot re-execs
-extern "C" void host_sd_flush(void) {}  // host_platform.cpp: no raw card in this build
+extern "C" void host_sd_flush(void) {}  // host_platform.cpp: the raw card needs no flush
+extern const char *host_sd_path;        // host_disk.cpp: --sd, the raw card's image
 
 static void usage(const char *argv0) {
-    fprintf(stderr, "usage: %s [--root DIR]\n"
+    fprintf(stderr, "usage: %s [--root DIR] [--sd card.img]\n"
                     "  DIR is the SD card folder (default ~/pico-amiga): DIR/amiga/kick.rom,\n"
-                    "  DIR/amiga/ext.rom, DIR/amiga/df0.adf as on the card.\n", argv0);
+                    "  DIR/amiga/ext.rom, DIR/amiga/df0.adf as on the card.\n"
+                    "  card.img: the card's raw sectors (its MBR and partitions), for the\n"
+                    "  A600's hard disk on an SD partition.\n", argv0);
 }
 
 int main(int argc, char **argv) {
     host_argv = argv;
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--root") && i + 1 < argc) host_root = argv[++i];
+        else if (!strcmp(argv[i], "--sd") && i + 1 < argc) host_sd_path = argv[++i];
         else { usage(argv[0]); return 2; }
     }
 

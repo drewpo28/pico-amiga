@@ -630,11 +630,130 @@ static const Node kMachine[] = {
     NM_ACTIONV   ("Custom ROM",  act_custom_rom, customRomLabel, nullptr),
 };
 
+// Devices > Disks > Hard disk (the A600's IDE port): the HDF's name; its pane
+// the file (Enter: name and size), Choose an HDF..., SD card partition... (the
+// card's own sectors, pico-speccy's raw IDE window), Remove.  Kickstart looks
+// for the drive at reset, so a change restarts the Amiga.
+static bool p_a600() { return Config::machine == MACHINE_A600; }
+static const char* hdShort() {
+    const char* p = machine_hdf();
+    return *p ? baseName(p) : "none";
+}
+static const Option* hdOpts(uint8_t& cnt) {
+    static Option o[4];
+    static char name[64];
+    uint8_t n = 0;
+    const char* p = machine_hdf();
+    if (*p) {
+        snprintf(name, sizeof name, "%s%s", baseName(p), machine_hdf_ro() ? " (read-only)" : "");
+        o[n++] = { name, DRV_T_INFO, nullptr };
+    }
+    o[n++] = { "HDF file...", DRV_T_INSERT, nullptr };
+    o[n++] = { "SD partition...", DRV_T_PART, nullptr };
+    if (*p) o[n++] = { "Remove", DRV_T_EJECT, nullptr };
+    cnt = n;
+    return o;
+}
+static void hdKey(int32_t tag, uint8_t key) {
+    if (key) return;
+    const char* p = machine_hdf();
+    switch (tag) {
+    case DRV_T_INFO: {
+        FILINFO fi;
+        char msg[96];
+        if (machine_hdf_is_raw()) {
+            snprintf(msg, sizeof msg, "%s: the card's own sectors%s", p, machine_hdf_ro() ? ", read-only" : "");
+            uiToast(msg, false, 2500);
+            return;
+        }
+        if (!*p || f_stat(p, &fi) != FR_OK) return;
+        snprintf(msg, sizeof msg, "%s: %u MB%s", baseName(p), (unsigned)(fi.fsize >> 20),
+                 (fi.fattrib & AM_RDO) ? ", read-only" : "");
+        uiToast(msg, false, 2500);
+        return;
+    }
+    case DRV_T_INSERT: {
+        static std::string dir;
+        if (dir.empty()) {
+            const std::string cur = p;
+            dir = cur.empty() ? std::string("/amiga/") : cur.substr(0, cur.find_last_of('/') + 1);
+            FILINFO fi;
+            if (dir != "/" && f_stat(dir.substr(0, dir.size() - 1).c_str(), &fi) != FR_OK) dir = "/";
+        }
+        const std::string r = browseFile(dir, "Hard disk (IDE)", BROWSE_HDF);
+        if (r.size() < 2 || r[0] != 'R') return;
+        const std::string path = dir + r.substr(1);
+        if (!machine_set_hdf(path.c_str())) {
+            Config::hdf.clear();
+            Config::save();
+            uiToast("That HDF cannot be opened", true, 2000);
+            return;
+        }
+        Config::hdf = path;
+        Config::hdf_raw.clear();
+        Config::save();
+        uiAmigaReset();
+        requestClose();
+        return;
+    }
+    case DRV_T_PART: {
+        MachinePart parts[8];
+        const int found = machine_sd_parts(parts);
+        if (found < 0) { uiToast("The card cannot be read", true, 2000); return; }
+        if (found == 0) { uiToast("The card has no partition table", true, 2500); return; }
+        static char labels[8][48];
+        const char* items[8];
+        int map[8], k = 0;
+        for (int i = 0; i < 8; i++) {
+            if (!parts[i].sectors) continue;
+            const uint32_t mb = parts[i].sectors / 2048;
+            const bool gb = mb >= 10240;
+            snprintf(labels[k], sizeof labels[k], "%d: type %02X, %u %s%s", parts[i].no, parts[i].type,
+                     (unsigned)(gb ? mb / 1024 : mb), gb ? "GB" : "MB",
+                     parts[i].files ? "  (files: read-only)" : "");
+            items[k] = labels[k];
+            map[k++] = i;
+        }
+        const int c = uiPickList("Hard disk: SD partition", items, k, 0);
+        if (c < 0) return;
+        const MachinePart& q = parts[map[c]];
+        static const char* const kMode[] = { "Read-only", "Writable" };
+        const int m = q.files ? 0 : uiPickList("The Amiga may", kMode, 2, 0);
+        if (m < 0) return;
+        if (!machine_set_hdf_raw(q.no, q.lba, q.sectors, m == 1)) {
+            Config::hdf_raw.clear();
+            Config::save();
+            uiToast("That partition cannot be used", true, 2000);
+            return;
+        }
+        char v[48];
+        snprintf(v, sizeof v, "%d:%u:%u:%u", m == 1 ? 2 : 1, (unsigned)q.no, (unsigned)q.lba, (unsigned)q.sectors);
+        Config::hdf_raw = v;
+        Config::hdf.clear();
+        Config::save();
+        uiAmigaReset();
+        requestClose();
+        return;
+    }
+    case DRV_T_EJECT:
+        machine_set_hdf("");
+        Config::hdf.clear();
+        Config::hdf_raw.clear();
+        Config::save();
+        uiAmigaReset();
+        requestClose();
+        return;
+    default:
+        return;
+    }
+}
+
 static const Node kDisks[] = {
     NM_PICK  ("DF0", SET_DF0_DISK, driveOpts0, driveKey0, driveShort0, opt_drive_foot, nullptr),
     NM_PICK  ("DF1", SET_NONE,     driveOpts1, driveKey1, driveShort1, opt_drive_foot, p_drive1),
     NM_PICK  ("DF2", SET_NONE,     driveOpts2, driveKey2, driveShort2, opt_drive_foot, p_drive2),
     NM_PICK  ("DF3", SET_NONE,     driveOpts3, driveKey3, driveShort3, opt_drive_foot, p_drive3),
+    NM_PICK  ("Hard disk", SET_NONE, hdOpts,   hdKey,     hdShort,     opt_drive_foot, p_a600),
     NM_RADIO ("Floppy drives", SET_DRIVES, opt_drives, nullptr),
     NM_ACTION("New blank disk", act_new_disk, nullptr),
 };

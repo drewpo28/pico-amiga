@@ -86,4 +86,19 @@ $BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --a600 --adf "$OUT/bo
      --frames 500 --state-load "$OUT/state600.bin" --shot 500:"$OUT/state600-b.png" > /dev/null 2>&1
 if cmp -s "$OUT/state600-a.png" "$OUT/state600-b.png"; then echo "PASS a600 snapshot round trip"; else echo "FAIL a600 snapshot round trip"; fail=1; fi
 
+# 7. A600 IDE (ide.c) with a bare-partition HDF (make_hdf.py: the drive's virtual
+#    RDB in front of it): make_ide_adf.py's bootblock runs IDENTIFY, reads by LBA
+#    and CHS, two sectors in one command, writes a sector and reads it back, and
+#    checks the interrupt through Gayle; --write-back puts the write in the file.
+python3 host/tests/make_hdf.py "$OUT/ide.hdf"
+python3 host/tests/make_ide_adf.py "$OUT/ide.adf"
+$BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --a600 --adf "$OUT/ide.adf" \
+     --hdf "$OUT/ide.hdf" --write-back --frames 1200 > "$OUT/ide.log" 2>&1
+check "a600 ide" "IDE OK" "$OUT/ide.log"
+python3 - "$OUT/ide.hdf" <<'PY' && echo "PASS a600 ide write-back" || { echo "FAIL a600 ide write-back"; fail=1; }
+import sys
+d = open(sys.argv[1], 'rb').read()
+sys.exit(0 if d[68 * 512:69 * 512] == b'\x12\x34' * 256 else 1)
+PY
+
 exit $fail

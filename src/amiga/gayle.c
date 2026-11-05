@@ -11,9 +11,12 @@
 //                    of it in bit 7, MSB first ($D0: 1,1,0,1,0,0,0,0); any
 //                    write there starts it over.  AGA's Gayle reads $D1.
 //
-// No drive is fitted yet and no card is in the slot.  WinUAE's "IDE killer"
-// answers an empty port: the status register $7F, every other register $FF, so
-// scsi.device gives up at once instead of waiting ~30 s for a drive to spin up.
+// The IDE port has the drive of ide.c (an HDF) or none; no card is in the slot.
+// With no drive, WinUAE's "IDE killer" answers: the status register $7F, every
+// other register $FF, so scsi.device gives up at once instead of waiting ~30 s
+// for a drive to spin up.  The drive's INTRQ sets IRQ bit 7 (and reads in CS
+// bit 7); IRQ & INT bits 7 or 3 raise level 2 (INTREQ PORTS), as long as they
+// are set: the handler clears IRQ by writing it with the bit 0.
 #include "amiga_int.h"
 
 static uint8_t cs, cs_mask, irq, inten, cfg;
@@ -22,20 +25,41 @@ static uint8_t id_cnt;
 void gayle_reset(void) {
     cs = cs_mask = irq = inten = cfg = 0;
     id_cnt = 0;
+    ide_reset();
 }
 
 uint8_t gayle_read(uint32_t a) {
     if ((a & 0xA0000) != 0xA0000) return 0;
     a &= 0xFFFF;
     switch (a) {
-    case 0x8000: return (uint8_t)(cs_mask | cs);
+    case 0x8000: return (uint8_t)(cs_mask | cs | (ide_irq() ? 0x80 : 0));
     case 0x9000: return irq;
     case 0xA000: return inten;
     case 0xB000: return cfg & 0x0F;
     default: break;
     }
     if (a >= 0x4000) return 0;
-    return ((a & ~0x2020u) >> 2) == 7 ? 0x7F : 0xFF;     // IDE: no drive
+    return ide_read((int)((a & ~0x2020u) >> 2));       // the data register reads 0 as a byte
+}
+
+// Words: the IDE data register moves a word; the rest are two byte accesses.
+static bool is_data(uint32_t a) {
+    return (a & 0xA0000) == 0xA0000 && (a & 0xFFFF) < 0x4000 && ((a & 0xFFFF & ~0x2020u) >> 2) == 0;
+}
+uint16_t gayle_read16(uint32_t a) {
+    if (is_data(a)) return ide_read_data();
+    return (uint16_t)(gayle_read(a) << 8 | gayle_read(a + 1));
+}
+void gayle_write16(uint32_t a, uint16_t v) {
+    if (is_data(a)) { ide_write_data(v); return; }
+    gayle_write(a, (uint8_t)(v >> 8));
+    gayle_write(a + 1, (uint8_t)v);
+}
+
+// Once a line (Gayle machines): the drive's interrupt into IRQ, IRQ & INT to Paula.
+void gayle_line(void) {
+    if (ide_line()) irq |= 0x80;
+    if (inten & irq & 0x88) amiga_set_intreq(INTF_PORTS);
 }
 
 void gayle_write(uint32_t a, uint8_t v) {
@@ -48,7 +72,9 @@ void gayle_write(uint32_t a, uint8_t v) {
     case 0x9000: irq = (uint8_t)((irq & v) | (v & 3u)); break;   // 0 clears a flag
     case 0xA000: inten = v; break;
     case 0xB000: cfg = v; break;
-    default: break;                         // IDE: no drive takes it
+    default:
+        if ((a & 0xFFFF) < 0x4000) ide_write((int)(((a & 0xFFFF) & ~0x2020u) >> 2), v);
+        break;
     }
 }
 
@@ -65,4 +91,5 @@ void gayle_id_write(void) { id_cnt = 0; }
 void gayle_state(st_t *s) {
     st_u8(s, &cs); st_u8(s, &cs_mask); st_u8(s, &irq); st_u8(s, &inten); st_u8(s, &cfg);
     st_u8(s, &id_cnt);
+    ide_state(s);
 }

@@ -163,6 +163,12 @@ void amiga_eject_disk(int drive);
 // them at reset, so a change wants one.
 void amiga_set_drives(int n);
 
+// The A600's IDE hard disk (Gayle machines only): an HDF image, a whole drive
+// with its RDB or one bare partition (ide.c), read and written a 512-byte
+// sector at a time through the callbacks (write NULL: writes fail); NULL = no
+// drive.  Kickstart looks for it at reset, so a change wants one (hard).
+void amiga_set_hdf(const amiga_disk_t *disk);
+
 // Floppy activity, for the platform's disk line (Win+F8) and drive icon: the
 // drive selected (or the last one a DMA used), its head, and what the disk DMA
 // does.  `idle` counts frames since the last disk DMA ended (0 while one runs).

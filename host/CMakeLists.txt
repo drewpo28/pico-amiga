@@ -78,6 +78,7 @@ if(SDL2_FOUND)
         ${SDL_DIR}/host_drivers.cpp
         ${SDL_DIR}/host_platform.cpp
         ${SDL_DIR}/host_fatfs.cpp
+        ${SDL_DIR}/host_disk.cpp
         ${SDL_DIR}/host_fsdir.cpp)
     include(${ROOT}/cmake/roms.cmake)
     amiga_builtin_roms(pico-amiga)

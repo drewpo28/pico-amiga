@@ -155,10 +155,24 @@ Step 1 - the machine (host):
 
 Step 2 - IDE with HDF images (host, shared with the A1200 and WHDLoad):
 
-- [ ] An ATA drive behind Gayle: IDENTIFY, READ/WRITE SECTORS (PIO, LBA and CHS),
-      the IRQ through Gayle; one HDF from the card (RDB or a bare partition),
-      streamed like an ADF; Devices > Disks > Hard disk to pick it
-- [ ] Check: Workbench 2.05 / 3.1 installed on an HDF boots from it
+- [x] An ATA drive behind Gayle (ide.c, WinUAE's ide.cpp): IDENTIFY, READ/WRITE
+      SECTORS (PIO, LBA28 and CHS), INITIALIZE DEVICE PARAMETERS, the interrupt
+      through Gayle's IRQ/INT to level 2; a sector at a time through 512 bytes.
+      An HDF with its RDB, or a bare partition behind a virtual RDB (RDSK + PART,
+      WinUAE's 32 x 1 geometry, 2 reserved); the bench's --hdf (--write-back)
+- [x] Devices > Disks > Hard disk (A600 only): HDF file... (fast seek), or SD
+      partition... - pico-speccy's raw IDE window: the card's own sectors, its MBR
+      read by ide_mbr.h (5-8: the logical ones), read-only or writable, never
+      writable over the card's FAT volume; Config::hdf / hdf_raw, snapshots' CFG.
+      The PC firmware's --sd card.img (host_disk.cpp) stands in for the raw card
+- [x] Check: Workbench 2.04 on KS 2.05 and 3.1 on KS 3.1 mount a bare and an RDB
+      HDF (make_hdf.py), Workbench 3.1 writes to it (makedir); smoke.sh test 7
+      (make_ide_adf.py): IDENTIFY, LBA/CHS, two sectors, a write, the interrupt
+- [ ] A Workbench installed on an HDF booting from it; a PFS3 RDB (filesystem
+      loaded from the RDB); a > 504 MB image (CHS limits of scsi.device)
+- [ ] SD2: browsing the card's other FAT partitions (pico-speccy's SdVolumes:
+      a local FatFs patch for logical partitions) - the files, not the IDE window
+- [ ] Writes: an f_sync per sector on HDF files (as the floppies); measure on the board
 
 Step 3 - hw: the A600 on a board (heap / `end` with ./check-release.sh).
 

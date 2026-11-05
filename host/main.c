@@ -7,6 +7,8 @@
 //
 //   pico-amiga-host --rom kick.rom [--ext ext.rom] [--adf disk.adf|.dms]... (DF0..DF3; 5th-8th: --swap only)
 //                   [--drives N] (fewer drives than --adf: the rest wait for --swap)
+//                   [--hdf disk.hdf] (the A600's IDE drive, read from the file a sector at a time;
+//                    written to it only with --write-back, otherwise the drive's writes fail)
 //                   [--write-back] (disks the Amiga wrote are saved to their files at the end)
 //                   [--frames N] [--shot N:file.png]... [--wav out.wav]
 //                   [--slow] [--a500plus | --a600] [--vcentre] [--key N:code:down]... [--status K]
@@ -182,6 +184,16 @@ static int disk_write(void *ctx, uint32_t off, const void *src, uint32_t len) {
     return 0;
 }
 
+// The HDF: a file, a sector at a time (images can be large).
+static int hdf_read(void *ctx, uint32_t off, void *dst, uint32_t len) {
+    FILE *f = ctx;
+    return fseek(f, (long)off, SEEK_SET) || fread(dst, 1, len, f) != len ? -1 : 0;
+}
+static int hdf_write(void *ctx, uint32_t off, const void *src, uint32_t len) {
+    FILE *f = ctx;
+    return fseek(f, (long)off, SEEK_SET) || fwrite(src, 1, len, f) != len ? -1 : 0;
+}
+
 // --render-thread: Denise on a second thread, as the firmware runs it on core 1.
 static void *render_thread(void *arg) {
     (void)arg;
@@ -215,7 +227,8 @@ static int64_t rtc_time(void *ctx) {
 
 int main(int argc, char **argv) {
     const char *rom_path = NULL, *ext_path = NULL, *wav_path = NULL;
-    const char *adf_path[8] = {0}; int nadf = 0;        // the first 4 go in DF0..DF3, the rest wait for --swap
+    const char *adf_path[8] = {0}; int nadf = 0;
+    const char *hdf_path = NULL;        // the first 4 go in DF0..DF3, the rest wait for --swap
     int frames = 250, status_every = 0, scale = 1, drives_opt = 0;
     bool slow = false, render_thread_on = false, plus = false, a600 = false, vcentre = false, write_back = false;
     shot_t shots[64]; int nshots = 0;
@@ -232,7 +245,8 @@ int main(int argc, char **argv) {
         const char *v = i + 1 < argc ? argv[i + 1] : NULL;
         if (!strcmp(a, "--rom") && v) { rom_path = v; i++; }
         else if (!strcmp(a, "--ext") && v) { ext_path = v; i++; }
-        else if (!strcmp(a, "--adf") && v && nadf < 8) { adf_path[nadf++] = v; i++; }   // DF0, DF1, ...
+        else if (!strcmp(a, "--adf") && v && nadf < 8) { adf_path[nadf++] = v; i++; }
+        else if (!strcmp(a, "--hdf") && v) { hdf_path = v; i++; }   // DF0, DF1, ...
         else if (!strcmp(a, "--frames") && v) { frames = atoi(v); i++; }
         else if (!strcmp(a, "--wav") && v) { wav_path = v; i++; }
         else if (!strcmp(a, "--status") && v) { status_every = atoi(v); i++; }
@@ -313,6 +327,15 @@ int main(int argc, char **argv) {
         amiga_insert_disk(k, &d);
     }
     if (ndrv > 1) { amiga_set_drives(ndrv); amiga_reset(true); }   // Kickstart finds DF1+ at reset
+    FILE *hdf = NULL;
+    if (hdf_path) {
+        hdf = fopen(hdf_path, write_back ? "r+b" : "rb");
+        if (!hdf) { fprintf(stderr, "%s: cannot open\n", hdf_path); return 1; }
+        fseek(hdf, 0, SEEK_END);
+        const amiga_disk_t d = { hdf_read, write_back ? hdf_write : NULL, hdf, (uint32_t)ftell(hdf) };
+        amiga_set_hdf(&d);
+        amiga_reset(true);
+    }
     if (wav_path) wav_open(wav_path);
     if (state_load) {
         FILE *f = fopen(state_load, "rb");

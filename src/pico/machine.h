@@ -97,6 +97,30 @@ struct MachineDisks {
     int set_index;             // its disk in DF0
 };
 void machine_get_disks(MachineDisks &d);
+// The A600's IDE hard disk: an HDF on the card (ide.c: a whole drive with its
+// RDB, or one bare partition), opened for reading and writing (read-only when
+// the file is).  machine_set_hdf: "" removes it; false when the file cannot be
+// opened (the drive is then empty).  Config::hdf is the caller's to keep.  The
+// core sees it on the A600 only and from the next reset on (Kickstart scans
+// the port at reset): the caller resets.
+bool machine_set_hdf(const char *path);
+const char *machine_hdf(void);          // the HDF's path, or "SD partition 3"; "" = none
+// The hard disk as a window of the SD card's own sectors (pico-speccy's raw IDE
+// slot): the Amiga's block 0 is card sector `lba`, `len` sectors long (0 = to
+// the end; at most 4 GB: amiga_disk_t's byte offsets), no FAT, no file.  A
+// partition holding a whole Amiga drive (an HDF written onto it) or one bare
+// Amiga partition, as an HDF.  Writable only on request, and never over the FAT
+// volume the firmware itself mounted (that one is forced read-only).  `part`
+// (1-8, 0 = typed) only names it.  Writes reach FatFs's cache through
+// ff_raw_write_notify.  machine_set_hdf("") removes it too.
+bool machine_set_hdf_raw(int part, uint32_t lba, uint32_t len, bool writable);
+bool machine_hdf_is_raw(void);
+bool machine_hdf_ro(void);
+// The card's partitions (ide_mbr.h: the four MBR entries, 5-8 the logical ones);
+// `files` marks the one FatFs mounted (the card's files).  Returns how many are
+// usable, 0 = no MBR (a card formatted without one), -1 = the card cannot be read.
+struct MachinePart { uint8_t no, type; uint32_t lba, sectors; bool files; };
+int machine_sd_parts(MachinePart out[8]);
 // Every drive emptied, then these disks put in (the set loaded first) and the
 // drives Config::drives asks for connected; the disks that cannot be opened are
 // listed in `missing` (their drives stay empty).

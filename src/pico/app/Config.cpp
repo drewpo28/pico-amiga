@@ -43,6 +43,8 @@ uint8_t  Config::machine      = 0;
 std::string Config::kick      = "ks13";
 std::string Config::kick_file = "/amiga/kick.rom";
 std::string Config::df0       = "";
+std::string Config::hdf       = "";
+std::string Config::hdf_raw   = "";
 bool     Config::df0_wp       = false;
 uint8_t  Config::df0_disk     = 0;
 uint8_t  Config::persist_slot = 1;
@@ -145,6 +147,8 @@ void Config::load() {
     if (kick_file.empty()) kick_file = "/amiga/kick.rom";
     if (!nvs_get_str("df0",      df0,          sts)) df0.clear();
     nvs_get_b  ("df0_wp",        df0_wp,       sts);
+    if (!nvs_get_str("hdf",      hdf,          sts)) hdf.clear();
+    if (!nvs_get_str("hdf_raw",  hdf_raw,      sts)) hdf_raw.clear();
     nvs_get_u8 ("df0_disk",      df0_disk,     sts);
     nvs_get_u8 ("persist_slot",  persist_slot, sts);
     if (persist_slot < 1 || persist_slot > 40) persist_slot = 1;
@@ -237,6 +241,8 @@ bool Config::save() {
     nvs_set_str(buf, "kick_file",   kick_file.c_str());
     nvs_set_str(buf, "df0",         df0.c_str());
     nvs_set_b(buf, "df0_wp",        df0_wp);
+    nvs_set_str(buf, "hdf",         hdf.c_str());
+    nvs_set_str(buf, "hdf_raw",     hdf_raw.c_str());
     nvs_set_i(buf, "df0_disk",      df0_disk);
     nvs_set_i(buf, "persist_slot",  persist_slot);
     nvs_set_i(buf, "drives",        drives);

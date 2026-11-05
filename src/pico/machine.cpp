@@ -6,6 +6,8 @@
 #include <strings.h>
 #include <string>
 #include "ff.h"
+#include "diskio.h"
+#include "ide_mbr.h"
 #include "dms.h"
 #include "roms.h"
 #include "app/Config.h"
@@ -85,12 +87,171 @@ bool machine_select_rom(amiga_config_t *cfg) {
     return true;
 }
 
+// ---- the A600's hard disk --------------------------------------------------------
+// The HDF stays open while it is in; reads and writes go a sector at a time
+// (ide.c), through FatFs's fast seek (a cluster map: a large image's FAT chain
+// is not walked per sector) when the map fits.  Each write is synced, as the
+// floppies' are.
+// The FIL and its cluster map come from the heap while an HDF is open only
+// (pico-speccy's rule for IDE): ~870 bytes of SRAM nobody else can use otherwise.
+struct HdfFile { FIL f; DWORD map[64]; };
+static HdfFile *s_hdf;
+static bool s_hdf_open, s_hdf_ro;
+static std::string s_hdf_path;          // the file, or the SD window's name
+static bool s_raw;                      // the SD window (machine_set_hdf_raw)
+static uint32_t s_raw_start, s_raw_count;
+
+static int raw_read(void *, uint32_t off, void *dst, uint32_t len) {
+    const uint32_t s = off / 512, n = len / 512;
+    if ((off | len) & 511 || s + n > s_raw_count) return -1;
+    return disk_read(0, (BYTE *)dst, (LBA_t)(s_raw_start + s), n) == RES_OK ? 0 : -1;
+}
+static int raw_write(void *, uint32_t off, const void *src, uint32_t len) {
+    const uint32_t s = off / 512, n = len / 512;
+    if ((off | len) & 511 || s + n > s_raw_count) return -1;
+    if (disk_write(0, (const BYTE *)src, (LBA_t)(s_raw_start + s), n) != RES_OK) return -1;
+    for (uint32_t i = 0; i < n; i++)                  // FatFs's cached copy, if it has one
+        ff_raw_write_notify(0, (LBA_t)(s_raw_start + s + i), (const BYTE *)src + i * 512);
+    return 0;
+}
+
+static int hdf_read(void *ctx, uint32_t off, void *dst, uint32_t len) {
+    FIL *f = (FIL *)ctx; UINT n;
+    if (f_lseek(f, off) != FR_OK || f_read(f, dst, len, &n) != FR_OK || n != len) return -1;
+    return 0;
+}
+static int hdf_write(void *ctx, uint32_t off, const void *src, uint32_t len) {
+    FIL *f = (FIL *)ctx; UINT n;
+    if (f_lseek(f, off) != FR_OK || f_write(f, src, len, &n) != FR_OK || n != len) return -1;
+    f_sync(f);
+    return 0;
+}
+
+// The drive the core gets: the HDF on the A600, nothing elsewhere.
+static void hdf_attach(void) {
+    if (Config::machine != MACHINE_A600 || (!s_hdf_open && !s_raw)) { amiga_set_hdf(NULL); return; }
+    const amiga_disk_t d = s_raw
+        ? amiga_disk_t{ raw_read, s_hdf_ro ? NULL : raw_write, NULL, s_raw_count * 512u }
+        : amiga_disk_t{ hdf_read, s_hdf_ro ? NULL : hdf_write, &s_hdf->f, (uint32_t)f_size(&s_hdf->f) };
+    amiga_set_hdf(&d);
+}
+
+static void hdf_close(void) {
+    if (s_hdf_open) { f_close(&s_hdf->f); s_hdf_open = false; }
+    free(s_hdf);
+    s_hdf = NULL;
+    s_raw = false;
+    s_hdf_ro = false;
+    s_hdf_path.clear();
+}
+
+bool machine_set_hdf(const char *path) {
+    hdf_close();
+    bool ok = true;
+    if (path && *path) {
+        s_hdf = (HdfFile *)malloc(sizeof *s_hdf);
+        if (!s_hdf) { hdf_attach(); return false; }
+        FIL *f = &s_hdf->f;
+        s_hdf_ro = false;
+        FRESULT r = f_open(f, path, FA_READ | FA_WRITE);
+        if (r == FR_DENIED || r == FR_WRITE_PROTECTED) { s_hdf_ro = true; r = f_open(f, path, FA_READ); }
+        ok = r == FR_OK && f_size(f) >= 1024 && f_size(f) <= 0xFFFFFE00u;
+        if (r == FR_OK && !ok) f_close(f);
+        if (ok) {
+            s_hdf_open = true;
+            s_hdf_path = path;
+            f->cltbl = s_hdf->map;                   // fast seek, or the plain one
+            s_hdf->map[0] = sizeof s_hdf->map / sizeof s_hdf->map[0];
+            if (f_lseek(f, CREATE_LINKMAP) != FR_OK) f->cltbl = NULL;
+        } else {
+            free(s_hdf);
+            s_hdf = NULL;
+        }
+    }
+    hdf_attach();
+    return ok;
+}
+
+const char *machine_hdf(void) { return s_hdf_path.c_str(); }
+bool machine_hdf_is_raw(void) { return s_raw; }
+bool machine_hdf_ro(void) { return s_hdf_ro; }
+
+// The sector FatFs mounted the card's files from (0 when it cannot tell).
+static uint32_t files_base(void) {
+    DWORD n;
+    FATFS *fs = NULL;
+    if (f_getfree("SD:", &n, &fs) != FR_OK || !fs) return 0;
+    return (uint32_t)fs->volbase;
+}
+
+int machine_sd_parts(MachinePart out[8]) {
+    for (int i = 0; i < 8; i++) out[i] = MachinePart{ (uint8_t)(i + 1), 0, 0, 0, false };
+    LBA_t card = 0;
+    disk_ioctl(0, GET_SECTOR_COUNT, &card);
+    uint8_t *sec = (uint8_t *)malloc(512);               // the heap, not .bss (pico-speccy's rule)
+    if (!sec) return -1;
+    if (disk_read(0, sec, 0, 1) != RES_OK) { free(sec); return -1; }
+    ide_mbr::Part p[ide_mbr::MAX_ALL];
+    for (int i = 0; i < ide_mbr::MAX_ALL; i++) p[i] = ide_mbr::Part{ 0, 0, 0 };
+    int n = ide_mbr::parse(sec, (uint32_t)card, p);
+    uint32_t ext_lba = 0, ext_n = 0;
+    if (ide_mbr::extended(sec, (uint32_t)card, &ext_lba, &ext_n)) {
+        uint32_t ebr = ext_lba;
+        for (int i = 0; i < ide_mbr::MAX_LOGICAL && ebr; i++) {
+            if (disk_read(0, sec, (LBA_t)ebr, 1) != RES_OK) break;
+            ebr = ide_mbr::parseEbr(sec, ebr, ext_lba, ext_n, &p[ide_mbr::MAX_PARTS + i]);
+            if (p[ide_mbr::MAX_PARTS + i].sectors) n++;
+        }
+    }
+    free(sec);
+    const uint32_t fb = files_base();
+    for (int i = 0; i < 8; i++) {
+        out[i].type = p[i].type;
+        out[i].lba = p[i].lba;
+        out[i].sectors = p[i].sectors;
+        out[i].files = fb && p[i].sectors && p[i].lba == fb;
+    }
+    return n;
+}
+
+bool machine_set_hdf_raw(int part, uint32_t lba, uint32_t len, bool writable) {
+    hdf_close();
+    LBA_t card = 0;
+    bool ok = disk_ioctl(0, GET_SECTOR_COUNT, &card) == RES_OK && card > lba;
+    if (ok) {
+        const uint32_t avail = (uint32_t)(card - lba);
+        if (!len || len > avail) len = avail;
+        if (len > 0xFFFFFE00u / 512) len = 0xFFFFFE00u / 512;    // amiga_disk_t: byte offsets
+        ok = len >= 2;
+    }
+    if (ok) {
+        // Never a writable window over the card's own files.
+        const uint32_t fb = files_base();
+        MachinePart parts[8];
+        bool over = fb >= lba && fb < lba + len;
+        if (!over && machine_sd_parts(parts) > 0)
+            for (const MachinePart &q : parts)
+                if (q.files && q.lba < lba + len && lba < q.lba + q.sectors) over = true;
+        s_raw = true;
+        s_raw_start = lba;
+        s_raw_count = len;
+        s_hdf_ro = !writable || over;
+        char name[32];
+        if (part > 0) snprintf(name, sizeof name, "SD partition %d", part);
+        else snprintf(name, sizeof name, "SD sectors %u+", (unsigned)lba);
+        s_hdf_path = name;
+    }
+    hdf_attach();
+    return ok;
+}
+
 bool machine_apply_kickstart(void) {
     amiga_config_t c;
     memset(&c, 0, sizeof c);
     if (!machine_select_rom(&c)) return false;
     amiga_set_roms(c.rom, c.rom_size, c.ext_rom, c.ext_size);
     amiga_set_machine(c.chipset, c.chip_size, c.slow_size, c.gayle);
+    hdf_attach();
     amiga_reset(true);
     return true;
 }
@@ -724,6 +885,14 @@ std::string machine_rom_label(const std::string &kick, const std::string &file) 
 }
 
 void machine_restore_disks(void) {
+    if (!Config::hdf_raw.empty()) {
+        unsigned mode = 0, part = 0, lba = 0, len = 0;
+        if (sscanf(Config::hdf_raw.c_str(), "%u:%u:%u:%u", &mode, &part, &lba, &len) != 4 || !mode ||
+            !machine_set_hdf_raw((int)part, lba, len, mode == 2))
+            Config::hdf_raw.clear();
+    } else if (!Config::hdf.empty() && !machine_set_hdf(Config::hdf.c_str())) {
+        Config::hdf.clear();
+    }
     if (!Config::df0.empty()) {
         const bool ok = is_m3u(Config::df0)
             ? machine_load_set(Config::df0.c_str(), Config::df0_disk)

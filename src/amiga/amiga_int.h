@@ -233,8 +233,23 @@ void     rtc_reset(void);
 void     gayle_reset(void);
 uint8_t  gayle_read(uint32_t a);                    // $D80000-$DDFFFF
 void     gayle_write(uint32_t a, uint8_t v);
+uint16_t gayle_read16(uint32_t a);                  // the IDE data register a word at a time
+void     gayle_write16(uint32_t a, uint16_t v);
 uint8_t  gayle_id_read(uint32_t a);                 // $DD0000-$DEFFFF
 void     gayle_id_write(void);
+void     gayle_line(void);                          // per line: the IDE interrupt
+
+// ---- the IDE drive behind Gayle (ide.c) ------------------------------------
+void     ide_insert(const amiga_disk_t *d);         // NULL: no drive
+void     ide_reset(void);
+bool     ide_present(void);
+uint8_t  ide_read(int reg);                         // 0-7 task file, 0x406/0x407 control block
+void     ide_write(int reg, uint8_t v);
+uint16_t ide_read_data(void);
+void     ide_write_data(uint16_t v);
+bool     ide_line(void);                            // per line; true while INTRQ is up
+bool     ide_irq(void);
+void     ide_state(st_t *s);
 
 // ---- CIAs (cia.c) ----------------------------------------------------------
 void     cia_reset(void);

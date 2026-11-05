@@ -116,6 +116,8 @@ struct Cfg {
     uint32_t rom_crc = 0, ext_crc = 0;
     int drives = 0;
     bool df0_wp = false;
+    std::string hdf;                        // the A600's hard disk, "" = none
+    std::string hdf_raw;                    // or its SD window (Config::hdf_raw)
     MachineDisks disks;
     uint32_t size[4] = {}, stamp[4] = {};   // the disks' files as they were (stamp: fdate << 16 | ftime)
 };
@@ -136,6 +138,8 @@ static std::string cfgText() {
     snprintf(l, sizeof l, "%08X", (unsigned)ext); kv("ext_crc", l);
     kn("drives", Config::drives);
     kn("df0_wp", Config::df0_wp);
+    kv("hdf", machine_hdf_is_raw() ? "" : machine_hdf());
+    kv("hdf_raw", machine_hdf_is_raw() ? Config::hdf_raw : std::string());
     kv("set", d.set);
     kn("set_index", (unsigned)d.set_index);
     for (int i = 0; i < 4; i++) {
@@ -176,6 +180,8 @@ static void cfgParse(const std::string& t, Cfg& c) {
         else if (k == "drives") c.drives = (int)n;
         else if (k == "df0_wp") c.df0_wp = n != 0;
         else if (k == "set") c.disks.set = v;
+        else if (k == "hdf") c.hdf = v;
+        else if (k == "hdf_raw") c.hdf_raw = v;
         else if (k == "set_index") c.disks.set_index = (int)n;
         else if (k.size() >= 3 && k.compare(0, 2, "df") == 0 && k[2] >= '0' && k[2] <= '3') {
             const int d = k[2] - '0';
@@ -311,6 +317,8 @@ void describe(const std::string& path, char* out, unsigned size) {
         for (int i = 0; i < 4; i++)
             if (!c->disks.path[i].empty())
                 add(" DF%d       : %s%s\n", i, baseName(c->disks.path[i]), c->disks.wp[i] ? " (protected)" : "");
+        if (!c->hdf.empty())
+            add(" Hard disk : %s\n", baseName(c->hdf));
         FILINFO fi;
         if (f_stat(path.c_str(), &fi) == FR_OK)
             add(" Saved     : %04u-%02u-%02u %02u:%02u\n", (fi.fdate >> 9) + 1980u, (fi.fdate >> 5) & 15u,
@@ -355,6 +363,17 @@ bool load(const std::string& path, std::string& err, std::string& warn) {
 
     std::string missing, changed;
     machine_put_disks(c->disks, missing);
+    // The hard disk before the state: the core's IDE block is the drive's.
+    unsigned rm = 0, rp = 0, rl = 0, rn = 0;
+    if (!c->hdf_raw.empty() && sscanf(c->hdf_raw.c_str(), "%u:%u:%u:%u", &rm, &rp, &rl, &rn) == 4 && rm) {
+        if (!machine_set_hdf_raw((int)rp, rl, rn, rm == 2)) missing += (missing.empty() ? "" : ", ") + std::string("the SD partition");
+        Config::hdf_raw = machine_hdf_is_raw() ? c->hdf_raw : std::string();
+        Config::hdf.clear();
+    } else {
+        if (!machine_set_hdf(c->hdf.c_str())) missing += (missing.empty() ? "" : ", ") + std::string(baseName(c->hdf));
+        Config::hdf = machine_hdf();
+        Config::hdf_raw.clear();
+    }
     for (int i = 0; i < 4; i++) {
         const std::string& p = c->disks.path[i];
         FILINFO fi;

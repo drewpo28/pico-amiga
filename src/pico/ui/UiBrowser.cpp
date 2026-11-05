@@ -62,6 +62,7 @@ static BrowseTypeState s_types[BROWSE_COUNT] = {
     { ".rom,.bin,.a500,.a600,.a1000,.cdtv" },    // BROWSE_ROM (.A500 etc.: PUAE's names)
     { "" },                                      // BROWSE_CFG
     { ".pas" },                                  // BROWSE_SNAP (snapshot.cpp)
+    { ".hdf" },                                  // BROWSE_HDF (the A600's hard disk)
 };
 
 static string lcExt(const string& name) {

@@ -125,6 +125,7 @@ static uint16_t io_read16(uint32_t a, int io) {
     case B_RTC:
         return rtc_read((int)(a >> 2) & 15);
     case B_GAYLE:
+        return gayle_read16(a);
     case B_GAYLE_ID:                // a byte at a time, the high one first, as WinUAE
         return (uint16_t)((io_read8(a, io) << 8) | io_read8(a + 1, io));
     default:
@@ -169,6 +170,8 @@ static void io_write16(uint32_t a, uint16_t v, int io) {
         rtc_write((int)(a >> 2) & 15, (uint8_t)v);
         break;
     case B_GAYLE:
+        gayle_write16(a, v);
+        break;
     case B_GAYLE_ID:
         io_write8(a, (uint8_t)(v >> 8), io);
         io_write8(a + 1, (uint8_t)v, io);

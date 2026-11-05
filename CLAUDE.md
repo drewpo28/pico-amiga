@@ -171,6 +171,15 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   $C00000-$D7FFFF, no clock. An empty IDE port reads $7F in the status register
   and $FF elsewhere (WinUAE's "IDE killer"): KS 2.05 writes $12 to the cylinder
   register, reads $FF back and boots at once instead of waiting ~30 s.
+- **The A600's IDE (ide.c) hands sector bytes over in order, IDENTIFY as a PC
+  holds it** (little-endian words, strings' first character in the high byte -
+  WinUAE's pw/ps): Gayle's wiring makes the 68000 see IDENTIFY's numbers
+  byte-swapped and scsi.device swaps them back. Built big-endian, KS 3.1 read 16
+  heads as $1000, sent INITIALIZE DEVICE PARAMETERS with select $FF (the slave)
+  and hung. A bare-partition HDF gets a virtual RDB (WinUAE's: 32 blocks per
+  track, 1 surface, 2 reserved, the image from block 32). The hard disk can also be
+  an SD partition (pico-speccy's raw IDE window, ide_mbr.h; machine.cpp), never
+  writable over the card's own FAT volume; the PC firmware takes `--sd card.img`.
 - **Every connected drive costs Kickstart memory**: Dune II (1 MB) reports a
   "Memory Allocation Error" with 4 drives (Floppy drives Auto on its 5-disk
   set) and runs with 1 or 2; the message is drawn while its palette is black.
