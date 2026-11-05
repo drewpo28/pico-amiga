@@ -289,9 +289,14 @@ void amiga_cpu_reset_instr(void);
 #if defined(AMIGA_HOT) && !defined(M68KI_FIXED_EC020)
 #define M68KI_HOT AMIGA_HOT
 #else
-#define M68KI_HOT                   /* the 68EC020's: only the list's first ones */
+#define M68KI_HOT                   /* the 68EC020's: tools/musashi_hot_020.txt */
 #endif
-/* The hottest (gen_musashi.py's HOT_020): SRAM in both handler sets. */
+#if defined(AMIGA_HOT) && defined(M68KI_FIXED_EC020)
+#define M68KI_HOT_020 AMIGA_HOT
+#else
+#define M68KI_HOT_020
+#endif
+/* In both lists: SRAM in both handler sets. */
 #ifdef AMIGA_HOT
 #define M68KI_HOT2 AMIGA_HOT
 #else

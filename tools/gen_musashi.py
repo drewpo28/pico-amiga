@@ -35,7 +35,6 @@ import subprocess
 import sys
 import tempfile
 
-HOT_020 = 128   # tools/musashi_hot.txt's first ones, in SRAM for the 68EC020 too
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MUS = os.path.join(ROOT, "external", "musashi")
 OUT = os.path.join(MUS, "gen")
@@ -142,13 +141,21 @@ def main():
         h[0] = 0                    # illegal: m68k_execute() uses the opcode's cycle table
         return [v or 0 for v in h]
     hcyc, hcyc20 = per_handler(1), per_handler(2)
-    # The first HOT_020 of them are in SRAM for the 68EC020 too (M68KI_HOT2):
-    # SRAM is short (PICO_DV's heap), and the top of the list is most of the time.
-    hotset, hot2 = set(hot), set(hot[:HOT_020])
+    # The 68EC020's own list (tools/musashi_hot_020.txt): in SRAM for both CPUs
+    # (M68KI_HOT2), the 68000 only (M68KI_HOT) or the 68EC020 only (M68KI_HOT_020).
+    hot020 = [l.strip() for l in open(os.path.join(ROOT, "tools", "musashi_hot_020.txt"))
+              if l.strip() and not l.startswith("#")]
+    missing = [name for name in hot020 if name not in referenced]
+    if missing:
+        sys.exit("musashi_hot_020.txt names unknown handlers: " + " ".join(missing))
+    hotset, hot2 = set(hot), set(hot020)
+    def mark(name):
+        if name in hotset and name in hot2: return "M68KI_HOT2 "
+        if name in hotset: return "M68KI_HOT "
+        if name in hot2: return "M68KI_HOT_020 "
+        return ""
     text = re.sub(r"^static void (m68k_op_\w+)\(void\)$",
-                  lambda m: ("M68KI_HOT2 static void %s(void)" if m.group(1) in hot2
-                             else "M68KI_HOT static void %s(void)" if m.group(1) in hotset
-                             else "static void %s(void)") % m.group(1),
+                  lambda m: "%sstatic void %s(void)" % (mark(m.group(1)), m.group(1)),
                   text, flags=re.M)
 
     # Fence the stock RAM tables + builder off the const build.
