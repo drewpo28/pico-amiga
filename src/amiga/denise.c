@@ -103,6 +103,10 @@ static uint16_t dma_sprpos[8], dma_sprctl[8], spr_vstart[8], spr_vstop[8];
 static uint8_t  spr_dma[8];
 enum { SPR_FETCH_CTL, SPR_WAIT, SPR_DATA };
 static uint16_t sprpos[8], sprctl[8], sprdata[8], sprdatb[8];
+// AGA: FMODE's SPR32 / SPR64 make a sprite 32 or 64 pixels wide: words 1-3 of its
+// DATA / DATB (word 0 is sprdata / sprdatb), and how many it has (0 = 1).
+static uint16_t sprdx[8][3], sprdbx[8][3];
+static uint8_t  spr_nw[8];
 static bool     spr_armed[8];
 static bool     spl_dirty;                  // spl[] is stale: compose before the next pixels
 
@@ -803,28 +807,42 @@ AMIGA_HOT static void sprite_dma(void) {
     for (int s = 0; s < 8; s++) {
         if (spr_dma[s] == SPR_WAIT && vpos == spr_vstart[s]) spr_dma[s] = SPR_DATA;
         if (spr_dma[s] == SPR_DATA && vpos == spr_vstop[s]) spr_dma[s] = SPR_FETCH_CTL;
+        // AGA's SPR32 / SPR64 (FMODE bits 2-3): 2 or 4 words at a time, aligned; the
+        // control words are the first of two such fetches, the data a DATA run then
+        // a DATB run each line (WinUAE).
+        const int fm = A.aga ? (dma_st.fmode >> 2) & 3 : 0;
+        const unsigned nw = fm == 0 ? 1u : fm == 3 ? 4u : 2u;
+        if (nw > 1) sprpt[s] &= ~(2u * nw - 1);
         if (spr_dma[s] == SPR_FETCH_CTL) {
             dma_sprpos[s] = chip_rw(sprpt[s]);
-            dma_sprctl[s] = chip_rw(sprpt[s] + 2);
-            sprpt[s] += 4;
+            dma_sprctl[s] = chip_rw(sprpt[s] + 2 * nw);
+            sprpt[s] += 4 * nw;
             spr_decode(s);
             push((uint16_t)(EV_SPR + s), dma_sprpos[s], 0, dma_sprctl[s]);
             spr_dma[s] = vpos == spr_vstart[s] ? SPR_DATA : SPR_WAIT;
             if (spr_dma[s] != SPR_DATA) continue;
         }
         if (spr_dma[s] == SPR_DATA) {
-            const uint16_t a = chip_rw(sprpt[s]), b = chip_rw(sprpt[s] + 2);
-            sprpt[s] += 4;
-            push((uint16_t)(EV_SPR + 8 + s), a, 0, b);
+            for (unsigned j = 0; j < nw; j++) {                  // h: the word, and how many
+                const uint16_t a = chip_rw(sprpt[s] + 2 * j), b = chip_rw(sprpt[s] + 2 * (nw + j));
+                push((uint16_t)(EV_SPR + 8 + s), a, (uint16_t)(j | nw << 4), b);
+            }
+            sprpt[s] += 4 * nw;
         }
     }
 }
 
-// Pixel x of a sprite starting at x0 (data a, b): its 2-bit colour, 0 outside.
-static inline int spr_px(int x, int x0, uint16_t a, uint16_t b) {
-    const unsigned i = (unsigned)(x - x0);
-    if (i > 15) return 0;
-    return ((a >> (15 - i)) & 1) | (((b >> (15 - i)) & 1) << 1);
+// Pixel x of sprite s starting at x0: its 2-bit colour, 0 outside (or unarmed).
+// A sprite is 16 x spr_nw pixels of SPRES's size (BPLCON3 bits 6-7, AGA): lowres
+// ones one spl[] entry each, hires / super-hires ones 2 / 4 to an entry (the
+// entry shows the first; spl[] is lowres).
+static inline int spr_px(int s, int x, int x0, int step) {
+    if (!spr_armed[s]) return 0;
+    const unsigned i = (unsigned)(x - x0) * (unsigned)step, w = 16u * (spr_nw[s] ? spr_nw[s] : 1u);
+    if (i >= w) return 0;
+    const unsigned k = i >> 4, bit = 15 - (i & 15);
+    const uint16_t a = k ? sprdx[s][k - 1] : sprdata[s], b = k ? sprdbx[s][k - 1] : sprdatb[s];
+    return ((a >> bit) & 1) | (((b >> bit) & 1) << 1);
 }
 
 // Output stage: spl[] from the sprites as they are now.
@@ -835,20 +853,21 @@ AMIGA_HOT static void sprite_compose(void) {
         int e = 2 * pair, o = e + 1;
         if (!spr_armed[e] && !spr_armed[o]) continue;
         bool att = (sprctl[o] & 0x80) != 0;
+        const int sres = A.aga ? (bplcon3 >> 6) & 3 : 0;
+        const int step = sres == 2 ? 2 : sres == 3 ? 4 : 1;
         int lo = SPL_SIZE, hi = 0;
         for (int s = e; s <= o; s++) if (spr_armed[s]) {
             int a = spr_x(s);
+            const int w = 16 * (spr_nw[s] ? spr_nw[s] : 1) / step;
             if (a < lo) lo = a;
-            if (a + 16 > hi) hi = a + 16;
+            if (a + w > hi) hi = a + w;
         }
         if (lo < 0) lo = 0;
         if (hi > SPL_SIZE) hi = SPL_SIZE;
-        // An unarmed sprite of the pair draws nothing: data 0.
+        // An unarmed sprite of the pair draws nothing.
         const int xe = spr_x(e), xo = spr_x(o);
-        const uint16_t ea = spr_armed[e] ? sprdata[e] : 0, eb = spr_armed[e] ? sprdatb[e] : 0;
-        const uint16_t oa = spr_armed[o] ? sprdata[o] : 0, ob = spr_armed[o] ? sprdatb[o] : 0;
         for (int x = lo; x < hi; x++) {
-            int ve = spr_px(x, xe, ea, eb), vo = spr_px(x, xo, oa, ob), ci;
+            int ve = spr_px(e, x, xe, step), vo = spr_px(o, x, xo, step), ci;
             if (att) ci = (vo << 2) | ve;
             else if (ve) ci = 4 * pair + ve;
             else if (vo) ci = 4 * pair + vo;
@@ -990,7 +1009,7 @@ AMIGA_HOT static void c_apply(uint32_t reg, uint16_t v, uint16_t x) {
         switch (reg & 6) {
         case 0: sprpos[s] = v; break;
         case 2: sprctl[s] = v; spr_armed[s] = false; break;
-        case 4: sprdata[s] = v; spr_armed[s] = true; break;
+        case 4: sprdata[s] = v; spr_nw[s] = 1; spr_armed[s] = true; break;
         default: sprdatb[s] = v; break;
         }
         spl_dirty = true;
@@ -1027,6 +1046,7 @@ static void c_reset(void) {
     memset(sprpos, 0, sizeof sprpos); memset(sprctl, 0, sizeof sprctl);
     memset(sprdata, 0, sizeof sprdata); memset(sprdatb, 0, sizeof sprdatb);
     memset(spr_armed, 0, sizeof spr_armed);
+    memset(sprdx, 0, sizeof sprdx); memset(sprdbx, 0, sizeof sprdbx); memset(spr_nw, 0, sizeof spr_nw);
     memset(spl, 0, sizeof spl);
     memset(pf_ring, 0, sizeof pf_ring);
     pf_f = pf_o = pf_ring[0];
@@ -1124,7 +1144,11 @@ AMIGA_HOT static bool o_step(int step) {
     } else {                                                  // EV_SPR: a sprite's DMA
         const int s = (e->kind - EV_SPR) & 7;
         if (e->kind < EV_SPR + 8) { sprpos[s] = e->v; sprctl[s] = e->x; spr_armed[s] = false; }
-        else                      { sprdata[s] = e->v; sprdatb[s] = e->x; spr_armed[s] = true; }
+        else {
+            const unsigned j = e->h & 15;                     // AGA: word j of e->h >> 4
+            if (j == 0) { sprdata[s] = e->v; sprdatb[s] = e->x; spr_nw[s] = (uint8_t)(e->h >> 4); spr_armed[s] = true; }
+            else if (j < 4) { sprdx[s][j - 1] = e->v; sprdbx[s][j - 1] = e->x; }
+        }
         spl_dirty = true;
     }
     o_busy = false;

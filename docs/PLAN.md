@@ -291,8 +291,12 @@ Step 3 - Alice: AGA bitplane and sprite DMA (host):
 - [x] 8 bitplanes: bplpt[8], BPLCON0 BPU3 (bit 4), 7 and 8 planes in every
       resolution. ws[] (16 KB) holds fewer lines of lead at 8 planes x 4x: check
       the 40-80 line lead still holds, grow the ring if not (SRAM)
-- [ ] Sprites: FMODE SPR32/SPR64 (16 / 32 / 64 pixels wide, 2 or 4 words per
+- [x] Sprites: FMODE SPR32/SPR64 (16 / 32 / 64 pixels wide, 2 or 4 words per
       fetch, control words in the wide format), SSCAN2 (sprite scan doubling)
+      [done but SSCAN2; SPRES hires / super-hires sprites show every 2nd / 4th pixel
+      (spl[] is lowres). A-Type (AGA PD): its 64-pixel A-TYPE logo right; the panel's
+      blinking "PUSH RUN BUTTON" shows a second, grey copy of the text and its
+      bottom-left icons look scrambled - unexplained, no reference screen yet]
 - [ ] BSCAN2 and the second modulo pair (BPL1MOD/BPL2MOD per line parity):
       productivity / scan-doubled modes, low priority for PAL games
 
