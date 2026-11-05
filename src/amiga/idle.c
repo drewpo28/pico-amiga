@@ -85,16 +85,16 @@ static bool bcc_back(uint32_t b, uint32_t t) {
 
 // dbra Dn,* at the PC: as many 10-cycle passes as fit, off Dn.
 AMIGA_HOT static bool dbra_skip(unsigned reg, uint64_t target) {
-    const unsigned mul = A.load_cpu > 1 ? A.load_cpu : 1;
+    const unsigned mul = A.cpu_mul > 1 ? A.cpu_mul : 1;
     uint *dn = &m68ki_cpu.dar[reg];
     const uint32_t cnt = *dn & 0xFFFF;                              // passes before it falls through
     const uint64_t avail = (target - A.cpu_cyc) * mul / 10;
     const uint32_t k = cnt < avail ? cnt : (uint32_t)avail;
     if (k) {
         *dn = (*dn & 0xFFFF0000u) | ((cnt - k) & 0xFFFF);
-        const uint32_t c = k * 10 + A.load_rem;
+        const uint32_t c = k * 10 + A.cpu_rem;
         A.cpu_cyc += c / mul;
-        A.load_rem = (uint8_t)(c % mul);
+        A.cpu_rem = (uint8_t)(c % mul);
         A.idle_cycles += c / mul;
     }
     return A.cpu_cyc >= target;

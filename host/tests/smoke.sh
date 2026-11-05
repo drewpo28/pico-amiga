@@ -36,6 +36,11 @@ $BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --slow --adf "$OUT/bo
      --frames 1200 --shot 1200:"$OUT/aros-boot.png" > "$OUT/aros.log" 2>&1
 check "aros bootblock" "BOOTBLOCK OK" "$OUT/aros.log"
 
+# 3a. The same on a 68EC020 (Musashi's second handler set, amiga_set_cpu).
+$BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --slow --cpu020 --adf "$OUT/boot.adf" \
+     --frames 1200 > "$OUT/aros020.log" 2>&1
+check "aros bootblock on a 68EC020" "BOOTBLOCK OK" "$OUT/aros020.log"
+
 # 3b. Snapshots: saved mid-boot (disk DMA running), loaded, the same picture 500
 #     frames on as without the round trip.
 $BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --slow --adf "$OUT/boot.adf" \

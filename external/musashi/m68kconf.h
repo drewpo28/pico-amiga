@@ -69,7 +69,7 @@
 #endif
 
 #ifndef M68K_EMULATE_EC020
-#define M68K_EMULATE_EC020          M68K_OPT_OFF  /* PICO-AMIGA: 68000 only */
+#define M68K_EMULATE_EC020          M68K_OPT_ON   /* PICO-AMIGA: the A1200's 68EC020 */
 #endif
 
 #ifndef M68K_EMULATE_020
@@ -286,10 +286,10 @@ void amiga_cpu_reset_instr(void);
 
 /* PICO-AMIGA: placement of the hot handlers (tools/musashi_hot.txt) and of
  * m68k_execute(): the firmware's AMIGA_HOT puts them in SRAM. */
-#ifdef AMIGA_HOT
+#if defined(AMIGA_HOT) && !defined(M68KI_FIXED_EC020)
 #define M68KI_HOT AMIGA_HOT
 #else
-#define M68KI_HOT
+#define M68KI_HOT                   /* the 68EC020's handlers: flash for now */
 #endif
 
 #endif /* M68K_COMPILE_FOR_MAME */

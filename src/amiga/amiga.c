@@ -25,7 +25,7 @@ static uint32_t prof_frames;
 AMIGA_HOT uint64_t amiga_now(void) {
     if (!A.in_cpu) return A.cpu_cyc;
     const int run = m68k_cycles_run();
-    return A.cpu_cyc + (uint64_t)(A.load_cpu > 1 ? run / A.load_cpu : run);
+    return A.cpu_cyc + (uint64_t)(A.cpu_mul > 1 ? run / A.cpu_mul : run);
 }
 
 AMIGA_HOT uint16_t amiga_hpos(void) {
@@ -36,7 +36,7 @@ AMIGA_HOT uint16_t amiga_hpos(void) {
 }
 
 AMIGA_HOT static void cpu_until(uint64_t target) {
-    const unsigned mul = A.load_cpu > 1 ? A.load_cpu : 1;
+    const unsigned mul = A.cpu_mul > 1 ? A.cpu_mul : 1;
     if (idle_skip(target)) return;                                 // a busy-wait loop (idle.c)
     while (A.cpu_cyc < target) {
         A.in_cpu = true;
@@ -44,16 +44,21 @@ AMIGA_HOT static void cpu_until(uint64_t target) {
         A.in_cpu = false;
         if (used <= 0) { A.cpu_cyc = target; break; }
         if (mul == 1) { A.cpu_cyc += (uint64_t)used; continue; }
-        const unsigned u = (unsigned)used + A.load_rem;           // load test: mul cycles per one
+        const unsigned u = (unsigned)used + A.cpu_rem;           // load test: mul cycles per one
         A.cpu_cyc += u / mul;
-        A.load_rem = (uint8_t)(u % mul);
+        A.cpu_rem = (uint8_t)(u % mul);
     }
 }
 
+static void cpu_mul_update(void) {
+    A.cpu_mul = (uint8_t)((A.cpu_clock ? A.cpu_clock : 1) * (A.load_mul ? A.load_mul : 1));
+    A.cpu_rem = 0;
+}
+
 void amiga_set_load_test(int cpu_mul, bool extra_planes) {
-    A.load_cpu = (uint8_t)(cpu_mul < 1 ? 1 : cpu_mul > 3 ? 3 : cpu_mul);
+    A.load_mul = (uint8_t)(cpu_mul < 1 ? 1 : cpu_mul > 3 ? 3 : cpu_mul);
     A.load_planes = extra_planes;
-    A.load_rem = 0;
+    cpu_mul_update();
 }
 
 // The 68000 RESET instruction asserts the reset line for the peripherals.
@@ -119,6 +124,8 @@ void amiga_set_roms(const uint8_t *rom, uint32_t rom_size, const uint8_t *ext, u
     A.cfg.ext_rom = ext; A.cfg.ext_size = ext_size;
 }
 
+void amiga_set_cpu(int cpu) { A.cfg.cpu = (uint8_t)cpu; }
+
 void amiga_set_machine(int chipset, uint32_t chip_size, uint32_t slow_size, uint8_t gayle) {
     A.cfg.chipset = (uint8_t)chipset;
     A.cfg.gayle = gayle;
@@ -128,6 +135,11 @@ void amiga_set_machine(int chipset, uint32_t chip_size, uint32_t slow_size, uint
 
 void amiga_reset(bool hard) {
     A.ecs = A.cfg.chipset == AMIGA_ECS;
+    // The CPU: a 68000 at 7 MHz, or a 68EC020 at 14 MHz (the A1200's: twice the
+    // cycles per colour clock).  Musashi's handler set follows (m68k_set_cpu_type).
+    m68k_set_cpu_type(A.cfg.cpu == AMIGA_CPU_EC020 ? M68K_CPU_TYPE_68EC020 : M68K_CPU_TYPE_68000);
+    A.cpu_clock = A.cfg.cpu == AMIGA_CPU_EC020 ? 2 : 1;
+    cpu_mul_update();
     A.chip_mask = A.cfg.chip_size - 1;
     if (hard) {
         memset(A.cfg.chip_ram, 0, A.cfg.chip_size);
@@ -156,7 +168,6 @@ void amiga_init(const amiga_config_t *cfg) {
     memset(&A, 0, sizeof A);
     A.cfg = *cfg;
     m68k_init();
-    m68k_set_cpu_type(M68K_CPU_TYPE_68000);
     amiga_reset(true);
 }
 

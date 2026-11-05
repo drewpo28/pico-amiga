@@ -327,6 +327,16 @@ typedef uint32 uint64;
 
 /* Access the CPU registers */
 #define CPU_TYPE         m68ki_cpu.cpu_type
+/* PICO-AMIGA: gen/m68kops.c is compiled once per CPU type (tools/gen_musashi.py)
+ * with that type a constant, so the handlers' CPU tests fold away: the 68000's
+ * set has no 68020 code in it and no run-time tests. */
+#if defined(M68KI_FIXED_EC020)
+#undef  CPU_TYPE
+#define CPU_TYPE         CPU_TYPE_EC020
+#elif defined(M68KI_FIXED_000)
+#undef  CPU_TYPE
+#define CPU_TYPE         CPU_TYPE_000
+#endif
 
 #define REG_DA           m68ki_cpu.dar /* easy access to data and address regs */
 #define REG_DA_SAVE           m68ki_cpu.dar_save
@@ -445,7 +455,11 @@ typedef uint32 uint64;
 #else
 	#define CPU_TYPE_IS_010(A)         0
 	#define CPU_TYPE_IS_010_PLUS(A)    CPU_TYPE_IS_EC020_PLUS(A)
-	#define CPU_TYPE_IS_010_LESS(A)    CPU_TYPE_IS_EC020_LESS(A)
+	/* PICO-AMIGA: was CPU_TYPE_IS_EC020_LESS(A), which counts the 68EC020 in: with
+	 * the 68010 off and the EC020 on, the EC020 then decoded (d8,An,Xn) with the
+	 * 68000's brief extension only (no scale, no full format - Musashi's 68040
+	 * tests divs_long / divu_long install a vector with (a0,d0.w*4)). */
+	#define CPU_TYPE_IS_010_LESS(A)    ((A) & (CPU_TYPE_000 | CPU_TYPE_008 | CPU_TYPE_010))
 #endif
 
 #if M68K_EMULATE_020 || M68K_EMULATE_EC020

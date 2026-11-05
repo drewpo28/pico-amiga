@@ -64,9 +64,12 @@ typedef struct {
     amiga_config_t cfg;
     uint32_t chip_mask;        // chip_size - 1
     bool     ecs;              // cfg.chipset == AMIGA_ECS
-    uint8_t  load_cpu;         // amiga_set_load_test: 68000 work per cycle (1, 2 or 3)
+    uint8_t  cpu_mul;          // CPU cycles per 7 MHz cycle: the clock (2 for the 68EC020's
+                               // 14 MHz) times the A1200 load test's (amiga_set_load_test)
+    uint8_t  cpu_clock;        // amiga_set_cpu: 1 (7 MHz) or 2 (14 MHz); 0 = 1
+    uint8_t  load_mul;         // amiga_set_load_test: 1, 2 or 3; 0 = 1
     bool     load_planes;      // ...and two more bitplanes read and spread (8 for 6)
-    uint8_t  load_rem;         // CPU cycles left over from the last slice (load_cpu 2)
+    uint8_t  cpu_rem;          // CPU cycles left over from the last slice (cpu_mul > 1)
     uint64_t idle_cycles;      // CPU cycles idle.c did not run (busy-wait loops)
 
     // Beam / time. One colour clock = 2 CPU cycles.

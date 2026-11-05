@@ -93,7 +93,9 @@ bool amiga_render_pump(void);
 // DMA pointers, large blits, DIWHIGH, BEAMCON0 stored) and Denise 8373
 // (DENISEID, super-hires, BPLCON3's border blank).
 enum { AMIGA_OCS = 0, AMIGA_ECS = 1 };
-#define AMIGA_GAYLE_A600 0xD0    // Gayle's ID (the AGA one, the A1200's, is $D1)
+#define AMIGA_GAYLE_A600 0xD0
+// CPUs (amiga_config_t.cpu): the 68000 at 7.09 MHz, or the A1200's 68EC020 at 14.19 MHz.
+enum { AMIGA_CPU_68000 = 0, AMIGA_CPU_EC020 = 1 };    // Gayle's ID (the AGA one, the A1200's, is $D1)
 #define AMIGA_TRACK_WORDS 6334   // a DD track at 300 rpm / 500 kbit/s (floppy.c)
 
 typedef struct {
@@ -106,6 +108,7 @@ typedef struct {
     // custom-register mirror at $C00000-$D7FFFF and no battery clock (rtc_time
     // is ignored), as WinUAE maps them.
     uint8_t   gayle;
+    uint8_t   cpu;           // AMIGA_CPU_68000 / AMIGA_CPU_EC020 (amiga_set_cpu)
     const uint8_t *rom;      uint32_t rom_size;    // 256 KB (mirrored) or 512 KB at $F80000
     const uint8_t *ext_rom;  uint32_t ext_size;    // 0 or 512 KB at $E00000 (AROS ext)
 
@@ -168,6 +171,9 @@ void amiga_set_drives(int n);
 // sector at a time through the callbacks (write NULL: writes fail); NULL = no
 // drive.  Kickstart looks for it at reset, so a change wants one (hard).
 void amiga_set_hdf(const amiga_disk_t *disk);
+// The CPU (AMIGA_CPU_*): takes effect at the next amiga_reset(), a hard one.
+void amiga_set_cpu(int cpu);
+
 // The geometry the drive reports in IDENTIFY (0s: no drive).
 void amiga_hdf_geometry(uint16_t *cyls, uint8_t *heads, uint8_t *sectors);
 

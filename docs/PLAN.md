@@ -239,22 +239,24 @@ Step 0 - is there room for it (hw, before anything else):
 
 Step 1 - the CPU: 68EC020 (host):
 
-- [ ] m68kconf.h: M68K_EMULATE_EC020 on (020/040 stay off); re-run
+- [x] m68kconf.h: M68K_EMULATE_EC020 on (020/040 stay off); re-run
       tools/gen_musashi.py. New handlers: bit fields, 32-bit MULx/DIVx.L,
       CAS/CHK2/CMP2, PACK/UNPK, EXTB, scaled index and memory-indirect EA
       modes, MOVEC (VBR, CACR, CAAR, MSP/ISP), RTD, TRAPcc, BKPT
-- [ ] The 68000 machines must not get slower: check that the runtime
-      CPU_TYPE_IS_* tests stay out of the hot handlers (generate two handler
-      sets if they do not), and that A500 screens and smoke stay unchanged
+- [x] The 68000 machines must not get slower: two handler sets (gen/m68kops.c,
+      gen/m68kops_020.c) with CPU_TYPE a constant each, const in flash, the running
+      one copied into the SRAM table; A500 screens byte-identical, smoke unchanged,
+      SRAM +1.9 KB (m68k_execute's 020 exception paths; read_imm_32 now inlined)
 - [ ] tools/musashi_hot.txt: a second profile from an AGA game; the SRAM set
       stays at ~17 KB (PICO_DV's heap is the limit), so the two lists share it
 - [ ] Per-handler cycles: Musashi's 020 table; cycles scale x2 against the
       colour clock (the scheduler counts CPU cycles per line). The instruction
       cache (CACR) is not modelled beyond storing CACR; chip-bus contention
       stays unmodelled as on the A500 (section 3)
-- [ ] Re-check with Musashi's test suite built for 68020 (test/mc68020, if the
-      tree has it) and state.c: the new registers (VBR, CACR, CAAR, MSP) at the
-      end of the CPU block
+- [x] Musashi's test/mc68040 suite (020-level instructions) on the 68EC020: 18/18
+      after the CPU_TYPE_IS_010_LESS fix; mc68000 59/60 as before. KS 3.1 + WB 3.1
+      boot on --cpu020, AttnFlags $0003; smoke runs AROS on it. state.c: CACR /
+      CAAR at the end of the CPU block, the CPU in MACH
 
 Step 2 - the machine (host):
 

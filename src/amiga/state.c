@@ -105,8 +105,10 @@ static void mach_state(st_t *s) {
     st_u32(s, &rom); st_u32(s, &ext);
     uint8_t gayle = A.cfg.gayle;            // at the end: older snapshots read 0 (no Gayle)
     st_u8(s, &gayle);
+    uint8_t cpu = A.cfg.cpu;                // after it: older snapshots read 0 (a 68000)
+    st_u8(s, &cpu);
     if (s->mode == ST_LOAD &&
-        (ver != STATE_VERSION || chipset != A.cfg.chipset || gayle != A.cfg.gayle ||
+        (ver != STATE_VERSION || chipset != A.cfg.chipset || gayle != A.cfg.gayle || cpu != A.cfg.cpu ||
          chip != A.cfg.chip_size ||
          slow != (A.cfg.slow_ram ? A.cfg.slow_size : 0) || rom != rom_now || ext != ext_now))
         s->ok = false;
@@ -135,6 +137,7 @@ static void cpu_state(st_t *s) {
     st_reg(s, &c->instr_mode); st_reg(s, &c->run_mode);
     st_reg(s, &c->reset_cycles);
     st_reg(s, &c->virq_state); st_reg(s, &c->nmi_pending);
+    st_reg(s, &c->cacr); st_reg(s, &c->caar);                   // the 68EC020's (at the end)
 }
 
 static void chip_state(st_t *s) { st_raw(s, A.cfg.chip_ram, A.cfg.chip_size); }

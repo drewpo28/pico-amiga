@@ -98,9 +98,20 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   `PICO-AMIGA:` (m68kconf.h). Re-run the generator after touching m68k_in.c or
   m68kconf.h or tools/musashi_hot.txt (the 250 hottest handlers, placed in
   SRAM; the generator also orders m68ki_handlers[] by it and emits per-handler
-  cycles, which m68k_execute() uses instead of the 64 KB opcode table). To re-check the CPU: build Musashi's test/test_driver.c against
-  this tree with the CPU type patched to 68000 and run test/mc68000/*.bin
-  (59/60 pass; move.bin fails the same way on stock Musashi in 68000 mode).
+  cycles, which m68k_execute() uses instead of the 64 KB opcode table). The
+  handlers are compiled twice, gen/m68kops.c for the 68000 and gen/m68kops_020.c
+  for the 68EC020 (A1200), each with CPU_TYPE a constant (m68kcpu.h), so neither
+  tests the CPU type at run time; both sets and their cycles are const (flash),
+  m68k_set_cpu_type() copies the running one into the SRAM m68ki_handlers[] (the
+  index table is shared); only the 68000 set has SRAM handlers so far.
+  `amiga_set_cpu()` / the bench's `--cpu020` pick it, at 14 MHz (A.cpu_mul 2). To
+  re-check the CPU: build Musashi's test/test_driver.c (and gen/m68kops_020.c,
+  `void amiga_cpu_reset_instr(void) {}`) against this tree with the CPU type
+  patched to 68000 and run test/mc68000/*.bin (59/60 pass; move.bin fails the
+  same way on stock Musashi in 68000 mode), patched to 68EC020 and run
+  test/mc68040/*.bin (18/18: they test the 020 instructions). A Musashi config
+  bug made the EC020 decode (d8,An,Xn) as a 68000 (CPU_TYPE_IS_010_LESS counted
+  it in with the 68010 off; fixed in m68kcpu.h).
 - Releases (pico-speccy's scheme): `./build_all.sh` (MURM MURM2 PICO_PC PICO_DV
   ZERO2, Release, CPU_MHZ 252 = a fresh card's clock, build-all/<BOARD>, UF2s to firmware/),
   `./check-release.sh` (heap = __HeapLimit - end per image, tmds_test, smoke),

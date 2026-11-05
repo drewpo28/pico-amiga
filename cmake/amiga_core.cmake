@@ -18,6 +18,7 @@ set(AMIGA_CORE_SRC
     ${ROOT}/src/amiga/state.c
     ${ROOT}/external/musashi/m68kcpu.c
     ${ROOT}/external/musashi/gen/m68kops.c
+    ${ROOT}/external/musashi/gen/m68kops_020.c
     ${ROOT}/external/musashi/softfloat/softfloat.c
 )
 add_library(amiga_core STATIC ${AMIGA_CORE_SRC})
@@ -30,6 +31,7 @@ target_include_directories(amiga_core PUBLIC
 set_source_files_properties(
     ${ROOT}/external/musashi/m68kcpu.c
     ${ROOT}/external/musashi/gen/m68kops.c
+    ${ROOT}/external/musashi/gen/m68kops_020.c
     ${ROOT}/external/musashi/softfloat/softfloat.c
     PROPERTIES COMPILE_OPTIONS "-w")
 target_compile_options(amiga_core PRIVATE -O2 -Wall -Wextra -Wno-unused-parameter)

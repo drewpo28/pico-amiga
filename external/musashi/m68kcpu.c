@@ -41,6 +41,7 @@
 extern void m68040_fpu_op0(void);
 extern void m68040_fpu_op1(void);
 extern void m68881_mmu_ops(void);
+#include <string.h>
 #include "m68kops.h"
 #include "m68kcpu.h"
 
@@ -52,11 +53,15 @@ extern void m68881_mmu_ops(void);
  * The handler table and the per-handler cycles are small and in RAM: the main
  * loop takes the cycles from the handler, not from the 64 KB opcode table. */
 #if M68K_CONST_TABLES
-extern const unsigned char m68ki_cycles_000[0x10000];
+extern const unsigned char m68ki_cycles_000[0x10000], m68ki_cycles_020[0x10000];
 extern const unsigned short m68ki_handler_index[0x10000];
 extern void (*m68ki_handlers[])(void);
 extern unsigned char m68ki_handler_cycles[];
-#define M68KI_CYCLES(n)     m68ki_cycles_000
+/* PICO-AMIGA PATCH: two handler sets (gen/m68kops.c, gen/m68kops_020.c) */
+extern void (*const m68ki_handlers_000[])(void), (*const m68ki_handlers_020[])(void);
+extern const unsigned char m68ki_handler_cycles_000[], m68ki_handler_cycles_020[];
+extern const unsigned m68ki_handler_count;
+#define M68KI_CYCLES(n)     ((n) == 2 ? m68ki_cycles_020 : m68ki_cycles_000)
 #define M68KI_DISPATCH(op)  m68ki_handlers[m68ki_handler_index[op]]()
 #else
 extern unsigned char m68ki_cycles[][0x10000];
@@ -807,8 +812,25 @@ void m68k_set_instr_hook_callback(void  (*callback)(unsigned int pc))
 }
 
 /* Set the CPU type. */
+/* PICO-AMIGA PATCH: the handler set of the CPU type, into the SRAM copy the
+ * main loop dispatches through (the 68EC020's for it, the 68000's for the rest
+ * this build compiles in). */
+static void m68ki_select_handlers(unsigned int cpu_type)
+{
+#if M68K_CONST_TABLES
+	const int ec020 = cpu_type == M68K_CPU_TYPE_68EC020;
+	memcpy(m68ki_handlers, ec020 ? m68ki_handlers_020 : m68ki_handlers_000,
+	       m68ki_handler_count * sizeof m68ki_handlers[0]);
+	memcpy(m68ki_handler_cycles, ec020 ? m68ki_handler_cycles_020 : m68ki_handler_cycles_000,
+	       m68ki_handler_count);
+#else
+	(void)cpu_type;
+#endif
+}
+
 void m68k_set_cpu_type(unsigned int cpu_type)
 {
+	m68ki_select_handlers(cpu_type);
 	switch(cpu_type)
 	{
 		case M68K_CPU_TYPE_68000:
