@@ -81,7 +81,7 @@ static const Option opt_psram_freq[] = {
     { "133 MHz", 133 }, { "166 MHz", 166 },
 };
 static const Option opt_a600_chip[] = {
-    { "1 MB (as it came)", 1, "1 MB" }, { "2 MB (an A601 in the trapdoor)", 2, "2 MB" },
+    { "1 MB (as it came)", 1, "1 MB" }, { "2 MB (A601 trapdoor)", 2, "2 MB" },
 };
 
 static const Option opt_drives[] = {
@@ -626,12 +626,17 @@ static void page_about() {
 
 // ── the tree ───────────────────────────────────────────────────────────────────
 
+// Machine > A600: its Kickstarts, and its chip RAM (1 MB, or 2 MB with an A601).
+static const Node kA600[] = {
+    NM_RADIO_D   ("Kickstart",   SET_KICK, a600Opts, nullptr),
+    NM_RADIO_EN  ("Chip RAM",    SET_A600_CHIP, opt_a600_chip, nullptr, machine_a600_2mb_ok),
+};
+
 static const Node kMachine[] = {
     NM_RADIO_D   ("DiagROM",     SET_KICK, diagOpts, nullptr),
     NM_RADIO_D   ("A500",        SET_KICK, a500Opts, nullptr),
     NM_RADIO_D   ("A500+",       SET_KICK, a500pOpts, nullptr),
-    NM_RADIO_D   ("A600",        SET_KICK, a600Opts, nullptr),
-    NM_RADIO_EN  ("A600 chip RAM", SET_A600_CHIP, opt_a600_chip, nullptr, machine_a600_2mb_ok),
+    NM_SUB       ("A600",        kA600,    nullptr),
     NM_ACTIONV_EN("A1200",       act_none, laterLabel, nullptr, p_never),
     NM_ACTIONV   ("Custom ROM",  act_custom_rom, customRomLabel, nullptr),
 };

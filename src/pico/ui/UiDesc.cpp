@@ -9,6 +9,7 @@
 #include "UiStage.h"
 #include "amiga.h"
 #include "machine.h"
+#include "app/Config.h"
 #include "roms.h"
 extern "C" {
 #include "video.h"
@@ -204,7 +205,8 @@ static int describeKick(int32_t v, DescLine* out, int max) {
         return n;
     }
     static const char* const kSub[] = { "OCS, 512K+512K", "ECS, 1 MB chip", "ECS, 1 MB, IDE" };
-    n = sub(out, n, max, machine_model_name(m), m < 3 ? kSub[m] : "", DESC_PLAIN);
+    const bool a601 = m == MACHINE_A600 && Config::a600_chip == 2 && machine_a600_2mb_ok();
+    n = sub(out, n, max, machine_model_name(m), a601 ? "ECS, 2 MB, IDE" : m < 3 ? kSub[m] : "", DESC_PLAIN);
     if (!strcmp(id, "ks12"))       { n = rule(out, n, max, "For old games that"); n = rule(out, n, max, "do not run on 1.3"); }
     else if (!strcmp(id, "ks13"))  { n = rule(out, n, max, "The A500's own: most"); n = rule(out, n, max, "games expect it"); }
     else if (!strcmp(id, "ks204")) { n = rule(out, n, max, "The A500+'s own;"); n = rule(out, n, max, "Workbench 2.0"); }
