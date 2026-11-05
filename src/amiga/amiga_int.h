@@ -145,6 +145,7 @@ void     blitter_state(st_t *s);
 void     denise_state(st_t *s);
 void     paula_state(st_t *s);
 void     floppy_state(st_t *s);
+void     gayle_state(st_t *s);
 
 // Current horizontal position in colour clocks (0..226), from the CPU's clock.
 uint16_t amiga_hpos(void);
@@ -227,6 +228,13 @@ void     floppy_status(amiga_floppy_t *st);
 uint8_t  rtc_read(int reg);                         // reg 0..15: the nibble
 void     rtc_write(int reg, uint8_t v);
 void     rtc_reset(void);
+
+// ---- Gayle: IDE, PCMCIA, ID (gayle.c; cfg.gayle != 0) -----------------------
+void     gayle_reset(void);
+uint8_t  gayle_read(uint32_t a);                    // $D80000-$DDFFFF
+void     gayle_write(uint32_t a, uint8_t v);
+uint8_t  gayle_id_read(uint32_t a);                 // $DD0000-$DEFFFF
+void     gayle_id_write(void);
 
 // ---- CIAs (cia.c) ----------------------------------------------------------
 void     cia_reset(void);

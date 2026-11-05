@@ -9,6 +9,7 @@ set(AMIGA_CORE_SRC
     ${ROOT}/src/amiga/denise.c
     ${ROOT}/src/amiga/fb.c
     ${ROOT}/src/amiga/floppy.c
+    ${ROOT}/src/amiga/gayle.c
     ${ROOT}/src/amiga/mem.c
     ${ROOT}/src/amiga/paula.c
     ${ROOT}/src/amiga/rtc.c

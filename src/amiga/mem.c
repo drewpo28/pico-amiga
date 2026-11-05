@@ -1,4 +1,4 @@
-// 24-bit address map of an A500 and the Musashi memory callbacks.
+// 24-bit address map of an A500 / A500+ / A600 and the Musashi memory callbacks.
 //
 // The 16 MB space is cut into 256 banks of 64 KB.  A bank is either DIRECT
 // (a host pointer + mask, so mirrors fall out of the mask) or an I/O bank
@@ -10,6 +10,9 @@
 //   $C00000-$C7FFFF  slow RAM if fitted, otherwise custom-register mirror
 //   $C80000-$D7FFFF  custom-register mirror
 //   $DC0000-$DCFFFF  battery clock if the platform has a time (cfg.rtc_time)
+//   With Gayle (A600, cfg.gayle): CIAs at $BF0000 only, nothing at $A00000-$BEFFFF
+//   (the PCMCIA slot's space, empty) or $C00000-$D7FFFF, Gayle at $D80000-$DDFFFF,
+//   its ID at $DD0000-$DEFFFF, no clock ($DC0000 reads 0) - WinUAE's map
 //   $DF0000-$DFFFFF  custom chips
 //   $E00000-$E7FFFF  extended ROM (AROS) if supplied
 //   $E80000-$EFFFFF  Zorro II autoconfig space (empty: reads 0)
@@ -18,7 +21,7 @@
 #include "amiga_int.h"
 #include "m68k.h"
 
-enum { B_NONE = 0, B_CIA, B_CUSTOM, B_RTC };
+enum { B_NONE = 0, B_CIA, B_CUSTOM, B_RTC, B_GAYLE, B_GAYLE_ID };
 
 typedef struct {
     const uint8_t *rd;   // direct read base, or NULL
@@ -54,10 +57,17 @@ static void map_low(void) {
 void mem_init(void) {
     const amiga_config_t *c = &A.cfg;
     memset(banks, 0, sizeof banks);
-    map(0xA0, 0x20, NULL, NULL, 0, B_CIA);
-    map(0xC0, 0x18, NULL, NULL, 0, B_CUSTOM);          // $C00000-$D7FFFF mirror
     map(0xDF, 0x01, NULL, NULL, 0, B_CUSTOM);
-    if (c->rtc_time) map(0xDC, 0x01, NULL, NULL, 0, B_RTC);
+    if (c->gayle) {
+        map(0xBF, 0x01, NULL, NULL, 0, B_CIA);
+        map(0xD8, 0x06, NULL, NULL, 0, B_GAYLE);
+        map(0xDC, 0x01, NULL, NULL, 0, B_NONE);        // no clock fitted
+        map(0xDD, 0x02, NULL, NULL, 0, B_GAYLE_ID);
+    } else {
+        map(0xA0, 0x20, NULL, NULL, 0, B_CIA);
+        map(0xC0, 0x18, NULL, NULL, 0, B_CUSTOM);      // $C00000-$D7FFFF mirror
+        if (c->rtc_time) map(0xDC, 0x01, NULL, NULL, 0, B_RTC);
+    }
     if (c->slow_ram && c->slow_size)
         map(0xC0, (int)(c->slow_size >> 16), c->slow_ram, c->slow_ram, c->slow_size - 1, B_NONE);
     if (c->ext_rom && c->ext_size)
@@ -94,6 +104,10 @@ static uint8_t io_read8(uint32_t a, int io) {
     }
     case B_RTC:                     // register n: the low nibble of the word at $DC0000 + 4n + 2
         return (a & 1) ? rtc_read((int)(a >> 2) & 15) : 0;
+    case B_GAYLE:
+        return gayle_read(a);
+    case B_GAYLE_ID:
+        return gayle_id_read(a);
     default:
         return 0;
     }
@@ -110,6 +124,9 @@ static uint16_t io_read16(uint32_t a, int io) {
         return custom_read(a & 0x1FE);
     case B_RTC:
         return rtc_read((int)(a >> 2) & 15);
+    case B_GAYLE:
+    case B_GAYLE_ID:                // a byte at a time, the high one first, as WinUAE
+        return (uint16_t)((io_read8(a, io) << 8) | io_read8(a + 1, io));
     default:
         return 0;
     }
@@ -128,6 +145,12 @@ static void io_write8(uint32_t a, uint8_t v, int io) {
     case B_RTC:
         if (a & 1) rtc_write((int)(a >> 2) & 15, v);
         break;
+    case B_GAYLE:
+        gayle_write(a, v);
+        break;
+    case B_GAYLE_ID:
+        gayle_id_write();
+        break;
     default:
         break;
     }
@@ -144,6 +167,11 @@ static void io_write16(uint32_t a, uint16_t v, int io) {
         break;
     case B_RTC:
         rtc_write((int)(a >> 2) & 15, (uint8_t)v);
+        break;
+    case B_GAYLE:
+    case B_GAYLE_ID:
+        io_write8(a, (uint8_t)(v >> 8), io);
+        io_write8(a + 1, (uint8_t)v, io);
         break;
     default:
         break;

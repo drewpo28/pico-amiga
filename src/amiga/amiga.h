@@ -1,4 +1,4 @@
-// pico-amiga — Amiga 500 / 500+ (OCS / ECS, PAL) emulation core.
+// pico-amiga — Amiga 500 / 500+ / 600 (OCS / ECS, PAL) emulation core.
 //
 // This header is the whole contract between the emulated machine and whatever
 // runs it: the RP2350 firmware (src/pico/) or the headless host runner (host/).
@@ -93,6 +93,7 @@ bool amiga_render_pump(void);
 // DMA pointers, large blits, DIWHIGH, BEAMCON0 stored) and Denise 8373
 // (DENISEID, super-hires, BPLCON3's border blank).
 enum { AMIGA_OCS = 0, AMIGA_ECS = 1 };
+#define AMIGA_GAYLE_A600 0xD0    // Gayle's ID (the AGA one, the A1200's, is $D1)
 #define AMIGA_TRACK_WORDS 6334   // a DD track at 300 rpm / 500 kbit/s (floppy.c)
 
 typedef struct {
@@ -100,6 +101,11 @@ typedef struct {
     uint8_t  *chip_ram;      uint32_t chip_size;   // 512 KB (A500), 1 MB (A500+); power of two
     uint8_t  *slow_ram;      uint32_t slow_size;   // 0 or 512 KB "trapdoor" at $C00000
     uint8_t   chipset;       // AMIGA_OCS / AMIGA_ECS
+    // Gayle (A600): its ID (AMIGA_GAYLE_A600), or 0 for none.  A Gayle machine
+    // has an empty IDE port and PCMCIA slot at $DA0000, CIAs at $BF0000 only, no
+    // custom-register mirror at $C00000-$D7FFFF and no battery clock (rtc_time
+    // is ignored), as WinUAE maps them.
+    uint8_t   gayle;
     const uint8_t *rom;      uint32_t rom_size;    // 256 KB (mirrored) or 512 KB at $F80000
     const uint8_t *ext_rom;  uint32_t ext_size;    // 0 or 512 KB at $E00000 (AROS ext)
 
@@ -145,9 +151,10 @@ void amiga_reset(bool hard);             // hard: clears chip RAM as on power-on
 // Swap the Kickstart (and extended) ROM; takes effect at the next amiga_reset(),
 // which a ROM change wants hard.  Same rules as amiga_config_t's fields.
 void amiga_set_roms(const uint8_t *rom, uint32_t rom_size, const uint8_t *ext, uint32_t ext_size);
-// Switch the model (A500 <-> A500+): chipset and RAM sizes, the buffers staying
-// those of amiga_init().  Takes effect at the next amiga_reset(), a hard one.
-void amiga_set_machine(int chipset, uint32_t chip_size, uint32_t slow_size);
+// Switch the model (A500 / A500+ / A600): chipset, RAM sizes and Gayle (0 or
+// its ID), the buffers staying those of amiga_init().  Takes effect at the next
+// amiga_reset(), a hard one.
+void amiga_set_machine(int chipset, uint32_t chip_size, uint32_t slow_size, uint8_t gayle);
 void amiga_run_frame(void);              // one PAL frame (312 or 313 lines)
 
 void amiga_insert_disk(int drive, const amiga_disk_t *disk);  // drive 0..3

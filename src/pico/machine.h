@@ -19,14 +19,19 @@ void machine_init(uint8_t *rom_buf, uint8_t *ext_buf, uint8_t *dms_area, uint32_
 // place from flash), or "sd" = Config::kick_file from the card (Machine >
 // Custom ROM; with an ext.rom in its folder, that at $E00000: AROS), falling
 // back to the first built-in ROM; and the model from Config::machine:
-// cfg->chipset, chip_size, slow_size.  The A500 has 512 KB chip RAM at the
-// chip_ram buffer and 512 KB slow RAM at slow_ram; the A500+ 1 MB of chip RAM
+// cfg->chipset, chip_size, slow_size, gayle.  The A500 has 512 KB chip RAM at the
+// chip_ram buffer and 512 KB slow RAM at slow_ram; the A500+ and A600 1 MB of chip RAM
 // and no slow RAM, so slow_ram must be chip_ram + 512 KB (PSRAM: one 1 MB
 // area).  False when there is no ROM at all.
 bool machine_select_rom(amiga_config_t *cfg);
 // The menu changed Config::kick or Config::machine: swap the ROM and the model
 // in and hard-reset the Amiga.
 bool machine_apply_kickstart(void);
+// Config::machine.  The A600 runs on the A500+'s memory layout (1 MB of chip RAM
+// over chip_ram and slow_ram) and adds Gayle.
+enum { MACHINE_A500 = 0, MACHINE_A500P = 1, MACHINE_A600 = 2, MACHINE_COUNT = 3 };
+const char *machine_model_name(int m);   // "A600"
+const char *machine_model_desc(int m);   // "A600 (ECS, 1 MB chip RAM, Gayle)"
 // What is running, for the menu's sub-header ("A500+", "Kickstart 2.04").
 const char *machine_name(void);
 const char *machine_rom_name(void);

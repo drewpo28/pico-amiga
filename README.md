@@ -2,7 +2,7 @@
 
 <img src="img/logo.jpg" alt="pico-amiga" width="320"/>
 
-An Amiga 500 / 500+ (OCS / ECS, PAL) emulator for RP2350 boards with QSPI
+An Amiga 500 / 500+ / 600 (OCS / ECS, PAL) emulator for RP2350 boards with QSPI
 PSRAM, in the family of [pico-speccy](https://github.com/drewpo28/pico-speccy):
 same boards, same drivers, same menu.
 
@@ -17,13 +17,14 @@ picture and sound over HDMI, or picture over VGA.
 |---|---|
 | A500 | 68000 at 7.09 MHz, OCS, 512 KB chip RAM + 512 KB slow RAM |
 | A500+ | ECS (super-hires, the 8375 Agnus / 8373 Denise IDs), 1 MB chip RAM, battery clock |
+| A600 | as the A500+, with Gayle (its ID, an empty IDE port and PCMCIA slot) and no clock |
 | Display | lowres, hires at its full 640 pixels, HAM, interlace with both fields, sprites, copper, blitter |
 | Sound | Paula, 4 DMA channels |
 | Disks | DF0-DF3: ADF streamed from the SD card and written back to it; DMS unpacked into PSRAM (write-protected); `.m3u` disk sets |
 | Kickstart | built into the firmware (see [Building](#building)) or any 256 / 512 KB ROM file from the card |
 
-The 68000 is [Musashi](https://github.com/kstenerud/Musashi); A600 and A1200
-(AGA, 68020) are not there yet - [docs/PLAN.md](docs/PLAN.md) has what is
+The 68000 is [Musashi](https://github.com/kstenerud/Musashi); the A600's hard
+disk (IDE with HDF images) and the A1200 (AGA, 68020) are not there yet - [docs/PLAN.md](docs/PLAN.md) has what is
 missing and in which order.
 
 ## Hardware
@@ -119,7 +120,7 @@ board: HDMI or VGA is picked at boot); `./check-release.sh` then checks each
 image's heap and runs the host tests.
 
 The Kickstarts in the Machine menu (DiagROM; A500: 1.2, 1.3, 2.04, 2.05, 3.1;
-A500+: 2.04, 2.05, 3.1) are linked into the firmware from `-DROMS_DIR` (default
+A500+: 2.04, 2.05, 3.1; A600: 2.05, 3.1) are linked into the firmware from `-DROMS_DIR` (default
 `debug/`) when their files are there: `cmake/roms.cmake` lists the file names.
 They are Commodore's and are not in this repository; without them the firmware
 boots any ROM file from the card.
@@ -153,6 +154,7 @@ src/amiga/     the emulator: platform-independent C11, shared by the firmware an
   cia.c          two 8520s (timers, TOD, ICR, keyboard serial port)
   floppy.c       drives, ADF <-> MFM track codec, disk DMA
   rtc.c          the A500+ battery clock
+  gayle.c        the A600's Gayle: ID, IDE port and PCMCIA registers
 src/pico/      RP2350 firmware: video (HSTX, PIO HDMI, VGA), HDMI audio, PSRAM,
                clocks, input, disks and DMS, ui/ (the menu, pico-speccy's)
 host/          the PC builds (SDL2 firmware, test bench) and the tests

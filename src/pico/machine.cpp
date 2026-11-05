@@ -41,14 +41,22 @@ static uint32_t load_file(const char *path, uint8_t *dst, uint32_t max) {
     return n;
 }
 
+// The A500+ and the A600 are both ECS with 1 MB of chip RAM; the A600 adds Gayle.
 static void select_model(amiga_config_t *cfg) {
-    const bool plus = Config::machine == 1;
-    cfg->chipset = plus ? AMIGA_ECS : AMIGA_OCS;
-    cfg->chip_size = plus ? 1024 * KB : 512 * KB;
-    cfg->slow_size = plus ? 0 : 512 * KB;
+    const int m = Config::machine < MACHINE_COUNT ? (int)Config::machine : (int)MACHINE_A500;
+    const bool ecs = m != MACHINE_A500;
+    cfg->chipset = ecs ? AMIGA_ECS : AMIGA_OCS;
+    cfg->chip_size = ecs ? 1024 * KB : 512 * KB;
+    cfg->slow_size = ecs ? 0 : 512 * KB;
+    cfg->gayle = m == MACHINE_A600 ? AMIGA_GAYLE_A600 : 0;
 }
 
-const char *machine_name(void) { return Config::machine == 1 ? "A500+" : "A500"; }
+static const char *const kModelName[MACHINE_COUNT] = { "A500", "A500+", "A600" };
+static const char *const kModelDesc[MACHINE_COUNT] = {
+    "A500 (OCS, 512 KB chip + 512 KB slow)", "A500+ (ECS, 1 MB chip RAM)", "A600 (ECS, 1 MB chip RAM, Gayle)" };
+const char *machine_model_name(int m) { return m >= 0 && m < MACHINE_COUNT ? kModelName[m] : "?"; }
+const char *machine_model_desc(int m) { return m >= 0 && m < MACHINE_COUNT ? kModelDesc[m] : "?"; }
+const char *machine_name(void) { return machine_model_name(Config::machine); }
 
 bool machine_select_rom(amiga_config_t *cfg) {
     select_model(cfg);
@@ -82,7 +90,7 @@ bool machine_apply_kickstart(void) {
     memset(&c, 0, sizeof c);
     if (!machine_select_rom(&c)) return false;
     amiga_set_roms(c.rom, c.rom_size, c.ext_rom, c.ext_size);
-    amiga_set_machine(c.chipset, c.chip_size, c.slow_size);
+    amiga_set_machine(c.chipset, c.chip_size, c.slow_size, c.gayle);
     amiga_reset(true);
     return true;
 }

@@ -105,8 +105,9 @@ void amiga_set_roms(const uint8_t *rom, uint32_t rom_size, const uint8_t *ext, u
     A.cfg.ext_rom = ext; A.cfg.ext_size = ext_size;
 }
 
-void amiga_set_machine(int chipset, uint32_t chip_size, uint32_t slow_size) {
+void amiga_set_machine(int chipset, uint32_t chip_size, uint32_t slow_size, uint8_t gayle) {
     A.cfg.chipset = (uint8_t)chipset;
+    A.cfg.gayle = gayle;
     A.cfg.chip_size = chip_size;
     A.cfg.slow_size = slow_size;
 }
@@ -122,6 +123,7 @@ void amiga_reset(bool hard) {
     custom_reset();
     cia_reset();
     rtc_reset();
+    gayle_reset();
     copper_reset();
     blitter_reset();
     denise_reset();

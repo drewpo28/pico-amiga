@@ -103,8 +103,11 @@ static void mach_state(st_t *s) {
     st_u16(s, &ver); st_u8(s, &chipset);
     st_u32(s, &chip); st_u32(s, &slow);
     st_u32(s, &rom); st_u32(s, &ext);
+    uint8_t gayle = A.cfg.gayle;            // at the end: older snapshots read 0 (no Gayle)
+    st_u8(s, &gayle);
     if (s->mode == ST_LOAD &&
-        (ver != STATE_VERSION || chipset != A.cfg.chipset || chip != A.cfg.chip_size ||
+        (ver != STATE_VERSION || chipset != A.cfg.chipset || gayle != A.cfg.gayle ||
+         chip != A.cfg.chip_size ||
          slow != (A.cfg.slow_ram ? A.cfg.slow_size : 0) || rom != rom_now || ext != ext_now))
         s->ok = false;
 }
@@ -145,7 +148,7 @@ static const struct { char id[5]; void (*fn)(st_t *); } kBlocks[] = {
     { "MEM ", mem_state },    { "CUST", custom_state },    { "CIAS", cia_state },
     { "RTC ", rtc_state },    { "COPR", copper_state },    { "BLIT", blitter_state },
     { "DENI", denise_state }, { "PAUL", paula_state },     { "FLOP", floppy_state },
-    { "CHIP", chip_state },   { "SLOW", slow_state },
+    { "CHIP", chip_state },   { "SLOW", slow_state },      { "GAYL", gayle_state },
 };
 #define NBLOCKS (int)(sizeof kBlocks / sizeof kBlocks[0])
 // Blocks a snapshot cannot do without (bits of kBlocks).

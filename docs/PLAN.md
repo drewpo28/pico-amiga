@@ -136,19 +136,22 @@ the bench (the A1200 becomes 3).
 
 Step 1 - the machine (host):
 
-- [ ] cmake/roms.cmake: an A600 machine; ks205 listed under it (and A500 /
-      A500+ as today), ks31 too (3.1 A500/A600 ROM); Machine > A600 row; Custom
-      ROM on it; DiagROM checks it
-- [ ] Memory map as the A500+ (1 MB chip, nothing at $C00000), but no clock at
-      $DC0000 (a stock A600 has none; KS 2.05 must not find one)
-- [ ] Gayle: the ID at $DE1000 (read by bit, check the sequence against WinUAE),
-      the IDE registers at $DA0000 answering "no drive" at once, so KS 2.05's
-      scsi.device does not wait ~30 s at boot; the Gayle interrupt and status
-      registers ($DA8000-$DAB000) read as idle. PCMCIA not fitted
-- [ ] state.c: the machine id; Gayle's registers at the end of a new block
-- [ ] Check: KS 2.05 boots to the insert-disk screen without a delay, Workbench
-      2.05 from ADF reports 1 MB chip; A500 / A500+ screens unchanged; smoke.sh:
-      an A600 test with AROS
+- [x] cmake/roms.cmake: ks205 and ks31 listed under the A600 too; Machine > A600
+      row; Custom ROM on it (Config::machine = 2, machine.h MACHINE_A600)
+- [x] Memory map (WinUAE's for IDE_A600A1200 + PCMCIA): 1 MB chip as the A500+,
+      CIAs at $BF0000 only, nothing at $A00000-$BEFFFF or $C00000-$D7FFFF, no
+      clock at $DC0000
+- [x] Gayle (gayle.c): the ID at $DD/$DE1000, one bit per byte read in bit 7, a
+      write restarts it ($D0: KS 2.05 reads four bits, 1101); the IDE at $DA0000
+      answers "no drive" ($7F status, $FF elsewhere): KS 2.05 gives up in the
+      same frame; CS / IRQ / INT / CFG at $DA8000-$DAB000 as WinUAE keeps them
+- [x] state.c: Gayle at the end of MACH (checked on load), its registers in GAYL
+- [x] Check: KS 2.05 boots to the insert-disk screen as fast as on the A500+;
+      smoke.sh test 6 (make_gayle_adf.py with AROS): ID, IDE status, no CIA mirror,
+      the A500+ without them, a snapshot round trip on the A600
+- [ ] Workbench 2.05 from ADF reports 1 MB chip; DiagROM on the A600
+- [ ] The A600's floppy: one internal drive (DF1+ external), nothing to change
+      unless a title cares
 
 Step 2 - IDE with HDF images (host, shared with the A1200 and WHDLoad):
 

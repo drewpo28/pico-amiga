@@ -304,7 +304,7 @@ void describe(const std::string& path, char* out, unsigned size) {
         add("Not a pico-amiga snapshot, or a damaged one.\n");
     } else {
         add(" Name      : %s\n", name.empty() ? "(none)" : name.c_str());
-        add(" Machine   : %s\n", c->machine == 1 ? "A500+ (ECS, 1 MB chip RAM)" : "A500 (OCS, 512 KB chip + 512 KB slow)");
+        add(" Machine   : %s\n", machine_model_desc(c->machine));
         add(" Kickstart : %s\n", machine_rom_label(c->kick, c->kick_file).c_str());
         if (!c->disks.set.empty())
             add(" Disk set  : %s, disk %d\n", baseName(c->disks.set), c->disks.set_index + 1);
@@ -326,7 +326,7 @@ bool load(const std::string& path, std::string& err, std::string& warn) {
     if (!io) { err = "The snapshot cannot be opened"; return false; }
     Cfg* c = new Cfg;
     FSIZE_t core = 0;
-    if (!readHead(io, nullptr, c, &core) || c->machine < 0 || c->machine > 1) {
+    if (!readHead(io, nullptr, c, &core) || c->machine < 0 || c->machine >= MACHINE_COUNT) {
         err = "Not a pico-amiga snapshot, or a damaged one";
         delete c; io_close(io);
         return false;
@@ -351,7 +351,7 @@ bool load(const std::string& path, std::string& err, std::string& warn) {
     memset(&ac, 0, sizeof ac);
     machine_select_rom(&ac);
     amiga_set_roms(ac.rom, ac.rom_size, ac.ext_rom, ac.ext_size);
-    amiga_set_machine(ac.chipset, ac.chip_size, ac.slow_size);
+    amiga_set_machine(ac.chipset, ac.chip_size, ac.slow_size, ac.gayle);
 
     std::string missing, changed;
     machine_put_disks(c->disks, missing);

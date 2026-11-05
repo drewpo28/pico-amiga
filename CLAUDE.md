@@ -1,6 +1,6 @@
 # pico-amiga — project notes
 
-Amiga 500 / 500+ (OCS / ECS, PAL) emulator for RP2350 + QSPI PSRAM. Sister project of
+Amiga 500 / 500+ / 600 (OCS / ECS, PAL) emulator for RP2350 + QSPI PSRAM. Sister project of
 pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
 
 ## Layout and rules
@@ -54,8 +54,10 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   continue sent to core 0 left the HDMI core halted (black screen); the
   extension continues the threads that stopped.
 - Built-in ROMs (Machine: DiagROM; A500 > KS 1.2/1.3/2.04/2.05/3.1; A500+ > KS
-  2.04/2.05/3.1; Custom ROM = a file from the card, Config::kick_file, Config::machine = 1: ECS, 1 MB chip RAM over the slow RAM's PSRAM,
-  `amiga_set_machine()`; the bench: `--a500plus`) are linked
+  2.04/2.05/3.1; A600 > KS 2.05/3.1; Custom ROM = a file from the card, Config::kick_file,
+  Config::machine = 1: ECS, 1 MB chip RAM over the slow RAM's PSRAM, 2: the same plus
+  Gayle (machine.h MACHINE_*), `amiga_set_machine()`; the bench: `--a500plus`, `--a600`;
+  the menu's SET_KICK value is the ROM index + 200 x Config::machine) are linked
   into the firmware and the host with `.incbin` from `ROMS_DIR` (default `debug/`,
   git-ignored: the Kickstarts are Commodore's and must never be committed).
   `cmake/roms.cmake` lists them; an id there is what storage.nvs keeps, never
@@ -162,6 +164,13 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   /CHNG now and then, and the menu swaps with no emulated time in between, so
   the core keeps the drive empty 2 s before the new disk is in (KS 1.3 needs
   ~0.5 s). Without it Dune II asked for a disk that was already in DF0.
+- **Gayle (A600, gayle.c) is WinUAE's map**: Gayle's bank $D80000-$DDFFFF answers
+  only with A19 and A17 set ($DA/$DB), the ID ($D0, the AGA one $D1) is shifted
+  out one bit per byte read of $DE1000 (bit 7) and a write restarts it, the CIAs
+  sit at $BF0000 only (no mirror at $A00000: the PCMCIA space), nothing at
+  $C00000-$D7FFFF, no clock. An empty IDE port reads $7F in the status register
+  and $FF elsewhere (WinUAE's "IDE killer"): KS 2.05 writes $12 to the cylinder
+  register, reads $FF back and boots at once instead of waiting ~30 s.
 - **Every connected drive costs Kickstart memory**: Dune II (1 MB) reports a
   "Memory Allocation Error" with 4 drives (Floppy drives Auto on its 5-disk
   set) and runs with 1 or 2; the message is drawn while its palette is black.

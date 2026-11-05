@@ -101,7 +101,7 @@ static const Option opt_vga_solid[] = {
 // Machine: a row per machine, each a radio over the same SET_KICK listing the
 // built-in ROMs filed under it (cmake/roms.cmake's machines field); a row whose
 // ROM is not the one running shows no value. Values are what UiStage's get_kick
-// reads: the built-in ROM's index, + 200 on the A500+. Custom ROM is a row of
+// reads: the built-in ROM's index, + 200 x Config::machine. Custom ROM is a row of
 // its own (a file from the card, then the machine).
 // Built once per boot (the table is fixed in the image).
 static uint8_t romOpts(const char* machine, Option* opts, uint8_t max, const char* slabel, int32_t add) {
@@ -128,7 +128,13 @@ static const Option* a500pOpts(uint8_t& cnt) {
     cnt = n;
     return opts;
 }
-// A600 and A1200: rows for the machines to come, greyed until their chipsets are.
+static const Option* a600Opts(uint8_t& cnt) {
+    static Option opts[8];
+    static uint8_t n = romOpts("A600", opts, 8, nullptr, 400);
+    cnt = n;
+    return opts;
+}
+// A1200: a row for the machine to come, greyed until its chipset is.
 static bool p_never() { return false; }
 static void act_none() {}
 static const char* laterLabel() { return "later"; }
@@ -261,8 +267,8 @@ static bool runRomFile(const std::string& path) {
         gfxEnd();
         return false;
     }
-    static const char* const kMachines[] = { "A500", "A500+" };
-    const int m = uiPickList("Run it on", kMachines, 2, Config::machine);
+    static const char* const kMachines[] = { "A500", "A500+", "A600" };
+    const int m = uiPickList("Run it on", kMachines, MACHINE_COUNT, Config::machine);
     gfxEnd();
     if (m < 0) return false;
     Config::kick = "sd";
@@ -586,7 +592,7 @@ static const char* sysInfoText() {
         add(" Flash QE       : %s\n", qe == 1 ? "was set" : qe == 4 ? "FIX FAILED" : qe == 6 ? "no raw access" : "set at boot");
     add(" PSRAM          : %u MB, SCK <= %d MHz\n", (unsigned)(psram_size() >> 20), settings_psram_mhz());
     add(" Machine        : %s, %s\n", machine_name(), machine_rom_name());
-    add(" Amiga RAM      : %s\n", Config::machine == 1 ? "1 MB chip (ECS)" : "512 KB chip + 512 KB slow (OCS)");
+    add(" Amiga RAM      : %s\n", Config::machine != MACHINE_A500 ? "1 MB chip (ECS)" : "512 KB chip + 512 KB slow (OCS)");
     add(" Floppy drives  : %d\n", machine_drives());
     add(" Audio          : %s\n", audio_out_name());
     const unsigned s = (unsigned)(time_us_64() / 1000000);
@@ -619,7 +625,7 @@ static const Node kMachine[] = {
     NM_RADIO_D   ("DiagROM",     SET_KICK, diagOpts, nullptr),
     NM_RADIO_D   ("A500",        SET_KICK, a500Opts, nullptr),
     NM_RADIO_D   ("A500+",       SET_KICK, a500pOpts, nullptr),
-    NM_ACTIONV_EN("A600",        act_none, laterLabel, nullptr, p_never),
+    NM_RADIO_D   ("A600",        SET_KICK, a600Opts, nullptr),
     NM_ACTIONV_EN("A1200",       act_none, laterLabel, nullptr, p_never),
     NM_ACTIONV   ("Custom ROM",  act_custom_rom, customRomLabel, nullptr),
 };

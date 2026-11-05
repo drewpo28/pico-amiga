@@ -189,11 +189,11 @@ static int describeOnOff(uint16_t setting, int32_t v, DescLine* out, int max) {
 }
 
 // Machine: what a built-in Kickstart is good for (value: the ROM's index, +200
-// on the A500+ row; 100/101 = a file from the card).
+// x the machine: 200 the A500+ row, 400 the A600's; 100 + that = a file from the card).
 static int describeKick(int32_t v, DescLine* out, int max) {
-    if (v >= 100 && v < 200) return 0;
-    const bool plus = v >= 200;
-    const unsigned i = (unsigned)(plus ? v - 200 : v);
+    if (v < 0 || v % 200 >= 100) return 0;
+    const int m = v / 200;
+    const unsigned i = (unsigned)(v % 200);
     if (i >= builtin_rom_count) return 0;
     const char* id = builtin_roms[i].id;
     int n = 0;
@@ -203,7 +203,8 @@ static int describeKick(int32_t v, DescLine* out, int max) {
         n = rule(out, n, max, "(not a Kickstart)");
         return n;
     }
-    n = sub(out, n, max, plus ? "A500+" : "A500", plus ? "ECS, 1 MB chip" : "OCS, 512K+512K", DESC_PLAIN);
+    static const char* const kSub[] = { "OCS, 512K+512K", "ECS, 1 MB chip", "ECS, 1 MB, IDE" };
+    n = sub(out, n, max, machine_model_name(m), m < 3 ? kSub[m] : "", DESC_PLAIN);
     if (!strcmp(id, "ks12"))       { n = rule(out, n, max, "For old games that"); n = rule(out, n, max, "do not run on 1.3"); }
     else if (!strcmp(id, "ks13"))  { n = rule(out, n, max, "The A500's own: most"); n = rule(out, n, max, "games expect it"); }
     else if (!strcmp(id, "ks204")) { n = rule(out, n, max, "The A500+'s own;"); n = rule(out, n, max, "Workbench 2.0"); }

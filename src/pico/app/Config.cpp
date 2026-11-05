@@ -139,7 +139,7 @@ void Config::load() {
     if (max_flash_freq < 33 || max_flash_freq > 166) max_flash_freq = 66;
     if (max_psram_freq < 66 || max_psram_freq > 166) max_psram_freq = 166;
     nvs_get_u8 ("machine",       machine,      sts);
-    if (machine > 1) machine = 0;
+    if (machine > 2) machine = 0;                 // machine.h MACHINE_COUNT
     nvs_get_str("kick",          kick,         sts);
     nvs_get_str("kick_file",     kick_file,    sts);
     if (kick_file.empty()) kick_file = "/amiga/kick.rom";

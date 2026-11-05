@@ -70,4 +70,20 @@ px = [tuple(row[3 * x:3 * x + 3]) for x in (39, 40, 360, 679, 680)]
 sys.exit(0 if px == [(0, 0, 0), (0x77, 0x77, 0), (0x77, 0x77, 0), (0x77, 0x77, 0), (0, 0, 0)] else 1)
 PY
 
+# 6. A600 (Gayle, make_gayle_adf.py): its ID $D0, the empty IDE port, no CIA
+#    mirror at $A00000; the A500+ has none of them.  And a snapshot round trip
+#    on the A600 (the GAYL block, MACH's Gayle).
+python3 host/tests/make_gayle_adf.py "$OUT/gayle.adf"
+$BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --a600 --adf "$OUT/gayle.adf" \
+     --frames 1200 > "$OUT/gayle.log" 2>&1
+check "a600 gayle" "GAYLE OK" "$OUT/gayle.log"
+$BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --a500plus --adf "$OUT/gayle.adf" \
+     --frames 1200 > "$OUT/gayle-plus.log" 2>&1
+check "a500+ has no gayle" "GAYLE NO" "$OUT/gayle-plus.log"
+$BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --a600 --adf "$OUT/boot.adf" \
+     --frames 900 --state-save 400:"$OUT/state600.bin" --shot 900:"$OUT/state600-a.png" > /dev/null 2>&1
+$BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --a600 --adf "$OUT/boot.adf" \
+     --frames 500 --state-load "$OUT/state600.bin" --shot 500:"$OUT/state600-b.png" > /dev/null 2>&1
+if cmp -s "$OUT/state600-a.png" "$OUT/state600-b.png"; then echo "PASS a600 snapshot round trip"; else echo "FAIL a600 snapshot round trip"; fail=1; fi
+
 exit $fail

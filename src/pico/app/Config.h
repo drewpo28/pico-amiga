@@ -43,7 +43,7 @@ public:
     static bool     disk_led;       // Video > Picture > Drive icon (UiStats.cpp)
 
     // Machine (machine.cpp)
-    static uint8_t  machine;        // 0 A500 (OCS, 512 KB chip + 512 KB slow), 1 A500+ (ECS, 1 MB chip)
+    static uint8_t  machine;        // 0 A500 (OCS, 512 KB chip + 512 KB slow), 1 A500+ (ECS, 1 MB chip), 2 A600 (A500+ + Gayle)
     static std::string kick;        // built-in ROM id (roms.h), or "sd" = kick_file from the card
     static std::string kick_file;   // Machine > Custom ROM: the Kickstart image on the card
     static std::string df0;         // ADF in DF0 ("" = empty drive)

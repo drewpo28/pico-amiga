@@ -9,12 +9,13 @@
 //                   [--drives N] (fewer drives than --adf: the rest wait for --swap)
 //                   [--write-back] (disks the Amiga wrote are saved to their files at the end)
 //                   [--frames N] [--shot N:file.png]... [--wav out.wav]
-//                   [--slow] [--a500plus] [--vcentre] [--key N:code:down]... [--status K]
+//                   [--slow] [--a500plus | --a600] [--vcentre] [--key N:code:down]... [--status K]
 //                   [--joy N:dirs:fire]... [--mouse N:dx:dy:buttons]...
 // --joy sets game port 2 from frame N on (dirs: bit0 up 1 down 2 left 3 right);
 // --mouse moves the port 1 mouse once at frame N (buttons: bit0 left 1 right).
 // --a500plus: the A500+ (ECS chipset, 1 MB chip RAM, no slow RAM, the battery
-// clock showing the PC's local time).  --vcentre: amiga_set_vcentre(true).
+// clock showing the PC's local time).  --a600: the A600 (as the A500+ but with
+// Gayle - an empty IDE port and PCMCIA slot - and no clock).  --vcentre: amiga_set_vcentre(true).
 // --state-save N:file writes the core's snapshot (amiga_state_save) after frame N;
 // --state-load file starts from one instead of the reset (same ROM, model, disks).
 #include <stdio.h>
@@ -216,7 +217,7 @@ int main(int argc, char **argv) {
     const char *rom_path = NULL, *ext_path = NULL, *wav_path = NULL;
     const char *adf_path[8] = {0}; int nadf = 0;        // the first 4 go in DF0..DF3, the rest wait for --swap
     int frames = 250, status_every = 0, scale = 1, drives_opt = 0;
-    bool slow = false, render_thread_on = false, plus = false, vcentre = false, write_back = false;
+    bool slow = false, render_thread_on = false, plus = false, a600 = false, vcentre = false, write_back = false;
     shot_t shots[64]; int nshots = 0;
     shot_t state_save = { -1, "" };
     const char *state_load = NULL;
@@ -238,6 +239,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--scale") && v) { scale = atoi(v); i++; }
         else if (!strcmp(a, "--slow")) slow = true;
         else if (!strcmp(a, "--a500plus")) plus = true;
+        else if (!strcmp(a, "--a600")) plus = a600 = true;
         else if (!strcmp(a, "--write-back")) write_back = true;
         else if (!strcmp(a, "--drives") && v) { drives_opt = atoi(v); i++; }
         else if (!strcmp(a, "--vcentre")) vcentre = true;
@@ -274,13 +276,14 @@ int main(int argc, char **argv) {
     }
     if (!rom_path) {
         fprintf(stderr, "usage: %s --rom kick.rom [--ext ext.rom] [--adf disk.adf]... [--frames N]\n"
-                        "       [--shot N:file.png] [--wav out.wav] [--slow] [--a500plus] [--status K] [--swap frame:drive:disk]\n", argv[0]);
+                        "       [--shot N:file.png] [--wav out.wav] [--slow] [--a500plus | --a600] [--status K] [--swap frame:drive:disk]\n", argv[0]);
         return 2;
     }
 
     amiga_config_t cfg = {0};
     cfg.chip_size = plus ? 1024 * 1024 : 512 * 1024;
     cfg.chip_ram = calloc(1, cfg.chip_size);
+    if (a600) cfg.gayle = AMIGA_GAYLE_A600;
     if (plus) { cfg.chipset = AMIGA_ECS; cfg.rtc_time = rtc_time; }
     else if (slow) { cfg.slow_size = 512 * 1024; cfg.slow_ram = calloc(1, cfg.slow_size); }
     uint32_t rs; cfg.rom = load(rom_path, &rs); cfg.rom_size = rs;
