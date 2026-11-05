@@ -31,7 +31,12 @@ verified on the host bench; "hw" means verified on a board.
 
 - [ ] Render lines on core 1: core 0 records per-line display state, core 1 does
       fetch + c2p + output (the pico-speccy Next split)
-- [ ] c2p: byte-wise tables (8 pixels per lookup) or the SIO interpolators
+- [ ] c2p: byte-wise tables (8 pixels per lookup) or the SIO interpolators.
+      Tried on the board 2026-11-05 (State of the Art, x3), both reverted: the plane loop
+      unrolled per plane count (8 M33 instructions a plane instead of 13, +2 KB SRAM) did
+      not change a frame's time; storing instead of ORing into the empty part of the line
+      made it ~1 ms slower. The fetch stage is not bound by its instruction count - look
+      at memory (SRAM banks shared with core 1's scanout, the pf ring) before rewriting it
 - [ ] Opcode handler index (128 KB) and cycle table (64 KB) into SRAM - there is room
 - [ ] m68k_execute and the hottest handlers into SRAM; profile with the SysTick sampler
       (Debug > PC profiler + tools/pcprof.py, 2026-11-05: State of the Art at x3 - the
