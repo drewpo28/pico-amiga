@@ -132,16 +132,18 @@ static const Option* a500pOpts(uint8_t& cnt) {
     cnt = n;
     return opts;
 }
+static const Option* a1200Opts(uint8_t& cnt) {
+    static Option opts[4];
+    static uint8_t n = romOpts("A1200", opts, 4, nullptr, 600);
+    cnt = n;
+    return opts;
+}
 static const Option* a600Opts(uint8_t& cnt) {
     static Option opts[8];
     static uint8_t n = romOpts("A600", opts, 8, nullptr, 400);
     cnt = n;
     return opts;
 }
-// A1200: a row for the machine to come, greyed until its chipset is.
-static bool p_never() { return false; }
-static void act_none() {}
-static const char* laterLabel() { return "later"; }
 
 // ── actions and pages ──────────────────────────────────────────────────────────
 
@@ -271,7 +273,7 @@ static bool runRomFile(const std::string& path) {
         gfxEnd();
         return false;
     }
-    static const char* const kMachines[] = { "A500", "A500+", "A600" };
+    static const char* const kMachines[] = { "A500", "A500+", "A600", "A1200" };
     const int m = uiPickList("Run it on", kMachines, MACHINE_COUNT, Config::machine);
     gfxEnd();
     if (m < 0) return false;
@@ -637,7 +639,8 @@ static const Node kMachine[] = {
     NM_RADIO_D   ("A500",        SET_KICK, a500Opts, nullptr),
     NM_RADIO_D   ("A500+",       SET_KICK, a500pOpts, nullptr),
     NM_SUB       ("A600",        kA600,    nullptr),
-    NM_ACTIONV_EN("A1200",       act_none, laterLabel, nullptr, p_never),
+    // Its 2 MB of chip RAM needs the 2 MB chip area (8 MB of PSRAM).
+    NM_RADIO_DE  ("A1200",       SET_KICK, a1200Opts, nullptr, machine_a600_2mb_ok),
     NM_ACTIONV   ("Custom ROM",  act_custom_rom, customRomLabel, nullptr),
 };
 
@@ -645,7 +648,7 @@ static const Node kMachine[] = {
 // the file (Enter: name and size), Choose an HDF..., SD card partition... (the
 // card's own sectors, pico-speccy's raw IDE window), Remove.  Kickstart looks
 // for the drive at reset, so a change restarts the Amiga.
-static bool p_a600() { return Config::machine == MACHINE_A600; }
+static bool p_a600() { return Config::machine == MACHINE_A600 || Config::machine == MACHINE_A1200; }   // Gayle
 static const char* hdShort() {
     const char* p = machine_hdf();
     return *p ? baseName(p) : "none";

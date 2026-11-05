@@ -8,10 +8,11 @@
 # Each entry: id|label|machines|file (file relative to ROMS_DIR). The id is what
 # storage.nvs keeps (Config::kick), so never reuse one for a different ROM. The
 # machines are the Machine menu rows the ROM is listed under, comma-separated
-# (DiagROM, A500, A500+, A600; the A1200 row waits for its chipset).
+# (DiagROM, A500, A500+, A600, A1200).
 # 2.04 is the A500+'s own Kickstart; 2.05 and 3.1 (the A600's images) run on
 # all three; the A600 lists only those two (2.05 is its own, the first with
-# Gayle's IDE). The A1200/A3000/A4000/CD32 ROMs are 68020 code: not listed.
+# Gayle's IDE). The A1200's 3.0 and 3.1 are its own (68020 code); the A3000 /
+# A4000 / CD32 ROMs are not listed.
 set(ROMS_DIR "${CMAKE_CURRENT_LIST_DIR}/../debug" CACHE PATH "Where the built-in ROM images are")
 set(AMIGA_BUILTIN_ROMS
     "diag|DiagROM|DiagROM|DiagROM/diagrom.rom"
@@ -19,7 +20,9 @@ set(AMIGA_BUILTIN_ROMS
     "ks13|Kickstart 1.3|A500|Kickstarts/PUAE Bios/kick34005.A500"
     "ks204|Kickstart 2.04|A500,A500+|Kickstarts/PUAE Bios/kick37175.A500"
     "ks205|Kickstart 2.05|A500,A500+,A600|Kickstarts/PUAE Bios/kick37350.A600"
-    "ks31|Kickstart 3.1|A500,A500+,A600|Kickstarts/PUAE Bios/kick40063.A600")
+    "ks31|Kickstart 3.1|A500,A500+,A600|Kickstarts/PUAE Bios/kick40063.A600"
+    "ks31a12|Kickstart 3.1|A1200|Kickstarts/PUAE Bios/kick40068.A1200"
+    "ks30a12|Kickstart 3.0|A1200|Kickstarts/PUAE Bios/kick39106.A1200")
 
 function(amiga_builtin_roms target)
     set(gen ${CMAKE_BINARY_DIR}/gen)

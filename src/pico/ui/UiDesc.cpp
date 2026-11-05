@@ -204,14 +204,16 @@ static int describeKick(int32_t v, DescLine* out, int max) {
         n = rule(out, n, max, "(not a Kickstart)");
         return n;
     }
-    static const char* const kSub[] = { "OCS, 512K+512K", "ECS, 1 MB chip", "ECS, 1 MB, IDE" };
+    static const char* const kSub[] = { "OCS, 512K+512K", "ECS, 1 MB chip", "ECS, 1 MB, IDE", "020, 2 MB, IDE" };
     const bool a601 = m == MACHINE_A600 && Config::a600_chip == 2 && machine_a600_2mb_ok();
-    n = sub(out, n, max, machine_model_name(m), a601 ? "ECS, 2 MB, IDE" : m < 3 ? kSub[m] : "", DESC_PLAIN);
+    n = sub(out, n, max, machine_model_name(m), a601 ? "ECS, 2 MB, IDE" : m < 4 ? kSub[m] : "", DESC_PLAIN);
     if (!strcmp(id, "ks12"))       { n = rule(out, n, max, "For old games that"); n = rule(out, n, max, "do not run on 1.3"); }
     else if (!strcmp(id, "ks13"))  { n = rule(out, n, max, "The A500's own: most"); n = rule(out, n, max, "games expect it"); }
     else if (!strcmp(id, "ks204")) { n = rule(out, n, max, "The A500+'s own;"); n = rule(out, n, max, "Workbench 2.0"); }
     else if (!strcmp(id, "ks205")) { n = rule(out, n, max, "The A600's; Workbench"); n = rule(out, n, max, "2.05"); }
     else if (!strcmp(id, "ks31"))  { n = rule(out, n, max, "Workbench 3.1; some"); n = rule(out, n, max, "old games fail on it"); }
+    else if (!strcmp(id, "ks31a12")) { n = rule(out, n, max, "The A1200's 3.1;"); n = rule(out, n, max, "AGA not yet: ECS"); }
+    else if (!strcmp(id, "ks30a12")) { n = rule(out, n, max, "The A1200's own 3.0;"); n = rule(out, n, max, "AGA not yet: ECS"); }
     n = rule(out, n, max, "A change restarts it");
     return n;
 }

@@ -53,15 +53,18 @@ static void select_model(amiga_config_t *cfg) {
     cfg->chipset = ecs ? AMIGA_ECS : AMIGA_OCS;
     // An A600 with an A601 in its trapdoor: 2 MB of chip RAM (the 8375 Agnus
     // addresses it), where the PSRAM layout leaves room (machine_init).
-    cfg->chip_size = m == MACHINE_A600 && Config::a600_chip == 2 && s_chip_area >= 2048 * KB ? 2048 * KB
-                   : ecs ? 1024 * KB : 512 * KB;
+    const bool chip2 = s_chip_area >= 2048 * KB &&
+                       (m == MACHINE_A1200 || (m == MACHINE_A600 && Config::a600_chip == 2));
+    cfg->chip_size = chip2 ? 2048 * KB : ecs ? 1024 * KB : 512 * KB;
     cfg->slow_size = ecs ? 0 : 512 * KB;
-    cfg->gayle = m == MACHINE_A600 ? AMIGA_GAYLE_A600 : 0;
+    cfg->gayle = m == MACHINE_A600 ? AMIGA_GAYLE_A600 : m == MACHINE_A1200 ? AMIGA_GAYLE_A1200 : 0;
+    cfg->cpu = m == MACHINE_A1200 ? AMIGA_CPU_EC020 : AMIGA_CPU_68000;
 }
 
-static const char *const kModelName[MACHINE_COUNT] = { "A500", "A500+", "A600" };
+static const char *const kModelName[MACHINE_COUNT] = { "A500", "A500+", "A600", "A1200" };
 static const char *const kModelDesc[MACHINE_COUNT] = {
-    "A500 (OCS, 512 KB chip + 512 KB slow)", "A500+ (ECS, 1 MB chip RAM)", "A600 (ECS, 1 MB chip RAM, Gayle)" };
+    "A500 (OCS, 512 KB chip + 512 KB slow)", "A500+ (ECS, 1 MB chip RAM)", "A600 (ECS, 1 MB chip RAM, Gayle)",
+    "A1200 (68EC020, 2 MB chip RAM, Gayle; ECS for now)" };
 const char *machine_model_name(int m) { return m >= 0 && m < MACHINE_COUNT ? kModelName[m] : "?"; }
 const char *machine_model_desc(int m) { return m >= 0 && m < MACHINE_COUNT ? kModelDesc[m] : "?"; }
 uint32_t machine_chip_size(void) {
@@ -204,7 +207,10 @@ static void hdf_log_parts(int (*rd)(void *, uint32_t, void *, uint32_t), void *c
 }
 
 static void hdf_attach(void) {
-    if (Config::machine != MACHINE_A600 || (!s_hdf_open && !s_raw)) { amiga_set_hdf(NULL); return; }
+    if ((Config::machine != MACHINE_A600 && Config::machine != MACHINE_A1200) || (!s_hdf_open && !s_raw)) {
+        amiga_set_hdf(NULL);
+        return;
+    }
     const amiga_disk_t d = s_raw
         ? amiga_disk_t{ raw_read, s_hdf_ro ? NULL : raw_write, NULL, s_raw_count * 512u }
         : amiga_disk_t{ hdf_read, s_hdf_ro ? NULL : hdf_write, &s_hdf->f, (uint32_t)f_size(&s_hdf->f) };
@@ -345,6 +351,7 @@ bool machine_apply_kickstart(void) {
     if (!machine_select_rom(&c)) return false;
     amiga_set_roms(c.rom, c.rom_size, c.ext_rom, c.ext_size);
     amiga_set_machine(c.chipset, c.chip_size, c.slow_size, c.gayle);
+    amiga_set_cpu(c.cpu);
     hdf_attach();
     amiga_reset(true);
     return true;

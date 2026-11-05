@@ -260,21 +260,23 @@ Step 1 - the CPU: 68EC020 (host):
 
 Step 2 - the machine (host):
 
-- [ ] cmake/roms.cmake: A1200 machine, KS 3.1 A1200 (and 3.0) with new ids;
-      Machine > A1200 row; Custom ROM on it; DiagROM checks the A1200 too
-- [ ] Memory map: 2 MB chip RAM (DMA pointers are already 21 bits), nothing at
-      $C00000 (Kickstart must not find slow RAM), chip_mask 2 MB
-- [ ] PSRAM layout (main.c): chip RAM 0-2 MB pushes the Custom ROM buffers, the
+- [x] cmake/roms.cmake: A1200 machine, KS 3.1 A1200 (ks31a12) and 3.0 (ks30a12);
+      Machine > A1200 row (greyed without the 2 MB chip area); Custom ROM on it
+- [ ] DiagROM on the A1200
+- [x] Memory map: 2 MB chip RAM, nothing at $C00000 (Gayle's map), chip_mask 2 MB:
+      KS 3.1 A1200 reports MaxLocMem $200000, AttnFlags $0003
+- [x] PSRAM layout (main.c, done for the A600's A601): chip RAM 0-2 MB pushes the Custom ROM buffers, the
       band, the MFM track and the DMS area up by 1 MB; an A1200 needs at least
       a 4 MB PSRAM (2 MB boards: the row is disabled, as the band is today)
-- [ ] VPOSR Alice ID (PAL $22 / $23, check against WinUAE), DENISEID Lisa ($F8)
-- [ ] Gayle: from the A600 (section 6, its ID and "no drive" IDE, then the HDF
-      drive); check the A1200's Gayle ID and register differences against WinUAE.
-      PCMCIA not fitted
+- [ ] VPOSR Alice ID (PAL $22 / $23, check against WinUAE), DENISEID Lisa ($F8):
+      with steps 3-4 - the A1200 reports ECS IDs until then, or KS 3.1's graphics
+      would write AGA palettes (LOCT halves) that this Denise misreads
+- [x] Gayle: the A600's (IDE with HDF / SD partition included), ID $D1 (WinUAE's
+      AGA Gayle). PCMCIA not fitted
 - [ ] Optional fast RAM (none on a stock A1200; WHDLoad and many games want
       it): 4 MB at $200000 from PSRAM, on boards with 8 MB
-- [ ] Check: KS 3.1 boots to the insert-disk screen, Workbench 3.1 from ADF
-      reports 2 MB chip; AROS (free) for smoke
+- [x] Check: KS 3.1 (40.068) boots to the insert-disk screen, Workbench 3.1 from ADF
+      runs (ECS screens); smoke: AROS's bootblock on --a1200
 
 Step 3 - Alice: AGA bitplane and sprite DMA (host):
 

@@ -146,7 +146,7 @@ void Config::load() {
     nvs_get_u8 ("machine",       machine,      sts);
     nvs_get_u8 ("a600_chip",     a600_chip,    sts);
     if (a600_chip != 2) a600_chip = 1;
-    if (machine > 2) machine = 0;                 // machine.h MACHINE_COUNT
+    if (machine > 3) machine = 0;                 // machine.h MACHINE_COUNT
     nvs_get_str("kick",          kick,         sts);
     nvs_get_str("kick_file",     kick_file,    sts);
     if (kick_file.empty()) kick_file = "/amiga/kick.rom";

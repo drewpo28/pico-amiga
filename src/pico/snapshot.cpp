@@ -365,6 +365,7 @@ bool load(const std::string& path, std::string& err, std::string& warn) {
     machine_select_rom(&ac);
     amiga_set_roms(ac.rom, ac.rom_size, ac.ext_rom, ac.ext_size);
     amiga_set_machine(ac.chipset, ac.chip_size, ac.slow_size, ac.gayle);
+    amiga_set_cpu(ac.cpu);
 
     std::string missing, changed;
     machine_put_disks(c->disks, missing);

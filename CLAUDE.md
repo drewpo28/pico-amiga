@@ -1,6 +1,6 @@
 # pico-amiga — project notes
 
-Amiga 500 / 500+ / 600 (OCS / ECS, PAL) emulator for RP2350 + QSPI PSRAM. Sister project of
+Amiga 500 / 500+ / 600 / 1200 (OCS / ECS, AGA to come; PAL) emulator for RP2350 + QSPI PSRAM. Sister project of
 pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
 
 ## Layout and rules
@@ -54,7 +54,9 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   continue sent to core 0 left the HDMI core halted (black screen); the
   extension continues the threads that stopped.
 - Built-in ROMs (Machine: DiagROM; A500 > KS 1.2/1.3/2.04/2.05/3.1; A500+ > KS
-  2.04/2.05/3.1; A600 > KS 2.05/3.1; Custom ROM = a file from the card, Config::kick_file,
+  2.04/2.05/3.1; A600 > KS 2.05/3.1; A1200 > KS 3.1/3.0 (ks31a12, ks30a12: a 68EC020,
+  2 MB chip, Gayle $D1, ECS chip IDs until AGA; Config::machine 3, `--a1200`);
+  Custom ROM = a file from the card, Config::kick_file,
   Config::machine = 1: ECS, 1 MB chip RAM over the slow RAM's PSRAM, 2: the same plus
   Gayle (machine.h MACHINE_*), Machine > A600 chip RAM 1 or 2 MB (an A601, Config::a600_chip;
   with 8 MB of PSRAM - every board has it - the chip RAM area is 2 MB and the ROM buffers,

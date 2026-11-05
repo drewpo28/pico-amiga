@@ -93,9 +93,10 @@ bool amiga_render_pump(void);
 // DMA pointers, large blits, DIWHIGH, BEAMCON0 stored) and Denise 8373
 // (DENISEID, super-hires, BPLCON3's border blank).
 enum { AMIGA_OCS = 0, AMIGA_ECS = 1 };
-#define AMIGA_GAYLE_A600 0xD0
+#define AMIGA_GAYLE_A600  0xD0   // Gayle's ID
+#define AMIGA_GAYLE_A1200 0xD1   // the A1200's (AGA) Gayle
 // CPUs (amiga_config_t.cpu): the 68000 at 7.09 MHz, or the A1200's 68EC020 at 14.19 MHz.
-enum { AMIGA_CPU_68000 = 0, AMIGA_CPU_EC020 = 1 };    // Gayle's ID (the AGA one, the A1200's, is $D1)
+enum { AMIGA_CPU_68000 = 0, AMIGA_CPU_EC020 = 1 };
 #define AMIGA_TRACK_WORDS 6334   // a DD track at 300 rpm / 500 kbit/s (floppy.c)
 
 typedef struct {
@@ -103,7 +104,7 @@ typedef struct {
     uint8_t  *chip_ram;      uint32_t chip_size;   // 512 KB (A500), 1 MB (A500+); power of two
     uint8_t  *slow_ram;      uint32_t slow_size;   // 0 or 512 KB "trapdoor" at $C00000
     uint8_t   chipset;       // AMIGA_OCS / AMIGA_ECS
-    // Gayle (A600): its ID (AMIGA_GAYLE_A600), or 0 for none.  A Gayle machine
+    // Gayle (A600, A1200): its ID (AMIGA_GAYLE_*), or 0 for none.  A Gayle machine
     // has an empty IDE port and PCMCIA slot at $DA0000, CIAs at $BF0000 only, no
     // custom-register mirror at $C00000-$D7FFFF and no battery clock (rtc_time
     // is ignored), as WinUAE maps them.

@@ -40,6 +40,9 @@ check "aros bootblock" "BOOTBLOCK OK" "$OUT/aros.log"
 $BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --slow --cpu020 --adf "$OUT/boot.adf" \
      --frames 1200 > "$OUT/aros020.log" 2>&1
 check "aros bootblock on a 68EC020" "BOOTBLOCK OK" "$OUT/aros020.log"
+$BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --a1200 --adf "$OUT/boot.adf" \
+     --frames 1200 > "$OUT/aros1200.log" 2>&1
+check "aros bootblock on the A1200" "BOOTBLOCK OK" "$OUT/aros1200.log"
 
 # 3b. Snapshots: saved mid-boot (disk DMA running), loaded, the same picture 500
 #     frames on as without the round trip.
