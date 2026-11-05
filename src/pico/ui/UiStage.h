@@ -68,7 +68,9 @@ enum SettingFlags : uint16_t {
     /* Snapshots > Quick slots: the current slot (the list's marker; set by its verbs) */ \
     X(SET_PERSIST_SLOT, AC_PURE, 0,                            get_pslot,     put_pslot,     nullptr) \
     /* Machine > A600 chip RAM: 1 MB, or 2 MB (an A601); a cold start of an A600 */ \
-    X(SET_A600_CHIP,   AC_LIVE, 0,                             get_a600chip,  put_a600chip,  hook_a600chip)
+    X(SET_A600_CHIP,   AC_LIVE, 0,                             get_a600chip,  put_a600chip,  hook_a600chip) \
+    /* Debug > A1200 load test: amiga_set_load_test, this session only */ \
+    X(SET_LOAD_TEST,   AC_LIVE, 0,                             get_loadtest,  put_loadtest,  hook_loadtest)
 
 #define NM_X_ENUM(id, cls, flags, g, p, h) id,
 enum SettingId : uint16_t {

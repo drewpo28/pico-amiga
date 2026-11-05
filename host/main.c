@@ -19,6 +19,7 @@
 // clock showing the PC's local time).  --a600: the A600 (as the A500+ but with
 // Gayle - an empty IDE port and PCMCIA slot - and no clock); --a601: an A600 with
 // 2 MB of chip RAM (an A601 in its trapdoor).  --vcentre: amiga_set_vcentre(true).
+// --load-test 1: the A1200 headroom test's CPU x2 (amiga_set_load_test), 2: and 8 planes.
 // --state-save N:file writes the core's snapshot (amiga_state_save) after frame N;
 // --state-load file starts from one instead of the reset (same ROM, model, disks).
 #include <stdio.h>
@@ -229,7 +230,8 @@ static int64_t rtc_time(void *ctx) {
 int main(int argc, char **argv) {
     const char *rom_path = NULL, *ext_path = NULL, *wav_path = NULL;
     const char *adf_path[8] = {0}; int nadf = 0;
-    const char *hdf_path = NULL;        // the first 4 go in DF0..DF3, the rest wait for --swap
+    const char *hdf_path = NULL;
+    int load_test = 0;        // the first 4 go in DF0..DF3, the rest wait for --swap
     int frames = 250, status_every = 0, scale = 1, drives_opt = 0;
     bool slow = false, render_thread_on = false, plus = false, a600 = false, a601 = false, vcentre = false, write_back = false;
     shot_t shots[64]; int nshots = 0;
@@ -247,7 +249,8 @@ int main(int argc, char **argv) {
         if (!strcmp(a, "--rom") && v) { rom_path = v; i++; }
         else if (!strcmp(a, "--ext") && v) { ext_path = v; i++; }
         else if (!strcmp(a, "--adf") && v && nadf < 8) { adf_path[nadf++] = v; i++; }
-        else if (!strcmp(a, "--hdf") && v) { hdf_path = v; i++; }   // DF0, DF1, ...
+        else if (!strcmp(a, "--hdf") && v) { hdf_path = v; i++; }
+        else if (!strcmp(a, "--load-test") && v) { load_test = atoi(v); i++; }   // DF0, DF1, ...
         else if (!strcmp(a, "--frames") && v) { frames = atoi(v); i++; }
         else if (!strcmp(a, "--wav") && v) { wav_path = v; i++; }
         else if (!strcmp(a, "--status") && v) { status_every = atoi(v); i++; }
@@ -329,6 +332,7 @@ int main(int argc, char **argv) {
         amiga_insert_disk(k, &d);
     }
     if (ndrv > 1) { amiga_set_drives(ndrv); amiga_reset(true); }   // Kickstart finds DF1+ at reset
+    if (load_test) amiga_set_load_test(2, load_test >= 2);
     FILE *hdf = NULL;
     if (hdf_path) {
         hdf = fopen(hdf_path, write_back ? "r+b" : "rb");

@@ -23,7 +23,9 @@ static uint32_t prof_frames;
 
 // ---- time ----------------------------------------------------------------------
 AMIGA_HOT uint64_t amiga_now(void) {
-    return A.in_cpu ? A.cpu_cyc + (uint64_t)m68k_cycles_run() : A.cpu_cyc;
+    if (!A.in_cpu) return A.cpu_cyc;
+    const int run = m68k_cycles_run();
+    return A.cpu_cyc + (uint64_t)(A.load_cpu > 1 ? run / A.load_cpu : run);
 }
 
 AMIGA_HOT uint16_t amiga_hpos(void) {
@@ -34,13 +36,23 @@ AMIGA_HOT uint16_t amiga_hpos(void) {
 }
 
 AMIGA_HOT static void cpu_until(uint64_t target) {
+    const unsigned mul = A.load_cpu > 1 ? A.load_cpu : 1;
     while (A.cpu_cyc < target) {
         A.in_cpu = true;
-        int used = m68k_execute((int)(target - A.cpu_cyc));
+        int used = m68k_execute((int)(target - A.cpu_cyc) * (int)mul);
         A.in_cpu = false;
         if (used <= 0) { A.cpu_cyc = target; break; }
-        A.cpu_cyc += (uint64_t)used;
+        if (mul == 1) { A.cpu_cyc += (uint64_t)used; continue; }
+        const unsigned u = (unsigned)used + A.load_rem;           // load test: mul cycles per one
+        A.cpu_cyc += u / mul;
+        A.load_rem = (uint8_t)(u % mul);
     }
+}
+
+void amiga_set_load_test(int cpu_mul, bool extra_planes) {
+    A.load_cpu = (uint8_t)(cpu_mul > 1 ? 2 : 1);
+    A.load_planes = extra_planes;
+    A.load_rem = 0;
 }
 
 // The 68000 RESET instruction asserts the reset line for the peripherals.

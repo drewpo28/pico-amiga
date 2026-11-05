@@ -860,12 +860,20 @@ static bool p_dbgUartPin() {
 #endif
 }
 
+// The A1200 headroom test (docs/PLAN.md, section 7, step 0): ms per frame with
+// a 14 MHz CPU's load, and with 8 planes' fetch; the PERF line says it is on.
+static const Option opt_load_test[] = {
+    { "Off", 0, "Off" }, { "CPU x2 (a 14 MHz CPU)", 1, "CPU x2" },
+    { "CPU x2 + 8 planes", 2, "x2+8pl" },
+};
+
 static const Node kDebug[] = {
     // TX-only 115200 log on the board's DBG_UART_TX_PIN: boot messages and a
     // PERF line a second. Reboot-class (the keyboard may move off the pin).
     NM_BOOL("UART log", SET_DBG_UART, p_dbgUartPin),
     // Denise's rendering shared with core 1 (off: all on core 0, as before).
     NM_BOOL("Render on core 1", SET_RENDER_C1, nullptr),
+    NM_RADIO("A1200 load test", SET_LOAD_TEST, opt_load_test, nullptr),
 };
 
 static const Node kHelp[] = {

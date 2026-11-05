@@ -82,6 +82,11 @@ NM_INT_ACCESS (psramfreq, max_psram_freq, uint16_t)
 NM_BOOL_ACCESS(dbguart,   dbg_uart)
 NM_INT_ACCESS (drives,    drives,     uint8_t)
 NM_INT_ACCESS (a600chip,  a600_chip,  uint8_t)
+NM_INT_ACCESS (loadtest,  load_test,  uint8_t)
+static bool hook_loadtest(int32_t, int32_t) {
+    amiga_set_load_test(Config::load_test ? 2 : 1, Config::load_test >= 2);
+    return true;
+}
 // The A600's chip RAM: a cold start when the A600 is running (the menu says so).
 static bool hook_a600chip(int32_t, int32_t) {
     return Config::machine != MACHINE_A600 || machine_apply_kickstart();

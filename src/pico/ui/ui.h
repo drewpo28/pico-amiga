@@ -15,6 +15,7 @@ void ui_init(amiga_row_t *framebuffer);
 
 // The settings main.c applies while booting (Config, from C).
 int  settings_cpu_mhz(void);
+int  settings_load_test(void);   // Debug > A1200 load test: 0 off, 1 CPU x2, 2 + 8 planes
 int  settings_vreg_mv(void);            // core voltage, mV
 int  settings_flash_mhz(void);          // flash / PSRAM SCK limits (Options)
 int  settings_psram_mhz(void);

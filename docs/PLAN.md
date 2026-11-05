@@ -197,7 +197,11 @@ per gun (every scanout, the TMDS lookups and the menu are 0x0RGB; HAM8's
 
 Step 0 - is there room for it (hw, before anything else):
 
-- [ ] Measure the headroom on the board: the A500 core with the CPU given twice
+- [ ] (switch ready: Debug > A1200 load test, the bench's --load-test 1/2; amiga_set_load_test:
+      the 68000 runs twice the cycles per line - KS 1.3 reaches frame 100's PC at 50 -
+      and two more planes are read and spread into a scratch line, an upper bound:
+      AROS hires 4 planes went 79 -> 183 us of fetch, 38 -> 77 of reads on the host)
+      Measure the headroom on the board: the A500 core with the CPU given twice
       the cycles per line (a debug switch) on Cannon Fodder / State of the Art,
       ms per frame at 378 and 504 MHz. Today a busy frame takes 18-20 ms; if
       the doubled CPU alone does not fit in 20 ms, AGA runs below full speed

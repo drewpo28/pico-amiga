@@ -253,6 +253,10 @@ AMIGA_HOT static void dma_unit(int k) {
         }
         bplpt[p] += 2u * (uint32_t)nw;
     }
+    if (A.load_planes && np && nw <= 2)                 // load test: planes 7 and 8's reads
+        for (int p = 0; p < 2; p++)
+            for (int j = 0; j < nw; j++)
+                ws[hd++ & (WS_SIZE - 1)] = U16BE(cr + ((bplpt[p] + 0x2000u + 2u * (uint32_t)j) & cm));
     atomic_store_explicit(&ws_head, hd, memory_order_release);
     if (k == dma_st.nunits - 1)
         for (int p = 0; p < np; p++) bplpt[p] += (uint32_t)(int32_t)bplmod[p & 1];
@@ -321,7 +325,19 @@ AMIGA_HOT static void fetch_unit(int k) {
     uint32_t tl = atomic_load_explicit(&ws_tail, memory_order_relaxed);
     for (int p = 0; p < np; p++)
         for (int j = 0; j < nw; j++) wd[p][j] = ws[tl++ & (WS_SIZE - 1)];
+    uint16_t wx[6][4];
+    const bool extra = A.load_planes && np && nw <= 2;   // load test: dma_unit's two more planes
+    if (extra)
+        for (int p = 0; p < 2; p++)
+            for (int j = 0; j < nw; j++) wx[p][j] = ws[tl++ & (WS_SIZE - 1)];
     atomic_store_explicit(&ws_tail, tl, memory_order_release);
+    if (extra) {                                         // spread as planes are, into a scratch line
+        static uint8_t scratch[PF_SIZE];
+        uint8_t *const keep = pf_f;
+        pf_f = scratch;
+        spread_planes(wx, 2, 0, 1, x + d1, r == HIRES);
+        pf_f = keep;
+    }
     if (r == SHRES) {
         if (d1 == d2) spread_shres(wd, np, 0, 1, x + d1);
         else {

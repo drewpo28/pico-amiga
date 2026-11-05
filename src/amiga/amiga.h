@@ -216,6 +216,14 @@ bool amiga_state_load(const amiga_stream_t *io);
 // start from 0, feed the data in any number of pieces.
 uint32_t amiga_crc32(uint32_t crc, const void *p, uint32_t n);
 
+// A1200 headroom test (docs/PLAN.md, section 7, step 0), off by default and not
+// in snapshots: cpu_mul 2 gives the 68000 twice the cycles per line (a 14 MHz
+// CPU's load: twice the instructions in the same emulated time), extra_planes
+// reads two more words per plane fetch unit from chip RAM and spreads them into
+// a scratch line (the cost of 8 planes where a screen has 6; the picture is
+// unchanged).  For measuring ms per frame only: games run too fast with it.
+void amiga_set_load_test(int cpu_mul, bool extra_planes);
+
 // Diagnostics.
 typedef struct {
     uint32_t frame;
