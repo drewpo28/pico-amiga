@@ -35,6 +35,7 @@ import subprocess
 import sys
 import tempfile
 
+HOT_020 = 128   # tools/musashi_hot.txt's first ones, in SRAM for the 68EC020 too
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MUS = os.path.join(ROOT, "external", "musashi")
 OUT = os.path.join(MUS, "gen")
@@ -141,9 +142,12 @@ def main():
         h[0] = 0                    # illegal: m68k_execute() uses the opcode's cycle table
         return [v or 0 for v in h]
     hcyc, hcyc20 = per_handler(1), per_handler(2)
-    hotset = set(hot)
+    # The first HOT_020 of them are in SRAM for the 68EC020 too (M68KI_HOT2):
+    # SRAM is short (PICO_DV's heap), and the top of the list is most of the time.
+    hotset, hot2 = set(hot), set(hot[:HOT_020])
     text = re.sub(r"^static void (m68k_op_\w+)\(void\)$",
-                  lambda m: ("M68KI_HOT static void %s(void)" if m.group(1) in hotset
+                  lambda m: ("M68KI_HOT2 static void %s(void)" if m.group(1) in hot2
+                             else "M68KI_HOT static void %s(void)" if m.group(1) in hotset
                              else "static void %s(void)") % m.group(1),
                   text, flags=re.M)
 
