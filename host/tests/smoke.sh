@@ -90,7 +90,7 @@ if cmp -s "$OUT/state600-a.png" "$OUT/state600-b.png"; then echo "PASS a600 snap
 #    RDB in front of it): make_ide_adf.py's bootblock runs IDENTIFY, reads by LBA
 #    and CHS, two sectors in one command, writes a sector and reads it back, and
 #    checks the interrupt through Gayle; --write-back puts the write in the file.
-python3 host/tests/make_hdf.py "$OUT/ide.hdf"
+python3 host/tests/make_hdf.py "$OUT/ide.hdf" --blocks 8032   # + the virtual RDB's 32: 8 x 16 x 63
 python3 host/tests/make_ide_adf.py "$OUT/ide.adf"
 $BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --a600 --adf "$OUT/ide.adf" \
      --hdf "$OUT/ide.hdf" --write-back --frames 1200 > "$OUT/ide.log" 2>&1

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build an Amiga HDF holding one empty FFS (DOS\\1) partition.
 
-  make_hdf.py out.hdf [--mb N] [--name NAME] [--rdb]
+  make_hdf.py out.hdf [--mb N | --blocks N] [--name NAME] [--rdb]
 
 Without --rdb: a bare partition (WinUAE's partition HDF: 32 blocks per track,
 one surface, 2 reserved blocks), as the IDE drive (src/amiga/ide.c) puts a
@@ -90,7 +90,7 @@ def main():
     out = args[0]
     mb = int(args[args.index("--mb") + 1]) if "--mb" in args else 4
     name = args[args.index("--name") + 1] if "--name" in args else "TestHD"
-    blocks = mb * 2048
+    blocks = int(args[args.index("--blocks") + 1]) if "--blocks" in args else mb * 2048
     if "--rdb" in args:
         cyls = blocks // 32
         part = ffs((cyls - 1) * 32, name)

@@ -14,9 +14,13 @@
 // of 32 blocks per track and one surface, 2 reserved blocks), the image from
 // block 32 on.  Writes to the virtual blocks are dropped.
 //
-// The geometry IDENTIFY reports: an RDB's own when it is a valid CHS one,
-// otherwise 16 heads x 63 sectors and the cylinders to cover the image (the
-// blocks past its end read as zeros).
+// The geometry IDENTIFY reports: an RDB's own when it is a valid CHS one that
+// fits in the image, otherwise the heads (1-16) x sectors (1-63) x cylinders that
+// come closest to the image without passing its end (16 x 63 first; most sizes
+// have an exact one).  Never past the end: HDToolBox's Read Configuration takes
+// the drive's size from it and partitions to the last cylinder, and a 2 GB SD
+// partition reported as 4157 x 16 x 63 had its last 48 blocks nowhere - writes
+// there vanished (now an error), reads came back zeros.
 #include <string.h>
 #include "amiga_int.h"
 
@@ -73,6 +77,8 @@ static void rdb_sum(uint8_t *b) {               // longs 0..63 add up to 0
 static void vrdb_block(uint32_t n, uint8_t *b) {
     memset(b, 0, 512);
     const uint32_t cyls = (img_blocks + VRDB_BLOCKS - 1) / VRDB_BLOCKS + 1;
+    uint32_t hicyl = img_blocks / VRDB_BLOCKS;                     // the partition's last cylinder,
+    if (hicyl > total_blocks() / VRDB_BLOCKS - 1) hicyl = total_blocks() / VRDB_BLOCKS - 1;   // inside the drive
     if (n == 0) {
         memcpy(b, "RDSK", 4);
         put32(b + 4, 64);
@@ -114,7 +120,7 @@ static void vrdb_block(uint32_t n, uint8_t *b) {
         put32(e + 20, VRDB_BLOCKS);             // de_BlocksPerTrack
         put32(e + 24, 2);                       // de_Reserved
         put32(e + 36, 1);                       // de_LowCyl
-        put32(e + 40, img_blocks / VRDB_BLOCKS);  // de_HighCyl: whole cylinders of the image
+        put32(e + 40, hicyl);                   // de_HighCyl: whole cylinders the drive holds
         put32(e + 44, 30);                      // de_NumBuffers
         put32(e + 52, 0x1FE00);                 // de_MaxTransfer
         put32(e + 56, 0x7FFFFFFE);              // de_Mask
@@ -135,15 +141,23 @@ static bool read_block(uint32_t lba, uint8_t *b) {
 static bool write_block(uint32_t lba, const uint8_t *b) {
     if (lba < voff) return true;
     lba -= voff;
-    if (lba >= img_blocks) return true;
+    if (lba >= img_blocks) return false;
     return disk.write && disk.write(disk.ctx, lba * 512u, b, 512) == 0;
 }
 
 // ---- insert --------------------------------------------------------------------------
-static void chs_cover(uint32_t blocks) {
-    heads_def = 16; spt_def = 63;
-    uint32_t c = (blocks + 16u * 63 - 1) / (16u * 63);
-    cyls_def = (uint16_t)(c < 1 ? 1 : c > 65535 ? 65535 : c);
+static void chs_fit(uint32_t blocks) {
+    uint32_t best = 0;
+    heads_def = 1; spt_def = 1; cyls_def = 1;
+    for (uint32_t h = 16; h >= 1; h--)
+        for (uint32_t s = 63; s >= 1; s--) {
+            uint32_t c = blocks / (h * s);
+            if (c > 65535) c = 65535;
+            if (c && c * h * s > best) {
+                best = c * h * s;
+                heads_def = (uint8_t)h; spt_def = (uint8_t)s; cyls_def = (uint16_t)c;
+            }
+        }
 }
 
 void ide_insert(const amiga_disk_t *d) {
@@ -159,10 +173,10 @@ void ide_insert(const amiga_disk_t *d) {
         if (!memcmp(b, "RDSK", 4)) {
             rdb = true;
             const uint32_t c = be32(b + 64), s = be32(b + 68), h = be32(b + 72);
-            if (c >= 1 && c <= 65535 && s >= 1 && s <= 255 && h >= 1 && h <= 16) {
+            if (c >= 1 && c <= 65535 && s >= 1 && s <= 255 && h >= 1 && h <= 16 && c * h * s <= img_blocks) {
                 cyls_def = (uint16_t)c; spt_def = (uint8_t)s; heads_def = (uint8_t)h;
             } else {
-                chs_cover(img_blocks);
+                chs_fit(img_blocks);
             }
         }
     }
@@ -172,7 +186,7 @@ void ide_insert(const amiga_disk_t *d) {
             voff = VRDB_BLOCKS;
             dos_type = be32(b);
         }
-        chs_cover(img_blocks + voff);
+        chs_fit(img_blocks + voff);
     }
     memset(buf, 0, sizeof buf);
 }
