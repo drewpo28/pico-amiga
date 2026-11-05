@@ -34,7 +34,14 @@ typedef struct {
 static bank_t banks[256];
 static bool   overlay;
 
+// Musashi's instruction fetch window (m68kcpu.h, AMIGA_FETCH_WINDOW): the 64 KB
+// bank the code last ran in, read straight from its RAM / ROM.  Any change to
+// banks[] closes it.
+const unsigned char *m68ki_fetch_ptr;
+unsigned int m68ki_fetch_lo, m68ki_fetch_len;
+
 static void map(int first, int count, const uint8_t *rd, uint8_t *wr, uint32_t mask, int io) {
+    m68ki_fetch_len = 0;
     for (int i = first; i < first + count && i < 256; i++) {
         banks[i].rd = rd; banks[i].wr = wr; banks[i].mask = mask; banks[i].wmask = mask;
         banks[i].io = (uint8_t)io;
@@ -45,6 +52,7 @@ static void map_low(void) {
     const amiga_config_t *c = &A.cfg;
     // Chip RAM and its mirrors up to 2 MB.
     map(0x00, 0x20, c->chip_ram, c->chip_ram, c->chip_size - 1, B_NONE);
+    m68ki_fetch_len = 0;
     if (overlay) {
         // ROM reads over the bottom 512 KB; writes still land in chip RAM.
         for (int i = 0; i < 8; i++) {
@@ -234,6 +242,18 @@ AMIGA_HOT unsigned int m68k_read_memory_16(unsigned int a) {
     const bank_t *b = &banks[a >> 16];
     if (b->rd) return ld16(b->rd + (a & b->mask));
     return io_read16(a, b->io);
+}
+
+AMIGA_HOT unsigned int m68ki_fetch_slow16(unsigned int a) {
+    a &= 0xFFFFFF;
+    const bank_t *b = &banks[a >> 16];
+    if (b->rd && b->mask >= 0xFFFF) {                    // the whole bank is one block
+        const uint32_t lo = a & 0xFF0000;
+        m68ki_fetch_ptr = b->rd + (lo & b->mask);
+        m68ki_fetch_lo = lo;
+        m68ki_fetch_len = 0x10000;
+    }
+    return m68k_read_memory_16(a);
 }
 
 AMIGA_HOT unsigned int m68k_read_memory_32(unsigned int a) {

@@ -1064,6 +1064,15 @@ char* m68ki_disassemble_quick(unsigned int pc, unsigned int cpu_type);
 
 extern uint pmmu_translate_addr(uint addr_in);
 
+#ifdef AMIGA_FETCH_WINDOW
+/* PICO-AMIGA PATCH: mem.c's instruction fetch window: addresses [lo, lo + len)
+ * read from ptr + (address - lo); len 0 when there is none.  The slow path
+ * reads through the memory map and moves the window to the address's bank. */
+extern const unsigned char *m68ki_fetch_ptr;
+extern unsigned int m68ki_fetch_lo, m68ki_fetch_len;
+unsigned int m68ki_fetch_slow16(unsigned int address);
+#endif
+
 /* Handles all immediate reads, does address error check, function code setting,
  * and prefetching if they are enabled in m68kconf.h
  */
@@ -1093,6 +1102,18 @@ static inline uint m68ki_read_imm_16(void)
 	CPU_PREF_DATA = m68k_read_immediate_16(ADDRESS_68K(CPU_PREF_ADDR));
 	return result;
 }
+#elif defined(AMIGA_FETCH_WINDOW)
+	/* PICO-AMIGA PATCH: straight from the 64 KB bank the code runs in (mem.c's
+	 * fetch window), else through the memory map, which moves the window. */
+	{
+		const uint a = ADDRESS_68K(REG_PC), o = a - m68ki_fetch_lo;
+		REG_PC += 2;
+		if (o < m68ki_fetch_len) {
+			const unsigned char *p = m68ki_fetch_ptr + o;
+			return ((uint)p[0] << 8) | p[1];
+		}
+		return m68ki_fetch_slow16(a);
+	}
 #else
 	REG_PC += 2;
 	return m68k_read_immediate_16(ADDRESS_68K(REG_PC-2));
@@ -1136,6 +1157,16 @@ static inline uint m68ki_read_imm_32(void)
 	CPU_PREF_DATA = m68k_read_immediate_16(ADDRESS_68K(CPU_PREF_ADDR));
 
 	return temp_val;
+#elif defined(AMIGA_FETCH_WINDOW)
+	{
+		const uint a = ADDRESS_68K(REG_PC), o = a - m68ki_fetch_lo;
+		REG_PC += 4;
+		if (o + 4 <= m68ki_fetch_len && o < m68ki_fetch_len) {
+			const unsigned char *p = m68ki_fetch_ptr + o;
+			return ((uint)p[0] << 24) | ((uint)p[1] << 16) | ((uint)p[2] << 8) | p[3];
+		}
+		return (m68ki_fetch_slow16(a) << 16) | m68ki_fetch_slow16(a + 2);
+	}
 #else
 	m68ki_set_fc(FLAG_S | FUNCTION_CODE_USER_PROGRAM); /* auto-disable (see m68kcpu.h) */
 	m68ki_check_address_error(REG_PC, MODE_READ, FLAG_S | FUNCTION_CODE_USER_PROGRAM); /* auto-disable (see m68kcpu.h) */

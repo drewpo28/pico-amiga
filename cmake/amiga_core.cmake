@@ -35,3 +35,6 @@ set_source_files_properties(
     ${ROOT}/external/musashi/softfloat/softfloat.c
     PROPERTIES COMPILE_OPTIONS "-w")
 target_compile_options(amiga_core PRIVATE -O2 -Wall -Wextra -Wno-unused-parameter)
+# Musashi's instruction fetch reads mem.c's window directly (m68kcpu.h); without
+# it (Musashi's own test driver) the stock m68k_read_memory_16/32 path.
+target_compile_definitions(amiga_core PRIVATE AMIGA_FETCH_WINDOW=1)

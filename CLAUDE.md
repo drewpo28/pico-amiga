@@ -128,6 +128,10 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   unit), and the unit starting at or after DDFSTOP is the last one. AROS uses
   hires DDF $3C/$D0 for a 640-px screen; a "units = (stop-start)/4 + 2" hires
   formula gives 39 words and a sheared picture.
+- **Instruction fetch reads a window, not the memory map** (AMIGA_FETCH_WINDOW,
+  m68kcpu.h / mem.c): m68ki_read_imm_16/32 read the 64 KB bank the code runs in
+  straight from its RAM / ROM; a miss goes through m68ki_fetch_slow16, which moves
+  the window; map() / map_low() close it. Musashi's test driver builds without it.
 - **Musashi samples interrupts only on entry to m68k_execute()** (and on SR
   writes): `amiga_update_ipl()` calls m68k_end_timeslice() when the level rises
   inside the CPU, otherwise an interrupt would wait for the end of the slice.
