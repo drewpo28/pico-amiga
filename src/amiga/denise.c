@@ -470,9 +470,9 @@ static inline uint16_t sprite_mix(int x, uint16_t c, int which) {
         int pri = which == 1 ? (bplcon2 & 7) : ((bplcon2 >> 3) & 7);
         if (pair >= pri) return c;                             // playfield in front
     }
-    // AGA: the sprites' 16 colours start at ESPRM x 16 (BPLCON4 bits 4-7; the odd
-    // sprites' OSPRM is taken as the same: the pair is all spl[] keeps).
-    return color[(A.aga ? (bplcon4 & 0xF0) : 16) + (s & 15)];
+    // AGA: the even sprites' colours start at ESPRM x 16 (BPLCON4 bits 4-7), the
+    // odd and attached ones' at OSPRM x 16 (bits 0-3), as WinUAE's sbasecol[].
+    return color[(A.aga ? (s & 0x40 ? (bplcon4 & 0x0F) << 4 : bplcon4 & 0xF0) : 16) + (s & 15)];
 }
 
 // Colour lookup for the current mode: pf value -> colour, and which playfield
@@ -903,13 +903,14 @@ AMIGA_HOT static void sprite_compose(void) {
         // An unarmed sprite of the pair draws nothing.
         const int xe = spr_x(e), xo = spr_x(o);
         for (int x = lo; x < hi; x++) {
-            int ve = spr_px(e, x, xe, step), vo = spr_px(o, x, xo, step), ci;
+            int ve = spr_px(e, x, xe, step), vo = spr_px(o, x, xo, step), ci, odd = 0x40;
             if (att) ci = (vo << 2) | ve;
-            else if (ve) ci = 4 * pair + ve;
+            else if (ve) ci = 4 * pair + ve, odd = 0;
             else if (vo) ci = 4 * pair + vo;
             else ci = 0;
             if (!ci) continue;
-            spl[x] = (uint8_t)(0x80 | (pair << 4) | (ci & 15));
+            // Bit 6: the odd sprite's colour (or an attached pair's): AGA's OSPRM.
+            spl[x] = (uint8_t)(0x80 | odd | (pair << 4) | (ci & 15));
             if (x < spl_lo) spl_lo = x;
             if (x + 1 > spl_hi) spl_hi = x + 1;
         }
