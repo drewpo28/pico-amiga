@@ -219,7 +219,7 @@ static uint32_t files_base(void) {
 }
 
 int machine_sd_parts(MachinePart out[8]) {
-    for (int i = 0; i < 8; i++) out[i] = MachinePart{ (uint8_t)(i + 1), 0, 0, 0, false };
+    for (int i = 0; i < 8; i++) out[i] = MachinePart{ (uint8_t)(i + 1), 0, 0, 0, false, "" };
     LBA_t card = 0;
     disk_ioctl(0, GET_SECTOR_COUNT, &card);
     uint8_t *sec = (uint8_t *)malloc(512);               // the heap, not .bss (pico-speccy's rule)
