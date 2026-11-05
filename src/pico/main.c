@@ -171,6 +171,7 @@ int main(void) {
     amiga_config_t cfg;
     memset(&cfg, 0, sizeof cfg);
     cfg.chip_ram = ps;              // sizes and chipset: machine_select_rom (Config::machine)
+    cfg.line_read = board_line_reader();   // bitplane lines around the XIP cache
     cfg.slow_ram = ps + 512 * KB;
     // The chip RAM area (2 MB from 8 MB of PSRAM on), the ROMs after it, then the
     // Win+F8 band's pixels (16 KB), the floppy's MFM track and the DMS area.  A

@@ -278,6 +278,14 @@ pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
   blank-line back porch + width) the blank lines played ~300 px, the frame ran at
   63 Hz and no display locked (PCp2, MURM2: HSTX had never shown a picture); split
   into runs of 255 the stream fell apart. Lines/s per mode is the check.
+- **Bitplane lines come around the XIP cache** (amiga_config_t.line_read, board.c):
+  at each line start the DMA side has every plane's line cleaned out of the cache
+  and copied by the CPU through the uncached, non-allocating alias (one QMI burst)
+  into lbuf[] (SRAM); dma_unit reads there while the pointer is in range (a copper
+  pointer write mid-line falls back to the cached read). pico-speccy's prev-FB
+  window: sweeping 80 KB a frame through the 16 KB cache (8 AGA planes) missed
+  25-30k times a frame and evicted the CPU's working set. `--line-read` on the
+  bench (a plain copy) must give the same screens.
 - **No DMA reads from PSRAM while the PIO TMDS scanout runs** (PICO_DV): the DMA
   has one read master, a PSRAM read stalls it for hundreds of ns, the video
   channel starves and HDMI drops (tried: a per-line bitplane prefetch, hires

@@ -1,6 +1,7 @@
 // The firmware's driver APIs on a PC: video.h, audio_out.h, input_devices.h,
 // psram.h, clock.h.  The SDL side (window, events, the audio device) is
 // host_main.cpp; this file is what src/pico/main.c and input.cpp call.
+#include "board.h"
 #include <SDL.h>
 #include <atomic>
 #include <chrono>
@@ -34,6 +35,7 @@ extern "C" uint32_t board_cycles(void) {
 }
 extern "C" uint32_t board_cycles_per_us(void) { return 1000; }
 // No XIP cache and no SysTick profiler on a PC.
+extern "C" board_line_read_fn board_line_reader(void) { return nullptr; }
 extern "C" void board_xip_counts(uint32_t *hit, uint32_t *acc) { *hit = *acc = 0; }
 extern "C" bool board_pcprof(bool on) { (void)on; return false; }
 extern "C" void board_pcprof_dump(void) {}

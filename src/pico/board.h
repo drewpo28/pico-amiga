@@ -27,6 +27,11 @@ void     board_xip_counts(uint32_t *hit, uint32_t *acc);
 // them with tools/pcprof.py against the same ELF.  Call both from core 0.
 bool     board_pcprof(bool on);           // false: no heap for the table
 void     board_pcprof_dump(void);
+// amiga_config_t.line_read for chip RAM at PSRAM_BASE: the range cleaned out of
+// the XIP cache, then copied through the uncached, non-allocating alias by the
+// CPU (its own bus port: the DMA, and so HDMI, never see it).  NULL on a PC.
+typedef void (*board_line_read_fn)(uint8_t *dst, uint32_t off, uint32_t len);
+board_line_read_fn board_line_reader(void);
 
 // System info (Win+F1).  The flash's JEDEC ID is read once, by
 // board_flash_probe() first thing in main(): the command leaves XIP and boot2
