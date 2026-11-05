@@ -1340,7 +1340,11 @@ uint16_t denise_q_color[256];
 AMIGA_HOT void denise_write(uint32_t reg, uint16_t v, int hpos) {
     const uint16_t h = (uint16_t)(hpos < 0 ? 0 : hpos);
     uint16_t x = 0;
-    if (reg >= R_COLOR00) {                                   // the last display registers
+    // Only COLOR00-31: DIWHIGH ($1E4) and FMODE ($1FC) sit above them, and taken
+    // for colours, a write equal to the "queued colour" was dropped (Roswell's end
+    // screen kept FMODE 3 from the part before and sheared its text), any with
+    // LOCT or RDRAM set too.
+    if (reg >= R_COLOR00 && reg < R_COLOR00 + 64) {
         int n = (reg - R_COLOR00) >> 1;
         if (A.aga) {
             if (q_bplcon2 & 0x0100) return;                  // RDRAM: a read mode, writes ignored
