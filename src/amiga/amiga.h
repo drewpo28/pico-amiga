@@ -218,7 +218,9 @@ uint32_t amiga_crc32(uint32_t crc, const void *p, uint32_t n);
 
 // A1200 headroom test (docs/PLAN.md, section 7, step 0), off by default and not
 // in snapshots: cpu_mul 2 gives the 68000 twice the cycles per line (a 14 MHz
-// CPU's load: twice the instructions in the same emulated time), extra_planes
+// CPU's load: twice the instructions in the same emulated time), 3 three times
+// (a 68EC020 does more per cycle than a 68000: an A1200 benchmarks at 2.5-3x an
+// A500), extra_planes
 // reads two more words per plane fetch unit from chip RAM and spreads them into
 // a scratch line (the cost of 8 planes where a screen has 6; the picture is
 // unchanged).  For measuring ms per frame only: games run too fast with it.

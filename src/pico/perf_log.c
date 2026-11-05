@@ -55,6 +55,8 @@ void perf_log_frame(uint32_t emu_us) {
     hold_last = hold; skip_last = skip; full_last = full; starve_last = starve;
     const uint32_t emu_avg = emu_sum / frames, emu10 = emu_avg / 100;
     const uint32_t fps10 = (uint32_t)((uint64_t)frames * 10000000u / (now - t0));
+    static const char *const kLoadTest[] = { "", " | LOAD TEST cpu x2", " | LOAD TEST cpu x2 + 8 planes",
+                                             " | LOAD TEST cpu x3", " | LOAD TEST cpu x3 + 8 planes" };
 #define MS(i) (unsigned)(ms10[i] / 10), (unsigned)(ms10[i] % 10)
     printf("PERF fps %u.%u emu %u.%u ms (%u%%, %u slow) | cpu %u.%u ren %u.%u+bpl %u.%u+rd %u.%u cop %u.%u blt %u.%u"
            " aud %u.%u line %u.%u dsk %u.%u oth %u.%u wait %u.%u (irq %u.%u) | core1 render %u.%u irq %u.%u enc %u.%u"
@@ -69,7 +71,7 @@ void perf_log_frame(uint32_t emu_us) {
            (unsigned)settings_cpu_mhz(), sck((unsigned)settings_cpu_mhz(), (unsigned)settings_flash_mhz()),
            sck((unsigned)settings_cpu_mhz(), settings_psram_mhz() < 135 ? (unsigned)settings_psram_mhz() : 135u),
            (unsigned)late, (unsigned)stall, (unsigned)dh, (unsigned)ds, (unsigned)dst, (unsigned)df, (unsigned)qmin,
-           settings_load_test() >= 2 ? " | LOAD TEST cpu x2 + 8 planes" : settings_load_test() ? " | LOAD TEST cpu x2" : "");
+           kLoadTest[settings_load_test() >= 0 && settings_load_test() <= 4 ? settings_load_test() : 0]);
     last = p;
     frames = emu_sum = slow = 0;
     t0 = now;

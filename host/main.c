@@ -19,7 +19,8 @@
 // clock showing the PC's local time).  --a600: the A600 (as the A500+ but with
 // Gayle - an empty IDE port and PCMCIA slot - and no clock); --a601: an A600 with
 // 2 MB of chip RAM (an A601 in its trapdoor).  --vcentre: amiga_set_vcentre(true).
-// --load-test 1: the A1200 headroom test's CPU x2 (amiga_set_load_test), 2: and 8 planes.
+// --load-test 1: the A1200 headroom test's CPU x2 (amiga_set_load_test), 2: and 8 planes,
+// 3: CPU x3, 4: and 8 planes.
 // --state-save N:file writes the core's snapshot (amiga_state_save) after frame N;
 // --state-load file starts from one instead of the reset (same ROM, model, disks).
 #include <stdio.h>
@@ -332,7 +333,7 @@ int main(int argc, char **argv) {
         amiga_insert_disk(k, &d);
     }
     if (ndrv > 1) { amiga_set_drives(ndrv); amiga_reset(true); }   // Kickstart finds DF1+ at reset
-    if (load_test) amiga_set_load_test(2, load_test >= 2);
+    if (load_test) amiga_set_load_test(load_test >= 3 ? 3 : 2, load_test == 2 || load_test == 4);
     FILE *hdf = NULL;
     if (hdf_path) {
         hdf = fopen(hdf_path, write_back ? "r+b" : "rb");

@@ -84,7 +84,8 @@ NM_INT_ACCESS (drives,    drives,     uint8_t)
 NM_INT_ACCESS (a600chip,  a600_chip,  uint8_t)
 NM_INT_ACCESS (loadtest,  load_test,  uint8_t)
 static bool hook_loadtest(int32_t, int32_t) {
-    amiga_set_load_test(Config::load_test ? 2 : 1, Config::load_test >= 2);
+    const uint8_t t = Config::load_test;                  // 1, 2: x2 (+ planes); 3, 4: x3 (+ planes)
+    amiga_set_load_test(t >= 3 ? 3 : t ? 2 : 1, t == 2 || t == 4);
     return true;
 }
 // The A600's chip RAM: a cold start when the A600 is running (the menu says so).

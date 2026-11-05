@@ -50,7 +50,7 @@ AMIGA_HOT static void cpu_until(uint64_t target) {
 }
 
 void amiga_set_load_test(int cpu_mul, bool extra_planes) {
-    A.load_cpu = (uint8_t)(cpu_mul > 1 ? 2 : 1);
+    A.load_cpu = (uint8_t)(cpu_mul < 1 ? 1 : cpu_mul > 3 ? 3 : cpu_mul);
     A.load_planes = extra_planes;
     A.load_rem = 0;
 }

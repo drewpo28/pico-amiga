@@ -64,7 +64,7 @@ typedef struct {
     amiga_config_t cfg;
     uint32_t chip_mask;        // chip_size - 1
     bool     ecs;              // cfg.chipset == AMIGA_ECS
-    uint8_t  load_cpu;         // amiga_set_load_test: 68000 work per cycle (1, or 2)
+    uint8_t  load_cpu;         // amiga_set_load_test: 68000 work per cycle (1, 2 or 3)
     bool     load_planes;      // ...and two more bitplanes read and spread (8 for 6)
     uint8_t  load_rem;         // CPU cycles left over from the last slice (load_cpu 2)
 

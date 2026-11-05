@@ -865,6 +865,7 @@ static bool p_dbgUartPin() {
 static const Option opt_load_test[] = {
     { "Off", 0, "Off" }, { "CPU x2 (a 14 MHz CPU)", 1, "CPU x2" },
     { "CPU x2 + 8 planes", 2, "x2+8pl" },
+    { "CPU x3 (an A1200's 68EC020)", 3, "CPU x3" }, { "CPU x3 + 8 planes", 4, "x3+8pl" },
 };
 
 static const Node kDebug[] = {
