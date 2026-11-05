@@ -155,6 +155,40 @@ static const char *disk_kind(int (*rd)(void *, uint32_t, void *, uint32_t), void
 }
 static const char *s_hdf_kind = "";
 
+// The RDB's partitions, for the log: name, cylinders, size, and whether one ends
+// past the image (HDToolBox partitions to the drive's last cylinder: a drive
+// that once reported more than it holds left a partition hanging off the end).
+static uint32_t be32p(const uint8_t *p) { return (uint32_t)p[0] << 24 | p[1] << 16 | p[2] << 8 | p[3]; }
+static void hdf_log_parts(int (*rd)(void *, uint32_t, void *, uint32_t), void *ctx, uint32_t blocks) {
+    uint8_t *b = (uint8_t *)malloc(512);
+    if (!b) return;
+    uint32_t part = 0xFFFFFFFF;
+    for (uint32_t n = 0; n < 16 && n < blocks; n++)
+        if (rd(ctx, n * 512u, b, 512) == 0 && !memcmp(b, "RDSK", 4)) {
+            printf("hard disk: RDB at block %u, its geometry %u x %u x %u\n", (unsigned)n,
+                   (unsigned)be32p(b + 64), (unsigned)be32p(b + 72), (unsigned)be32p(b + 68));
+            part = be32p(b + 28);
+            break;
+        }
+    for (int i = 0; i < 16 && part < blocks; i++) {
+        if (rd(ctx, part * 512u, b, 512) != 0 || memcmp(b, "PART", 4)) break;
+        const uint8_t *e = b + 128;
+        const uint32_t per = be32p(e + 12) * be32p(e + 20), lo = be32p(e + 36), hi = be32p(e + 40);
+        const uint32_t end = (hi + 1) * per;            // first block after it
+        char name[32];
+        const unsigned nl = b[36] < 31 ? b[36] : 31;
+        memcpy(name, b + 37, nl); name[nl] = 0;
+        printf("hard disk:   %s: cylinders %u-%u (%u x %u), %u MB, DOS type %08X%s", name, (unsigned)lo,
+               (unsigned)hi, (unsigned)be32p(e + 12), (unsigned)be32p(e + 20),
+               (unsigned)((hi - lo + 1) * (per / 2) / 1024), (unsigned)be32p(e + 64),
+               (be32p(b + 20) & 1) ? ", bootable" : "");
+        if (end > blocks) printf(" - ENDS %u BLOCKS PAST THE DISK", (unsigned)(end - blocks));
+        printf("\n");
+        part = be32p(b + 16);
+    }
+    free(b);
+}
+
 static void hdf_attach(void) {
     if (Config::machine != MACHINE_A600 || (!s_hdf_open && !s_raw)) { amiga_set_hdf(NULL); return; }
     const amiga_disk_t d = s_raw
@@ -166,6 +200,11 @@ static void hdf_attach(void) {
     if (s_raw) printf(" (card sectors %u+%u)", (unsigned)s_raw_start, (unsigned)s_raw_count);
     printf("\n");
     amiga_set_hdf(&d);
+    uint16_t c; uint8_t h, sp;
+    amiga_hdf_geometry(&c, &h, &sp);
+    printf("hard disk: IDENTIFY %u x %u x %u = %u of %u blocks\n", c, h, sp,
+           (unsigned)((uint32_t)c * h * sp), (unsigned)(d.size / 512));
+    hdf_log_parts(d.read, d.ctx, d.size / 512);
 }
 const char *machine_hdf_kind(void) { return s_hdf_kind; }
 

@@ -193,6 +193,8 @@ void ide_insert(const amiga_disk_t *d) {
 
 bool ide_present(void) { return present(); }
 
+void amiga_hdf_geometry(uint16_t *c, uint8_t *h, uint8_t *s) { *c = cyls_def; *h = heads_def; *s = spt_def; }
+
 // ---- commands ----------------------------------------------------------------------
 static void signature(void) {
     r_nsec = 1; r_sec = 1; r_lcyl = r_hcyl = 0;

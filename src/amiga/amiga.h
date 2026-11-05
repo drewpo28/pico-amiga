@@ -168,6 +168,8 @@ void amiga_set_drives(int n);
 // sector at a time through the callbacks (write NULL: writes fail); NULL = no
 // drive.  Kickstart looks for it at reset, so a change wants one (hard).
 void amiga_set_hdf(const amiga_disk_t *disk);
+// The geometry the drive reports in IDENTIFY (0s: no drive).
+void amiga_hdf_geometry(uint16_t *cyls, uint8_t *heads, uint8_t *sectors);
 
 // Floppy activity, for the platform's disk line (Win+F8) and drive icon: the
 // drive selected (or the last one a DMA used), its head, and what the disk DMA
