@@ -262,9 +262,22 @@ AMIGA_HOT static void dma_unit(int k) {
         for (int p = 0; p < np; p++) bplpt[p] += (uint32_t)(int32_t)bplmod[p & 1];
 }
 
+// Four lowres pixels' pf values (q[0], q[1]: bytes abcd) at pf position pos, each
+// twice: aabb ccdd.
+static inline __attribute__((always_inline)) void lowres_out(int pos, const uint32_t q[2]) {
+    for (int h = 0; h < 2; h++) {
+        const uint32_t v = q[h];
+        or32(pf_f + pos + 8 * h,
+             (v & 0xFF) | (v & 0xFF) << 8 | (v & 0xFF00) << 8 | (v & 0xFF00) << 16);
+        or32(pf_f + pos + 8 * h + 4,
+             (v >> 16 & 0xFF) | (v >> 16 & 0xFF) << 8 | (v >> 8 & 0xFF0000) | (v & 0xFF000000));
+    }
+}
+
 // Planes first, first + step, ... of a unit's words, at hires-pixel position pos:
-// eight pixels at a time, one byte of every plane through spread8.
-AMIGA_HOT static void spread_planes(const uint16_t wd[6][4], int np, int first, int step, int pos, bool hires) {
+// eight pixels at a time, one byte of every plane through spread8.  The general
+// case (dual-playfield scroll: every other plane).
+AMIGA_HOT static void spread_any(const uint16_t wd[6][4], int np, int first, int step, int pos, bool hires) {
     if (hires) {
         for (int j = 0; j < 2; j++, pos += 16) {
             if (pos < 0 || pos + 16 > PF_SIZE) continue;
@@ -288,16 +301,65 @@ AMIGA_HOT static void spread_planes(const uint16_t wd[6][4], int np, int first, 
                 q[0] |= t[0] << p;
                 q[1] |= t[1] << p;
             }
-            // Each lowres pixel twice: bytes abcd -> aabb ccdd.
-            for (int h = 0; h < 2; h++) {
-                const uint32_t v = q[h];
-                or32(pf_f + pos + o + 8 * h,
-                     (v & 0xFF) | (v & 0xFF) << 8 | (v & 0xFF00) << 8 | (v & 0xFF00) << 16);
-                or32(pf_f + pos + o + 8 * h + 4,
-                     (v >> 16 & 0xFF) | (v >> 16 & 0xFF) << 8 | (v >> 8 & 0xFF0000) | (v & 0xFF000000));
-            }
+            lowres_out(pos + o, q);
         }
     }
+}
+
+// The usual case, all planes under one scroll, with np a constant: the loops
+// over the planes and the word's two bytes unroll, and each plane's shift is
+// an orr's constant operand (8 instructions a plane on the M33, 13 in the loop).
+static inline __attribute__((always_inline))
+void spread_n(const uint16_t wd[6][4], const int np, int pos, bool hires) {
+    if (hires) {
+        for (int j = 0; j < 2; j++, pos += 16) {
+            if (pos < 0 || pos + 16 > PF_SIZE) continue;
+            for (int s = 8, o = 0; s >= 0; s -= 8, o += 8) {
+                uint32_t lo = 0, hi = 0;
+#pragma GCC unroll 6
+                for (int p = 0; p < np; p++) {
+                    const uint32_t *t = spread8[(wd[p][j] >> s) & 0xFF];
+                    lo |= t[0] << p;
+                    hi |= t[1] << p;
+                }
+                or32(pf_f + pos + o, lo);
+                or32(pf_f + pos + o + 4, hi);
+            }
+        }
+    } else {
+        if (pos < 0 || pos + 32 > PF_SIZE) return;
+        for (int s = 8, o = 0; s >= 0; s -= 8, o += 16) {
+            uint32_t q[2] = { 0, 0 };
+#pragma GCC unroll 6
+            for (int p = 0; p < np; p++) {
+                const uint32_t *t = spread8[(wd[p][0] >> s) & 0xFF];
+                q[0] |= t[0] << p;
+                q[1] |= t[1] << p;
+            }
+            lowres_out(pos + o, q);
+        }
+    }
+}
+
+AMIGA_HOT __attribute__((noinline)) static void spread_planes(const uint16_t wd[6][4], int np, int first, int step, int pos, bool hires) {
+    if (first == 0 && step == 1) {                      // hires has at most 4 planes
+        if (hires) switch (np) {
+            case 1: spread_n(wd, 1, pos, true); return;
+            case 2: spread_n(wd, 2, pos, true); return;
+            case 3: spread_n(wd, 3, pos, true); return;
+            case 4: spread_n(wd, 4, pos, true); return;
+            default: break;
+        } else switch (np) {
+            case 1: spread_n(wd, 1, pos, false); return;
+            case 2: spread_n(wd, 2, pos, false); return;
+            case 3: spread_n(wd, 3, pos, false); return;
+            case 4: spread_n(wd, 4, pos, false); return;
+            case 5: spread_n(wd, 5, pos, false); return;
+            case 6: spread_n(wd, 6, pos, false); return;
+            default: break;
+        }
+    }
+    spread_any(wd, np, first, step, pos, hires);
 }
 
 // Super-hires: a plane's four words (64 pixels) at pf position pos, 32 entries.
