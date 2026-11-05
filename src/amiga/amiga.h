@@ -140,13 +140,6 @@ typedef struct {
     // card): the local time as seconds since 1970-01-01, read when Kickstart
     // reads the clock.  NULL: no clock (the registers read 0, as an empty slot).
     int64_t (*rtc_time)(void *ctx);
-    // Bitplane lines in bulk, or NULL: at each line start Denise has len bytes of
-    // chip RAM at off (both multiples of 4) copied to dst (SRAM) for every plane,
-    // and takes the line's words from there.  The firmware cleans the range out of
-    // the XIP cache and reads it through the uncached, non-allocating alias in one
-    // QMI burst: 8 planes streamed through the 16 KB cache missed 25-30k times a
-    // frame and evicted the CPU's own working set (pico-speccy's prev-FB window).
-    void (*line_read)(uint8_t *dst, uint32_t off, uint32_t len);
     void *ctx;
 } amiga_config_t;
 

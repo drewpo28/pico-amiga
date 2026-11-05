@@ -255,29 +255,6 @@ AMIGA_HOT static void compute_ddf(agnus_t *f) {
     f->nunits = b < a ? 0 : (b - a + u - 1) / u + 1;
 }
 
-// The line's planes as line_read copied them (amiga_config_t): plane p's bytes
-// [lb_a[p], lb_a[p] + lb_n[p]) of chip RAM.  256 bytes hold the longest line
-// (super-hires, DDF $18-$D8: 200 bytes) and the alignment.
-#define LB_MAX 256
-static uint8_t  lbuf[8][LB_MAX] __attribute__((aligned(4)));
-static uint32_t lb_a[8], lb_n[8];
-
-AMIGA_HOT static void line_prefetch(void) {
-    const int np = dma_st.bpl_dma ? planes(dma_st.bplcon0) : 0;
-    for (int p = 0; p < 8; p++) lb_n[p] = 0;
-    if (!np || !dma_st.nunits) return;
-    const uint32_t align = A.aga && (dma_st.fmode & 3) ? ((dma_st.fmode & 3) == 3 ? 7u : 3u) : 0u;
-    const uint32_t bytes = (uint32_t)(dma_st.nunits * unit_words(&dma_st)) * 2u;
-    const uint32_t size = A.chip_mask + 1;
-    for (int p = 0; p < np; p++) {
-        const uint32_t a = (bplpt[p] & ~align) & A.chip_mask & ~1u, a4 = a & ~3u;
-        const uint32_t n4 = (a + bytes - a4 + 3u) & ~3u;
-        if (n4 > LB_MAX || a4 + n4 > size) continue;            // a wrap: the plain reads
-        A.cfg.line_read(lbuf[p], a4, n4);
-        lb_a[p] = a4; lb_n[p] = n4;
-    }
-}
-
 // DMA side: unit k's chip RAM reads (PSRAM latency: the BPLRD bucket), into
 // the word ring.  A hires plane's two words (super-hires: each pair of its four)
 // are one 32-bit read when they share a word.
@@ -291,13 +268,6 @@ AMIGA_HOT static void dma_unit(int k) {
     uint32_t hd = atomic_load_explicit(&ws_head, memory_order_relaxed);
     for (int p = 0; p < np; p++) {
         const uint32_t pt = bplpt[p] & ~align;
-        const uint32_t o = (pt & cm) - lb_a[p];
-        if (o < lb_n[p] && o + 2u * (uint32_t)nw <= lb_n[p]) { // in the prefetched line
-            const uint8_t *q = lbuf[p] + o;
-            for (int j = 0; j < nw; j++) ws[hd++ & (WS_SIZE - 1)] = U16BE(q + 2 * j);
-            bplpt[p] = pt + 2u * (uint32_t)nw;
-            continue;
-        }
         if (nw == 1) {
             ws[hd++ & (WS_SIZE - 1)] = U16BE(cr + (pt & cm));
         } else {
@@ -1376,7 +1346,6 @@ AMIGA_HOT void denise_line_start(void) {
     }
     dma_st.vpos = A.vpos; dma_st.dmacon = A.dmacon;
     a_line_start(&dma_st);
-    if (A.cfg.line_read) line_prefetch();
     push(EV_LINE, A.dmacon, (uint16_t)A.vpos, (uint16_t)((A.lof ? 1 : 0) | (A.lines << 1)));
     sprite_dma();
 }

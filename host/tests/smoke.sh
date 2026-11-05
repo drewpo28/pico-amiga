@@ -56,10 +56,6 @@ if cmp -s "$OUT/state-a.png" "$OUT/state-b.png"; then echo "PASS snapshot round 
 $BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --slow --frames 1000 --status 1000 \
      --shot 1000:"$OUT/aros-screen.png" > "$OUT/aros-screen.log" 2>&1
 check "aros interlace rows" "lace4=2[0-9][0-9]" "$OUT/aros-screen.log"
-# 4a. The same screen with the bitplane lines read in bulk (amiga_config_t.line_read).
-$BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --slow --frames 1000 --line-read \
-     --shot 1000:"$OUT/aros-screen-lr.png" > /dev/null 2>&1
-if cmp -s "$OUT/aros-screen.png" "$OUT/aros-screen-lr.png"; then echo "PASS line_read screen"; else echo "FAIL line_read screen"; fail=1; fi
 
 # 5. A500+ (ECS): the chip IDs, and a super-hires screen from the upper 512 KB of
 #    1 MB chip RAM (make_ecs_adf.py): $770 from output column 40 to 679, black around.

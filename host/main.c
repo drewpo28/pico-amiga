@@ -231,12 +231,6 @@ static int64_t rtc_time(void *ctx) {
     return (int64_t)t + lt.tm_gmtoff;
 }
 
-// --line-read: amiga_config_t.line_read as a plain copy (the firmware's goes
-// around the XIP cache); its screens must match the ones without it.
-static bool line_read_on;
-static const uint8_t *lr_chip;
-static void host_line_read(uint8_t *dst, uint32_t off, uint32_t len) { memcpy(dst, lr_chip + off, len); }
-
 int main(int argc, char **argv) {
     const char *rom_path = NULL, *ext_path = NULL, *wav_path = NULL;
     const char *adf_path[8] = {0}; int nadf = 0;
@@ -276,7 +270,6 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--drives") && v) { drives_opt = atoi(v); i++; }
         else if (!strcmp(a, "--vcentre")) vcentre = true;
         else if (!strcmp(a, "--render-thread")) render_thread_on = true;
-        else if (!strcmp(a, "--line-read")) line_read_on = true;   // the firmware's bitplane line copies
         else if (!strcmp(a, "--shot") && v && nshots < 64) {
             const char *c = strchr(v, ':');
             if (!c) { fprintf(stderr, "--shot N:file.png\n"); return 2; }
@@ -321,7 +314,6 @@ int main(int argc, char **argv) {
     if (plus) { cfg.chipset = AMIGA_ECS; cfg.rtc_time = rtc_time; }
     else if (slow) { cfg.slow_size = 512 * 1024; cfg.slow_ram = calloc(1, cfg.slow_size); }
     if (aga) cfg.chipset = AMIGA_AGA;          // after the model's ECS
-    if (line_read_on) { lr_chip = cfg.chip_ram; cfg.line_read = host_line_read; }
     uint32_t rs; cfg.rom = load(rom_path, &rs); cfg.rom_size = rs;
     if (rs != 256 * 1024 && rs != 512 * 1024) { fprintf(stderr, "ROM must be 256 or 512 KB\n"); return 1; }
     if (ext_path) { uint32_t es; cfg.ext_rom = load(ext_path, &es); cfg.ext_size = es; }

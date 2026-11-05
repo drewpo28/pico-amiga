@@ -135,7 +135,7 @@ target_link_libraries(pico-amiga PRIVATE
     sdcard fatfs
     pico_stdlib pico_multicore
     hardware_clocks hardware_dma hardware_pwm hardware_vreg hardware_pio hardware_i2c
-    hardware_adc hardware_flash hardware_exception hardware_xip_cache
+    hardware_adc hardware_flash hardware_exception
     tinyusb_host
 )
 set_target_properties(pico-amiga PROPERTIES OUTPUT_NAME "${BOARD_TAG}-amiga-${PORT_VERSION}")

@@ -18,8 +18,6 @@
 #include "hardware/exception.h"
 #include "hardware/structs/systick.h"
 #include "hardware/regs/xip.h"
-#include "hardware/xip_cache.h"
-#include "psram.h"
 #include <stdio.h>
 #include <string.h>
 #include "pico/bootrom.h"
@@ -112,18 +110,6 @@ uint32_t __not_in_flash_func(board_cycles)(void) {   // the audio tick IRQ calls
 }
 
 uint32_t board_cycles_per_us(void) { return clock_get_hz(clk_sys) / 1000000u; }
-
-// ---- Bitplane lines from PSRAM (pico-speccy's prev-FB window transport) ---------
-// Clean first: the CPU and the blitter wrote the planes through the write-back
-// cache.  Sequential uncached words merge into one QMI burst (COOLDOWN).
-static void __not_in_flash_func(line_read)(uint8_t *dst, uint32_t off, uint32_t len) {
-    const uintptr_t x = PSRAM_BASE - XIP_BASE + off;
-    xip_cache_clean_range(x, len);
-    const volatile uint32_t *s = (const volatile uint32_t *)(XIP_NOCACHE_NOALLOC_BASE + x);
-    uint32_t *d = (uint32_t *)dst;
-    for (uint32_t n = len >> 2; n; n--) *d++ = *s++;
-}
-board_line_read_fn board_line_reader(void) { return line_read; }
 
 // ---- XIP cache counters, PC profiler (pico-speccy's PcProf) --------------------------
 void board_xip_counts(uint32_t *hit, uint32_t *acc) {
