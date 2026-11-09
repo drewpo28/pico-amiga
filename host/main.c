@@ -33,6 +33,7 @@
 #include <stdint.h>
 #include <time.h>
 #include "amiga.h"
+#include "amiga_int.h"
 #include "dms.h"
 #include "m68k.h"
 
@@ -218,6 +219,13 @@ typedef struct { int frame; char path[256]; } shot_t;
 typedef struct { int frame, code, down; } keyev_t;
 typedef struct { int frame, a, b, c; } inev_t;     // --joy: dirs fire; --mouse: dx dy buttons
 
+// --trace N: every custom write and sprite DMA fetch of frame N (amiga_trace_reg).
+static int trace_frame = -1;
+static void trace_reg(uint32_t reg, uint16_t v, int hpos, uint32_t x) {
+    if (reg >= 0x1000) fprintf(stderr, "T v%3d spr%d st%u pt=%06X\n", A.vpos, (int)(reg - 0x1000), v, x);
+    else fprintf(stderr, "T v%3d h%3d %c %03X=%04X\n", A.vpos, hpos, x ? 'C' : 'P', reg, v);
+}
+
 static uint32_t prof_clock(void) {
     struct timespec ts; clock_gettime(CLOCK_MONOTONIC, &ts);
     return (uint32_t)(ts.tv_sec * 1000000000ll + ts.tv_nsec);
@@ -274,7 +282,8 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--fast-bus")) chip_bus = 0;
         else if (!strcmp(a, "--skip-odd")) skip_odd = true;     // odd frames not drawn (amiga_set_render_skip)
         else if (!strcmp(a, "--bus-tune") && v) { sscanf(v, "%d,%d", &bus_fetch8, &bus_cost8); i++; }   // amiga_set_chip_bus_params
-        else if (!strcmp(a, "--hist") && v) { hist_path = v; i++; }   // handler runs by index at the end (tools/musashi_hist.py)
+        else if (!strcmp(a, "--hist") && v) { hist_path = v; i++; }
+        else if (!strcmp(a, "--trace") && v) { trace_frame = atoi(v); i++; }   // handler runs by index at the end (tools/musashi_hist.py)
         else if (!strcmp(a, "--write-back")) write_back = true;
         else if (!strcmp(a, "--drives") && v) { drives_opt = atoi(v); i++; }
         else if (!strcmp(a, "--vcentre")) vcentre = true;
@@ -384,6 +393,7 @@ int main(int argc, char **argv) {
                 }
             }
         amiga_set_render_skip(skip_odd && (f & 1));
+        amiga_trace_reg = f + 1 == trace_frame ? trace_reg : NULL;
         amiga_run_frame();
         for (int k = 0; k < ndumps; k++) if (dumps[k].frame == f + 1) {
             fprintf(stderr, "dump %06X:", dumps[k].a);
@@ -430,6 +440,16 @@ int main(int argc, char **argv) {
         }
     }
     if (wav) wav_close();
+    if (getenv("AMIGA_EVK")) {                       // display events by register, the hottest
+        extern uint32_t denise_stat_evk[0x200];
+        for (int k = 0; k < 12; k++) {
+            unsigned best = 0, bi = 0;
+            for (unsigned i = 0; i < 0x200; i++) if (denise_stat_evk[i] > best) { best = denise_stat_evk[i]; bi = i; }
+            if (!best) break;
+            fprintf(stderr, "evk %s%03X %u\n", bi >= 0x100 ? "EV_" : "", bi >= 0x100 ? bi - 0x100 : bi * 2, best);
+            denise_stat_evk[bi] = 0;
+        }
+    }
     if (hist_path) {
         extern unsigned int amiga_stat_hist[2048];
         FILE *hf = fopen(hist_path, "w");

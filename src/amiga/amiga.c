@@ -14,10 +14,15 @@
 
 #ifndef SLICE_CC
 #define SLICE_CC 16
+// The sprite DMA slots ($15-$34) are fetched after this slice: a DMACON write
+// before them (the copper's at $10) has been seen.
+#define SPRITE_DMA_CC (2 * SLICE_CC)
 #endif
 
 amiga_t A;
 unsigned int amiga_bus_instr;                    // instructions run (m68k_execute)
+unsigned short amiga_icache_tag[64];             // the 68020's instruction cache, by line (m68kcpu.h)
+unsigned int amiga_icache_miss;
 unsigned int amiga_stat_data, amiga_stat_fetch, amiga_stat_audw;  // AMIGA_STATS counters
 #ifdef AMIGA_STATS
 unsigned int amiga_stat_hist[2048];                                // 8 KB: the bench only
@@ -79,11 +84,15 @@ AMIGA_HOT static void cpu_until(uint64_t target) {
 static unsigned bus_fetch8 = 6, bus_cost8 = 16;
 void amiga_set_chip_bus_params(int fetch8, int cost8) { bus_fetch8 = (unsigned)fetch8; bus_cost8 = (unsigned)cost8; }
 AMIGA_HOT static void bus_wait(int h0, int h1) {
-    static uint32_t instr_last, data_last;
+    static uint32_t instr_last, data_last, miss_last;
     const uint32_t instr = amiga_bus_instr - instr_last, data = A.bus_data - data_last;
-    instr_last = amiga_bus_instr; data_last = A.bus_data;
+    const uint32_t miss = amiga_icache_miss - miss_last;
+    instr_last = amiga_bus_instr; data_last = A.bus_data; miss_last = amiga_icache_miss;
     if (!instr && !data) return;
-    const uint32_t acc8 = data * 8 + (mem_fetch_chip ? instr * bus_fetch8 : 0);
+    // bus_fetch8 255: the instruction cache's misses are the fetches (one
+    // longword access each), instead of a flat share of an access an instruction.
+    const uint32_t fetch8 = bus_fetch8 == 255 ? miss * 8 : instr * bus_fetch8;
+    const uint32_t acc8 = data * 8 + (mem_fetch_chip ? fetch8 : 0);
     int busy8 = denise_bus_busy8(h0, h1) + BUS_FIXED8;
     if (blitter_busy()) busy8 += (h1 - h0) * ((A.dmacon & DMAF_BLTPRI) ? 8 : 6);
     int free8 = (h1 - h0) * 8 - busy8;
@@ -250,6 +259,11 @@ AMIGA_HOT __attribute__((noinline)) static void run_line(void) {
         if (A.chip_bus && A.cpu_clock > 1) bus_wait(h0, h);
         prof_switch(AMIGA_PROF_OTHER);
         blitter_poll();
+        if (h == SPRITE_DMA_CC) {
+            prof_switch(AMIGA_PROF_LINE);
+            denise_sprite_dma();
+            prof_switch(AMIGA_PROF_OTHER);
+        }
         if (h == AMIGA_CC_PER_LINE) break;
     }
     denise_line_end();

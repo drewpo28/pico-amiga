@@ -114,8 +114,13 @@ extern unsigned int amiga_stat_data, amiga_stat_fetch, amiga_stat_audw;   // aud
 extern unsigned int amiga_stat_hist[2048];                                // runs per handler index
 #ifdef AMIGA_STATS
 #define AMIGA_STAT(c) ((c)++)
+// The bench's register trace: every custom write (custom.c) and sprite DMA
+// fetch (denise.c, reg 0x1000 + sprite, v = state, x = pointer) when set.
+extern void (*amiga_trace_reg)(uint32_t reg, uint16_t v, int hpos, uint32_t x);
+#define AMIGA_TRACE_REG(r, v, h, x) do { if (amiga_trace_reg) amiga_trace_reg((r), (v), (h), (x)); } while (0)
 #else
 #define AMIGA_STAT(c) ((void)0)
+#define AMIGA_TRACE_REG(r, v, h, x) ((void)0)
 #endif
 
 // ---- profiling (amiga_get_profile) ------------------------------------------
@@ -235,6 +240,7 @@ void     denise_write(uint32_t reg, uint16_t v, int hpos);
 extern uint16_t denise_q_color[256];                 // the colours as queued (denise_write)
 void     denise_line_start(void);
 void     denise_line_end(void);
+void     denise_sprite_dma(void);                     // at SPRITE_DMA_CC of the line (run_line)
 void     denise_frame_start(void);
 bool     denise_lace(void);                         // BPLCON0 LACE
 void     denise_status(amiga_status_t *st);          // bplcon0, fmode, dma_lines

@@ -125,7 +125,27 @@
   sprite otherwise waits for its VSTART, also one written to SPRxPOS/CTL by the
   CPU or copper. RoboCop 2 writes POS/CTL and data pointers in the vertical blank
   and turns sprite DMA on later; fetching control words at the first DMA line
-  made RoboCop invisible (and the title's icons garbage).
+  made RoboCop invisible (and the title's icons garbage).  The fetch happens
+  after colour clock 32 of the line (SPRITE_DMA_CC in amiga.c: the slots are
+  $15-$34), not at line start: Roots' sprite part fetches its 8 x 64-pixel
+  sprites' one data line at 28 and has the copper clear SPREN at clock 16 of
+  line 29 - at line start the fetch went on and read the next sprite's control
+  words as data; the screen (the sprites' constant columns, coloured by the
+  copper's palette stream and BPLCON4 banks) was vertical bands (2026-11-09).
+- **BPLCON4 takes effect one lowres pixel after its write's colour clock**
+  (con4_pending in denise.c); the other registers' writes at the clock itself.
+  Roots' sprite part switches banks every 48 pixels at the column where a sprite
+  period starts (sprite x = HSTART + 1): applied at the clock, each period's
+  last pixel showed the next bank's colour, a thin line down every block border.
+- **AGA BPLCON1 has scroll bits 16 and 32** (PF1H6-7 bits 10-11, PF2H6-7 bits
+  14-15) for the wider fetch units, wrapped at the unit's width (fetch_unit):
+  Roots' zigzag / rings / rays part scrolls odd and even planes 0-63 a line with
+  FMODE 3 (eight plane pointers, BPLCON1 and BPLCON4 per line); with the four
+  classic bits alone its patterns were a dense weave of 16-pixel cells.
+- **Known: a snapshot loaded in Roots jumps to its sprite part** within three
+  frames, from the rings or the zigzag part alike (the bench's --state-load);
+  the bench's straight runs are deterministic (t4800.png == f4800.png).
+  Something the demo polls is restored as "skip" - not found yet.
 - **Bitplane DMA follows DMACON mid-line** (custom.c -> denise_write(R_DMACON)):
   off stops the line's fetch (no modulo), on fetches the units from there. A-Type's
   panel turns it off on its first line, rewrites the pointers after DDFSTRT and turns
@@ -203,6 +223,13 @@
   super-hires sprites (SPRES) keep the per-pixel walk over the line.  A plain AGA
   playfield's LUT rebuild covers 1 << planes entries (BPLCON4 writes several times
   a line over one plane rebuilt 256).
+- **The DMA side's position (dma_st.r_h) must move on every line**: a DMACON
+  write turning bitplane DMA on mid-line resumes the units from it.  Skipping
+  dma_to on lines without bitplanes (it has no units to read there; Roots' sprite
+  part makes 9,000 writes a frame on such lines) must still set r_h, or Exolon,
+  State of the Art and RoboCop 2 change (2026-11-09).  The sprite columns of a
+  DIRECT lowres row are written straight (no w_put): the sprite part's host render
+  went 2.7 -> 1.0 ms a frame.
 - **Core 1's render steps must stay short** (try_stage: one step per lock): the
   PIO HDMI build loop builds scanout lines two ahead of the DMA between pumps,
   and a pump longer than a line (32 us) starts lines late - with eight steps per

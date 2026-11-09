@@ -49,7 +49,12 @@ AMIGA_HOT uint16_t custom_read(uint32_t reg) {
     }
 }
 
+#ifdef AMIGA_STATS
+void (*amiga_trace_reg)(uint32_t reg, uint16_t v, int hpos, uint32_t x);
+#endif
+
 AMIGA_HOT void custom_write(uint32_t reg, uint16_t v, int hpos, bool from_copper) {
+    AMIGA_TRACE_REG(reg, v, hpos, from_copper);
     (void)from_copper;
     if (display_reg(reg)) { denise_write(reg, v, hpos); return; }
     if (reg >= R_BLTCON0 && reg <= R_BLTADAT) { blitter_write(reg, v); return; }

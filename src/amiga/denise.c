@@ -78,6 +78,7 @@ typedef struct {
 #define AGNUS_INIT { .diwstrt = 0x2C81, .diwstop = 0xF4C1, .ddfstrt = 0x38, .ddfstop = 0xD0 }
 static agnus_t  dma_st = AGNUS_INIT, fetch_st = AGNUS_INIT;
 uint32_t denise_stat_compose, denise_stat_oto, denise_stat_ev;   // AMIGA_STATS counters (the bench's status)
+uint32_t denise_stat_evk[0x200];                                 // events by register / kind
 // amiga_set_render_skip: this frame's picture is not drawn - the DMA side only
 // moves the pointers, the fetch stage spreads nothing, the output stage keeps
 // its registers (colours, BPLCON, sprites) and touches no framebuffer row.
@@ -130,6 +131,7 @@ static bool     spl_dirty;                  // spl[] is stale: compose before th
 // and pf_o[2 x], pf_o[2 x + 1] in a hires one.  Doubling lowres pixels into the
 // hires layout was a third of core 1's time on an 8-plane AGA screen.
 static uint8_t  pf_ring[PF_RING][PF_SIZE];
+static uint8_t  pf_written[PF_RING];        // the slot holds plane bits since its last clear
 static uint8_t *pf_f = pf_ring[0], *pf_o = pf_ring[0];
 static uint8_t  spl[SPL_SIZE];
 static int      spl_lo, spl_hi;           // dirty range of spl[]
@@ -379,9 +381,11 @@ AMIGA_HOT static void spread_shres(const uint16_t wd[8][4], int np, int first, i
 }
 
 // Fetch stage: unit k's words, from the ring, spread into the playfield.
+static uint32_t f_seq;                                   // the fetch stage's line (pf_written)
 AMIGA_HOT static void fetch_unit(int k) {
     const agnus_t *f = &fetch_st;
     if (f_skip) return;                                  // nothing was read for this frame
+    pf_written[f_seq % PF_RING] = 1;
     int t = f->ds + k * f->unit_cc;
     const int r = res(f->bplcon0), nw = unit_words(f);
     int np = planes(f->bplcon0);
@@ -391,7 +395,17 @@ AMIGA_HOT static void fetch_unit(int k) {
     // fm_maxplanes): hires with FMODE 3 takes lowres's 17 - Workbench 3.1 on AGA
     // lined up with its ECS screen to the pixel only so.
     int x = 2 * (2 * t + 2 * fm_maxplane[fmode_i(f)][r] + 1);   // hires-pixel coordinate
-    int d1 = 2 * (f->bplcon1 & 15), d2 = 2 * ((f->bplcon1 >> 4) & 15);
+    // The scroll, in lowres pixels: PF1H2-5 / PF2H2-5 (bits 0-3, 4-7); AGA adds
+    // PF1H6-7 (bits 10-11) and PF2H6-7 (bits 14-15) for its wider fetch units,
+    // wrapped at the unit (WinUAE's delaymask).  Roots' zigzag part scrolls its
+    // odd and even planes by 0-63 a line with FMODE 3.
+    int s1 = f->bplcon1 & 15, s2 = (f->bplcon1 >> 4) & 15;
+    if (A.aga) {
+        const int mask = 16 * nw / (1 << r) - 1;
+        s1 = (s1 | (f->bplcon1 & 0x0C00) >> 6) & mask;
+        s2 = (s2 | (f->bplcon1 & 0xC000) >> 10) & mask;
+    }
+    const int d1 = 2 * s1, d2 = 2 * s2;
     const int div = r == LORES ? 2 : 1;                          // pf entries: lowres pixels in a lowres line
     uint16_t wd[8][4];
     uint32_t tl = atomic_load_explicit(&ws_tail, memory_order_relaxed);
@@ -760,9 +774,28 @@ static inline uint16_t border(void) {
     return (A.ecs && (bplcon0 & 1) && (bplcon3 & 0x20)) ? 0 : color[0];
 }
 
+// BPLCON4 (BPLAM, ESPRM, OSPRM) takes effect one lowres pixel after the
+// colour clock of its write, where the other registers' writes do (Roots'
+// sprite part switches banks every 48 pixels, each a copper write at the
+// column where a sprite period starts: applied there, the period's last pixel
+// showed the next bank's colour, a thin line down every block border).
+static uint16_t con4_next;
+static bool     con4_pending;
+AMIGA_HOT static void con4_apply(void) {
+    con4_pending = false;
+    if ((bplcon4 ^ con4_next) & 0xFF00) lut_dirty = true;
+    bplcon4 = con4_next;
+}
+
 // Pixels [x0, x1) of the current line, in DIW coordinates.
 static void sprites_to(int a, int b);
 AMIGA_HOT static void output(int x0, int x1) {
+    if (con4_pending) {                                    // the pixel before it: as it was
+        con4_pending = false;
+        if (x1 > x0) { output(x0, x0 + 1); x0++; }
+        con4_apply();
+        if (x1 <= x0) return;
+    }
     if (lut_dirty) build_lut();
     const int hstart = diw_hstart(diwstrt, diwhigh), hstop = diw_hstop(diwstop, diwhigh);
     const bool hires = res(bplcon0) != LORES;
@@ -798,7 +831,13 @@ AMIGA_HOT static void output(int x0, int x1) {
     const int tail = spl_hi < wb ? spl_hi : wb;
     if (tail < wb) { w_plain(tail, wb, hires); wb = tail; }
     if (!hires) {
-        {
+        if (w_mode == AMIGA_ROW_DIRECT) {        // the AGA rule: straight into the row (Roots'
+            uint16_t *d = fbrow->px.rgb - f0;    // sprite part outputs ~14 ranges a line)
+            for (int x = wa; x < wb; x++) {
+                const uint8_t v = pf_o[x];
+                d[x] = sprite_mix(x, lut[v], lut_pf[v]);
+            }
+        } else {
             for (int x = wa; x < wb; x++) {
                 uint8_t v = pf_o[x];
                 uint16_t c = sprite_mix(x, lut[v], lut_pf[v]);
@@ -902,6 +941,7 @@ AMIGA_HOT static void sprite_dma(void) {
         const int fm = A.aga ? (dma_st.fmode >> 2) & 3 : 0;
         const unsigned nw = fm == 0 ? 1u : fm == 3 ? 4u : 2u;
         if (nw > 1) sprpt[s] &= ~(2u * nw - 1);
+        AMIGA_TRACE_REG(0x1000 + s, spr_dma[s], 0, sprpt[s]);
         if (spr_dma[s] == SPR_FETCH_CTL) {
             dma_sprpos[s] = chip_rw(sprpt[s]);
             dma_sprctl[s] = chip_rw(sprpt[s] + 2 * nw);
@@ -945,6 +985,7 @@ static inline int spr_px(int s, int x, int x0, int step) {
 // (SPRES) keep the per-pixel walk, over the whole line.
 static uint32_t sb32[8][17];
 static int      sb_x[8], sb_w[8];           // DIW x and width (lowres pixels) of each armed sprite
+static uint8_t  sb_stale[8];                // the sprite's words changed since sb32 was filled
 static int      spl_valid_hi;               // composed up to this column in this epoch and line
 static bool     spl_generic;                // this epoch: a per-pixel composition (SPRES)
 
@@ -996,6 +1037,11 @@ AMIGA_HOT static void sprite_epoch(void) {
         const int nw = spr_nw[s] ? spr_nw[s] : 1;
         sb_x[s] = spr_x(s);
         sb_w[s] = 16 * nw;
+        if (sb_x[s] < lo) lo = sb_x[s];
+        if (sb_x[s] + sb_w[s] > hi) hi = sb_x[s] + sb_w[s];
+        // Repositioned sprites (Roots: 3-4 times a line) keep their words.
+        if (!sb_stale[s]) continue;
+        sb_stale[s] = 0;
         for (int k = 0; k < nw; k++) {
             const uint16_t a = k ? sprdx[s][k - 1] : sprdata[s], b = k ? sprdbx[s][k - 1] : sprdatb[s];
             uint32_t *d = sb32[s] + 4 * k;
@@ -1004,8 +1050,6 @@ AMIGA_HOT static void sprite_epoch(void) {
             d[2] = spr4[(a >> 4) & 15][(b >> 4) & 15];
             d[3] = spr4[a & 15][b & 15];
         }
-        if (sb_x[s] < lo) lo = sb_x[s];
-        if (sb_x[s] + sb_w[s] > hi) hi = sb_x[s] + sb_w[s];
     }
     if (lo < 0) lo = 0;
     if (hi > SPL_SIZE) hi = SPL_SIZE;
@@ -1071,13 +1115,17 @@ AMIGA_HOT static void a_line_start(agnus_t *f) {
 
 // Fetch stage: line `seq`.
 AMIGA_HOT static void f_line_start(uint32_t seq) {
+    f_seq = seq;
     a_line_start(&fetch_st);
     pf_f = pf_ring[seq % PF_RING];
-    if (!f_skip) clear_bytes(pf_f, PF_SIZE);
+    // A slot nothing spread into since its last clear is still zero: a line
+    // without bitplanes (Roots' sprite part: every line) costs no clear.
+    if (!f_skip && pf_written[seq % PF_RING]) { clear_bytes(pf_f, PF_SIZE); pf_written[seq % PF_RING] = 0; }
 }
 
 // Output stage: line `seq`.
 AMIGA_HOT static void c_line_start(uint32_t seq) {
+    if (con4_pending) con4_apply();                       // written in the line's last pixel, or a skipped line
     vwin = in_vwin(c_vpos, diwstrt, diwstop, diwhigh);
     r_h = 0;
     spl_valid_hi = -1;
@@ -1196,8 +1244,8 @@ AMIGA_HOT static void c_apply(uint32_t reg, uint16_t v, uint16_t x) {
         switch (reg & 6) {
         case 0: sprpos[s] = v; break;
         case 2: sprctl[s] = v; spr_armed[s] = false; break;
-        case 4: sprdata[s] = v; spr_nw[s] = 1; spr_armed[s] = true; break;
-        default: sprdatb[s] = v; break;
+        case 4: sprdata[s] = v; spr_nw[s] = 1; spr_armed[s] = true; sb_stale[s] = 1; break;
+        default: sprdatb[s] = v; sb_stale[s] = 1; break;
         }
         spl_dirty = true;
         return;
@@ -1213,9 +1261,8 @@ AMIGA_HOT static void c_apply(uint32_t reg, uint16_t v, uint16_t x) {
         if (A.aga && (d & 0x00C0)) spl_dirty = true;
         break;
     }
-    case R_BPLCON4:                    // ESPRM / OSPRM: sprite_mix reads them as they are
-        if ((bplcon4 ^ v) & 0xFF00) lut_dirty = true;
-        bplcon4 = v;
+    case R_BPLCON4:                    // one lowres pixel later (con4_apply, output)
+        con4_next = v; con4_pending = true;
         break;
     case R_DIWSTRT: diwstrt = v; diwhigh = 0; break;
     case R_DIWSTOP: diwstop = v; diwhigh = 0; break;
@@ -1229,7 +1276,7 @@ static void c_reset(void) {
     memset(pend_reg_set, 0, sizeof pend_reg_set); memset(pend_col_set, 0, sizeof pend_col_set); pending = false;
     dma_skip = f_skip = o_skip = false;
     bplcon0 = bplcon2 = bplcon3 = 0;
-    bplcon4 = 0x0011;
+    bplcon4 = 0x0011; con4_pending = false;
     q_bplcon2 = q_bplcon3 = 0;
     diwstrt = 0x2C81; diwstop = 0xF4C1; diwhigh = 0;
     const agnus_t init = AGNUS_INIT;
@@ -1247,7 +1294,9 @@ static void c_reset(void) {
     memset(spr_armed, 0, sizeof spr_armed);
     memset(sprdx, 0, sizeof sprdx); memset(sprdbx, 0, sizeof sprdbx); memset(spr_nw, 0, sizeof spr_nw);
     memset(spl, 0, sizeof spl);
+    memset(sb_stale, 1, sizeof sb_stale);
     memset(pf_ring, 0, sizeof pf_ring);
+    memset(pf_written, 0, sizeof pf_written);
     pf_f = pf_o = pf_ring[0];
     spl_lo = SPL_SIZE; spl_hi = 0;
     c_frame_start(AMIGA_FB_Y0);
@@ -1350,6 +1399,7 @@ AMIGA_HOT static bool o_step(int step) {
             const unsigned j = e->h & 15;                     // AGA: word j of e->h >> 4
             if (j == 0) { sprdata[s] = e->v; sprdatb[s] = e->x; spr_nw[s] = (uint8_t)(e->h >> 4); spr_armed[s] = true; }
             else if (j < 4) { sprdx[s][j - 1] = e->v; sprdbx[s][j - 1] = e->x; }
+            sb_stale[s] = 1;
         }
         spl_dirty = true;
     }
@@ -1412,12 +1462,18 @@ AMIGA_HOT void denise_sync(void) {
 AMIGA_HOT static void push(uint16_t kind, uint16_t v, uint16_t h, uint16_t x) {
     const uint32_t hd = atomic_load_explicit(&ev_head, memory_order_relaxed);
     if (hd - atomic_load_explicit(&o_tail, memory_order_acquire) >= EVQ) {
-        const int prof = prof_switch(AMIGA_PROF_RWAIT);       // the consumers are a queue behind
-        while (hd - atomic_load_explicit(&o_tail, memory_order_acquire) >= EVQ) c_help();
+        // The consumers are a queue behind: take a stage step while they are
+        // (as c_help, without its two profile switches a spin: Roots' sprite
+        // part waits here thousands of times a frame).
+        const int prof = prof_switch(AMIGA_PROF_RENDER);
+        while (hd - atomic_load_explicit(&o_tail, memory_order_acquire) >= EVQ) c_step_any(AMIGA_CC_PER_LINE, false);
         prof_switch(prof);
     }
     dev_t *e = &evq[hd & (EVQ - 1)];
     AMIGA_STAT(denise_stat_ev);
+#ifdef AMIGA_STATS
+    denise_stat_evk[kind < 0x200 ? kind >> 1 : 0x100 + (kind & 0xFF)]++;   // by register (0x100+: EV_*)
+#endif
     e->kind = kind; e->v = v; e->h = h; e->x = x;
     atomic_store_explicit(&ev_head, hd + 1, memory_order_release);
     if (!is_async()) {
@@ -1481,8 +1537,15 @@ AMIGA_HOT void denise_line_start(void) {
     if (A.vpos == 0) { dma_lines_last = dma_lines; dma_lines = 0; }
     if (dma_st.bpl_dma) dma_lines++;
     push(EV_LINE, A.dmacon, (uint16_t)A.vpos, (uint16_t)((A.lof ? 1 : 0) | (A.lines << 1)));
-    sprite_dma();
 }
+
+// The sprites' DMA slots are colour clocks $15-$34: the scheduler calls this
+// once the line is there (amiga.c), so a DMACON write before them counts.
+// Roots' sprite part fetches its 8 sprites' one data line at 28 and has its
+// copper clear SPREN at colour clock 16 of line 29: at line start, the fetch
+// went on and read the next sprite's control words as data (vertical bands
+// over the whole part).
+AMIGA_HOT void denise_sprite_dma(void) { sprite_dma(); }
 
 AMIGA_HOT void denise_line_end(void) {
     dma_to(AMIGA_CC_PER_LINE);
@@ -1533,7 +1596,10 @@ AMIGA_HOT void denise_write(uint32_t reg, uint16_t v, int hpos) {
     // then.  The sprite registers skipped this, and RoboCop 2's SPR0CTL write at
     // h 226 had the fetch stage (at once in sync mode, when caught up in async)
     // spread stale ring words over its playfield's last line.
-    dma_to(h);
+    // A line without bitplane DMA has no units to read, but its position must
+    // move on: a DMACON write turning the DMA on mid-line resumes from r_h.
+    if (dma_st.bpl_dma) dma_to(h);
+    else if (h > dma_st.r_h) dma_st.r_h = h < AMIGA_CC_PER_LINE ? h : AMIGA_CC_PER_LINE;
     if (reg >= R_SPR0POS && reg < R_SPR0POS + 64) {
         const int s = (reg - R_SPR0POS) >> 3;
         if ((reg & 6) == 0) { dma_sprpos[s] = v; spr_decode(s); }

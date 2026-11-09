@@ -1072,6 +1072,15 @@ extern const unsigned char *m68ki_fetch_ptr;
 extern unsigned int m68ki_fetch_lo, m68ki_fetch_len;
 unsigned int m68ki_fetch_slow16(unsigned int address);
 extern unsigned int amiga_bus_instr;   /* instructions run (amiga.c's chip bus model) */
+/* The 68020's instruction cache as a tag per longword line (64 x 4 bytes,
+ * direct-mapped, bits 8-23 the tag; CACR is not consulted): a fetch whose line
+ * is not the one cached is a chip bus access for amiga.c's chip bus model. */
+extern unsigned short amiga_icache_tag[64];
+extern unsigned int amiga_icache_miss;
+#define AMIGA_ICACHE_FETCH(a) do { \
+	const unsigned ic_l = ((a) >> 2) & 63, ic_t = ((a) >> 8) & 0xFFFF; \
+	if (amiga_icache_tag[ic_l] != ic_t) { amiga_icache_tag[ic_l] = (unsigned short)ic_t; amiga_icache_miss++; } \
+} while (0)
 #endif
 #ifdef AMIGA_STATS
 extern unsigned int amiga_stat_data, amiga_stat_fetch, amiga_stat_hist[2048];
@@ -1116,6 +1125,7 @@ M68KI_HOT2 static inline uint m68ki_read_imm_16(void)
 		const uint a = ADDRESS_68K(REG_PC), o = a - m68ki_fetch_lo;
 		REG_PC += 2;
 		AMIGA_STAT_FETCH(1);
+		AMIGA_ICACHE_FETCH(a);
 		if (o < m68ki_fetch_len) {
 			const unsigned char *p = m68ki_fetch_ptr + o;
 			return ((uint)p[0] << 8) | p[1];
@@ -1170,6 +1180,8 @@ M68KI_HOT2 static inline uint m68ki_read_imm_32(void)
 		const uint a = ADDRESS_68K(REG_PC), o = a - m68ki_fetch_lo;
 		REG_PC += 4;
 		AMIGA_STAT_FETCH(2);
+		AMIGA_ICACHE_FETCH(a);
+		AMIGA_ICACHE_FETCH(a + 2);
 		if (o + 4 <= m68ki_fetch_len && o < m68ki_fetch_len) {
 			const unsigned char *p = m68ki_fetch_ptr + o;
 			return ((uint)p[0] << 24) | ((uint)p[1] << 16) | ((uint)p[2] << 8) | p[3];
