@@ -260,15 +260,17 @@ static int describeOther(uint16_t setting, int32_t v, DescLine* out, int max) {
     case SET_CPU_MHZ:
         n = sub(out, n, max, "Speed", v >= 504 ? "full" : "not guaranteed", v >= 504 ? DESC_OK : DESC_BAD);
         if (v < 504) { n = rule(out, n, max, "Most likely too slow"); n = rule(out, n, max, "for the emulation"); }
-        else           n = rule(out, n, max, "What the Amiga needs");
+        else if (v == 504) n = rule(out, n, max, "What the Amiga needs");
+        else               { n = rule(out, n, max, "7% over 504; sets the"); n = rule(out, n, max, "core voltage to 1.80 V"); }
         n = rule(out, n, max, "Some video modes run");
         n = rule(out, n, max, "at one clock only");
         n = sub(out, n, max, "Applies", "after a reboot", DESC_PLAIN);
         break;
     case SET_VREG:
         if (v < 1600)       { n = rule(out, n, max, "Cooler, but 504 MHz"); n = rule(out, n, max, "may not hold"); }
-        else if (v == 1600)   n = rule(out, n, max, "The tested one");
-        else                { n = rule(out, n, max, "For a board that hangs"); n = rule(out, n, max, "at 504 MHz; hotter"); }
+        else if (v == 1600)   n = rule(out, n, max, "The tested one at 504");
+        else if (v < 1800)  { n = rule(out, n, max, "For a board that hangs"); n = rule(out, n, max, "at 504 MHz; hotter"); }
+        else                { n = rule(out, n, max, "What 540 MHz needs;"); n = rule(out, n, max, "hotter"); }
         n = sub(out, n, max, "Applies", "after a reboot", DESC_PLAIN);
         break;
     case SET_FLASH_FREQ:

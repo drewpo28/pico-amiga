@@ -20,6 +20,22 @@ typedef struct {
 // at a divider of a whole or half number from 1 (a clean TMDS clock), so
 // clk_sys / 10, / 15, / 20...  First match wins.
 static const mode_row_t k_modes[] = {
+    // clk_sys 540 (pico-speccy's twins): 25.2 MHz would be 540 / 21.4, so the
+    // standard modes run at 27 MHz (540 / 20: PIO divider 2.0, clk_hstx 135 / 5,
+    // VGA / 20) on the CEA 576p / 480p lines, 800x600 at 36 MHz (540 / 15).
+    // 720x576 @50: CEA 576p, 864 x 625, 50.00 Hz.
+    { VM_720x576_50, O_HSTX | O_PIO | O_VGA, 540, { 27000000, 720, 12, 64, 68,  576, 5, 5, 39,  50 } },
+    // 640x480 @60: pico-speccy's [17], 856 x 525, 60.08 Hz.
+    { VM_640x480_60, O_HSTX | O_PIO | O_VGA, 540, { 27000000, 640, 24, 96, 96,  480, 10, 2, 33, 60 } },
+    // 720x480 @60: 576p's line, 520 lines, 60.10 Hz.
+    { VM_720x480_60, O_HSTX | O_PIO | O_VGA, 540, { 27000000, 720, 12, 64, 68,  480, 10, 2, 28, 60 } },
+    // 800x600 @50 at 36 MHz: 1056 x 682, 49.99 Hz; @60 framed: 960 x 625, 60.00 Hz
+    // (a reduced blanking of 160, the island inside its 48 of hsync, as at 504).
+    { VM_800x600_X2, O_HSTX | O_PIO, 540, { 36000000, 800, 40, 128, 88,  600, 1, 4, 77,  50 } },
+    { VM_800x600_60, O_HSTX | O_PIO, 540, { 36000000, 800, 8, 48, 104,   600, 1, 4, 20,  60 } },
+    // VGA 800x600 at 36 MHz: VESA 800x600 @56 (1024 x 625), the one monitors know.
+    { VM_800x600_X2, O_VGA, 540,   { 36000000, 800, 24, 72, 128, 600, 1, 2, 22,  56 } },
+
     // 832 x 605, 50.06 Hz: pico-speccy's [5] (hw-proven); 25.2 MHz is 252/10,
     // 378/15, 504/20.  The PIO scanout keeps its own copy of it (tmds_lut.h).
     { VM_720x576_50, O_HSTX | O_PIO, 0, { 25200000, 720, 12, 64, 36,  576, 5, 5, 19,  50 } },

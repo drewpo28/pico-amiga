@@ -140,7 +140,9 @@ void Config::load() {
     nvs_get_u8 ("volume",        volume,       sts);
     nvs_get_b  ("hdmi_audio",    hdmi_audio,   sts);
     nvs_get_b  ("hdmi_capture",  hdmi_capture, sts);
-    if (cpu_mhz != 252 && cpu_mhz != 378 && cpu_mhz != 504) cpu_mhz = CPU_MHZ;
+    if (cpu_mhz != 252 && cpu_mhz != 378 && cpu_mhz != 504 && cpu_mhz != 540) cpu_mhz = CPU_MHZ;
+    // 540 MHz needs 1.80 V (pico-speccy, hw 2026-10-08: SRAM corruption at 1.60-1.70 V).
+    if (cpu_mhz == 540 && vreg_mv < 1800) vreg_mv = 1800;
     if (volume > 16) volume = 16;
     if (audio_out > 3) audio_out = 0;
     if (max_flash_freq < 33 || max_flash_freq > 166) max_flash_freq = 66;

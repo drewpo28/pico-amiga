@@ -31,7 +31,7 @@ missing and in which order.
 
 | | |
 |---|---|
-| MCU | RP2350 (A or B). It starts at 252 MHz; set **504 MHz** in Options > Overclock: at 252 and 378 full speed is not guaranteed, most likely they are too slow for the emulation |
+| MCU | RP2350 (A or B). It starts at 252 MHz; set **504 MHz** in Options > Overclock: at 252 and 378 full speed is not guaranteed, most likely they are too slow for the emulation. 540 MHz (7% more, 1.80 V core, the video modes switch to their 27 / 36 MHz twins) for the heaviest AGA demos |
 | PSRAM | 8 MB QSPI PSRAM on XIP CS1 |
 | Video | HDMI/DVI through HSTX (display on GPIO 12-19) or a PIO TMDS serializer, with HDMI audio; or VGA, detected at boot |
 | Storage | SD card (FatFs) |

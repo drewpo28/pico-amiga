@@ -46,6 +46,13 @@
 
 ## Video outputs, PSRAM, timing
 
+- **540 MHz** (Options > Overclock, 2026-11-09, pico-speccy's scheme): 25.2 MHz
+  is 540 / 21.4, so video_modes.c has 27 MHz twins of the standard modes at
+  clk_sys 540 (PIO divider 2.0, HSTX clk_hstx 135 / 5, VGA / 20; CEA's 864 x 625
+  and 856 x 525 lines) and 36 MHz ones for 800x600; Config::load forces the core
+  to 1.80 V with it (pico-speccy's DVp2 corrupted SRAM at 1.60-1.70 V); the PSRAM
+  SCK is 540 / 4 = 135 MHz, the proven ceiling (psram.c); the flash limit's
+  divider follows as always (66 -> 60 MHz).
 - PIO TMDS (video_pio.c) goes out by lookup, pico-speccy's scheme with a
   palette per line (tmds_lut.h): a line is 416 entry numbers (one per two
   pixels), a DMA chain + a converter SM turn them into the entries' pin words.

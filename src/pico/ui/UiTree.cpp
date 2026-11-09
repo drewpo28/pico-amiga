@@ -59,8 +59,12 @@ static const Option* audioOutOpts(uint8_t& cnt) {
     cnt = video_is_vga() ? 3 : 4;
     return opts;
 }
+// 540, as pico-speccy's: every video mode switches to a 27 / 36 MHz twin
+// (video_modes.c, PIO divider 2.0 / 1.5, HSTX clk_hstx 135 = 540 / 4), the
+// PSRAM runs at 135 MHz (540 / 4, the proven ceiling) and the core needs 1.80 V
+// (Config::load raises it; at 1.60-1.70 V pico-speccy's DVp2 corrupted SRAM).
 static const Option opt_cpu_mhz[] = {
-    { "252 MHz", 252 }, { "378 MHz", 378 }, { "504 MHz", 504 },
+    { "252 MHz", 252 }, { "378 MHz", 378 }, { "504 MHz", 504 }, { "540 MHz", 540 },
 };
 // pico-speccy's Core voltage steps (its 1.90 / 2.00 V are storage.nvs-only there
 // and not offered here); the value is mV (Config::vreg_mv).

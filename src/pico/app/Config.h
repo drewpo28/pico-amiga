@@ -22,7 +22,7 @@ public:
     static bool     ui_vga_solid;   // VGA: the on-grid theme twin (no dither shimmer)
 
     // Board (read at boot)
-    static uint16_t cpu_mhz;        // 252 / 378 / 504
+    static uint16_t cpu_mhz;        // 252 / 378 / 504 / 540 (540: vreg_mv forced to 1800)
     static uint16_t vreg_mv;        // Options > Overclock > Core voltage, mV (storage.nvs
                                     //   vreq_voltage "1_60", pico-speccy's key and format)
     static uint16_t max_flash_freq; // flash SCK limit, MHz (default 66)
