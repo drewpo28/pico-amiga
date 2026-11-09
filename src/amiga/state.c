@@ -215,6 +215,5 @@ bool amiga_state_load(const amiga_stream_t *io) {
         if (!t.ok || !skip(io, t.n)) return false;
         seen |= 1u << b;
     }
-    mem_pool_flush();                                   // chip RAM is the snapshot's now
     return (seen & REQUIRED) == REQUIRED;
 }

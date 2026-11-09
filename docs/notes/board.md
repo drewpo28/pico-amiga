@@ -135,15 +135,6 @@ can grow to the window for free.  The audio ring (16 KB) moved to PSRAM at +2 MB
 + 32 KB (Paula writes it, the audio tick reads it, no DMA).  Heap on PICO_DV: 19
 -> 50 KB.  A linker `.incl` change needs the ELF deleted: ninja does not track it.
 
-The fetch page pool (2026-11-09, mem.c): 3 x 8 KB of SRAM (`fetch_pool` in
-main.c, amiga_config_t.fetch_pool) hold copies of the chip RAM pages the CPU
-runs from most; the instruction fetch window points into a resident page's
-copy, every chip RAM writer (mem.c, chip_ww, the blitter's fast path) writes
-the copy through, chip RAM stays the truth for data.  The PC is sampled once a
-scheduler slice (m68k_pc_now), the hottest page not resident replaces the
-coolest slot once a frame when twice as hot, the heat halves every frame.  A
-snapshot load or reset flushes it.  Heap on PICO_DV after it: ~20 KB.
-
 ## Measured
 
 - Roots on the A1200 with the chip-bus model (2026-11-09 log, PROF1 = core 1):

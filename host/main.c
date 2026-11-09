@@ -340,8 +340,6 @@ int main(int argc, char **argv) {
     cfg.audio_ring = audio; cfg.audio_frames = AUDIO_FRAMES;
     static uint16_t track[AMIGA_TRACK_WORDS];
     cfg.track = track;
-    cfg.fetch_pool_size = 3 * 8192;                   // as the firmware's SRAM pool
-    cfg.fetch_pool = malloc(cfg.fetch_pool_size);
     cfg.serial_out = serial_out;
     cfg.prof_clock = prof_clock;            // --status: the core's buckets, ns
     amiga_init(&cfg);
@@ -425,13 +423,6 @@ int main(int argc, char **argv) {
             fprintf(stderr, "render/frame: events %u o_to %u sprite composes %u audw %u | ", (denise_stat_ev - de_last) / nf,
                     (denise_stat_oto - do_last) / nf, (denise_stat_compose - dc_last) / nf, (amiga_stat_audw - da_last) / nf);
             dc_last = denise_stat_compose; do_last = denise_stat_oto; de_last = denise_stat_ev; da_last = amiga_stat_audw;
-            extern unsigned int mem_pool_copies, mem_pool_windows, mem_pool_hits, mem_pool_samples, mem_pool_resident;
-            static uint32_t pc_last, pw_last, ph_last, ps_last, pr_last;
-            fprintf(stderr, "pool/frame: windows %u hit %u copies %u resident %u%% | ", (mem_pool_windows - pw_last) / nf,
-                    (mem_pool_hits - ph_last) / nf, (mem_pool_copies - pc_last) / nf,
-                    mem_pool_samples > ps_last ? (mem_pool_resident - pr_last) * 100 / (mem_pool_samples - ps_last) : 0);
-            pc_last = mem_pool_copies; pw_last = mem_pool_windows; ph_last = mem_pool_hits;
-            ps_last = mem_pool_samples; pr_last = mem_pool_resident;
             fprintf(stderr, "frame %u t=%ld.%06ld pc=%06X dmacon=%04X intena=%04X intreq=%04X ovl=%d cop=%06X blits=%u "
                     "rows direct=%d idx8=%d lace4=%d | con0=%04X fmode=%X dmalines=%u | /frame instr %u data %u fetch %u busw %u%%"
                     " | us/frame cpu %u ren %u bpl %u rd %u cop %u blt %u | idle %u%%\n",

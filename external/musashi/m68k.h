@@ -380,8 +380,6 @@ void m68k_state_register(const char *type, int index);
  * If context is NULL, the currently running CPU context will be used.
  */
 unsigned int m68k_get_reg(void* context, m68k_register_t reg);
-/* PICO-AMIGA PATCH: the current PC, cheaply (m68kcpu.c). */
-unsigned int m68k_pc_now(void);
 
 /* Poke values into the internals of the currently running CPU context */
 void m68k_set_reg(m68k_register_t reg, unsigned int value);

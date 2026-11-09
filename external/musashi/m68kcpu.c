@@ -995,10 +995,6 @@ void m68k_set_cpu_type(unsigned int cpu_type)
 
 /* Execute some instructions until we use up num_cycles clock cycles */
 /* ASG: removed per-instruction interrupt checks */
-/* PICO-AMIGA PATCH: the PC without m68k_get_reg's switch (mem.c samples it
- * every scheduler slice for the fetch page pool). */
-M68KI_HOT unsigned int m68k_pc_now(void) { return REG_PC; }
-
 M68KI_HOT int m68k_execute(int num_cycles)
 {
 	/* eat up any reset cycles */

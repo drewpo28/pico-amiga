@@ -108,7 +108,7 @@ AMIGA_HOT static uint32_t area_blit(void) {
                 uint8_t *d = cr + (pt[BD] & cm);
                 uint16_t o;
                 memcpy(&o, d, 2);
-                if (o != v) { memcpy(d, &v, 2); mem_pool_ww(pt[BD] & cm, v); }
+                if (o != v) memcpy(d, &v, 2);
                 pt[BD] += inc;
                 if (copy && y == h - 1 && x == w - 1) adat = __builtin_bswap16(v);
             }

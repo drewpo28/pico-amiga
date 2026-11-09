@@ -187,9 +187,6 @@ int main(void) {
     const bool more = psram > chip_area + 1 * MB + misc;
     if (more) ui_stats_buffer(hi);
     cfg.track = more ? (uint16_t *)(hi + 16 * KB) : malloc(AMIGA_TRACK_WORDS * 2);
-    // The fetch page pool: 3 x 8 KB of SRAM (the heap keeps ~20 KB on PICO_DV).
-    static uint8_t fetch_pool[3 * 8192] __attribute__((aligned(8)));
-    cfg.fetch_pool = fetch_pool; cfg.fetch_pool_size = sizeof fetch_pool;
     if (!cfg.track) fail(0xF00);
     int16_t *audio_ring = more ? (int16_t *)(hi + 32 * KB) : malloc(AUDIO_FRAMES * 4);
     if (!audio_ring) fail(0xF00);

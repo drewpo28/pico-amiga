@@ -65,12 +65,9 @@ static void map_low(void) {
     }
 }
 
-static void pool_init(void);
-
 void mem_init(void) {
     const amiga_config_t *c = &A.cfg;
     memset(banks, 0, sizeof banks);
-    pool_init();
     map(0xDF, 0x01, NULL, NULL, 0, B_CUSTOM);
     if (c->gayle) {
         map(0xBF, 0x01, NULL, NULL, 0, B_CIA);
@@ -254,96 +251,10 @@ AMIGA_HOT unsigned int m68k_read_memory_16(unsigned int a) {
     return io_read16(a, b->io);
 }
 
-// ---- the fetch page pool ---------------------------------------------------
-// amiga_config_t.fetch_pool: pages of fast memory (the firmware's SRAM) holding
-// copies of the chip RAM pages the CPU runs from most.  The instruction fetch
-// window of a resident page points into its copy; chip RAM (PSRAM behind the
-// XIP cache on the board, 170-230 cycles an instruction) stays the truth for
-// every data access, and every chip RAM writer (the CPU here, chip_ww, the
-// blitter's fast path) writes a resident page's copy through.  The PC is
-// sampled once a scheduler slice (4,400 a frame): the hottest page not resident
-// replaces the coolest slot, one copy a frame at most, when it is at least
-// twice as hot (hysteresis), and the heat halves every frame.
-int8_t   mem_pool_slot[256];
-uint8_t *mem_pool_base;
-static int      pool_slots;
-static int16_t  pool_page[16];                           // slot -> chip page, or -1
-static uint16_t pool_heat[256];
-unsigned int mem_pool_copies, mem_pool_windows, mem_pool_hits;   // the bench's status
-
-void mem_pool_flush(void) {
-    memset(mem_pool_slot, -1, sizeof mem_pool_slot);
-    for (int s = 0; s < 16; s++) pool_page[s] = -1;
-    memset(pool_heat, 0, sizeof pool_heat);
-    m68ki_fetch_len = 0;
-}
-
-static void pool_init(void) {
-    mem_pool_base = A.cfg.fetch_pool;
-    pool_slots = mem_pool_base ? (int)(A.cfg.fetch_pool_size / MEM_POOL_PAGE) : 0;
-    if (pool_slots > 16) pool_slots = 16;
-    mem_pool_flush();
-}
-
-unsigned int mem_pool_samples, mem_pool_resident;                 // the bench's status: samples, those on a resident page
-
-AMIGA_HOT void mem_pool_sample(uint32_t pc) {
-    if (!pool_slots) return;
-    const bank_t *b = &banks[(pc & 0xFFFFFF) >> 16];
-    mem_pool_samples++;
-    if (b->rd == A.cfg.chip_ram) {
-        const unsigned p = (pc & b->mask) >> MEM_POOL_SHIFT;
-        pool_heat[p]++;
-        if (mem_pool_slot[p] >= 0) mem_pool_resident++;
-    }
-}
-
-void mem_pool_frame(void) {
-    if (!pool_slots) return;
-    const unsigned npages = A.cfg.chip_size >> MEM_POOL_SHIFT;
-    int best = -1; unsigned bh = 0;
-    for (unsigned p = 0; p < npages; p++)
-        if (mem_pool_slot[p] < 0 && pool_heat[p] > bh) { bh = pool_heat[p]; best = (int)p; }
-    if (best >= 0) {
-        int cs = 0; unsigned ch = ~0u;
-        for (int s = 0; s < pool_slots; s++) {
-            const unsigned h = pool_page[s] < 0 ? 0 : pool_heat[pool_page[s]];
-            if (h < ch) { ch = h; cs = s; }
-        }
-        if (ch == 0 || bh >= 2 * ch) {
-            if (pool_page[cs] >= 0) mem_pool_slot[pool_page[cs]] = -1;
-            memcpy(mem_pool_base + cs * MEM_POOL_PAGE, A.cfg.chip_ram + (uint32_t)best * MEM_POOL_PAGE, MEM_POOL_PAGE);
-            pool_page[cs] = (int16_t)best;
-            mem_pool_slot[best] = (int8_t)cs;
-            m68ki_fetch_len = 0;                         // the window may be on either page
-            mem_pool_copies++;
-        }
-    }
-    for (unsigned p = 0; p < npages; p++) pool_heat[p] >>= 1;
-}
-
-static inline void pool_w8(uint32_t off, uint8_t v) {
-    const int s = mem_pool_slot[off >> MEM_POOL_SHIFT];
-    if (s >= 0) mem_pool_base[s * MEM_POOL_PAGE + (off & (MEM_POOL_PAGE - 1))] = v;
-}
-static inline void pool_w16(uint32_t off, uint16_t v) {
-    const int s = mem_pool_slot[off >> MEM_POOL_SHIFT];
-    if (s >= 0) st16(mem_pool_base + s * MEM_POOL_PAGE + (off & (MEM_POOL_PAGE - 1)), v);
-}
-
 AMIGA_HOT unsigned int m68ki_fetch_slow16(unsigned int a) {
     a &= 0xFFFFFF;
     const bank_t *b = &banks[a >> 16];
-    if (b->rd == A.cfg.chip_ram && pool_slots) {
-        // One page at a time, so that running into a resident page is seen.
-        const uint32_t off = a & b->mask;
-        const int s = mem_pool_slot[off >> MEM_POOL_SHIFT];
-        m68ki_fetch_ptr = s >= 0 ? mem_pool_base + s * MEM_POOL_PAGE : b->rd + (off & ~(MEM_POOL_PAGE - 1));
-        m68ki_fetch_lo = a & ~(MEM_POOL_PAGE - 1);
-        m68ki_fetch_len = MEM_POOL_PAGE;
-        mem_fetch_chip = 1;
-        mem_pool_windows++; if (s >= 0) mem_pool_hits++;
-    } else if (b->rd && b->mask >= 0xFFFF) {             // the whole bank is one block
+    if (b->rd && b->mask >= 0xFFFF) {                    // the whole bank is one block
         const uint32_t lo = a & 0xFF0000;
         m68ki_fetch_ptr = b->rd + (lo & b->mask);
         m68ki_fetch_lo = lo;
@@ -386,11 +297,7 @@ AMIGA_HOT void m68k_write_memory_8(unsigned int a, unsigned int v) {
     AMIGA_STAT(amiga_stat_data);
     const bank_t *b = &banks[a >> 16];
     A.bus_data += b->chip;
-    if (b->wr) {
-        b->wr[a & b->wmask] = (uint8_t)v;
-        if (b->chip) pool_w8(a & b->wmask, (uint8_t)v);
-        return;
-    }
+    if (b->wr) { b->wr[a & b->wmask] = (uint8_t)v; return; }
     if (!b->rd) io_write8(a, (uint8_t)v, b->io);
 }
 
@@ -399,11 +306,7 @@ AMIGA_HOT void m68k_write_memory_16(unsigned int a, unsigned int v) {
     AMIGA_STAT(amiga_stat_data);
     const bank_t *b = &banks[a >> 16];
     A.bus_data += b->chip;
-    if (b->wr) {
-        st16(b->wr + (a & b->wmask), (uint16_t)v);
-        if (b->chip) pool_w16(a & b->wmask, (uint16_t)v);
-        return;
-    }
+    if (b->wr) { st16(b->wr + (a & b->wmask), (uint16_t)v); return; }
     if (!b->rd) io_write16(a, (uint16_t)v, b->io);
 }
 
