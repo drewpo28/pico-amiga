@@ -135,6 +135,16 @@ can grow to the window for free.  The audio ring (16 KB) moved to PSRAM at +2 MB
 + 32 KB (Paula writes it, the audio tick reads it, no DMA).  Heap on PICO_DV: 19
 -> 50 KB.  A linker `.incl` change needs the ELF deleted: ninja does not track it.
 
+Tried and reverted (2026-11-09, commits 4f97e37 / 83856a7): a fetch page pool -
+3 x 8 KB of SRAM holding copies of the chip RAM pages the CPU runs from most,
+the instruction fetch window pointing into them, every chip RAM writer writing
+through, pages picked by PC samples once a frame.  Roots' zigzag part: the
+CPU's samples were 92% on resident pages and XIP accesses fell 180k -> 150k a
+frame, but XIP misses stayed at 12k a frame and `cpu` went 11.0 -> 12.0 ms: the
+demo's code already lived in the 16 KB XIP cache, the misses are the CPU's data
+and the DMA's, and the cost per instruction (~230 cycles) is Musashi's own
+overhead.  A faster CPU needs that overhead cut, not a faster fetch.
+
 ## Measured
 
 - Roots on the A1200 with the chip-bus model (2026-11-09 log, PROF1 = core 1):
