@@ -142,6 +142,11 @@
   Roots' zigzag / rings / rays part scrolls odd and even planes 0-63 a line with
   FMODE 3 (eight plane pointers, BPLCON1 and BPLCON4 per line); with the four
   classic bits alone its patterns were a dense weave of 16-pixel cells.
+- **A colour written to an entry nothing shows is applied without drawing up
+  to it** (o_step, color_shown: AGA plain single playfield - the playfield's
+  v ^ BPLAM entries, the armed sprites' ESPRM / OSPRM banks, COLOR00).  Roots'
+  sprite part streams 44 colours a line into the banks it shows later: 9,400
+  output ranges a frame became 3,600, the frames byte-identical.
 - **Known: a snapshot loaded in Roots jumps to its sprite part** within three
   frames, from the rings or the zigzag part alike (the bench's --state-load);
   the bench's straight runs are deterministic (t4800.png == f4800.png).

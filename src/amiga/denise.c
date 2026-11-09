@@ -787,6 +787,24 @@ AMIGA_HOT static void con4_apply(void) {
     bplcon4 = con4_next;
 }
 
+// AGA, a plain single playfield: is palette entry n on screen now?  The
+// playfield shows v ^ BPLAM for v below 1 << planes, the armed sprites their
+// ESPRM / OSPRM banks (both of a BPLCON4 still pending), the border COLOR00.
+// Anything else (HAM, dual playfield, EHB, OCS: the event's x is not the
+// entry) counts as shown.
+AMIGA_HOT static bool color_shown(unsigned n) {
+    if (n == 0 || !A.aga || !lut_plain_aga() || ham_mode(bplcon0)) return true;
+    const unsigned np = 1u << planes(bplcon0), bank = n >> 4;
+    for (int k = 0; k < 2; k++) {
+        const unsigned c4 = k ? con4_next : bplcon4;
+        if (((n ^ (c4 >> 8)) & 255) < np) return true;
+        if (bank == (c4 & 15) || bank == ((c4 >> 4) & 15))
+            for (int s = 0; s < 8; s++) if (spr_armed[s]) return true;
+        if (!con4_pending) break;
+    }
+    return false;
+}
+
 // Pixels [x0, x1) of the current line, in DIW coordinates.
 static void sprites_to(int a, int b);
 AMIGA_HOT static void output(int x0, int x1) {
@@ -1378,6 +1396,16 @@ AMIGA_HOT static bool o_step(int step) {
     const dev_t *e = &o_ev;
     if (e->kind < EV_LINE || e->kind == EV_END) {
         const int h = ev_hpos(e);
+        // A colour written to an entry nothing on screen shows now changes no
+        // pixel before it: applied without drawing up to it.  Roots' sprite
+        // part streams 44 colours a line into the banks it will show later:
+        // 11,000 of its 14,000 events a frame, each a range of a few pixels.
+        if (e->kind >= R_COLOR00 && e->kind < R_COLOR00 + 64 && !color_shown(e->x)) {
+            c_apply(e->kind, e->v, e->x);
+            o_busy = false;
+            tail_next(&o_tail);
+            return true;
+        }
         if (h > r_h + step) { o_to(r_h + step); return true; }
         o_to(h);
         if (e->kind == EV_END) {
