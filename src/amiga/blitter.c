@@ -14,7 +14,15 @@ static uint16_t con0, con1, afwm = 0xFFFF, alwm = 0xFFFF;
 static uint32_t pt[4];
 static int16_t  mod[4];
 static uint16_t adat, bdat, cdat;
-static uint16_t bold, bhold;      // B shifter state; kept between blits (B DMA off uses BLTBDAT)
+// B shifter state.  BHOLD (the shifted word) outlives a blit: B DMA off uses
+// the BLTBDAT the CPU wrote, shifted on the write against the previous B word -
+// which a blit's start clears (WinUAE's fast path starts each blit with
+// prevb = 0).  Sanity's Arte draws its logo morph as 1-word columns, ORed in
+// with ASH = BSH and BLTBDAT = $FFFF written before each blit: the shifted
+// $FFFF is the mask that drops the bits the A shifter carries over from the
+// previous row; against the previous blit's $FFFF the mask was $FFFF and the
+// logo came out in shards.
+static uint16_t bold, bhold;
 static int      bw = 64, bh = 1024; // blit width (words) and height (rows)
 static bool     pending;          // BLTSIZE written while blitter DMA was off
 static bool     busy, zero = true;
@@ -271,6 +279,7 @@ AMIGA_HOT void blitter_write(uint32_t reg, uint16_t v) {
     case R_BLTSIZE:
         bh = v >> 6;    if (!bh) bh = 1024;
         bw = v & 0x3F;  if (!bw) bw = 64;
+        bold = 0;                       // see go()
         go();
         break;
     // ECS Agnus: BLTCON0's low byte alone, and blits up to 32768 x 2048 words
@@ -280,6 +289,7 @@ AMIGA_HOT void blitter_write(uint32_t reg, uint16_t v) {
     case R_BLTSIZH:
         if (!A.ecs) break;
         bw = v & 0x7FF; if (!bw) bw = 0x800;
+        bold = 0;
         go();
         break;
     default: break;

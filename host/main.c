@@ -222,6 +222,7 @@ typedef struct { int frame, a, b, c; } inev_t;     // --joy: dirs fire; --mouse:
 // --trace N: every custom write and sprite DMA fetch of frame N (amiga_trace_reg).
 static int trace_frame = -1;
 static void trace_reg(uint32_t reg, uint16_t v, int hpos, uint32_t x) {
+    if (reg >= 0x2000) { if (x) fprintf(stderr, "T v%3d bpl%d units %u pt=%06X\n", A.vpos, (int)(reg - 0x2000), v, x); return; }
     if (reg >= 0x1000) fprintf(stderr, "T v%3d spr%d st%u pt=%06X\n", A.vpos, (int)(reg - 0x1000), v, x);
     else fprintf(stderr, "T v%3d h%3d %c %03X=%04X\n", A.vpos, hpos, x ? 'C' : 'P', reg, v);
 }

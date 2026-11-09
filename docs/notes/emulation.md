@@ -147,6 +147,23 @@
   v ^ BPLAM entries, the armed sprites' ESPRM / OSPRM banks, COLOR00).  Roots'
   sprite part streams 44 colours a line into the banks it shows later: 9,400
   output ranges a frame became 3,600, the frames byte-identical.
+- **A blit's start clears the B shifter's previous word** (blitter.c, BLTSIZE /
+  BLTSIZH): a BLTBDAT the CPU writes afterwards is shifted against 0, as
+  WinUAE's fast path starts each blit with prevb = 0.  Sanity's Arte draws its
+  logo morph as 1-word columns 480 words tall, ORed in with ASH = BSH and
+  BLTBDAT = $FFFF written before each blit: the shifted $FFFF is the mask that
+  drops what the A shifter carries over from the previous row (the latches are
+  not cleared between rows); shifted against the previous blit's $FFFF the mask
+  was $FFFF and the logo came out in shards (2026-11-09).
+- **The vertical window a line's bitplane DMA follows is the one at its
+  DDFSTRT** (denise.c vwin_apply): a DIWSTRT / DIWSTOP written before the
+  line's DDFSTRT counts for the line, one written after it from the next line.
+  Arte's "ARTE" picture puts the vblank setup (DIWSTRT $2981) on line 32 and the
+  picture's DIWSTRT $1D81 and plane pointers at colour clocks 114-170 of the
+  same line: fetched on line 32 after the writes, the five planes started 5-9
+  words apart and the picture was shredded.  (At line start alone, the line was
+  in the window from the previous frame's $1D81; WinUAE's equality compare at
+  line start would fetch too - the picture says the hardware does not.)
 - **Known: a snapshot loaded in Roots jumps to its sprite part** within three
   frames, from the rings or the zigzag part alike (the bench's --state-load);
   the bench's straight runs are deterministic (t4800.png == f4800.png).

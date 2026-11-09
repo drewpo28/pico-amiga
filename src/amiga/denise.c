@@ -1196,14 +1196,27 @@ AMIGA_HOT static void c_line_finish(void) {
 // ---- registers ---------------------------------------------------------------
 // A register write, once the side got to its hpos.  The DMA side and the
 // fetch stage (the pointers and modulos are the DMA side's: denise_write):
+AMIGA_HOT static void vwin_apply(agnus_t *f) {
+    if (f->fetch_k == 0 && f->r_h <= f->ds)
+        f->bpl_dma = in_vwin(f->vpos, f->diwstrt, f->diwstop, f->diwhigh) &&
+                     (f->dmacon & (DMAF_MASTER | DMAF_RASTER)) == (DMAF_MASTER | DMAF_RASTER);
+}
+
 AMIGA_HOT static void a_apply(agnus_t *f, uint32_t reg, uint16_t v) {
     switch (reg) {
     case R_BPLCON0: f->bplcon0 = v; if (A.aga && f->fetch_k == 0) compute_ddf(f); break;   // AGA: the unit's length
     case R_BPLCON1: f->bplcon1 = v; break;
     case R_FMODE:   f->fmode = v; if (f->fetch_k == 0) compute_ddf(f); break;
-    case R_DIWSTRT: f->diwstrt = v; f->diwhigh = 0; break;
-    case R_DIWSTOP: f->diwstop = v; f->diwhigh = 0; break;
-    case R_DIWHIGH: f->diwhigh = (uint16_t)(v | DIWHIGH_ON); break;
+    // The vertical window the line's bitplane DMA follows is the one at its
+    // DDFSTRT: a DIWSTRT written before it counts for this line, one after it
+    // from the next line.  Sanity's Arte puts its vblank setup (DIWSTRT $2981,
+    // VSTART 41) on line 32, then a second list's DIWSTRT $1D81 (VSTART 29)
+    // and the picture's plane pointers at colour clocks 114-170 of that line:
+    // fetched on line 32 after the writes, the planes started 5-9 words apart
+    // and the picture was a shredded, triple one.
+    case R_DIWSTRT: f->diwstrt = v; f->diwhigh = 0; vwin_apply(f); break;
+    case R_DIWSTOP: f->diwstop = v; f->diwhigh = 0; vwin_apply(f); break;
+    case R_DIWHIGH: f->diwhigh = (uint16_t)(v | DIWHIGH_ON); vwin_apply(f); break;
     case R_DDFSTRT: f->ddfstrt = v; if (f->fetch_k == 0) compute_ddf(f); break;
     case R_DDFSTOP: f->ddfstop = v; if (f->fetch_k == 0) compute_ddf(f); break;
     case R_DMACON: {
@@ -1577,6 +1590,7 @@ AMIGA_HOT void denise_sprite_dma(void) { sprite_dma(); }
 
 AMIGA_HOT void denise_line_end(void) {
     dma_to(AMIGA_CC_PER_LINE);
+    for (int p = 0; p < 8; p++) AMIGA_TRACE_REG(0x2000 + p, (uint16_t)dma_st.fetch_k, 0, bplpt[p]);   // the bench: the pointers after the line
     if (dma_st.fetch_k > 0 && planes(dma_st.bplcon0) > 0) {
         if (vc_first < 0) vc_first = A.vpos;
         vc_last = A.vpos;
