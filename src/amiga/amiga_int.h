@@ -205,9 +205,35 @@ static inline uint16_t chip_rw(uint32_t addr) {
     memcpy(&v, A.cfg.chip_ram + (addr & A.chip_mask & ~1u), 2);
     return __builtin_bswap16(v);
 }
+// The copper list mirror (copper.c): COP_MIR_N windows of COP_MIR_SIZE bytes
+// of chip RAM (from cop_mir_lo[w]) kept in SRAM, read by the copper instead of
+// PSRAM.  Every chip RAM writer keeps them current: the CPU (mem.c), chip_ww
+// (the blitter, the disk); a bulk change (reset, a snapshot) drops them
+// (copper_reset).  Two windows: a demo alternating two lists (Roots' zigzag
+// part) has both mirrored.
+#define COP_MIR_N    2
+#define COP_MIR_SIZE 12288
+#define COP_MIR_NONE 0x80000000u            // no window: off - lo is huge for any chip offset
+extern uint8_t  cop_mir[COP_MIR_N][COP_MIR_SIZE];
+extern uint32_t cop_mir_lo[COP_MIR_N];      // chip offset of each window, or COP_MIR_NONE
+static inline void cop_mir_w8(uint32_t off, uint8_t v) {
+    for (int w = 0; w < COP_MIR_N; w++) {
+        const uint32_t i = off - cop_mir_lo[w];
+        if (i < COP_MIR_SIZE) cop_mir[w][i] = v;
+    }
+}
+static inline void cop_mir_w16(uint32_t off, uint16_t v) {   // v big-endian already; off may be odd
+    for (int w = 0; w < COP_MIR_N; w++) {
+        const uint32_t i = off - cop_mir_lo[w];
+        if (i < COP_MIR_SIZE - 1) memcpy(cop_mir[w] + i, &v, 2);
+        else if (i == COP_MIR_SIZE - 1) cop_mir[w][i] = (uint8_t)v;   // its low byte is outside
+    }
+}
 static inline void chip_ww(uint32_t addr, uint16_t v) {
+    const uint32_t off = addr & A.chip_mask & ~1u;
     v = __builtin_bswap16(v);
-    memcpy(A.cfg.chip_ram + (addr & A.chip_mask & ~1u), &v, 2);
+    memcpy(A.cfg.chip_ram + off, &v, 2);
+    cop_mir_w16(off, v);
 }
 
 // ---- custom chip register dispatch (custom.c) ------------------------------
@@ -237,6 +263,7 @@ uint32_t blitter_count(void);
 // ---- denise / bitplane + sprite DMA (denise.c) -----------------------------
 void     denise_reset(void);
 void     denise_write(uint32_t reg, uint16_t v, int hpos);
+void     denise_bplpt(uint32_t reg, uint16_t v, int hpos);   // BPLxPTH/L: denise_write's short path (the copper)
 extern uint16_t denise_q_color[256];                 // the colours as queued (denise_write)
 void     denise_line_start(void);
 void     denise_line_end(void);

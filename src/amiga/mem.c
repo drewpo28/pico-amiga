@@ -293,7 +293,11 @@ AMIGA_HOT void m68k_write_memory_8(unsigned int a, unsigned int v) {
     AMIGA_STAT(amiga_stat_data);
     const bank_t *b = &banks[a >> 16];
     A.bus_data += b->chip;
-    if (b->wr) { b->wr[a & b->wmask] = (uint8_t)v; return; }
+    if (b->wr) {
+        b->wr[a & b->wmask] = (uint8_t)v;
+        if (b->chip) cop_mir_w8(a & b->wmask, (uint8_t)v);   // the copper list mirror
+        return;
+    }
     if (!b->rd) io_write8(a, (uint8_t)v, b->io);
 }
 
@@ -302,7 +306,11 @@ AMIGA_HOT void m68k_write_memory_16(unsigned int a, unsigned int v) {
     AMIGA_STAT(amiga_stat_data);
     const bank_t *b = &banks[a >> 16];
     A.bus_data += b->chip;
-    if (b->wr) { st16(b->wr + (a & b->wmask), (uint16_t)v); return; }
+    if (b->wr) {
+        st16(b->wr + (a & b->wmask), (uint16_t)v);
+        if (b->chip) cop_mir_w16(a & b->wmask, __builtin_bswap16((uint16_t)v));
+        return;
+    }
     if (!b->rd) io_write16(a, (uint16_t)v, b->io);
 }
 

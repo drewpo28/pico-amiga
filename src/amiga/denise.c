@@ -505,18 +505,36 @@ static inline uint16_t pf_color(uint8_t v, int *which) {
     return color[v & 31];
 }
 
-// Apply a sprite on top of a playfield pixel.
+// Apply a sprite on top of a playfield pixel: spl[x] is 0x80 | odd << 6 | pair
+// << 4 | colour (sprite_compose_full / spr_tab).  By two tables, rebuilt lazily
+// (spr_mix_update): Roots' sprite part has a sprite over every column of 212
+// lines, so this runs ~70,000 times a frame on core 1.
+//   spr_col[odd << 4 | colour]  the colour.  AGA: the even sprites' colours start
+//     at ESPRM x 16 (BPLCON4 bits 4-7), the odd and attached ones' at OSPRM x 16
+//     (bits 0-3), as WinUAE's sbasecol[]; OCS: 16.
+//   pf_front[which]  bit `pair`: playfield `which` (1, 2; 0 = none) is in front of
+//     that pair, BPLCON2's PF1P / PF2P.
+static uint16_t spr_col[32];
+static uint8_t  pf_front[3];
+static bool     spr_mix_dirty = true;
 static inline uint16_t sprite_mix(int x, uint16_t c, int which) {
-    uint8_t s = spl[x];
+    const uint8_t s = spl[x];
     if (!(s & 0x80)) return c;
-    int pair = (s >> 4) & 3;
-    if (which) {
-        int pri = which == 1 ? (bplcon2 & 7) : ((bplcon2 >> 3) & 7);
-        if (pair >= pri) return c;                             // playfield in front
-    }
-    // AGA: the even sprites' colours start at ESPRM x 16 (BPLCON4 bits 4-7), the
-    // odd and attached ones' at OSPRM x 16 (bits 0-3), as WinUAE's sbasecol[].
-    return color[(A.aga ? (s & 0x40 ? (bplcon4 & 0x0F) << 4 : bplcon4 & 0xF0) : 16) + (s & 15)];
+    if ((pf_front[which] >> ((s >> 4) & 3)) & 1) return c;    // playfield in front
+    return spr_col[((s >> 2) & 16) | (s & 15)];
+}
+AMIGA_HOT static void spr_mix_update(void) {
+    spr_mix_dirty = false;
+    const unsigned be = A.aga ? bplcon4 & 0xF0 : 16, bo = A.aga ? (bplcon4 & 0x0F) << 4 : 16;
+    for (unsigned i = 0; i < 16; i++) { spr_col[i] = color[be + i]; spr_col[16 + i] = color[bo + i]; }
+    pf_front[0] = 0;
+    pf_front[1] = (uint8_t)(0xF << (bplcon2 & 7));             // pair >= PF1P
+    pf_front[2] = (uint8_t)(0xF << ((bplcon2 >> 3) & 7));
+}
+// A colour write to entry n: the sprites' colours changed?
+static inline void spr_col_written(unsigned n) {
+    const unsigned be = A.aga ? bplcon4 & 0xF0 : 16, bo = A.aga ? (bplcon4 & 0x0F) << 4 : 16;
+    if ((n & ~15u) == be || (n & ~15u) == bo) spr_mix_dirty = true;
 }
 
 // Colour lookup for the current mode: pf value -> colour, and which playfield
@@ -784,6 +802,7 @@ static bool     con4_pending;
 AMIGA_HOT static void con4_apply(void) {
     con4_pending = false;
     if ((bplcon4 ^ con4_next) & 0xFF00) lut_dirty = true;
+    if ((bplcon4 ^ con4_next) & 0x00FF) spr_mix_dirty = true;   // ESPRM / OSPRM
     bplcon4 = con4_next;
 }
 
@@ -815,6 +834,7 @@ AMIGA_HOT static void output(int x0, int x1) {
         if (x1 <= x0) return;
     }
     if (lut_dirty) build_lut();
+    if (spr_mix_dirty) spr_mix_update();
     const int hstart = diw_hstart(diwstrt, diwhigh), hstop = diw_hstop(diwstop, diwhigh);
     const bool hires = res(bplcon0) != LORES;
     const bool ham = ham_mode(bplcon0);
@@ -1099,13 +1119,28 @@ AMIGA_HOT static void sprites_to(int a, int b) {
         if (hi <= lo) continue;
         const uint8_t *tab = spr_tab[(sprctl[o] & 0x80) ? 1 : 0][pair];
         const uint8_t *se = (const uint8_t *)sb32[e], *so = (const uint8_t *)sb32[o];
-        const unsigned we = (unsigned)sb_w[e], wo = (unsigned)sb_w[o];
-        const int xe = sb_x[e], xo = sb_x[o];
-        for (int x = lo; x < hi; x++) {
-            const unsigned ue = (unsigned)(x - xe), uo = (unsigned)(x - xo);
-            const unsigned ve = ue < we ? se[ue] : 0, vo = uo < wo ? so[uo] : 0;
-            const uint8_t t = tab[(ve << 2) | vo];
-            if (t) spl[x] = t;
+        const int xe = sb_x[e], xo = sb_x[o], xe1 = xe + sb_w[e], xo1 = xo + sb_w[o];
+        // In runs where the pair's cover is constant (the even one, both, the odd
+        // one): no bounds tests a column (Roots' sprite part: 8 x 64 columns a line).
+        for (int x = lo; x < hi; ) {
+            const bool ie = x >= xe && x < xe1, io = x >= xo && x < xo1;
+            int nx = hi;
+            if (xe > x && xe < nx) nx = xe;
+            if (xe1 > x && xe1 < nx) nx = xe1;
+            if (xo > x && xo < nx) nx = xo;
+            if (xo1 > x && xo1 < nx) nx = xo1;
+            if (ie && io) {
+                const uint8_t *pe = se + (x - xe), *po = so + (x - xo);
+                for (; x < nx; x++) { const uint8_t t = tab[(*pe++ << 2) | *po++]; if (t) spl[x] = t; }
+            } else if (ie) {
+                const uint8_t *pe = se + (x - xe);
+                for (; x < nx; x++) { const uint8_t t = tab[*pe++ << 2]; if (t) spl[x] = t; }
+            } else if (io) {
+                const uint8_t *po = so + (x - xo);
+                for (; x < nx; x++) { const uint8_t t = tab[*po++]; if (t) spl[x] = t; }
+            } else {
+                x = nx;
+            }
         }
     }
     spl_valid_hi = b;
@@ -1245,6 +1280,7 @@ AMIGA_HOT static void c_apply(uint32_t reg, uint16_t v, uint16_t x) {
         const uint16_t c = v & 0xFFF;
         if (color[x & 255] == c) return;
         color[x & 255] = c;
+        spr_col_written(x & 255);
         // A plain single playfield: pf value x ^ BPLAM shows it.
         if (lut_dirty || !lut_plain_aga()) { lut_dirty = true; return; }
         const unsigned i = (x ^ (bplcon4 >> 8)) & 255;
@@ -1262,6 +1298,7 @@ AMIGA_HOT static void c_apply(uint32_t reg, uint16_t v, uint16_t x) {
         const uint16_t c = v & 0xFFF;
         if (color[n] == c) return;
         color[n] = c;
+        spr_col_written((unsigned)n);
         if (lut_dirty || (bplcon0 & 0x0400) || res(bplcon0) == SHRES) { lut_dirty = true; return; }   // DPF, SHRES: rebuild
         // Single playfield: pf values n and n + 32 (EHB's half-bright) use it.
         lut[n] = c;
@@ -1283,7 +1320,7 @@ AMIGA_HOT static void c_apply(uint32_t reg, uint16_t v, uint16_t x) {
     }
     switch (reg) {
     case R_BPLCON0: bplcon0 = v; lut_dirty = true; break;
-    case R_BPLCON2: bplcon2 = v; lut_dirty = true; break;
+    case R_BPLCON2: bplcon2 = v; lut_dirty = true; spr_mix_dirty = true; break;
     case R_BPLCON3: {
         // AGA: PF2OF (the LUT), SPRES (the sprites); BANK and LOCT are the producer's.
         const uint16_t d = (uint16_t)(bplcon3 ^ v);
@@ -1316,6 +1353,7 @@ static void c_reset(void) {
     bplmod[0] = bplmod[1] = 0;
     memset(color, 0, sizeof color);
     lut_dirty = true;
+    spr_mix_dirty = true;
     memset(sprpt, 0, sizeof sprpt);
     memset(dma_sprpos, 0, sizeof dma_sprpos); memset(dma_sprctl, 0, sizeof dma_sprctl);
     memset(spr_vstart, 0, sizeof spr_vstart); memset(spr_vstop, 0, sizeof spr_vstop);
@@ -1603,6 +1641,18 @@ AMIGA_HOT void denise_line_end(void) {
 // two zeros every 12 colour clocks, 12,800 MOVEs a frame, two thirds of them
 // repeats - each one a trip through both stages.  The copper tests it itself.
 uint16_t denise_q_color[256];
+
+// A bitplane pointer from the copper (BPL1PTH..BPL8PTL): denise_write's path
+// for them without its range tests - Roots' zigzag part writes all 16 on every
+// line.  The units before h read with the old pointer first.
+AMIGA_HOT void denise_bplpt(uint32_t reg, uint16_t v, int hpos) {
+    const uint16_t h = (uint16_t)(hpos < 0 ? 0 : hpos);
+    if (dma_st.bpl_dma) dma_to(h);
+    else if (h > dma_st.r_h) dma_st.r_h = h < AMIGA_CC_PER_LINE ? h : AMIGA_CC_PER_LINE;
+    const int p = (reg - R_BPL1PTH) >> 2;
+    if (reg & 2) bplpt[p] = (bplpt[p] & 0xFFFF0000) | (v & 0xFFFE);
+    else         bplpt[p] = (bplpt[p] & 0x0000FFFF) | ((uint32_t)(v & 0x1F) << 16);
+}
 
 AMIGA_HOT void denise_write(uint32_t reg, uint16_t v, int hpos) {
     const uint16_t h = (uint16_t)(hpos < 0 ? 0 : hpos);

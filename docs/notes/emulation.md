@@ -40,8 +40,17 @@
   constant 24-bit mask, m68k_execute counts instructions in a register, and the
   68020 instruction-cache tags (`--bus-tune 255,C`) are compiled into the bench
   only: a word fetch on the board went from ~27 instructions to ~13 (2026-11-09,
-  Roots' zigzag: 1.4 words fetched an instruction, the fetch was the single
-  biggest bucket of the PC profile).
+  Roots' 8-plane part: 1.4 words fetched an instruction, the fetch was the single
+  biggest bucket of the PC profile).  Tried the same evening and reverted, each
+  measured against the previous firmware in Roots' first 15 s under "With cache":
+  a 32-bit opcode fetch keeping the other half for the next word (half the XIP
+  transactions for straight-line code) and a chip-RAM-first data callback with
+  no bank lookup or stack frame - together cpu 12.3-14.2 -> 13.3-15.5 ms, so an
+  XIP cache HIT costs about an SRAM access and the bookkeeping outweighed it; an
+  8 KB SRAM hash of the 128 KB opcode -> handler index (flash) went out with
+  them (its own A/B is the 19:54 log against the firmware after it).  What the
+  PSRAM costs the CPU is its misses (the demo's data, 14-26k a frame), not the
+  hits.
 - **Musashi samples interrupts only on entry to m68k_execute()** (and on SR
   writes): `amiga_update_ipl()` calls m68k_end_timeslice() when the level rises
   inside the CPU, otherwise an interrupt would wait for the end of the slice.
@@ -184,6 +193,23 @@
   `move.w $dff088,d0`; ignored, the OS list ran on and its last MOVE (BPLCON0 =
   0 planes) left the intro and the game black.
 - Single playfield sprite priority uses **PF2P**, not PF1P (vAmiga agrees).
+- **The copper's list is mirrored in SRAM** (copper.c, amiga_int.h: COP_MIR_N =
+  2 windows of COP_MIR_SIZE = 12 KB): fetches are counted by 4 KB block with a
+  decay of ~8 frames, the windows go to the two non-overlapping 12 KB ranges with
+  the most, a range taking a window once it has been in that top set 3 frames
+  running (COP1LC is no guide: Roots and Arte start with a stub that jumps to the
+  real list; Roots' zigzag part alternates two 20 KB lists every frame, which is
+  why there are two windows and the slow decay - a per-frame ranking put both
+  windows into that frame's list and the candidate never settled).  Every chip
+  RAM writer keeps them current - the CPU in mem.c's bank path, chip_ww for the
+  blitter and the disk - and copper_reset drops them (a reset, a snapshot).  The
+  copper's reads of the zigzag list missed the XIP cache (~2.8 ms of its 9 ms of
+  copper, 2026-11-09); the bench's status prints `cop N (mirror M)` fetches a
+  frame: 57% mirrored there (12 KB of each 20 KB list), 93% in Arte's end part,
+  ~100% elsewhere.  The windows cost 24 KB of SRAM (heap ~19 KB after them).  Its
+  bitplane pointers (16 a line there) go to denise_bplpt straight from copper_run,
+  past custom_write / display_reg / denise_write's tests, and a WAIT's vertical
+  compare is kept per line.
 - Byte writes to custom registers put the byte on both halves of the word.
 - Area blits with B DMA off use BLTBDAT (shifted on the CPU write), not 0:
   graphics RectFill/Flood rely on it. With 0 KS 1.2/1.3's strap Flood() loops
@@ -249,7 +275,12 @@
   repositions its 8 x 64-pixel sprites 3-4 times a line (1,100 times a frame): the
   per-pixel spr_px walk over the whole line was 33 ms of core 1 a frame, the
   table-driven whole-line one still 20; the columns drawn are 320 a line.  Hires /
-  super-hires sprites (SPRES) keep the per-pixel walk over the line.  A plain AGA
+  super-hires sprites (SPRES) keep the per-pixel walk over the line.  sprites_to
+  walks a pair in runs where its cover is constant (even / both / odd: no bounds
+  test a column) and sprite_mix is two tables, spr_col[odd, colour] and
+  pf_front[which] (BPLCON2's priorities as a pair mask), rebuilt lazily on a
+  sprite-bank colour, BPLCON2 or ESPRM / OSPRM change (2026-11-09: a sprite over
+  every column of 212 lines in Roots' zigzag part, ~70,000 mixes a frame).  A plain AGA
   playfield's LUT rebuild covers 1 << planes entries (BPLCON4 writes several times
   a line over one plane rebuilt 256).
 - **The DMA side's position (dma_st.r_h) must move on every line**: a DMACON
