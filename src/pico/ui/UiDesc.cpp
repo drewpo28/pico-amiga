@@ -174,6 +174,30 @@ static int describeOnOff(uint16_t setting, int32_t v, DescLine* out, int max) {
         n = rule(out, n, max, v ? "A floppy icon top right" : "No icon");
         if (v) n = rule(out, n, max, "while a drive works");
         break;
+    case SET_CHIP_BUS:
+        if (v == 1) {
+            n = rule(out, n, max, "The 68EC020 waits for");
+            n = rule(out, n, max, "chip RAM as a stock");
+            n = rule(out, n, max, "A1200 does: cheapest");
+        } else if (v == 2) {
+            n = rule(out, n, max, "Its instruction cache");
+            n = rule(out, n, max, "counted: a faster CPU,");
+            n = rule(out, n, max, "a third more work");
+        } else {
+            n = rule(out, n, max, "Full speed, as with");
+            n = rule(out, n, max, "fast RAM: twice the work");
+        }
+        break;
+    case SET_FRAME_SKIP:
+        if (v) {
+            n = rule(out, n, max, "A frame after one that");
+            n = rule(out, n, max, "overran is not drawn:");
+            n = rule(out, n, max, "full speed, fewer pictures");
+        } else {
+            n = rule(out, n, max, "Every frame drawn; heavy");
+            n = rule(out, n, max, "scenes run in slow motion");
+        }
+        break;
     case SET_HDMI_CAPTURE:
         if (v) {
             n = rule(out, n, max, "Simpler HDMI signal for");
@@ -299,7 +323,8 @@ int describe(const Node& n, int32_t value, DescLine* out, int max) {
     if (int c = describeOther(n.setting, value, out, max)) return c;
     if (n.setting == SET_VIDEO_MODE) return describeVideoMode(value, out, max);
     if (n.setting == SET_HPOS) return describePosition(value, out, max);
-    if (n.setting == SET_VCENTRE || n.setting == SET_DISK_LED || n.setting == SET_HDMI_CAPTURE)
+    if (n.setting == SET_VCENTRE || n.setting == SET_DISK_LED || n.setting == SET_HDMI_CAPTURE || n.setting == SET_CHIP_BUS ||
+        n.setting == SET_FRAME_SKIP)
         return describeOnOff(n.setting, value, out, max);
     if (n.setting == SET_DRIVES) return describeDrives(value, out, max);
     if (n.kind == K_PICK && n.label[0] == 'D' && n.label[1] == 'F')

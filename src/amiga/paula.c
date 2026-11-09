@@ -65,7 +65,7 @@ void paula_dma_changed(void) {
     }
 }
 
-static void advance(chan_t *c, int i, int cc) {
+AMIGA_HOT static void advance(chan_t *c, int i, int cc) {
     int32_t per = c->per < 124 && c->dma ? 124 : c->per;
     if (!per) per = 65536;
     c->per_cnt -= cc;
@@ -106,7 +106,7 @@ static void advance(chan_t *c, int i, int cc) {
     }
 }
 
-void paula_half_line(void) {
+AMIGA_HOT void paula_half_line(void) {
     int32_t l = 0, r = 0;
     // 227 colour clocks per line: alternate 113 / 114.
     int cc = (audio_pos & 1) ? 114 : 113;
@@ -127,7 +127,7 @@ void paula_half_line(void) {
 
 AMIGA_HOT uint32_t paula_audio_pos(void) { return audio_pos; }
 
-void paula_write(uint32_t reg, uint16_t v) {
+AMIGA_HOT void paula_write(uint32_t reg, uint16_t v) {
     int i = (int)((reg - R_AUD0LCH) >> 4);
     if (i < 0 || i > 3) return;
     chan_t *c = &ch[i];

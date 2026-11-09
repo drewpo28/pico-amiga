@@ -634,13 +634,25 @@ static const Node kA600[] = {
     NM_RADIO_EN  ("Chip RAM",    SET_A600_CHIP, opt_a600_chip, nullptr, machine_a600_2mb_ok),
 };
 
+// Machine > A1200: its Kickstarts (its 2 MB of chip RAM needs the 2 MB chip
+// area: 8 MB of PSRAM), and how its 68EC020 waits for the chip bus
+// (amiga_set_chip_bus): as a stock A1200's (~1.3 MIPS, the cheapest to emulate),
+// with its instruction cache counted (~1.7 MIPS, a third more emulation work a
+// frame), or not at all (as with fast RAM, twice the work).
+static const Option opt_chip_bus[] = {
+    { "Stock A1200", 1, "Stock" }, { "With cache", 2, "Cache" }, { "Off (fast RAM)", 0, "Off" },
+};
+static const Node kA1200[] = {
+    NM_RADIO_DE  ("Kickstart",   SET_KICK, a1200Opts, nullptr, machine_a600_2mb_ok),
+    NM_RADIO     ("Chip bus",    SET_CHIP_BUS, opt_chip_bus, nullptr),
+};
+
 static const Node kMachine[] = {
     NM_RADIO_D   ("DiagROM",     SET_KICK, diagOpts, nullptr),
     NM_RADIO_D   ("A500",        SET_KICK, a500Opts, nullptr),
     NM_RADIO_D   ("A500+",       SET_KICK, a500pOpts, nullptr),
     NM_SUB       ("A600",        kA600,    nullptr),
-    // Its 2 MB of chip RAM needs the 2 MB chip area (8 MB of PSRAM).
-    NM_RADIO_DE  ("A1200",       SET_KICK, a1200Opts, nullptr, machine_a600_2mb_ok),
+    NM_SUB       ("A1200",       kA1200,   nullptr),
     NM_ACTIONV   ("Custom ROM",  act_custom_rom, customRomLabel, nullptr),
 };
 
@@ -833,6 +845,7 @@ static const Node kVideo[] = {
     NM_RADIO  (NM_IND "Position", SET_HPOS, opt_hpos, nullptr),
     NM_BOOL   (NM_IND "Vertical centring", SET_VCENTRE, nullptr),
     NM_BOOL   (NM_IND "Drive icon", SET_DISK_LED, nullptr),
+    NM_BOOL   (NM_IND "Skip frames when late", SET_FRAME_SKIP, nullptr),
 };
 
 static const Node kOverclock[] = {

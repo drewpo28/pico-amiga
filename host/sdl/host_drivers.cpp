@@ -37,6 +37,10 @@ extern "C" uint32_t board_cycles_per_us(void) { return 1000; }
 extern "C" void board_xip_counts(uint32_t *hit, uint32_t *acc) { *hit = *acc = 0; }
 extern "C" bool board_pcprof(bool on) { (void)on; return false; }
 extern "C" void board_pcprof_dump(void) {}
+extern "C" volatile uint8_t board_pcprof_c1_want;
+volatile uint8_t board_pcprof_c1_want;
+extern "C" void board_pcprof_core1_apply(void) {}
+extern "C" void board_load_cpu_overlay(int cpu) { (void)cpu; }
 // System info (Win+F1): what a PC can say for the board.
 static const uint8_t host_jedec[3] = { 0, 0, 0 };
 extern "C" void board_flash_probe(void) {}

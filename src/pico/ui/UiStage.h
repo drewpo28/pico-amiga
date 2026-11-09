@@ -72,7 +72,11 @@ enum SettingFlags : uint16_t {
     /* Debug > A1200 load test: amiga_set_load_test, this session only */ \
     X(SET_LOAD_TEST,   AC_LIVE, 0,                             get_loadtest,  put_loadtest,  hook_loadtest) \
     /* Debug > PC profiler: board_pcprof, this session only */ \
-    X(SET_PCPROF,      AC_LIVE, 0,                             get_pcprof,    put_pcprof,    hook_pcprof)
+    X(SET_PCPROF,      AC_LIVE, 0,                             get_pcprof,    put_pcprof,    hook_pcprof) \
+    /* Machine > A1200 > Chip bus waits: amiga_set_chip_bus */ \
+    X(SET_CHIP_BUS,    AC_LIVE, 0,                             get_chipbus,   put_chipbus,   hook_chipbus) \
+    /* Video > Picture > Skip frames when late: main.c reads it every frame */ \
+    X(SET_FRAME_SKIP,  AC_PURE, 0,                             get_frameskip, put_frameskip, nullptr)
 
 #define NM_X_ENUM(id, cls, flags, g, p, h) id,
 enum SettingId : uint16_t {

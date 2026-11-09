@@ -23,7 +23,7 @@ void dbg_uart_reclock(void);
 
 // Once a second while the console runs: emulated frame time, FPS and the
 // profiler's split, one line ("PERF ..."). Call after every amiga_run_frame().
-void perf_log_frame(uint32_t emu_us);
+void perf_log_frame(uint32_t emu_us, bool skipped);   // skipped: the frame was not drawn
 
 #ifdef __cplusplus
 }

@@ -22,6 +22,7 @@
 #include "ff.h"
 #include "amiga.h"
 #include "machine.h"
+#include "board.h"              // board_load_cpu_overlay
 #include "app/Config.h"
 
 namespace Snap {
@@ -366,6 +367,7 @@ bool load(const std::string& path, std::string& err, std::string& warn) {
     amiga_set_roms(ac.rom, ac.rom_size, ac.ext_rom, ac.ext_size);
     amiga_set_machine(ac.chipset, ac.chip_size, ac.slow_size, ac.gayle);
     amiga_set_cpu(ac.cpu);
+    board_load_cpu_overlay(ac.cpu);
 
     std::string missing, changed;
     machine_put_disks(c->disks, missing);

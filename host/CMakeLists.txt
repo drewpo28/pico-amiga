@@ -9,6 +9,8 @@ endif()
 
 set(ROOT ${CMAKE_CURRENT_LIST_DIR}/..)
 include(${ROOT}/cmake/amiga_core.cmake)
+# The bench's counters (amiga_status_t: instructions, accesses), host only.
+target_compile_definitions(amiga_core PRIVATE AMIGA_STATS=1)
 
 add_executable(pico-amiga-host main.c ${ROOT}/src/pico/dms.c)
 target_include_directories(pico-amiga-host PRIVATE ${ROOT}/src/pico)

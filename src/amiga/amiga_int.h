@@ -72,6 +72,14 @@ typedef struct {
     bool     load_planes;      // ...and two more bitplanes read and spread (8 for 6)
     uint8_t  cpu_rem;          // CPU cycles left over from the last slice (cpu_mul > 1)
     uint64_t idle_cycles;      // CPU cycles idle.c did not run (busy-wait loops)
+    // The chip bus (amiga_set_chip_bus; amiga.c bus_wait): the 68EC020 waits for
+    // its chip accesses, bus_data counts the CPU's data accesses to chip banks
+    // (mem.c), bus_stall the colour clocks it waited, bus_rem8 the eighths over.
+    bool     chip_bus;
+    bool     render_skip;      // amiga_set_render_skip: the next frame's picture is not drawn
+    uint32_t bus_data;
+    uint64_t bus_stall;
+    uint8_t  bus_rem8;
 
     // Beam / time. One colour clock = 2 CPU cycles.
     uint32_t frame;
@@ -95,6 +103,20 @@ typedef struct {
 } amiga_t;
 
 extern amiga_t A;
+
+// Instructions run (m68k_execute's loop: the chip bus model's fetch estimate,
+// the bench's count), and the window the CPU fetches from is a chip bank (mem.c).
+extern unsigned int amiga_bus_instr;
+extern uint8_t  mem_fetch_chip;
+// AMIGA_STATS (the host bench): data accesses and instruction words fetched,
+// counted where they happen (mem.c, m68kcpu.h).
+extern unsigned int amiga_stat_data, amiga_stat_fetch, amiga_stat_audw;   // audw: writes to AUDx registers
+extern unsigned int amiga_stat_hist[2048];                                // runs per handler index
+#ifdef AMIGA_STATS
+#define AMIGA_STAT(c) ((c)++)
+#else
+#define AMIGA_STAT(c) ((void)0)
+#endif
 
 // ---- profiling (amiga_get_profile) ------------------------------------------
 // Charge the time since the last switch to the current bucket and make `cat` the
@@ -215,6 +237,8 @@ void     denise_line_start(void);
 void     denise_line_end(void);
 void     denise_frame_start(void);
 bool     denise_lace(void);                         // BPLCON0 LACE
+void     denise_status(amiga_status_t *st);          // bplcon0, fmode, dma_lines
+int      denise_bus_busy8(int h0, int h1);           // bitplane DMA's chip cycles in [h0, h1), in eighths
 void     denise_sync(void);                         // wait for the render core (async)
 uint32_t denise_core1_ticks(void);
 

@@ -242,7 +242,7 @@ static void go(void) {
     blitter_dma_changed();
 }
 
-void blitter_write(uint32_t reg, uint16_t v) {
+AMIGA_HOT void blitter_write(uint32_t reg, uint16_t v) {
     switch (reg) {
     case R_BLTCON0: con0 = v; break;
     case R_BLTCON1: con1 = v; break;

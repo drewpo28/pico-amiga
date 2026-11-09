@@ -41,8 +41,10 @@ uint8_t  Config::vga_vmode    = 0;
 uint8_t  Config::hpos         = 0;
 bool     Config::vcentre      = false;
 bool     Config::disk_led     = true;
+bool     Config::frame_skip   = true;
 uint8_t  Config::machine      = 0;
 uint8_t  Config::a600_chip    = 1;
+uint8_t  Config::chip_bus     = 1;
 std::string Config::kick      = "ks13";
 std::string Config::kick_file = "/amiga/kick.rom";
 std::string Config::df0       = "";
@@ -146,6 +148,8 @@ void Config::load() {
     nvs_get_u8 ("machine",       machine,      sts);
     nvs_get_u8 ("a600_chip",     a600_chip,    sts);
     if (a600_chip != 2) a600_chip = 1;
+    nvs_get_u8 ("chip_bus",      chip_bus,     sts);
+    if (chip_bus > 2) chip_bus = 1;
     if (machine > 3) machine = 0;                 // machine.h MACHINE_COUNT
     nvs_get_str("kick",          kick,         sts);
     nvs_get_str("kick_file",     kick_file,    sts);
@@ -165,6 +169,7 @@ void Config::load() {
     if (hpos > 1) hpos = 0;
     nvs_get_b  ("vcentre",       vcentre,      sts);
     nvs_get_b  ("disk_led",      disk_led,     sts);
+    nvs_get_b  ("frame_skip",    frame_skip,   sts);
 }
 
 // ---- writing -------------------------------------------------------------------------
@@ -243,6 +248,7 @@ bool Config::save() {
     nvs_set_b(buf, "hdmi_capture",  hdmi_capture);
     nvs_set_i(buf, "machine",       machine);
     nvs_set_i(buf, "a600_chip",     a600_chip);
+    nvs_set_i(buf, "chip_bus",      chip_bus);
     nvs_set_str(buf, "kick",        kick.c_str());
     nvs_set_str(buf, "kick_file",   kick_file.c_str());
     nvs_set_str(buf, "df0",         df0.c_str());
@@ -257,6 +263,7 @@ bool Config::save() {
     nvs_set_i(buf, "hpos",          hpos);
     nvs_set_b(buf, "vcentre",       vcentre);
     nvs_set_b(buf, "disk_led",      disk_led);
+    nvs_set_b(buf, "frame_skip",    frame_skip);
     // f_sync before the rename, so a stalled card cannot leave a half-written file
     // under the real name.
     const FRESULT sy = buf.ok ? f_sync(&f) : FR_DISK_ERR;

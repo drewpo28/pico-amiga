@@ -11,6 +11,8 @@
 #include "dms.h"
 #include "roms.h"
 #include "app/Config.h"
+#include "board.h"              // board_load_cpu_overlay
+#include "ui/ui.h"
 #include "pico/stdlib.h"
 
 #define KB 1024u
@@ -80,6 +82,7 @@ const char *machine_name(void) { return machine_model_name(Config::machine); }
 
 bool machine_select_rom(amiga_config_t *cfg) {
     select_model(cfg);
+    board_load_cpu_overlay(cfg->cpu);
     cfg->ext_rom = NULL;
     cfg->ext_size = 0;
     if (Config::kick == "sd") {
@@ -353,6 +356,8 @@ bool machine_apply_kickstart(void) {
     amiga_set_roms(c.rom, c.rom_size, c.ext_rom, c.ext_size);
     amiga_set_machine(c.chipset, c.chip_size, c.slow_size, c.gayle);
     amiga_set_cpu(c.cpu);
+    board_load_cpu_overlay(c.cpu);
+    settings_apply_chip_bus();
     hdf_attach();
     amiga_reset(true);
     return true;

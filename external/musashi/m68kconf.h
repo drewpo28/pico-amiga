@@ -284,21 +284,36 @@ void amiga_cpu_reset_instr(void);
 #define M68K_CONST_TABLES           M68K_OPT_ON
 #endif
 
-/* PICO-AMIGA: placement of the hot handlers (tools/musashi_hot.txt) and of
- * m68k_execute(): the firmware's AMIGA_HOT puts them in SRAM. */
+/* PICO-AMIGA: placement of the hot handlers (tools/musashi_hot.txt, the 68000's
+ * set in gen/m68kops.c; tools/musashi_hot_020.txt, the 68EC020's in
+ * gen/m68kops_020.c) and of the m68kcpu.h helpers they inline or call.  On the
+ * firmware (AMIGA_OVL defined: src/pico/ld, board.c) each handler set's hot
+ * code is an OVERLAY section, both sharing one SRAM window: only one CPU runs
+ * at a time, and board_load_cpu_overlay() copies the running set's image in
+ * from flash at amiga_set_cpu().  Without the window (AMIGA_HOT alone: the
+ * host) they go wherever AMIGA_HOT says. */
+#if defined(AMIGA_OVL) && defined(M68KI_FIXED_EC020)
+#define M68KI_HOT_SECTION __attribute__((section("m68k_ovl_020")))
+#elif defined(AMIGA_OVL) && defined(M68KI_FIXED_000)
+#define M68KI_HOT_SECTION __attribute__((section("m68k_ovl_000")))
+#elif defined(AMIGA_HOT)
+#define M68KI_HOT_SECTION AMIGA_HOT
+#else
+#define M68KI_HOT_SECTION
+#endif
 #if defined(AMIGA_HOT) && !defined(M68KI_FIXED_EC020)
-#define M68KI_HOT AMIGA_HOT
+#define M68KI_HOT M68KI_HOT_SECTION
 #else
 #define M68KI_HOT                   /* the 68EC020's: tools/musashi_hot_020.txt */
 #endif
 #if defined(AMIGA_HOT) && defined(M68KI_FIXED_EC020)
-#define M68KI_HOT_020 AMIGA_HOT
+#define M68KI_HOT_020 M68KI_HOT_SECTION
 #else
 #define M68KI_HOT_020
 #endif
-/* In both lists: SRAM in both handler sets. */
+/* In both lists, and the m68kcpu.h helpers: the set's window (or SRAM). */
 #ifdef AMIGA_HOT
-#define M68KI_HOT2 AMIGA_HOT
+#define M68KI_HOT2 M68KI_HOT_SECTION
 #else
 #define M68KI_HOT2
 #endif

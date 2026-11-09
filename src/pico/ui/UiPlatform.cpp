@@ -49,6 +49,7 @@ extern "C" void ui_init(amiga_row_t *framebuffer) { nm::gfxSetFramebuffer(frameb
 
 extern "C" int settings_cpu_mhz(void)   { return Config::cpu_mhz; }
 extern "C" int settings_load_test(void) { return Config::load_test; }
+extern "C" bool settings_frame_skip(void) { return Config::frame_skip; }
 extern "C" int settings_vreg_mv(void)   { return Config::vreg_mv; }
 // Audio > Output: 3 (HDMI only) means nothing on a VGA display - the DAC then.
 extern "C" int settings_audio_out(void) {
@@ -82,6 +83,14 @@ extern "C" void settings_apply_video(void) {
     amiga_set_fb_x0(Config::hpos ? AMIGA_FB_X0_WIDE : AMIGA_FB_X0_CENTRE);
     amiga_set_vcentre(Config::vcentre);
     amiga_render_async(Config::render_c1);
+    settings_apply_chip_bus();
+}
+
+// Machine > A1200 > Chip bus (a 68EC020 machine): off, a stock A1200's, or with
+// its instruction cache counted (amiga_set_chip_bus_params).
+extern "C" void settings_apply_chip_bus(void) {
+    amiga_set_chip_bus(Config::chip_bus != 0);
+    amiga_set_chip_bus_params(Config::chip_bus == 2 ? 2 : 6, 16);
 }
 
 extern "C" void settings_apply_sound(void) {

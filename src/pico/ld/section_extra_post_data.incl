@@ -1,0 +1,35 @@
+/* PICO-AMIGA: replaces the SDK's empty section_extra_post_data.incl (included
+ * between the end of .bss and the heap).  Musashi's hot handler sets - the
+ * 68000's (tools/musashi_hot.txt, gen/m68kops.c) and the 68EC020's
+ * (tools/musashi_hot_020.txt, gen/m68kops_020.c) - are two sections at ONE SRAM
+ * address, as ld's OVERLAY command lays them out: their load images sit in
+ * flash after .data's, crt0 does not copy them (it copies __data_start__ to
+ * __data_end__ only), board_load_cpu_overlay() copies the running CPU's set in
+ * at amiga_set_cpu().  Only one CPU runs at a time, so the window costs the
+ * larger set, not the sum (m68kconf.h M68KI_HOT_SECTION, CMake AMIGA_OVL). */
+SECTIONS
+{
+    m68k_ovl_000 : {
+        . = ALIGN(4);
+        __m68k_ovl_start = .;
+        *(m68k_ovl_000*)
+        . = ALIGN(4);
+    } > RAM AT> RAM_STORE
+    m68k_ovl_020 ADDR(m68k_ovl_000) : {
+        *(m68k_ovl_020*)
+        . = ALIGN(4);
+    } > RAM AT> RAM_STORE
+    /* The region's counter stands at the end of the LAST section, the smaller
+     * set's: the heap is told to start at the window's end instead
+     * (section_heap.incl takes HEAP_LOC), and this 4-byte section marks it. */
+    .m68k_ovl_end ADDR(m68k_ovl_000) + MAX(SIZEOF(m68k_ovl_000), SIZEOF(m68k_ovl_020)) (NOLOAD) : {
+        . = ALIGN(4);
+        . += 4;
+        __m68k_ovl_end = .;
+    } > RAM
+    HEAP_LOC = __m68k_ovl_end;
+    __load_start_m68k_ovl_000 = LOADADDR(m68k_ovl_000);
+    __load_stop_m68k_ovl_000  = LOADADDR(m68k_ovl_000) + SIZEOF(m68k_ovl_000);
+    __load_start_m68k_ovl_020 = LOADADDR(m68k_ovl_020);
+    __load_stop_m68k_ovl_020  = LOADADDR(m68k_ovl_020) + SIZEOF(m68k_ovl_020);
+}

@@ -43,12 +43,14 @@ public:
     static uint8_t  hpos;           // picture position: 0 centred, 1 left overscan
     static bool     vcentre;        // centre short pictures vertically (amiga_set_vcentre)
     static bool     disk_led;       // Video > Picture > Drive icon (UiStats.cpp)
+    static bool     frame_skip;     // Video > Picture > Skip frames when late (main.c, amiga_set_render_skip)
 
     // Machine (machine.cpp)
     static std::string hdf;         // the A600's hard disk image (card path), "" = none
     static std::string hdf_raw;     // or an SD window: "mode:part:lba:len" (mode 1 read-only,
                                     // 2 writable; part 1-8, 0 typed; card sectors), "" = none
     static uint8_t  a600_chip;      // the A600's chip RAM in MB: 1, or 2 (an A601; 8 MB PSRAM)
+    static uint8_t  chip_bus;       // Machine > A1200 > Chip bus: 0 off, 1 stock A1200, 2 with cache credit (amiga_set_chip_bus)
     static uint8_t  machine;        // 0 A500 (OCS, 512 KB chip + 512 KB slow), 1 A500+ (ECS, 1 MB chip), 2 A600 (A500+ + Gayle), 3 A1200
     static std::string kick;        // built-in ROM id (roms.h), or "sd" = kick_file from the card
     static std::string kick_file;   // Machine > Custom ROM: the Kickstart image on the card

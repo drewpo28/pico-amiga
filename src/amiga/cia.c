@@ -40,7 +40,7 @@ static void cia_irq(int w) {
 
 static void ta_underflow(int w);
 
-static void tb_tick(int w, uint32_t n) {
+AMIGA_HOT static void tb_tick(int w, uint32_t n) {
     cia_t *c = &cia[w];
     while (n) {
         if (n <= c->tb) { c->tb -= (uint16_t)n; return; }
@@ -59,7 +59,7 @@ static void ta_underflow(int w) {
     if ((c->crb & 0x01) && (c->crb & 0x60) == 0x40) tb_tick(w, 1);   // TB counts TA underflows
 }
 
-static void cia_sync(int w) {
+AMIGA_HOT static void cia_sync(int w) {
     cia_t *c = &cia[w];
     uint64_t now = e_now();
     uint32_t n = (uint32_t)(now - c->last_e);

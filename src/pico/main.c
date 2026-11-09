@@ -9,8 +9,10 @@
 //   +0.0 MB  chip RAM 512 KB      +0.5 MB  slow RAM 512 KB ($C00000)
 //            (A500+ / A600: 1 MB of chip RAM over both, no slow RAM)
 //   +1.0 MB  Kickstart ROM        +1.5 MB  extended ROM (AROS) if present
-//   +2.0 MB  16 KB: the Win+F8 band's pixels (UiStats.cpp), the floppy's MFM track
-//   +2.0 MB + 32 KB  DMS images: the decoder's work area, then 880 KB per drive
+//   +2.0 MB  16 KB: the Win+F8 band's pixels (UiStats.cpp), the floppy's MFM track,
+//            at +32 KB the audio ring (16 KB: Paula writes it, the audio tick reads
+//            it - no DMA; 16 KB of SRAM given back, 2026-11-09)
+//   +2.0 MB + 48 KB  DMS images: the decoder's work area, then 880 KB per drive
 //            (machine.cpp; DF0..DF3 fit in 8 MB, a 2 MB PSRAM takes no DMS
 //            and has no Win+F8 band)
 // With 8 MB or more the chip RAM area is 2 MB (the A600 with an A601: Machine >
@@ -64,8 +66,7 @@
 #define MB (1024u * 1024u)
 
 static amiga_row_t fb[AMIGA_FB_H];
-#define AUDIO_FRAMES 4096
-static int16_t audio_ring[AUDIO_FRAMES * 2];
+#define AUDIO_FRAMES 4096                // the ring: 16 KB in PSRAM (the layout below)
 
 static FATFS fs;
 
@@ -76,7 +77,10 @@ static bool chip_is_rp2350a(void) { return sysinfo_hw->package_sel & 1u; }
 // renderer between lines itself.
 static void core1_main(void) {
     video_start(fb);
-    for (;;) amiga_render_pump();
+    for (;;) {
+        board_pcprof_core1_poll();   // Debug > PC profiler: this core's SysTick
+        amiga_render_pump();
+    }
 }
 
 // PICO_DEFAULT_LED_PIN 255 = no LED (ZERO2, the stock W module's is on the radio).
@@ -177,13 +181,15 @@ int main(void) {
     // 2 MB PSRAM has no band, and its track comes from the heap.
     const uint32_t chip_area = psram >= 8 * MB ? 2 * MB : 1 * MB;
     uint8_t *const hi = ps + chip_area + 1 * MB;
-    const uint32_t misc = 32 * KB;
+    const uint32_t misc = 48 * KB;
     if (ui_stats_buffer_size() > 16 * KB || AMIGA_TRACK_WORDS * 2 > misc - 16 * KB)
         fail(0xF00);                 // a build error in all but name
     const bool more = psram > chip_area + 1 * MB + misc;
     if (more) ui_stats_buffer(hi);
     cfg.track = more ? (uint16_t *)(hi + 16 * KB) : malloc(AMIGA_TRACK_WORDS * 2);
     if (!cfg.track) fail(0xF00);
+    int16_t *audio_ring = more ? (int16_t *)(hi + 32 * KB) : malloc(AUDIO_FRAMES * 4);
+    if (!audio_ring) fail(0xF00);
     machine_init(ps + chip_area, ps + chip_area + 512 * KB, more ? hi + misc : NULL,
                  more ? psram - (chip_area + 1 * MB) - misc : 0, chip_area);
 
@@ -231,11 +237,21 @@ int main(void) {
         input_frame();
         if (input_reset_requested()) amiga_reset(false);
         amiga_set_profiling(dbg_uart_active() || ui_stats_active());   // the PERF line or Win+F8 reads it
+        // Video > Picture > Skip frames when late: a frame that overran its 20 ms
+        // (the render, usually: 8 AGA planes) is followed by one that is emulated
+        // but not drawn, never two in a row - the emulation keeps its speed, the
+        // picture drops to 25 Hz in such a scene instead of the whole thing slowing.
+        static bool skipped;
+        static uint32_t emu_last;
+        const bool skip = settings_frame_skip() && !skipped && emu_last > 20000;
+        amiga_set_render_skip(skip);
+        skipped = skip;
         const uint32_t t_emu = time_us_32();
         amiga_run_frame();
         const uint32_t emu_us = time_us_32() - t_emu;
+        emu_last = emu_us;
         ui_stats_frame(emu_us);
-        perf_log_frame(emu_us);
+        perf_log_frame(emu_us, skip);
         // LED: slow blink = no keyboard, fast blink = keyboard mounted, steady = key held.
         led(input_key_held() || (frame & (input_keyboard_mounted() ? 8 : 32)) != 0);
     }

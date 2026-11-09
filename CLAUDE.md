@@ -1,343 +1,62 @@
 # pico-amiga — project notes
 
-Amiga 500 / 500+ / 600 / 1200 (OCS / ECS, AGA to come; PAL) emulator for RP2350 + QSPI PSRAM. Sister project of
-pico-speccy (same owner, same boards); reuse its drivers rather than rewriting.
+Amiga 500 / 500+ / 600 / 1200 (OCS / ECS / AGA, PAL) emulator for RP2350 + QSPI PSRAM.
+Sister project of pico-speccy (same owner, same boards): reuse its drivers and
+schemes rather than rewriting. Details that only some tasks need are in docs/notes/
+(see the end); docs/PLAN.md is the roadmap with what was measured.
 
-## Layout and rules
+## Rules
 
-- `src/amiga/` is the emulator and must stay platform-independent C11: no SDK
-  headers, no allocation, no blocking. The firmware (`src/pico/`) and the host
-  bench (`host/`) both build it through `cmake/amiga_core.cmake`.
-- `AMIGA_HOT` marks functions the firmware places in SRAM (`.time_critical.amiga`).
-- Every behaviour change in the core is checked on the host first:
+- `src/amiga/` is the emulator: platform-independent C11, no SDK headers, no
+  allocation, no blocking. The firmware (`src/pico/`) and the host (`host/`) build
+  it through `cmake/amiga_core.cmake`. `AMIGA_HOT` = SRAM on the board; check with
+  `arm-none-eabi-nm` where it lands (a static AMIGA_HOT function inlined into a
+  flash caller runs from flash).
+- Every core change is checked on the host first:
   `cmake --build build-host && host/tests/smoke.sh roms` (ROMs via
-  `host/tests/fetch_test_roms.sh`; they are not in the repo).
-- `build-host/pico-amiga` is the firmware itself on a PC (SDL2, like pico-speccy's
-  host branch): `src/pico/main.c` + `input.cpp` built against `host/sdl/include`
-  (Pico SDK stand-ins) and `host/sdl/*.cpp` (video/audio/input/psram over SDL,
-  `host_fatfs.cpp` = the FatFs API over a folder, `--root`, default ~/pico-amiga,
-  holding `amiga/kick.rom` etc. as on the card). Board-only code stays out of the
-  files it compiles (`input_devices.cpp` is the board's, host_drivers.cpp the PC's).
-  `PICO_AMIGA_SHOT=f.bmp:N` saves output frame N; `SDL_VIDEODRIVER=offscreen` runs it
-  headless. `build-host/pico-amiga-host` remains the headless test bench.
-- `src/pico/ui/` is pico-speccy's nm:: menu (F12, WinUAE's key: F1..F10 are the
-  Amiga's; Ctrl+F12 = DF0 browser, Shift+F12 or F11 = reset, Win+F11 = reboot the
-  board, asked with Yes the default - pico-speccy's F12; Win+F1 = System info, the
-  board/memory/temperature page, pico-speccy's Alt+F1 - Alt is the Amiga's; Win+F5
-  = Open file, pico-speccy's F5 browser: Enter opens a disk / .m3u / Kickstart, F5
-  on a disk picks DF0..DF3, F9 makes a blank ADF, F1 on a disk shows what is on it
-  (machine_disk_info: volume, filesystem, boot block, root, startup-sequence; a
-  DMS is unpacked into the spare PSRAM slot after DF3's); a disk put into DF1..DF3 by hand
-  survives set and DF0 changes, Drive::manual; Win+F8 = the performance band,
-  pico-speccy's F8, its summary with the drive's TR/SEC line). The drive icon
-  (pico-speccy's FDD lamp, Video > Picture > Drive icon, top right) and the band
-  (bottom) take the core's two overlay row ranges (amiga_set_overlay_rows(which,
-  ..): one range spanning both would send every row through row_done). Its
-  root follows pico-speccy's: Help, Machine, Devices (Disks, Input), Video, ... The engine (UiNav, UiRender,
-  UiDialog, UiFont, UiModel, the Stage mechanism) is kept close to pico-speccy, with
-  `PICO-AMIGA:` notes; `UiGfx.cpp` draws 0x0RGB straight into the Amiga framebuffer,
-  turning each row it touches into a DIRECT one (the scanout keeps showing it; the emulator is stopped while the menu runs, and its
-  next frame repaints everything). The content is ours: `UiTree.cpp` (the tree),
-  `UiStage.h` (the SettingId X-table, append only), `UiPlatform.*` (keys, reset,
-  reboot), `app/Config.*` (settings in pico-speccy's storage.nvs format, at
-  /.config/pico-amiga/<board tag>/storage.nvs). Check menu changes on the PC host:
-  `PICO_AMIGA_KEYS=150:F12,200:Down,...` presses keys at output frames.
-- Board debugging from VS Code (Cortex-Debug session, pico-speccy's local
-  `picospec-tools` extension: it runs the open workspace's `tools/`, with the
-  file names of `tools/pico-amiga-tools.json`): Ctrl+Alt+S / Ctrl+Alt+P =
-  screenshot (`screenshot.gdb` dumps main.c's `fb`, `fb2png.py` expands it as
-  `amiga_fb_line` does) to /tmp/pico-amiga_screen.png; Ctrl+Alt+M =
-  `memdump.gdb` + `memdump.py`: /tmp/pico-amiga_dump.log (CPU, custom chips,
-  code at PC via `build-host/m68kdis`, the copper list). All of chip / slow RAM
-  only after `set $amiga_chip = 1` / `set $amiga_slow = 1` (seconds of halt).
-  The two cores are separate GDB threads: a pause may stop core 1 alone, and a
-  continue sent to core 0 left the HDMI core halted (black screen); the
-  extension continues the threads that stopped.
-- Built-in ROMs (Machine: DiagROM; A500 > KS 1.2/1.3/2.04/2.05/3.1; A500+ > KS
-  2.04/2.05/3.1; A600 > KS 2.05/3.1; A1200 > KS 3.1/3.0 (ks31a12, ks30a12: a 68EC020,
-  2 MB chip, Gayle $D1, AGA; Config::machine 3, `--a1200 --aga` on the bench);
-  Custom ROM = a file from the card, Config::kick_file,
-  Config::machine = 1: ECS, 1 MB chip RAM over the slow RAM's PSRAM, 2: the same plus
-  Gayle (machine.h MACHINE_*), Machine > A600 chip RAM 1 or 2 MB (an A601, Config::a600_chip;
-  with 8 MB of PSRAM - every board has it - the chip RAM area is 2 MB and the ROM buffers,
-  the Win+F8 band, the MFM track and the DMS area sit 1 MB higher, main.c), `amiga_set_machine()`;
-  the bench: `--a500plus`, `--a600`, `--a601` (2 MB chip);
-  the menu's SET_KICK value is the ROM index + 200 x Config::machine) are linked
-  into the firmware and the host with `.incbin` from `ROMS_DIR` (default `debug/`,
-  git-ignored: the Kickstarts are Commodore's and must never be committed).
-  `cmake/roms.cmake` lists them; an id there is what storage.nvs keeps, never
-  reuse one. The firmware targets 16 MB flash; the core reads the ROM in place
-  (XIP). `machine.cpp` owns ROM selection and the drives: DF0..DF3 (Devices > Disks > Floppy
-  drives, Auto = one per disk of an `.m3u` set, or its `#DRIVES:n` line - ours:
-  Gobliiins reads DF0 only and hangs short of memory with 3; Kickstart finds DF1+ by drive ID
-  at reset). An ADF streams from the card; a `.dms` is unpacked at insert time by
-  `src/pico/dms.c` (xDMS port, its ~100 KB work area in PSRAM) into a per-drive
-  880 KB PSRAM slot above 2 MB, write-protected. The bench takes `--adf x.dms` too,
-  up to 8 `--adf` (DF0..DF3, the rest for `--swap`), `--drives N` and `--write-back`
-  (written disks saved to their files). Devices > Disks > New blank disk formats an empty
-  OFS ADF on the card (`machine_new_disk`); with an .m3u set loaded it is appended
-  to the set (games' own save-disk formatters: swap it in with Ctrl+F12).
-- Snapshots (pico-speccy's `.pss` as `.pas`): `src/amiga/state.c` saves and
-  loads the core between frames as blocks (`amiga_state_save/load`); each module's
-  `*_state(st_t*)` moves its fields both ways (ST_SIZE / ST_SAVE / ST_LOAD), fixes
-  up what derives from them under ST_LOAD, and takes a new field at its END (older
-  snapshots read it as 0). MACH comes first (model, ROM CRCs) and is checked before
-  anything changes. `src/pico/snapshot.cpp` is the file: "PAS1" header, NAME
-  (renamed in place), CFG (model, Kickstart, the drives' disks with size and date),
-  then the core's blocks; the disks' contents are not in it. Snapshots > Load from
-  file / Quick slots (40, `/amiga/snapshots/persistN.pas`, `ui/UiSnap.cpp`);
-  Win+F3 / Win+F4 open the slots (Enter loads / saves), Alt+Win+F3 / Alt+Win+F4
-  load / save `Config::persist_slot` at once; a `.pas` opens from Win+F5 (no F2
-  key). The bench: `--state-save N:file` / `--state-load file` (the core's blocks
-  only); smoke checks a round trip mid-boot.
-- `src/pico/drivers/` are pico-speccy's drivers (USB HID/XInput, fabgl VK keyboard
-  queue, PS/2, NES pad, SD); local changes are marked `PICO-AMIGA:`, and
-  `drivers/input_glue.h` stands in for pico-speccy's Config/Debug/ESPectrum.
-  `external/tinyusb` is pico-speccy's TinyUSB 0.21 copy (PICO_TINYUSB_PATH).
-  Boards and pins: `cmake/boards.cmake` (same names and GPIOs as pico-speccy).
+  `host/tests/fetch_test_roms.sh`; not in the repo).
+- `build-host/pico-amiga` is the firmware on a PC (SDL2: `src/pico/main.c` against
+  `host/sdl/`, `--root` = the card folder, default ~/pico-amiga);
+  `build-host/pico-amiga-host` is the headless bench (`--a500plus --a600 --a601
+  --a1200 --aga --cpu020 --adf --drives --status --shot --state-save/load`).
+  `PICO_AMIGA_SHOT=f.bmp:N` saves a frame, `PICO_AMIGA_KEYS=150:F12,...` presses
+  keys, `SDL_VIDEODRIVER=offscreen` runs headless. `--render-thread` screens must
+  match the sync ones.
+- Kickstarts are Commodore's: they live in `ROMS_DIR` (default `debug/`,
+  git-ignored) and must never be committed. `cmake/roms.cmake` lists them; an id
+  there is what storage.nvs keeps, never reuse one.
 - `external/musashi/gen/` is generated by `tools/gen_musashi.py`; never edit it.
-  Local changes to Musashi are marked `PICO-AMIGA PATCH` (m68kcpu.c) and
-  `PICO-AMIGA:` (m68kconf.h). Re-run the generator after touching m68k_in.c or
-  m68kconf.h or tools/musashi_hot*.txt (the 250 hottest handlers, placed in
-  SRAM; musashi_hot_020.txt: the 68EC020's 128, from AGA runs; the generator
-  also orders m68ki_handlers[] by it and emits per-handler
-  cycles, which m68k_execute() uses instead of the 64 KB opcode table). The
-  handlers are compiled twice, gen/m68kops.c for the 68000 and gen/m68kops_020.c
-  for the 68EC020 (A1200), each with CPU_TYPE a constant (m68kcpu.h), so neither
-  tests the CPU type at run time; both sets and their cycles are const (flash),
-  m68k_set_cpu_type() copies the running one into the SRAM m68ki_handlers[] (the
-  index table is shared); each set has its own SRAM handlers.
-  `amiga_set_cpu()` / the bench's `--cpu020` pick it, at 14 MHz (A.cpu_mul 2). To
-  re-check the CPU: build Musashi's test/test_driver.c (and gen/m68kops_020.c,
-  `void amiga_cpu_reset_instr(void) {}`) against this tree with the CPU type
-  patched to 68000 and run test/mc68000/*.bin (59/60 pass; move.bin fails the
-  same way on stock Musashi in 68000 mode), patched to 68EC020 and run
-  test/mc68040/*.bin (18/18: they test the 020 instructions). A Musashi config
-  bug made the EC020 decode (d8,An,Xn) as a 68000 (CPU_TYPE_IS_010_LESS counted
-  it in with the 68010 off; fixed in m68kcpu.h).
-- Releases (pico-speccy's scheme): `./build_all.sh` (MURM MURM2 PICO_PC PICO_DV
-  ZERO2, Release, CPU_MHZ 252 = a fresh card's clock, build-all/<BOARD>, UF2s to firmware/),
-  `./check-release.sh` (heap = __HeapLimit - end per image, tmds_test, smoke),
-  `./draft-release.sh [ver] [--prerelease] [--skip-build] [--notes f]` (gh
-  release with the Downloads table of tools/release_downloads.py). Claude
-  commands: /pre-release, /draft-release, /release, /getch, /update-readme.
+  Re-run it after touching m68k_in.c, m68kconf.h or tools/musashi_hot*.txt. Local
+  Musashi changes are marked `PICO-AMIGA PATCH` / `PICO-AMIGA:`; trace emulation
+  stays on.
+- Anything that changes what is on screen goes through `denise_write()` (writes
+  carry their hpos; Denise replays them as events, possibly on core 1). Colour
+  writes must stay cheap (a repeat is dropped, an entry is patched, no rebuild).
+- Snapshots (`src/amiga/state.c`): a module's new field goes at the END of its
+  `*_state()`; older snapshots read it as 0.
+- `src/pico/drivers/` and `src/pico/ui/` are pico-speccy's; local changes are
+  marked `PICO-AMIGA:`. The menu tree is ours (`UiTree.cpp`, `UiStage.h` X-table:
+  append only, `app/Config.*`). Boards and pins: `cmake/boards.cmake`.
+- Before a performance or driver change, look at how pico-speccy solved it.
+- Releases: `./build_all.sh`, `./check-release.sh`, `./draft-release.sh`;
+  Claude commands /pre-release, /draft-release, /release, /getch, /update-readme.
 
-## Things that were not obvious
+## Board debugging
 
-- **Fetch units are 8 cc in BOTH resolutions** (hires = two words per plane per
-  unit), and the unit starting at or after DDFSTOP is the last one. AROS uses
-  hires DDF $3C/$D0 for a 640-px screen; a "units = (stop-start)/4 + 2" hires
-  formula gives 39 words and a sheared picture.
-- **Instruction fetch reads a window, not the memory map** (AMIGA_FETCH_WINDOW,
-  m68kcpu.h / mem.c): m68ki_read_imm_16/32 read the 64 KB bank the code runs in
-  straight from its RAM / ROM; a miss goes through m68ki_fetch_slow16, which moves
-  the window; map() / map_low() close it. Musashi's test driver builds without it.
-- **Musashi samples interrupts only on entry to m68k_execute()** (and on SR
-  writes): `amiga_update_ipl()` calls m68k_end_timeslice() when the level rises
-  inside the CPU, otherwise an interrupt would wait for the end of the slice.
-- **Musashi's trace emulation must stay on** (`M68K_EMULATE_TRACE`): trace-vector
-  decoders decrypt code one instruction at a time from the Trace exception. With it
-  off, Cannon Fodder's disk 2 code spun forever with SR.T set (black screen).
-- **Display writes render first, then apply**: `denise_write()` queues the
-  write with its hpos and the consumer renders up to it before storing.
-  Anything that changes what is on screen must go through it (CPU and copper
-  writes carry their own hpos).
-- **Denise runs as an event consumer** (denise.c, the queue at the end): the
-  scheduler's line start/end, frame start and display writes are queued with
-  the state they read (vpos, DMACON, LOF), and replayed by two stages with
-  their own cursor and lock: fetch (bitplane DMA into a 4-line pf ring) and
-  output (colours, sprites, framebuffer), which follows it and may be on the
-  other core. Each keeps its own copy of BPLCON0 and DIW. Sync mode replays at
-  once (host bench, smoke); the firmware turns on `amiga_render_async`, core 1
-  pumps (`amiga_render_pump()`, 32-cc steps, between line builds on PICO_DV)
-  and core 0 takes a stage itself whenever it would wait;
-  `amiga_run_frame()` waits for both at frame end. The chip RAM reads (bitplane
-  and sprite DMA) are the emulation's, at the event's time (`dma_*` in denise.c):
-  the words reach the fetch stage through a 16 KB ring (`ws[]`, 40-80 lines of
-  lead) and the sprites' through events. Read by the stages instead, they showed
-  what the game wrote after the beam: IK+ erases its fighters ~50 lines behind
-  it and flickered. Bounding the emulation's lead instead (8 lines) cost the
-  overlap and slowed Cannon Fodder's intro scroll. Every queued write first runs
-  the DMA side up to its hpos (`dma_to` in denise_write): the event lets the fetch
-  stage go that far, and the ring must hold those words by then (sprite register
-  writes skipped it: RoboCop 2's last playfield line got stale words in sync mode,
-  and could in async). `--render-thread` screens must
-  match the sync ones (IK+, Cannon Fodder, Exolon checked frame for frame). `pico-amiga-host --render-thread`
-  runs the async path on a thread; its screens must match the sync ones.
-- **ECS super-hires** (denise.c): a pf entry is a pixel pair (left bits 0-1,
-  right 2-3) and the LUT gives the pair's colour: COLOR[p2*4+p1], the left pixel
-  its top two bits per gun, the right its low two (WinUAE's linetoscr_*_sh),
-  averaged into one of our 720 pixels. graphics.library lays the palette out
-  for exactly that (Workbench blue $68B shows as $5AA: 64 colours, correct).
-  Pixels start at DIW x 2t + 5 (lowres 17, hires 9): with KS 2.04's DDF
-  $38/$D8, Workbench's last column lands on output pixel 679 as in hires.
-- **FLOPPY_TURBO scales the index pulse too, while a DMA runs** (floppy.c): the
-  drive spins faster, so a transfer spans as many revolutions as on hardware.
-  Barbarian's loader stops a two-revolution read on the third index; with
-  only DSKBLK scaled its index handler stayed on the level 6 vector and the OS
-  hung in a storm of uncleared EXTER interrupts (black screen).
-- **A read cut short leaves the head where the time took it** (floppy.c
-  abort_read): the words are handed over at the DMA's start, but a DSKLEN write
-  that stops it puts rot_pos at start + the words that read time covers.
-  RoboCop's loader looks at a sector's header and restarts at once for a sector
-  it does not want; with the head at the read's end it saw every other sector.
-- **A swapped disk must be seen gone** (floppy.c, SWAP_LINES): Kickstart polls
-  /CHNG now and then, and the menu swaps with no emulated time in between, so
-  the core keeps the drive empty 2 s before the new disk is in (KS 1.3 needs
-  ~0.5 s). Without it Dune II asked for a disk that was already in DF0.
-- **Gayle (A600, gayle.c) is WinUAE's map**: Gayle's bank $D80000-$DDFFFF answers
-  only with A19 and A17 set ($DA/$DB), the ID ($D0, the AGA one $D1) is shifted
-  out one bit per byte read of $DE1000 (bit 7) and a write restarts it, the CIAs
-  sit at $BF0000 only (no mirror at $A00000: the PCMCIA space), nothing at
-  $C00000-$D7FFFF, no clock. An empty IDE port reads $7F in the status register
-  and $FF elsewhere (WinUAE's "IDE killer"): KS 2.05 writes $12 to the cylinder
-  register, reads $FF back and boots at once instead of waiting ~30 s.
-- **AGA (A.aga; the firmware's A1200, the bench's `--aga`)**:
-  Alice $23 / Lisa $F8; Lisa's 256 colours - the producer (denise_write) resolves
-  BANK, drops LOCT writes (low nibbles: the 12-bit output does not show them) and
-  RDRAM, and queues the entry in the event's x; BPLCON4 (BPLAM, ESPRM); FMODE: the
-  fetch unit and words per plane from WinUAE's fetchunits[], the pixels at DIW x
-  2t + 2 x fm_maxplane + 1 (17 / 9 / 5 without FMODE; hires FMODE 3 = 17); 8 planes;
-  HAM8 (control in planes 1-2) and HAM in hires. SSCAN2 / BSCAN2 (31 kHz modes) not.
-  Workbench 3.1 on AGA writes FMODE 3 at line 43, not at the frame's start.
-- **The A600's IDE (ide.c) hands sector bytes over in order, IDENTIFY as a PC
-  holds it** (little-endian words, strings' first character in the high byte -
-  WinUAE's pw/ps): Gayle's wiring makes the 68000 see IDENTIFY's numbers
-  byte-swapped and scsi.device swaps them back. Built big-endian, KS 3.1 read 16
-  heads as $1000, sent INITIALIZE DEVICE PARAMETERS with select $FF (the slave)
-  and hung. A bare-partition HDF gets a virtual RDB (WinUAE's: 32 blocks per
-  track, 1 surface, 2 reserved, the image from block 32). The hard disk can also be
-  an SD partition (pico-speccy's raw IDE window, ide_mbr.h; machine.cpp), never
-  writable over the card's own FAT volume; the PC firmware takes `--sd card.img`.
-- **FFS validates a new partition in RAM**: Format in 2.x writes the root block with the
-  bitmap flag clear and FFS builds the bitmap at the first mount, holding blocks/8
-  bytes at once. A 2 GB Work (4.17M blocks, ~520 KB) on a 1 MB A600 reports "Volume
-  Work is not validated" and stays so; 100 MB works, and 2 GB does with 2 MB of chip
-  RAM (`--a601`): partitions of ~500 MB at most on a 1 MB machine.
-- **Every connected drive costs Kickstart memory**: Dune II (1 MB) reports a
-  "Memory Allocation Error" with 4 drives (Floppy drives Auto on its 5-disk
-  set) and runs with 1 or 2; the message is drawn while its palette is black.
-- **Sprite DMA follows VSTART/VSTOP from any source** (denise.c sprite_dma): the
-  first control words are fetched on line 25 only, with sprite DMA on then; a
-  sprite otherwise waits for its VSTART, also one written to SPRxPOS/CTL by the
-  CPU or copper. RoboCop 2 writes POS/CTL and data pointers in the vertical blank
-  and turns sprite DMA on later; fetching control words at the first DMA line
-  made RoboCop invisible (and the title's icons garbage).
-- **Bitplane DMA follows DMACON mid-line** (custom.c -> denise_write(R_DMACON)):
-  off stops the line's fetch (no modulo), on fetches the units from there. A-Type's
-  panel turns it off on its first line, rewrites the pointers after DDFSTRT and turns
-  it on on the next; sampled at line start only, planes 4-5 lagged a word (a grey
-  shifted copy of PUSH RUN BUTTON, scrambled ship icons).
-- **Reading COPJMP1/2 strobes them** (custom_read): Zynaps starts its list with
-  `move.w $dff088,d0`; ignored, the OS list ran on and its last MOVE (BPLCON0 =
-  0 planes) left the intro and the game black.
-- Single playfield sprite priority uses **PF2P**, not PF1P (vAmiga agrees).
-- Byte writes to custom registers put the byte on both halves of the word.
-- Area blits with B DMA off use BLTBDAT (shifted on the CPU write), not 0:
-  graphics RectFill/Flood rely on it. With 0 KS 1.2/1.3's strap Flood() loops
-  forever and the "insert disk" hand never appears.
-- CIA-A /IRQ is level-like: `cia_line()` re-raises INTREQ PORTS while an
-  enabled ICR flag is pending.
-- **Framebuffer rows pick their format at line start** (amiga.h): DIRECT
-  (lowres/HAM, 360 colours), IDX8 (hires, 720 indices, 64-colour row palette),
-  LACE4 (interlace: long field = upper output line, short = lower, 16 colours
-  each). Overflow converts the row to DIRECT mid-line (w_to_direct). Field
-  order was checked by line smoothness on the AROS screen. The sprite-free
-  window path (w_plain) caches pf value -> index in ilut[]; keep it that way,
-  the generic per-pixel w_put cost +50% host time.
-- LOF toggles every frame while BPLCON0 LACE is set (amiga.c), 313/312 lines.
-- PIO TMDS (video_pio.c) goes out by lookup, pico-speccy's scheme with a
-  palette per line (tmds_lut.h): a line is 416 entry numbers (one per two
-  pixels), a DMA chain + a converter SM turn them into the entries' pin words.
-  Core 1 builds lines two ahead, encoding only each new colour / hires pair of
-  a line into its page (5 pages for 4 line buffers: a row's second line reuses
-  the first's numbers). The entry window must be 64 KB-aligned: it is the
-  `.hdmi_lut` section at ORIGIN(RAM), src/pico/ld/ overrides the SDK's
-  section_ram_vector_table.incl. Entries come from tables of balanced character
-  pairs (tmds_pio.h, tmds_pair.h); hires pairs of different colours use
-  per-lane [16][16] tables whose second character may be off by up to 4 levels
-  to keep each pair DC-balanced. The word format was checked bit-for-bit
-  against pico-speccy's hdmi_pack3_pio / hdmi_pins_pio for the PICO_DV pin map;
-  build-host/tmds_test decodes all 4096 colours like a receiver and checks the
-  lookup lines against the CPU encoder word for word. Re-run it after touching
-  tmds_pio.h, tmds_pair.h or tmds_lut.h.
-- **Video > Output > Mode** (video_modes.c, pico-speccy's VM_* numbers and timings in
-  storage.nvs hdmi_vmode / vga_vmode): 640x480 at 60 Hz (default: not every display
-  takes 50 Hz; a 320 x 240 window on the standard screen; Picture position moves
-  it; the menu's surface Sf is the window), 720x480 at 60 Hz (360 x 240: 720x576's
-  line, 504 lines), 800x600 at 60 Hz (VM 17, ours: framed, 625 lines at 37.8 / 50.4 /
-  33.6 MHz, HDMI only - VGA's 800x600 is 60 Hz already), 720x576 at 50 Hz, 800x600
-  at 50 Hz (framed). UiDesc.cpp describes each (refresh, how much is cut). Each
-  scanout has its rows: HSTX needs a pixel clock of clk_sys / 5, 10, 15 or 20
-  (800x600 at 50 Hz: 37.8 MHz at 378, 50.4 at 252/504); the PIO HDMI a divider of a
-  whole or half number (800x600 at 50 Hz: 37.8 at 378, 33.6 at 504, none at 252), its
-  lookup line a runtime tl_layout_t (tmds_lut.h: black borders are TL_E_BLACK,
-  tmds_test lays out every mode at every clock from video_modes.c and checks it); VGA runs 800x600 at VESA's 60 Hz (42 MHz, 1108 x
-  628). A 50 Hz mode paces the emulation by its frames, 60 Hz by its lines in 20
-  ms: a moving cut, as pico-speccy's V-Sync off. A new mode is kept only once
-  confirmed: the commit writes the old ones to vmode_pending.nvs (F_VMODE) and the
-  boot that finds it asks for 15 s, then reverts and reboots.
-- **HSTX lines use no RAW_REPEAT / TMDS_REPEAT** (video_hstx.c): every control
-  period is a RAW run, one word per pixel, as pico-speccy paces its blank lines; a
-  black picture line is TMDS from a zero line. With RAW_REPEAT | 688 (640x480's
-  blank-line back porch + width) the blank lines played ~300 px, the frame ran at
-  63 Hz and no display locked (PCp2, MURM2: HSTX had never shown a picture); split
-  into runs of 255 the stream fell apart. Lines/s per mode is the check.
-- **No DMA reads from PSRAM while the PIO TMDS scanout runs** (PICO_DV): the DMA
-  has one read master, a PSRAM read stalls it for hundreds of ns, the video
-  channel starves and HDMI drops (tried: a per-line bitplane prefetch, hires
-  screens lost the picture). XIP streaming would not stall it but bypasses the
-  write-back XIP cache, so it reads stale chip RAM.
-  Nor CPU copies through the uncached alias (2026-11-05, reverted 35682bb): a
-  line per plane cleaned out of the cache and read uncached at line start cost
-  ~45 ns a byte (4.6 ms a frame for 8 AGA planes), saved 4.5 ms of cached reads,
-  and the cleans slowed the CPU: Roots' heaviest part went 31 -> 25 fps.
-- Firmware: PSRAM init runs QMI direct mode — nothing may fetch from flash on
-  either core meanwhile, so it runs before core 1 starts and before USB.
-- **A frame starts when the scanout is 70% into its picture** (main.c,
-  `video_lines()`): there is one framebuffer, and started at the top, a frame
-  of 18-20 ms crossed the beam mid-screen (a moving cut). From 70%, Denise paints
-  every row after the scanout showed it and before it shows it again.
-- **Colour writes must stay cheap**: Spaceballs' State of the Art runs 12,800
-  copper MOVEs a frame, two thirds repeats. A write equal to the queued colour
-  is dropped (`denise_q_color`, tested in the copper loop itself); the others
-  patch LUT entries n and n+32 instead of rebuilding the LUT.
-- **Busy-wait loops are not run** (idle.c, from cpu_until once a slice): `dbra Dn,*`
-  comes off Dn exactly; a test + Bcc back to it (cmpi / btst #n / tst on abs.w, abs.l,
-  (d16,An)) found at two slice ends with its value unchanged skips whole slices while
-  the value (re-read by mem_peek: RAM / ROM and side-effect-free registers only, never
-  CIA ICR or COPJMP) stays and no interrupt is pending. State of the Art spent >40% of
-  its instructions in such loops (the bench's PC histogram); its CPU time fell 2x,
-  3-4x under the A1200 load test, and IK+, Cannon Fodder, Exolon, State of the Art and
-  KS 1.3 stayed byte-identical at frames 500/1500/3000. The bench prints `idle N%`.
-- **Check where AMIGA_HOT code lands** (`arm-none-eabi-nm`): a static AMIGA_HOT
-  function inlined into a flash caller runs from flash. run_line sat inside
-  amiga_run_frame that way (now noinline), the blits inside blitter.c's start().
+VS Code Cortex-Debug with pico-speccy's `picospec-tools` extension: Ctrl+Alt+S
+screenshot (`tools/screenshot.gdb` + `fb2png.py` -> /tmp/pico-amiga_screen.png),
+Ctrl+Alt+M memory dump (`memdump.gdb` + `memdump.py` -> /tmp/pico-amiga_dump.log).
+The cores are separate GDB threads. Debug > UART log prints the PERF line;
+Debug > PC profiler adds PROF (core 0) and PROF1 (core 1) lines, resolved with
+`tools/pcprof.py LOG ELF [--core 1]` against the same ELF.
 
-## Measured
+## Where the details are
 
-- Host profile with AROS idling at its boot screen (hires, 4 planes): bitplane
-  fetch/c2p ~50%, output ~20%, CPU ~10%. The renderer is the first thing to move
-  to core 1 / optimize on the RP2350 (docs/PLAN.md, section 2).
-- Firmware RAM (framebuffer 245 KB, colour map 8 KB, audio ring 16 KB, ~45 KB of SRAM code incl. 17 KB of Musashi handlers; DV adds TMDS
-  tables/line buffers, of 520 KB): PICO_DV has ~8 KB between the end of .bss and
-  __HeapLimit (2026-10-28, `nm` `end`); the old "~50 KB" was stale. That gap
-  is the whole C/C++ heap (the menu's strings, the file browser): with ECS it
-  fell to 5.4 KB and Devices > Disks > DF0 panicked "Out of memory" on the board; the
-  colour map's tag and index tables merged into one (-4 KB), the Win+F8
-  band's pixels moved to PSRAM (16 KB at +2 MB, before the DMS area; a 2 MB
-  PSRAM has no band) and the .m3u read through 256 bytes: 20.5 KB; System
-  info's flash JEDEC read (hardware_flash) took 0.9 KB of it: 19.5 KB
-  (2026-10-28); 13.9 KB by the 2026-10-30 HEAD before snapshots, 14.5 KB with
-  them (their code is flash, their buffers the heap's while they run). Then
-  VGA's 22 KB (pair LUT, templates) moved into the idle PIO HDMI entry window
-  (`hdmi_spare()`: one scanout runs after boot) and the floppy's MFM track
-  (12.4 KB, `amiga_config_t.track`) into PSRAM after the band (+2 MB + 16 KB; a
-  2 MB PSRAM mallocs it), and the UART log's 4 KB ring is malloc'ed only when
-  Debug > UART log is on: 52 KB on MURM / PICO_DV / ZERO2, 77 KB on MURM2 /
-  PICO_PC (2026-10-30, ./check-release.sh). AGA (256 colours, LUTs, 8 plane pointers, the
-  68EC020's handler set in flash) took it to 42 KB on MURM / PICO_DV (2026-11-05). Check `end` after adding SRAM code
-  or tables.
-- PICO_DV core 1 before the lookup scanout (Cannon Fodder, 504 MHz, ms per
-  frame): CPU TMDS encoding 6.5, line IRQ 1.6, leaving Denise ~6 (the PERF
-  line's `core1 render/irq/enc`).
+- `docs/notes/ui.md`: the menu's keys, drives and disks (.m3u, DMS, blank disks),
+  snapshots and quick slots, built-in ROMs and machines, Config storage.
+- `docs/notes/emulation.md`: what was not obvious in the chipset emulation (fetch
+  units, Denise's stages, AGA, floppy, Gayle/IDE, sprites, the chip-bus model,
+  idle loops). Read before touching denise.c, floppy.c, mem.c or amiga.c.
+- `docs/notes/board.md`: video modes and the TMDS/HSTX scanouts, PSRAM/XIP/DMA
+  constraints, the RAM budget, measured frame times. Read before touching
+  src/pico/video_*.c, main.c or anything that adds SRAM.

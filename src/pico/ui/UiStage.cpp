@@ -95,6 +95,11 @@ static bool hook_loadtest(int32_t, int32_t) {
     return true;
 }
 // The A600's chip RAM: a cold start when the A600 is running (the menu says so).
+NM_INT_ACCESS (chipbus,   chip_bus,   uint8_t)
+static bool hook_chipbus(int32_t, int32_t) {
+    settings_apply_chip_bus();
+    return true;
+}
 static bool hook_a600chip(int32_t, int32_t) {
     return Config::machine != MACHINE_A600 || machine_apply_kickstart();
 }
@@ -107,6 +112,7 @@ NM_INT_ACCESS (hpos,      hpos,       uint8_t)
 NM_BOOL_ACCESS(renderc1,  render_c1)
 NM_BOOL_ACCESS(vcentre,   vcentre)
 NM_BOOL_ACCESS(diskled,   disk_led)
+NM_BOOL_ACCESS(frameskip, frame_skip)
 NM_INT_ACCESS (pslot,     persist_slot, uint8_t)
 // Video > Output > Mode edits the mode of the display in use.
 static int32_t get_vmode() { return video_is_vga() ? Config::vga_vmode : Config::hdmi_vmode; }

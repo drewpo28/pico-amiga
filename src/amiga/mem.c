@@ -29,6 +29,7 @@ typedef struct {
     uint32_t       mask; // read offset mask applied to the full address
     uint32_t       wmask;// write offset mask (differs from mask under the ROM overlay)
     uint8_t        io;   // B_* when rd == NULL
+    uint8_t        chip; // on the chip bus (chip RAM, the custom registers): the CPU waits for DMA there
 } bank_t;
 
 static bank_t banks[256];
@@ -39,12 +40,14 @@ static bool   overlay;
 // banks[] closes it.
 const unsigned char *m68ki_fetch_ptr;
 unsigned int m68ki_fetch_lo, m68ki_fetch_len;
+uint8_t mem_fetch_chip;        // ...and it is a chip bank (the chip bus model)
 
 static void map(int first, int count, const uint8_t *rd, uint8_t *wr, uint32_t mask, int io) {
     m68ki_fetch_len = 0;
     for (int i = first; i < first + count && i < 256; i++) {
         banks[i].rd = rd; banks[i].wr = wr; banks[i].mask = mask; banks[i].wmask = mask;
         banks[i].io = (uint8_t)io;
+        banks[i].chip = (rd && rd == A.cfg.chip_ram) || io == B_CUSTOM;
     }
 }
 
@@ -101,7 +104,7 @@ void mem_state(st_t *s) {
 }
 
 // ---- I/O banks --------------------------------------------------------------
-static uint8_t io_read8(uint32_t a, int io) {
+AMIGA_HOT static uint8_t io_read8(uint32_t a, int io) {
     switch (io) {
     case B_CIA:
         if (a & 1) return (a & 0x1000) ? 0xFF : cia_read(0, (a >> 8) & 0xF);
@@ -121,7 +124,7 @@ static uint8_t io_read8(uint32_t a, int io) {
     }
 }
 
-static uint16_t io_read16(uint32_t a, int io) {
+AMIGA_HOT static uint16_t io_read16(uint32_t a, int io) {
     switch (io) {
     case B_CIA: {
         uint8_t hi = (a & 0x2000) ? 0xFF : cia_read(1, (a >> 8) & 0xF);
@@ -141,7 +144,7 @@ static uint16_t io_read16(uint32_t a, int io) {
     }
 }
 
-static void io_write8(uint32_t a, uint8_t v, int io) {
+AMIGA_HOT static void io_write8(uint32_t a, uint8_t v, int io) {
     switch (io) {
     case B_CIA:
         if (a & 1) { if (!(a & 0x1000)) cia_write(0, (a >> 8) & 0xF, v); }
@@ -165,7 +168,7 @@ static void io_write8(uint32_t a, uint8_t v, int io) {
     }
 }
 
-static void io_write16(uint32_t a, uint16_t v, int io) {
+AMIGA_HOT static void io_write16(uint32_t a, uint16_t v, int io) {
     switch (io) {
     case B_CIA:
         if (!(a & 0x2000)) cia_write(1, (a >> 8) & 0xF, (uint8_t)(v >> 8));
@@ -232,14 +235,18 @@ static inline void st16(uint8_t *p, uint16_t v) {
 
 AMIGA_HOT unsigned int m68k_read_memory_8(unsigned int a) {
     a &= 0xFFFFFF;
+    AMIGA_STAT(amiga_stat_data);
     const bank_t *b = &banks[a >> 16];
+    A.bus_data += b->chip;
     if (b->rd) return b->rd[a & b->mask];
     return io_read8(a, b->io);
 }
 
 AMIGA_HOT unsigned int m68k_read_memory_16(unsigned int a) {
     a &= 0xFFFFFF;
+    AMIGA_STAT(amiga_stat_data);
     const bank_t *b = &banks[a >> 16];
+    A.bus_data += b->chip;
     if (b->rd) return ld16(b->rd + (a & b->mask));
     return io_read16(a, b->io);
 }
@@ -252,6 +259,7 @@ AMIGA_HOT unsigned int m68ki_fetch_slow16(unsigned int a) {
         m68ki_fetch_ptr = b->rd + (lo & b->mask);
         m68ki_fetch_lo = lo;
         m68ki_fetch_len = 0x10000;
+        mem_fetch_chip = b->chip;
     }
     return m68k_read_memory_16(a);
 }
@@ -273,7 +281,9 @@ AMIGA_HOT unsigned int m68k_read_memory_32(unsigned int a) {
         }
     }
 #endif
+    AMIGA_STAT(amiga_stat_data);
     const bank_t *b = &banks[a >> 16];
+    A.bus_data += b->chip;
     if (b->rd && ((a + 2) & 0xFFFF) >= 2) {           // both halves in this bank
         const uint8_t *p = b->rd + (a & b->mask);
         return ((uint32_t)ld16(p) << 16) | ld16(p + 2);
@@ -284,14 +294,18 @@ AMIGA_HOT unsigned int m68k_read_memory_32(unsigned int a) {
 
 AMIGA_HOT void m68k_write_memory_8(unsigned int a, unsigned int v) {
     a &= 0xFFFFFF;
+    AMIGA_STAT(amiga_stat_data);
     const bank_t *b = &banks[a >> 16];
+    A.bus_data += b->chip;
     if (b->wr) { b->wr[a & b->wmask] = (uint8_t)v; return; }
     if (!b->rd) io_write8(a, (uint8_t)v, b->io);
 }
 
 AMIGA_HOT void m68k_write_memory_16(unsigned int a, unsigned int v) {
     a &= 0xFFFFFF;
+    AMIGA_STAT(amiga_stat_data);
     const bank_t *b = &banks[a >> 16];
+    A.bus_data += b->chip;
     if (b->wr) { st16(b->wr + (a & b->wmask), (uint16_t)v); return; }
     if (!b->rd) io_write16(a, (uint16_t)v, b->io);
 }

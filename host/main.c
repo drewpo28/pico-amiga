@@ -238,6 +238,10 @@ int main(int argc, char **argv) {
     int load_test = 0;        // the first 4 go in DF0..DF3, the rest wait for --swap
     int frames = 250, status_every = 0, scale = 1, drives_opt = 0;
     bool slow = false, render_thread_on = false, plus = false, a600 = false, a601 = false, cpu020 = false, a1200 = false, aga = false, vcentre = false, write_back = false;
+    int chip_bus = -1;                                 // --chip-bus / --fast-bus; default: on with --a1200
+    bool skip_odd = false;
+    int bus_fetch8 = 6, bus_cost8 = 16;
+    const char *hist_path = NULL;
     shot_t shots[64]; int nshots = 0;
     shot_t state_save = { -1, "" };
     const char *state_load = NULL;
@@ -266,6 +270,11 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--cpu020")) cpu020 = true;
         else if (!strcmp(a, "--aga")) aga = true;
         else if (!strcmp(a, "--a1200")) plus = a600 = a601 = cpu020 = a1200 = true;
+        else if (!strcmp(a, "--chip-bus")) chip_bus = 1;
+        else if (!strcmp(a, "--fast-bus")) chip_bus = 0;
+        else if (!strcmp(a, "--skip-odd")) skip_odd = true;     // odd frames not drawn (amiga_set_render_skip)
+        else if (!strcmp(a, "--bus-tune") && v) { sscanf(v, "%d,%d", &bus_fetch8, &bus_cost8); i++; }   // amiga_set_chip_bus_params
+        else if (!strcmp(a, "--hist") && v) { hist_path = v; i++; }   // handler runs by index at the end (tools/musashi_hist.py)
         else if (!strcmp(a, "--write-back")) write_back = true;
         else if (!strcmp(a, "--drives") && v) { drives_opt = atoi(v); i++; }
         else if (!strcmp(a, "--vcentre")) vcentre = true;
@@ -325,6 +334,8 @@ int main(int argc, char **argv) {
     cfg.prof_clock = prof_clock;            // --status: the core's buckets, ns
     amiga_init(&cfg);
     amiga_set_vcentre(vcentre);
+    amiga_set_chip_bus(chip_bus < 0 ? a1200 : chip_bus != 0);   // the A1200's 68EC020 waits for the chip bus
+    amiga_set_chip_bus_params(bus_fetch8, bus_cost8);
     if (render_thread_on) {
         pthread_t th;
         pthread_create(&th, NULL, render_thread, NULL);
@@ -372,6 +383,7 @@ int main(int argc, char **argv) {
                     amiga_insert_disk(swaps[k].a, &d);
                 }
             }
+        amiga_set_render_skip(skip_odd && (f & 1));
         amiga_run_frame();
         for (int k = 0; k < ndumps; k++) if (dumps[k].frame == f + 1) {
             fprintf(stderr, "dump %06X:", dumps[k].a);
@@ -393,18 +405,38 @@ int main(int argc, char **argv) {
             static uint64_t idle_last;                              // the CPU's busy-wait time skipped (idle.c)
             amiga_profile_t pr; amiga_get_profile(&pr, true);        // since the last status
             const uint32_t nf = pr.frames ? pr.frames : 1;
+            static amiga_status_t st_last;                         // the counters, per frame since the last status
+            extern uint32_t denise_stat_compose, denise_stat_oto, denise_stat_ev;
+            extern unsigned int amiga_stat_audw;
+            static uint32_t dc_last, do_last, de_last, da_last;
+            fprintf(stderr, "render/frame: events %u o_to %u sprite composes %u audw %u | ", (denise_stat_ev - de_last) / nf,
+                    (denise_stat_oto - do_last) / nf, (denise_stat_compose - dc_last) / nf, (amiga_stat_audw - da_last) / nf);
+            dc_last = denise_stat_compose; do_last = denise_stat_oto; de_last = denise_stat_ev; da_last = amiga_stat_audw;
             fprintf(stderr, "frame %u t=%ld.%06ld pc=%06X dmacon=%04X intena=%04X intreq=%04X ovl=%d cop=%06X blits=%u "
-                    "rows direct=%d idx8=%d lace4=%d | us/frame cpu %u ren %u bpl %u rd %u cop %u blt %u | idle %u%%\n",
+                    "rows direct=%d idx8=%d lace4=%d | con0=%04X fmode=%X dmalines=%u | /frame instr %u data %u fetch %u busw %u%%"
+                    " | us/frame cpu %u ren %u bpl %u rd %u cop %u blt %u | idle %u%%\n",
                     st.frame, (long)ts.tv_sec, ts.tv_nsec / 1000, st.pc, st.dmacon, st.intena, st.intreq, st.overlay, st.cop_pc, st.blits,
                     modes[0], modes[1], modes[2],
+                    st.bplcon0, st.fmode, st.dma_lines,
+                    (unsigned)((st.instr - st_last.instr) / nf), (unsigned)((st.data_acc - st_last.data_acc) / nf),
+                    (unsigned)((st.fetch_acc - st_last.fetch_acc) / nf),
+                    (unsigned)((st.bus_stall - st_last.bus_stall) * 100 / nf / (AMIGA_CC_PER_LINE * AMIGA_LINES_LONG)),
                     (unsigned)(pr.ticks[AMIGA_PROF_CPU] / nf / 1000), (unsigned)(pr.ticks[AMIGA_PROF_RENDER] / nf / 1000),
                     (unsigned)(pr.ticks[AMIGA_PROF_BPL] / nf / 1000), (unsigned)(pr.ticks[AMIGA_PROF_BPLRD] / nf / 1000),
                     (unsigned)(pr.ticks[AMIGA_PROF_COPPER] / nf / 1000), (unsigned)(pr.ticks[AMIGA_PROF_BLIT] / nf / 1000),
                     (unsigned)((pr.idle_cycles - idle_last) * 100 / nf / (2u * AMIGA_CC_PER_LINE * AMIGA_LINES_LONG)));
             idle_last = pr.idle_cycles;
+            st_last = st;
         }
     }
     if (wav) wav_close();
+    if (hist_path) {
+        extern unsigned int amiga_stat_hist[2048];
+        FILE *hf = fopen(hist_path, "w");
+        if (!hf) { perror(hist_path); return 1; }
+        for (int i = 0; i < 2048; i++) if (amiga_stat_hist[i]) fprintf(hf, "%d %u\n", i, amiga_stat_hist[i]);
+        fclose(hf);
+    }
     // --write-back: what the Amiga wrote goes back into the image files (a DMS is
     // written as the ADF it was unpacked to, under its own name).
     for (int k = 0; write_back && k < nadf; k++) {

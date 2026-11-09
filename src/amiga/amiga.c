@@ -17,6 +17,11 @@
 #endif
 
 amiga_t A;
+unsigned int amiga_bus_instr;                    // instructions run (m68k_execute)
+unsigned int amiga_stat_data, amiga_stat_fetch, amiga_stat_audw;  // AMIGA_STATS counters
+#ifdef AMIGA_STATS
+unsigned int amiga_stat_hist[2048];                                // 8 KB: the bench only
+#endif
 uint8_t  prof_cur;
 uint32_t prof_t, prof_acc[AMIGA_PROF_COUNT];
 static uint32_t prof_frames;
@@ -49,6 +54,55 @@ AMIGA_HOT static void cpu_until(uint64_t target) {
         A.cpu_rem = (uint8_t)(u % mul);
     }
 }
+
+// The chip bus (amiga_set_chip_bus), after the CPU ran a slice [h0, h1) of
+// colour clocks: a 68EC020 without fast RAM gets the chip bus for one access
+// every two colour clocks, and only the clocks the DMA leaves: the bitplanes'
+// (denise_bus_busy8), a running blit's (three in four, all of them with
+// BLTPRI), and ~27 a line of sprites, disk, audio and refresh.  Its accesses
+// are the chip data accesses mem.c counted and the fetches of the instructions
+// it ran (bus_fetch8 below: three quarters of a 32-bit fetch each, no cache).
+// What they need
+// beyond the slice's free clocks is added to the CPU's time: the next slices
+// start later, as on the machine.
+#define BUS_FIXED8 15                        // ~27 of 227 clocks a line, per 16-clock slice, in eighths
+// amiga_set_chip_bus_params, in eighths: fetch accesses an instruction and
+// clocks an access.  6, 16 (no instruction cache credit, two clocks an access):
+// ~1.3 MIPS, a stock A1200's; Roots' music routine, called from its frame loop,
+// then runs every other frame in two parts (bench: `audw`, writes to Paula a
+// frame).  2, 16 (a quarter fetch: the 68020's 256-byte cache serving the rest)
+// keeps it at 50 Hz, as a free bus does - a sharp threshold, 3, 16 does not -
+// at ~1.7 MIPS, 35,000 instructions a frame: 14-19 ms of the board's core 0 in
+// those parts, over the frame with the blitter and copper (2026-11-09 log: fps
+// 42-45, the audio ring starving everywhere heavy).  So the stock model is the
+// default and the menu offers the other (Machine > A1200 > Chip bus).
+static unsigned bus_fetch8 = 6, bus_cost8 = 16;
+void amiga_set_chip_bus_params(int fetch8, int cost8) { bus_fetch8 = (unsigned)fetch8; bus_cost8 = (unsigned)cost8; }
+AMIGA_HOT static void bus_wait(int h0, int h1) {
+    static uint32_t instr_last, data_last;
+    const uint32_t instr = amiga_bus_instr - instr_last, data = A.bus_data - data_last;
+    instr_last = amiga_bus_instr; data_last = A.bus_data;
+    if (!instr && !data) return;
+    const uint32_t acc8 = data * 8 + (mem_fetch_chip ? instr * bus_fetch8 : 0);
+    int busy8 = denise_bus_busy8(h0, h1) + BUS_FIXED8;
+    if (blitter_busy()) busy8 += (h1 - h0) * ((A.dmacon & DMAF_BLTPRI) ? 8 : 6);
+    int free8 = (h1 - h0) * 8 - busy8;
+    if (free8 < 0) free8 = 0;
+    const int need8 = (int)(acc8 * bus_cost8 / 8);                   // bus_cost8 / 8 clocks an access
+    if (need8 <= free8) return;
+    // A slice's CPU time is 4 x 16 clocks at most: more than 8 slices of wait is
+    // a count from before the model was switched on, not a slice's.
+    uint32_t over8 = (uint32_t)(need8 - free8);
+    if (over8 > (uint32_t)(h1 - h0) * 64u) over8 = (uint32_t)(h1 - h0) * 64u;
+    const uint32_t stall8 = over8 + A.bus_rem8;
+    const uint32_t cc = stall8 / 8;
+    A.bus_rem8 = (uint8_t)(stall8 % 8);
+    A.cpu_cyc += 2u * cc;
+    A.bus_stall += cc;
+}
+
+void amiga_set_chip_bus(bool on) { A.chip_bus = on; }
+void amiga_set_render_skip(bool on) { A.render_skip = on; }
 
 static void cpu_mul_update(void) {
     A.cpu_mul = (uint8_t)((A.cpu_clock ? A.cpu_clock : 1) * (A.load_mul ? A.load_mul : 1));
@@ -187,12 +241,13 @@ AMIGA_HOT __attribute__((noinline)) static void run_line(void) {
     denise_line_start();
     prof_switch(AMIGA_PROF_OTHER);
     copper_line_start();
-    for (int h = SLICE_CC; ; h += SLICE_CC) {
+    for (int h = SLICE_CC, h0 = 0; ; h0 = h, h += SLICE_CC) {
         if (h > AMIGA_CC_PER_LINE) h = AMIGA_CC_PER_LINE;
         prof_switch(AMIGA_PROF_COPPER);
         copper_run(h);
         prof_switch(AMIGA_PROF_CPU);
         cpu_until(A.line_cyc + 2u * (uint32_t)h);
+        if (A.chip_bus && A.cpu_clock > 1) bus_wait(h0, h);
         prof_switch(AMIGA_PROF_OTHER);
         blitter_poll();
         if (h == AMIGA_CC_PER_LINE) break;
@@ -280,4 +335,9 @@ void amiga_get_status(amiga_status_t *st) {
     st->overlay = mem_overlay();
     st->cop_pc = copper_pc();
     st->blits = blitter_count();
+    denise_status(st);
+    st->instr = amiga_bus_instr;
+    st->bus_stall = (uint32_t)A.bus_stall;
+    st->data_acc = amiga_stat_data;
+    st->fetch_acc = amiga_stat_fetch;
 }

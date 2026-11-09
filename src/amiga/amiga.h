@@ -68,6 +68,11 @@ void amiga_set_fb_x0(int x0);
 // half a second, so screens that flash or open their window line by line do
 // not make the picture jump.
 void amiga_set_vcentre(bool on);
+// Frame skipping: on, the next frame (from its start) is emulated but not
+// drawn - no bitplane reads, no fetch or output work, the framebuffer keeps the
+// last picture; the display registers, sprites and copper are run as ever.
+// The platform sets it for a frame when the one before overran (main.c).
+void amiga_set_render_skip(bool on);
 // Framebuffer rows [y0, y1) carry a platform overlay (row_done); y1 <= y0: none.
 // Two ranges (`which` 0 or 1), so two overlays far apart (a band at the bottom,
 // an icon at the top) do not send every row between them through row_done.
@@ -176,6 +181,18 @@ void amiga_set_drives(int n);
 void amiga_set_hdf(const amiga_disk_t *disk);
 // The CPU (AMIGA_CPU_*): takes effect at the next amiga_reset(), a hard one.
 void amiga_set_cpu(int cpu);
+// The chip bus (a 68EC020 machine; the 68000's is not modelled): on, the CPU
+// waits for its chip RAM and custom register accesses as the A1200's does - one
+// every two colour clocks at most, and none of the clocks the bitplane DMA
+// takes (all of them with 8 lowres planes and FMODE 0, a quarter with FMODE 3)
+// or a running blit does.  A stock A1200 (no fast RAM) runs about half the
+// instructions of a 14 MHz 68020 with its own memory; off, the CPU runs them
+// all, as it did before.  Takes effect at once.
+void amiga_set_chip_bus(bool on);
+// Its parameters, in eighths: instruction-fetch accesses per instruction (6: no
+// instruction cache credit, the default; 2: a quarter, the cache serving the
+// rest - a faster CPU, ~35% more emulation time) and colour clocks per access (16).
+void amiga_set_chip_bus_params(int fetch8, int cost8);
 
 // The geometry the drive reports in IDENTIFY (0s: no drive).
 void amiga_hdf_geometry(uint16_t *cyls, uint8_t *heads, uint8_t *sectors);
@@ -243,6 +260,13 @@ typedef struct {
     uint8_t  overlay;
     uint32_t cop_pc;
     uint32_t blits;
+    uint16_t bplcon0, fmode;     // the display's, at the frame's end
+    uint16_t dma_lines;          // lines of the last frame with bitplane DMA on
+    uint32_t instr;              // instructions run since reset
+    uint32_t bus_stall;          // colour clocks the CPU waited for the chip bus (amiga_set_chip_bus)
+    // Built with AMIGA_STATS (the host bench): the CPU's data accesses and
+    // instruction-fetch words since reset.
+    uint32_t data_acc, fetch_acc;
 } amiga_status_t;
 void amiga_get_status(amiga_status_t *st);
 

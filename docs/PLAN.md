@@ -41,7 +41,23 @@ verified on the host bench; "hw" means verified on a board.
 - [ ] m68k_execute and the hottest handlers into SRAM; profile with the SysTick sampler
       (Debug > PC profiler + tools/pcprof.py, 2026-11-05: State of the Art at x3 - the
       dispatch loop ~11%, custom / CIA reads ~8-12%, the memory callbacks ~9-12%,
-      dma_unit 7-27% with 8-18k XIP misses a frame, prof_switch ~2.6%)
+      dma_unit 7-27% with 8-18k XIP misses a frame, prof_switch ~2.6%).
+      Roots on the A1200 (2026-11-05 log, matched ELF), core 0's CPU-bound seconds:
+      m68k_read_memory_16/32 (the bucket named m68k_read_memory_8) 20%, the fetch
+      window's reads 11%, the dispatch loop 12%: ~45% of core 0 is the chip RAM
+      (PSRAM) behind the XIP cache - 50k instructions a frame took 17 ms (170
+      cycles each, ~50 on a PC); the stretches at 27 ms had 60k XIP misses a frame.
+      The render-bound seconds: dma_unit 20% (164 KB of bitplanes a frame through
+      8-byte cache lines).  Core 1 samples too now ("PROF1" lines, pcprof.py --core 1)
+- [x] Core 1 (PICO_DV): render 13-17 ms + enc 10-13 ms a frame in Roots' 256-colour
+      parts - over 20 ms.  PROF1 (2026-11-09): spread_planes' lowres doubling a third
+      of core 1 in 8-plane lowres (now one pf entry a lowres pixel), fill_bytes in
+      flash 7%, IDX8 rows overflowing to DIRECT 8% in 8-plane hires (now DIRECT from
+      the start); the rest is tl_active (the TMDS slot loop) and the bitplane reads.
+      Frame skipping (Video > Picture, after an overrun, never twice) covers what is
+      left: the emulation keeps 50 fps, the picture 25 in such a scene  Encoding a line's colours
+      only once across rows was costed (2026-11-09): a page scheme reusing the
+      row above's entries saves ~0.5 ms a frame for 6 KB of SRAM - not taken
 - [x] Busy-wait loops skipped (idle.c): dbra Dn,* and test + Bcc on an unchanged value
 - [ ] prof_switch only while the PERF line is on (~2.6% of core 0 always)
 - [ ] Instruction fetch without the bank lookup call (a PC page pointer)
@@ -50,8 +66,20 @@ verified on the host bench; "hw" means verified on a board.
 
 ## 3. Accuracy
 
-- [ ] DMA contention: CPU loses chip-bus cycles to bitplanes/copper/blitter
-      (today the CPU runs at full speed whatever the display does)
+- [x] DMA contention, the A1200's (amiga.c bus_wait, Machine > A1200 > Chip bus
+      waits, the bench's --a1200 / --chip-bus / --fast-bus): the 68EC020 gets one
+      chip access per two colour clocks less what the bitplanes (by planes and
+      FMODE), a running blit (3/4, all with BLTPRI) and ~27 clocks a line of
+      sprites / disk / audio / refresh take; what its accesses (mem.c's chip
+      data accesses + 3/4 of a 32-bit fetch per instruction; Machine > A1200 > Chip
+      bus: With cache = 1/4, which keeps Roots' frame-loop music at 50 Hz but costs
+      a third more core 0 time; --bus-tune to try others) need
+      beyond that is added to its time after each 16-clock slice.  The copper's
+      cycles are not counted.  Roots ran 50k instructions a frame with the CPU
+      free (2.5 MIPS: a stock A1200 does ~1.3), i.e. the demo's CPU-bound parts
+      ran faster than on the machine, at 17-27 ms of board time a frame
+- [ ] DMA contention on the 68000 (the A500 keeps every cycle today: 5-6 lowres /
+      3-4 hires planes steal its odd cycles, the blitter its free ones)
 - [ ] Copper slots taken by hires/6-plane fetches; blitter cycle timing and nasty mode
 - [ ] Interlace with more than 16 colours per line (falls back to the latest field today)
 - [ ] Sprite collisions (CLXDAT/CLXCON), sprite writes mid-line, sprite DMA slot limits vs DDFSTRT
@@ -337,3 +365,10 @@ Step 5 - checks and the board:
 - [ ] smoke.sh: an A1200 test with AROS (no Commodore ROM in the repo)
 - [ ] hw: on a board with >= 4 MB PSRAM; `end` / heap after the larger handler
       set and LUTs (./check-release.sh), ms per frame with the PERF band
+- [x] hw: Roots with Chip bus waits on against the 2026-11-05 log: cpu 10-12 ms a
+      frame (was 17-27), fps 36-45 left in the 8-plane parts (render-bound)
+- [x] hw: the 2026-11-09 render changes + frame skip: fps 50 with ~25 skip/s in the
+      8-plane parts; the sprite part (no bitplanes, 8 x 64-px sprites repositioned
+      by the copper, 9k writes a frame) fell to 15 fps with the audio ring starving
+      (au hold 22k/s): the per-pixel sprite compose and the events of skipped
+      frames - both fixed (emulation.md), awaiting a board run

@@ -5,6 +5,7 @@
 // I2S DAC from an RC-filtered PWM pair, the video output to tell a VGA resistor
 // ladder from an HDMI connector on the same pins.
 #include "board.h"
+#include "amiga.h"           // AMIGA_CPU_* (board_load_cpu_overlay)
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
 #include "hardware/clocks.h"
@@ -17,6 +18,7 @@
 #include "hardware/sync.h"
 #include "hardware/exception.h"
 #include "hardware/structs/systick.h"
+#include "hardware/structs/sio.h"
 #include "hardware/regs/xip.h"
 #include <stdio.h>
 #include <string.h>
@@ -111,6 +113,21 @@ uint32_t __not_in_flash_func(board_cycles)(void) {   // the audio tick IRQ calls
 
 uint32_t board_cycles_per_us(void) { return clock_get_hz(clk_sys) / 1000000u; }
 
+// ---- Musashi's handler overlay (m68kconf.h, src/pico/ld) -----------------------------
+extern char __m68k_ovl_start[];
+extern char __load_start_m68k_ovl_000[], __load_stop_m68k_ovl_000[];
+extern char __load_start_m68k_ovl_020[], __load_stop_m68k_ovl_020[];
+static int s_ovl_loaded = -1;
+
+void board_load_cpu_overlay(int cpu) {
+    if (cpu == s_ovl_loaded) return;
+    const char *src = cpu == AMIGA_CPU_EC020 ? __load_start_m68k_ovl_020 : __load_start_m68k_ovl_000;
+    const char *end = cpu == AMIGA_CPU_EC020 ? __load_stop_m68k_ovl_020 : __load_stop_m68k_ovl_000;
+    memcpy(__m68k_ovl_start, src, (size_t)(end - src));
+    __asm volatile("dsb\nisb" ::: "memory");             // new code in SRAM
+    s_ovl_loaded = cpu;
+}
+
 // ---- XIP cache counters, PC profiler (pico-speccy's PcProf) --------------------------
 void board_xip_counts(uint32_t *hit, uint32_t *acc) {
     volatile uint32_t *h = (volatile uint32_t *)(XIP_CTRL_BASE + XIP_CTR_HIT_OFFSET);
@@ -123,21 +140,29 @@ void board_xip_counts(uint32_t *hit, uint32_t *acc) {
 #define PCPROF_SLOTS 256u            // power of two
 #define PCPROF_SHIFT 6               // 64-byte buckets
 #define PCPROF_LINES 4               // 14 buckets a line
-static uint32_t *volatile s_pkey;    // [PCPROF_SLOTS] keys, then [PCPROF_SLOTS] counts
-static volatile uint32_t s_ptotal, s_plost;
+// One table per core: [PCPROF_SLOTS] keys, then [PCPROF_SLOTS] counts.  Each core
+// samples its own SysTick (a private peripheral: the registers are per core) into
+// its own table through the shared vector table's handler.
+static uint32_t *volatile s_pkey[2];
+static volatile uint32_t s_ptotal[2], s_plost[2];
 static uint32_t s_phz;
+// Core 1 runs its SysTick itself, when its loop polls board_pcprof_core1_poll():
+// what core 0 asks (0 off, 1 sampling, 2 paused for a dump) and what core 1 has.
+volatile uint8_t board_pcprof_c1_want;
+static volatile uint8_t s_c1_have;
 
 void __not_in_flash_func(pcprof_sample)(const uint32_t *frame) {
-    uint32_t *const key = s_pkey;
+    const uint core = sio_hw->cpuid;
+    uint32_t *const key = s_pkey[core];
     if (!key) return;
     uint32_t *const cnt = key + PCPROF_SLOTS;
     const uint32_t k = (frame[6] >> PCPROF_SHIFT) + 1u;      // + 1: 0 means empty
     uint32_t h = (k * 2654435761u) >> 24;
     for (uint32_t i = 0; i < 16; i++, h = (h + 1) & (PCPROF_SLOTS - 1)) {
-        if (key[h] == k) { cnt[h]++; s_ptotal++; return; }
-        if (key[h] == 0) { key[h] = k; cnt[h] = 1; s_ptotal++; return; }
+        if (key[h] == k) { cnt[h]++; s_ptotal[core]++; return; }
+        if (key[h] == 0) { key[h] = k; cnt[h] = 1; s_ptotal[core]++; return; }
     }
-    s_plost++;
+    s_plost[core]++;
 }
 
 // The interrupted PC is word 6 of the exception frame, on whichever stack it was.
@@ -150,41 +175,68 @@ void __attribute__((naked)) __not_in_flash_func(pcprof_isr)(void) {
         "b pcprof_sample \n");
 }
 
-static void pcprof_reload(void) {
-    s_phz = clock_get_hz(clk_sys);
+// This core's SysTick: off, or ticking at PCPROF_HZ of clk_sys.
+static void pcprof_tick(bool on) {
     systick_hw->csr = 0;
+    if (!on) return;
     systick_hw->rvr = s_phz / PCPROF_HZ - 1;
     systick_hw->cvr = 0;
     systick_hw->csr = 0x7;           // processor clock, interrupt, enable
 }
 
+static void pcprof_reload(void) {
+    s_phz = clock_get_hz(clk_sys);
+    pcprof_tick(true);
+}
+
+// Core 1 (its loop, once a line or so): follow what core 0 asked.
+void __not_in_flash_func(board_pcprof_core1_apply)(void) {
+    const uint8_t want = board_pcprof_c1_want;
+    pcprof_tick(want == 1);
+    s_c1_have = want;
+}
+
+// Core 0: ask core 1 for `want` and wait for it (its loop polls within a line;
+// 5 ms covers a stalled scanout), true when it got there.
+static bool pcprof_c1_set(uint8_t want) {
+    board_pcprof_c1_want = want;
+    for (int i = 0; i < 5000 && s_c1_have != want; i++) busy_wait_us(1);
+    return s_c1_have == want;
+}
+
 bool board_pcprof(bool on) {
     static bool installed;
     systick_hw->csr = 0;
-    uint32_t *old = s_pkey;
-    s_pkey = NULL;
-    free(old);
+    pcprof_c1_set(0);
+    for (int c = 0; c < 2; c++) {
+        uint32_t *old = s_pkey[c];
+        s_pkey[c] = NULL;
+        free(old);
+    }
     if (!on) return true;
-    uint32_t *t = (uint32_t *)calloc(2 * PCPROF_SLOTS, sizeof(uint32_t));
-    if (!t) return false;
+    uint32_t *t0 = (uint32_t *)calloc(2 * PCPROF_SLOTS, sizeof(uint32_t));
+    uint32_t *t1 = (uint32_t *)calloc(2 * PCPROF_SLOTS, sizeof(uint32_t));
+    if (!t0 || !t1) { free(t0); free(t1); return false; }
     if (!installed) { exception_set_exclusive_handler(SYSTICK_EXCEPTION, pcprof_isr); installed = true; }
-    s_ptotal = s_plost = 0;
-    s_pkey = t;
+    for (int c = 0; c < 2; c++) s_ptotal[c] = s_plost[c] = 0;
+    s_pkey[0] = t0;
+    s_pkey[1] = t1;
     pcprof_reload();
-    printf("PROF: core 0 PC sampling at %u Hz, %u-byte buckets\n", PCPROF_HZ, 1u << PCPROF_SHIFT);
+    const bool c1 = pcprof_c1_set(1);
+    printf("PROF: core 0%s PC sampling at %u Hz, %u-byte buckets\n", c1 ? " and core 1" : "", PCPROF_HZ, 1u << PCPROF_SHIFT);
     return true;
 }
 
-// The 56 hottest buckets in per mille of the samples, then the table starts over.
-void board_pcprof_dump(void) {
-    uint32_t *const key = s_pkey;
-    if (!key) return;
+// The 56 hottest buckets of a core in per mille of its samples, then its table
+// starts over.  Core 0's lines are "PROF" / "PROF+", core 1's "PROF1" / "PROF1+".
+static void pcprof_dump_core(int core) {
+    uint32_t *const key = s_pkey[core];
     uint32_t *const cnt = key + PCPROF_SLOTS;
-    systick_hw->csr &= ~0x2u;        // the tick masked while the table is read
-    const uint32_t total = s_ptotal, lost = s_plost;
+    const uint32_t total = s_ptotal[core], lost = s_plost[core];
+    const char *tag = core ? "PROF1" : "PROF";
     for (int part = 0; total && part < PCPROF_LINES; part++) {
         char line[240];
-        int n = part ? snprintf(line, sizeof line, "PROF+") : snprintf(line, sizeof line, "PROF %u smp:", (unsigned)total);
+        int n = part ? snprintf(line, sizeof line, "%s+", tag) : snprintf(line, sizeof line, "%s %u smp:", tag, (unsigned)total);
         for (int k = 0; k < 14 && n < (int)sizeof line - 20; k++) {
             uint32_t best = 0, bi = 0;
             for (uint32_t i = 0; i < PCPROF_SLOTS; i++) if (cnt[i] > best) { best = cnt[i]; bi = i; }
@@ -197,7 +249,17 @@ void board_pcprof_dump(void) {
         printf("%s\n", line);
     }
     memset(key, 0, 2 * PCPROF_SLOTS * sizeof(uint32_t));
-    s_ptotal = s_plost = 0;
+    s_ptotal[core] = s_plost[core] = 0;
+}
+
+void board_pcprof_dump(void) {
+    if (!s_pkey[0]) return;
+    systick_hw->csr &= ~0x2u;        // the tick masked while the table is read
+    pcprof_dump_core(0);
+    if (s_c1_have == 1 && pcprof_c1_set(2)) {                 // core 1 paused meanwhile
+        pcprof_dump_core(1);
+        pcprof_c1_set(1);
+    }
     if (clock_get_hz(clk_sys) != s_phz) pcprof_reload();
     else systick_hw->csr |= 0x2u;
 }

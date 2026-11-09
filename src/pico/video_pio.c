@@ -154,6 +154,7 @@ static void __not_in_flash_func(build_line)(void) {
 // emulator's lines in between (amiga_render_pump, in small steps).
 static void __no_inline_not_in_flash_func(build_loop)(void) {
     for (;;) {
+        board_pcprof_core1_poll();                   // Debug > PC profiler: this core's SysTick
         if ((int32_t)(next_build - started) < LEAD) build_line();
         else                                         amiga_render_pump();
     }

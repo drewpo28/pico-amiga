@@ -261,7 +261,7 @@ uint16_t floppy_read(uint32_t reg) {
     return 0;
 }
 
-void floppy_line(void) {
+AMIGA_HOT void floppy_line(void) {
     for (int d = 0; d < NDRIVES; d++) {
         drive_t *dv = &drv[d];
         if (dv->inserted || dv->empty_lines >= SWAP_LINES) continue;

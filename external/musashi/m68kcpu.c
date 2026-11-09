@@ -1050,11 +1050,17 @@ M68KI_HOT int m68k_execute(int num_cycles)
 
 			/* Read an instruction and call its handler */
 			REG_IR = m68ki_read_imm_16();
+#ifdef AMIGA_FETCH_WINDOW
+			amiga_bus_instr++;               /* PICO-AMIGA PATCH: the chip bus model counts instructions */
+#endif
 #if M68K_CONST_TABLES
 			/* PICO-AMIGA PATCH: the cycles of the handler (index 0, illegal,
 			 * varies by opcode: the opcode table). */
 			{
 				const unsigned h = m68ki_handler_index[REG_IR];
+#ifdef AMIGA_STATS
+				amiga_stat_hist[h]++;    /* the bench's handler histogram (tools/musashi_hist.py) */
+#endif
 				m68ki_handlers[h]();
 				USE_CYCLES(h ? m68ki_handler_cycles[h] : CYC_INSTRUCTION[REG_IR]);
 			}

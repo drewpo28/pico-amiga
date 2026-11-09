@@ -18,8 +18,8 @@ static unsigned sck(unsigned mhz, unsigned limit) {
     return mhz / d;
 }
 
-void perf_log_frame(uint32_t emu_us) {
-    static uint32_t frames, emu_sum, t0, slow;
+void perf_log_frame(uint32_t emu_us, bool skipped) {
+    static uint32_t frames, emu_sum, t0, slow, skips;
     static amiga_profile_t last;
     static uint32_t isr_last, late_last, stall_last, c1irq_last, c1enc_last, hold_last, skip_last, full_last, starve_last;
     if (!dbg_uart_active()) return;
@@ -27,6 +27,7 @@ void perf_log_frame(uint32_t emu_us) {
     frames++;
     emu_sum += emu_us;
     if (emu_us > 20000) slow++;
+    if (skipped) skips++;
     const uint32_t now = time_us_32();
     if (now - t0 < 1000000u) return;
 
@@ -60,13 +61,13 @@ void perf_log_frame(uint32_t emu_us) {
     static const char *const kLoadTest[] = { "", " | LOAD TEST cpu x2", " | LOAD TEST cpu x2 + 8 planes",
                                              " | LOAD TEST cpu x3", " | LOAD TEST cpu x3 + 8 planes" };
 #define MS(i) (unsigned)(ms10[i] / 10), (unsigned)(ms10[i] % 10)
-    printf("PERF fps %u.%u emu %u.%u ms (%u%%, %u slow) | cpu %u.%u ren %u.%u+bpl %u.%u+rd %u.%u cop %u.%u blt %u.%u"
+    printf("PERF fps %u.%u emu %u.%u ms (%u%%, %u slow, %u skip) | cpu %u.%u ren %u.%u+bpl %u.%u+rd %u.%u cop %u.%u blt %u.%u"
            " aud %u.%u line %u.%u dsk %u.%u oth %u.%u wait %u.%u (irq %u.%u) | core1 render %u.%u irq %u.%u enc %u.%u"
            " | cpu %u flash %u psram %u MHz | late %u stall %u | au hold %u skip %u hdmi starve %u full %u min %u"
            " | xip %uk/fr miss %uk/fr%s\n",
            (unsigned)(fps10 / 10), (unsigned)(fps10 % 10),
            (unsigned)(emu10 / 10), (unsigned)(emu10 % 10),
-           (unsigned)(emu_avg ? 2000000u / emu_avg : 0), (unsigned)slow,     // 20 ms = 100%
+           (unsigned)(emu_avg ? 2000000u / emu_avg : 0), (unsigned)slow, (unsigned)skips,   // 20 ms = 100%
            MS(AMIGA_PROF_CPU), MS(AMIGA_PROF_RENDER), MS(AMIGA_PROF_BPL), MS(AMIGA_PROF_BPLRD), MS(AMIGA_PROF_COPPER), MS(AMIGA_PROF_BLIT),
            MS(AMIGA_PROF_PAULA), MS(AMIGA_PROF_LINE), MS(AMIGA_PROF_DISK), MS(AMIGA_PROF_OTHER),
            MS(AMIGA_PROF_RWAIT), (unsigned)(irq10 / 10), (unsigned)(irq10 % 10), MS(AMIGA_PROF_CORE1),
@@ -78,6 +79,6 @@ void perf_log_frame(uint32_t emu_us) {
            kLoadTest[settings_load_test() >= 0 && settings_load_test() <= 4 ? settings_load_test() : 0]);
     board_pcprof_dump();                                    // Debug > PC profiler's lines, if on
     last = p;
-    frames = emu_sum = slow = 0;
+    frames = emu_sum = slow = skips = 0;
     t0 = now;
 }

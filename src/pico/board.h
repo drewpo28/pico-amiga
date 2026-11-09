@@ -21,12 +21,26 @@ uint32_t board_cycles_per_us(void);
 // The XIP cache's hit and access counters since the last call (both cores, flash
 // and PSRAM together: the RP2350 has one cache and one counter pair).
 void     board_xip_counts(uint32_t *hit, uint32_t *acc);
-// PC-sampling profiler of core 0 (pico-speccy's PcProf): SysTick at 8 kHz counts
-// the interrupted PC in 64-byte buckets (a 2 KB table from the heap while on).
-// board_pcprof_dump() prints the hottest as "PROF" lines and starts over; resolve
-// them with tools/pcprof.py against the same ELF.  Call both from core 0.
+// PC-sampling profiler of both cores (pico-speccy's PcProf): each core's SysTick
+// at 8 kHz counts the interrupted PC in 64-byte buckets (a 2 KB table per core
+// from the heap while on).  board_pcprof_dump() prints the hottest as "PROF"
+// (core 0) and "PROF1" (core 1) lines and starts over; resolve them with
+// tools/pcprof.py against the same ELF.  Call both from core 0.  Core 1 runs its
+// own tick when its loop polls board_pcprof_core1_poll() (main.c, video_pio.c).
+// Musashi's hot handlers (m68kconf.h): the 68000's and the 68EC020's sets are
+// OVERLAY sections in one SRAM window (src/pico/ld/section_extra_post_data.incl);
+// this copies the set of cpu (AMIGA_CPU_*) in from flash.  Call with the CPU
+// stopped, from core 0, before amiga_reset().
+void     board_load_cpu_overlay(int cpu);
 bool     board_pcprof(bool on);           // false: no heap for the table
 void     board_pcprof_dump(void);
+extern volatile uint8_t board_pcprof_c1_want;
+void     board_pcprof_core1_apply(void);
+static inline void board_pcprof_core1_poll(void) {
+    static uint8_t have;                  // what this core last applied
+    const uint8_t want = board_pcprof_c1_want;
+    if (want != have) { have = want; board_pcprof_core1_apply(); }
+}
 
 // System info (Win+F1).  The flash's JEDEC ID is read once, by
 // board_flash_probe() first thing in main(): the command leaves XIP and boot2
