@@ -256,6 +256,7 @@ AMIGA_HOT __attribute__((noinline)) static void run_line(void) {
         copper_run(h);
         prof_switch(AMIGA_PROF_CPU);
         cpu_until(A.line_cyc + 2u * (uint32_t)h);
+        mem_pool_sample(m68k_pc_now());
         if (A.chip_bus && A.cpu_clock > 1) bus_wait(h0, h);
         prof_switch(AMIGA_PROF_OTHER);
         blitter_poll();
@@ -286,6 +287,7 @@ void amiga_run_frame(void) {
     for (A.vpos = 0; A.vpos < A.lines; A.vpos++) run_line();
     denise_sync();                   // the frame is complete before anyone looks at it
     prof_switch(AMIGA_PROF_OTHER);
+    mem_pool_frame();
     A.vpos = 0;
     A.frame++;
     prof_frames++;

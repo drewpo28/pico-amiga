@@ -146,6 +146,11 @@ typedef struct {
     // reads the clock.  NULL: no clock (the registers read 0, as an empty slot).
     int64_t (*rtc_time)(void *ctx);
     void *ctx;
+
+    // The fetch page pool (mem.c): fast memory for copies of the chip RAM pages
+    // the CPU runs from most, 8 KB each (the firmware: SRAM, the chip RAM being
+    // PSRAM).  NULL or under 8 KB: instructions are fetched from chip RAM.
+    uint8_t  *fetch_pool;    uint32_t fetch_pool_size;
 } amiga_config_t;
 
 // Floppy image: 880 KB ADF, accessed through callbacks so the platform can

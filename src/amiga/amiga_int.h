@@ -205,9 +205,25 @@ static inline uint16_t chip_rw(uint32_t addr) {
     memcpy(&v, A.cfg.chip_ram + (addr & A.chip_mask & ~1u), 2);
     return __builtin_bswap16(v);
 }
+// The fetch page pool (mem.c): chip page -> pool slot (-1: not resident), the
+// slots' memory.  A chip RAM writer keeps a resident page's copy current.
+#define MEM_POOL_SHIFT 13
+#define MEM_POOL_PAGE  (1u << MEM_POOL_SHIFT)
+extern int8_t   mem_pool_slot[256];
+extern uint8_t *mem_pool_base;
+static inline void mem_pool_ww(uint32_t off, uint16_t be) {    // off: chip RAM offset, be: big-endian
+    const int s = mem_pool_slot[off >> MEM_POOL_SHIFT];
+    if (s >= 0) memcpy(mem_pool_base + s * MEM_POOL_PAGE + (off & (MEM_POOL_PAGE - 1)), &be, 2);
+}
+void mem_pool_sample(uint32_t pc);      // the PC, once a scheduler slice (heat)
+void mem_pool_frame(void);              // once a frame: the hottest page in, the coolest out
+void mem_pool_flush(void);              // chip RAM replaced wholesale (reset, snapshot)
+
 static inline void chip_ww(uint32_t addr, uint16_t v) {
+    const uint32_t off = addr & A.chip_mask & ~1u;
     v = __builtin_bswap16(v);
-    memcpy(A.cfg.chip_ram + (addr & A.chip_mask & ~1u), &v, 2);
+    memcpy(A.cfg.chip_ram + off, &v, 2);
+    mem_pool_ww(off, v);
 }
 
 // ---- custom chip register dispatch (custom.c) ------------------------------
