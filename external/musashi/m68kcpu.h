@@ -1099,6 +1099,7 @@ extern unsigned int amiga_icache_miss;
 #endif
 #ifdef AMIGA_STATS
 extern unsigned int amiga_stat_data, amiga_stat_fetch, amiga_stat_hist[2048];
+extern unsigned int *amiga_pc_hist;     /* the bench's --pchist: instructions by PC / 2 (1M entries), or NULL */
 #define AMIGA_STAT_FETCH(n) (amiga_stat_fetch += (n))
 #else
 #define AMIGA_STAT_FETCH(n) ((void)0)

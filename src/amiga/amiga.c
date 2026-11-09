@@ -31,6 +31,7 @@ unsigned int amiga_icache_miss;
 unsigned int amiga_stat_data, amiga_stat_fetch, amiga_stat_audw;  // AMIGA_STATS counters
 #ifdef AMIGA_STATS
 unsigned int amiga_stat_hist[2048];                                // 8 KB: the bench only
+unsigned int *amiga_pc_hist;                                       // the bench's --pchist (host/main.c)
 #endif
 uint8_t  prof_cur;
 uint32_t prof_t, prof_acc[AMIGA_PROF_COUNT];

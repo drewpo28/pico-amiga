@@ -1063,6 +1063,7 @@ M68KI_HOT int m68k_execute(int num_cycles)
 				const unsigned h = m68ki_handler_index[REG_IR];
 #ifdef AMIGA_STATS
 				amiga_stat_hist[h]++;    /* the bench's handler histogram (tools/musashi_hist.py) */
+				if (amiga_pc_hist) amiga_pc_hist[(REG_PPC >> 1) & 0xFFFFF]++;   /* ...and by PC (--pchist) */
 #endif
 				m68ki_handlers[h]();
 				USE_CYCLES(h ? m68ki_handler_cycles[h] : CYC_INSTRUCTION[REG_IR]);

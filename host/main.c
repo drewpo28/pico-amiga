@@ -222,6 +222,7 @@ typedef struct { int frame, a, b, c; } inev_t;     // --joy: dirs fire; --mouse:
 // --trace N: every custom write and sprite DMA fetch of frame N (amiga_trace_reg).
 static int trace_frame = -1;
 static void trace_reg(uint32_t reg, uint16_t v, int hpos, uint32_t x) {
+    if (reg == 0x3000) { fprintf(stderr, "T v%3d h%3d cop fetch %06X\n", A.vpos, hpos, x); return; }
     if (reg >= 0x2000) { if (x) fprintf(stderr, "T v%3d bpl%d units %u pt=%06X\n", A.vpos, (int)(reg - 0x2000), v, x); return; }
     if (reg >= 0x1000) fprintf(stderr, "T v%3d spr%d st%u pt=%06X\n", A.vpos, (int)(reg - 0x1000), v, x);
     else fprintf(stderr, "T v%3d h%3d %c %03X=%04X\n", A.vpos, hpos, x ? 'C' : 'P', reg, v);
@@ -250,7 +251,7 @@ int main(int argc, char **argv) {
     int chip_bus = -1;                                 // --chip-bus / --fast-bus; default: on with --a1200
     bool skip_odd = false;
     int bus_fetch8 = 6, bus_cost8 = 16;
-    const char *hist_path = NULL;
+    const char *hist_path = NULL, *pchist_path = NULL;
     shot_t shots[64]; int nshots = 0;
     shot_t state_save = { -1, "" };
     const char *state_load = NULL;
@@ -284,6 +285,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--skip-odd")) skip_odd = true;     // odd frames not drawn (amiga_set_render_skip)
         else if (!strcmp(a, "--bus-tune") && v) { sscanf(v, "%d,%d", &bus_fetch8, &bus_cost8); i++; }   // amiga_set_chip_bus_params
         else if (!strcmp(a, "--hist") && v) { hist_path = v; i++; }
+        else if (!strcmp(a, "--pchist") && v) { pchist_path = v; i++; }   // the 64 hottest PCs (instructions run) at the end
         else if (!strcmp(a, "--trace") && v) { trace_frame = atoi(v); i++; }   // handler runs by index at the end (tools/musashi_hist.py)
         else if (!strcmp(a, "--write-back")) write_back = true;
         else if (!strcmp(a, "--drives") && v) { drives_opt = atoi(v); i++; }
@@ -346,6 +348,7 @@ int main(int argc, char **argv) {
     amiga_set_vcentre(vcentre);
     amiga_set_chip_bus(chip_bus < 0 ? a1200 : chip_bus != 0);   // the A1200's 68EC020 waits for the chip bus
     amiga_set_chip_bus_params(bus_fetch8, bus_cost8);
+    if (pchist_path) { extern unsigned int *amiga_pc_hist; amiga_pc_hist = calloc(1u << 20, sizeof *amiga_pc_hist); }
     if (render_thread_on) {
         pthread_t th;
         pthread_create(&th, NULL, render_thread, NULL);
@@ -417,12 +420,14 @@ int main(int argc, char **argv) {
             amiga_profile_t pr; amiga_get_profile(&pr, true);        // since the last status
             const uint32_t nf = pr.frames ? pr.frames : 1;
             static amiga_status_t st_last;                         // the counters, per frame since the last status
-            extern uint32_t denise_stat_compose, denise_stat_oto, denise_stat_ev;
+            extern uint32_t denise_stat_compose, denise_stat_oto, denise_stat_ev, copper_stat_mir, copper_stat_fetch;
             extern unsigned int amiga_stat_audw;
-            static uint32_t dc_last, do_last, de_last, da_last;
-            fprintf(stderr, "render/frame: events %u o_to %u sprite composes %u audw %u | ", (denise_stat_ev - de_last) / nf,
-                    (denise_stat_oto - do_last) / nf, (denise_stat_compose - dc_last) / nf, (amiga_stat_audw - da_last) / nf);
+            static uint32_t dc_last, do_last, de_last, da_last, cm_last, cf_last;
+            fprintf(stderr, "render/frame: events %u o_to %u sprite composes %u audw %u cop %u (mirror %u) | ", (denise_stat_ev - de_last) / nf,
+                    (denise_stat_oto - do_last) / nf, (denise_stat_compose - dc_last) / nf, (amiga_stat_audw - da_last) / nf,
+                    (copper_stat_fetch - cf_last) / nf, (copper_stat_mir - cm_last) / nf);
             dc_last = denise_stat_compose; do_last = denise_stat_oto; de_last = denise_stat_ev; da_last = amiga_stat_audw;
+            cm_last = copper_stat_mir; cf_last = copper_stat_fetch;
             fprintf(stderr, "frame %u t=%ld.%06ld pc=%06X dmacon=%04X intena=%04X intreq=%04X ovl=%d cop=%06X blits=%u "
                     "rows direct=%d idx8=%d lace4=%d | con0=%04X fmode=%X dmalines=%u | /frame instr %u data %u fetch %u busw %u%%"
                     " | us/frame cpu %u ren %u bpl %u rd %u cop %u blt %u | idle %u%%\n",
@@ -456,6 +461,24 @@ int main(int argc, char **argv) {
         FILE *hf = fopen(hist_path, "w");
         if (!hf) { perror(hist_path); return 1; }
         for (int i = 0; i < 2048; i++) if (amiga_stat_hist[i]) fprintf(hf, "%d %u\n", i, amiga_stat_hist[i]);
+        fclose(hf);
+    }
+    if (pchist_path) {
+        // "PC count share%" for the 64 hottest instruction addresses, hottest first,
+        // then the total: where a demo's CPU time goes (idle.c's loops show up here).
+        extern unsigned int *amiga_pc_hist;
+        FILE *hf = fopen(pchist_path, "w");
+        if (!hf) { perror(pchist_path); return 1; }
+        uint64_t total = 0;
+        for (unsigned i = 0; i < (1u << 20); i++) total += amiga_pc_hist[i];
+        for (int k = 0; k < 64; k++) {
+            unsigned best = 0, bi = 0;
+            for (unsigned i = 0; i < (1u << 20); i++) if (amiga_pc_hist[i] > best) { best = amiga_pc_hist[i]; bi = i; }
+            if (!best) break;
+            fprintf(hf, "%06X %u %.2f%%\n", bi * 2, best, 100.0 * best / (double)(total ? total : 1));
+            amiga_pc_hist[bi] = 0;
+        }
+        fprintf(hf, "total %llu\n", (unsigned long long)total);
         fclose(hf);
     }
     // --write-back: what the Amiga wrote goes back into the image files (a DMS is
