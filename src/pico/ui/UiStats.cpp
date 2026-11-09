@@ -165,7 +165,7 @@ static void diskLine(const amiga_floppy_t& f, char* out, size_t n) {
     char sec[4];
     if (f.sector < 11) snprintf(sec, sizeof sec, "%02u", (unsigned)f.sector);
     else snprintf(sec, sizeof sec, "--");
-    snprintf(out, n, "DF%d TR%02u.%u SEC%s %s", f.drive, (unsigned)f.cyl, (unsigned)f.side, sec,
+    snprintf(out, n, "DF%d T%02u.%u S%s %s", f.drive, (unsigned)f.cyl, (unsigned)f.side, sec,
              f.dma == 2 ? "WR" : f.dma == 1 ? "RD" : f.motor ? "ON" : "--");
 }
 
