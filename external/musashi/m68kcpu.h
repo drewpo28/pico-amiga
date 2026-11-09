@@ -280,7 +280,9 @@ typedef uint32 uint64;
 #endif /* M68K_INT_GT_32_BIT || M68K_USE_64_BIT */
 
 /* Simulate address lines of 68k family */
-#define ADDRESS_68K(A) ((A)&CPU_ADDRESS_MASK)
+/* PICO-AMIGA PATCH: a constant, not CPU_ADDRESS_MASK: the 68000 and the 68EC020,
+ * the two CPUs here, both have 24 address pins, and this is on every fetch. */
+#define ADDRESS_68K(A) ((A)&0x00ffffff)
 
 
 /* Shift & Rotate Macros. */
@@ -1028,6 +1030,15 @@ typedef struct
 	void (*set_fc_callback)(unsigned int new_fc);     /* Called when the CPU function code changes */
 	void (*instr_hook_callback)(unsigned int pc);     /* Called every instruction cycle prior to execution */
 
+#ifdef AMIGA_FETCH_WINDOW
+	/* PICO-AMIGA PATCH: mem.c's instruction fetch window (m68k_set_fetch_window):
+	 * addresses [fetch_lo, fetch_lo + fetch_len) read from fetch_ptr + (address -
+	 * fetch_lo); fetch_len 0 when there is none.  In here, not globals: the
+	 * handlers hold this struct's address already, so a fetch loads no literals. */
+	const unsigned char *fetch_ptr;
+	uint fetch_lo;
+	uint fetch_len;
+#endif
 } m68ki_cpu_core;
 
 
@@ -1065,22 +1076,26 @@ char* m68ki_disassemble_quick(unsigned int pc, unsigned int cpu_type);
 extern uint pmmu_translate_addr(uint addr_in);
 
 #ifdef AMIGA_FETCH_WINDOW
-/* PICO-AMIGA PATCH: mem.c's instruction fetch window: addresses [lo, lo + len)
- * read from ptr + (address - lo); len 0 when there is none.  The slow path
- * reads through the memory map and moves the window to the address's bank. */
-extern const unsigned char *m68ki_fetch_ptr;
-extern unsigned int m68ki_fetch_lo, m68ki_fetch_len;
+/* PICO-AMIGA PATCH: mem.c's instruction fetch window (the fetch_* fields of
+ * m68ki_cpu_core).  The slow path reads through the memory map and moves the
+ * window to the address's bank. */
 unsigned int m68ki_fetch_slow16(unsigned int address);
 extern unsigned int amiga_bus_instr;   /* instructions run (amiga.c's chip bus model) */
 /* The 68020's instruction cache as a tag per longword line (64 x 4 bytes,
  * direct-mapped, bits 8-23 the tag; CACR is not consulted): a fetch whose line
- * is not the one cached is a chip bus access for amiga.c's chip bus model. */
+ * is not the one cached is a chip bus access for amiga.c's chip bus model's
+ * `--bus-tune 255,C`.  The bench only (AMIGA_STATS): the board's menu offers
+ * the flat models, and this is six instructions on every word fetched. */
 extern unsigned short amiga_icache_tag[64];
 extern unsigned int amiga_icache_miss;
+#ifdef AMIGA_STATS
 #define AMIGA_ICACHE_FETCH(a) do { \
 	const unsigned ic_l = ((a) >> 2) & 63, ic_t = ((a) >> 8) & 0xFFFF; \
 	if (amiga_icache_tag[ic_l] != ic_t) { amiga_icache_tag[ic_l] = (unsigned short)ic_t; amiga_icache_miss++; } \
 } while (0)
+#else
+#define AMIGA_ICACHE_FETCH(a) ((void)0)
+#endif
 #endif
 #ifdef AMIGA_STATS
 extern unsigned int amiga_stat_data, amiga_stat_fetch, amiga_stat_hist[2048];
@@ -1122,12 +1137,12 @@ M68KI_HOT2 static inline uint m68ki_read_imm_16(void)
 	/* PICO-AMIGA PATCH: straight from the 64 KB bank the code runs in (mem.c's
 	 * fetch window), else through the memory map, which moves the window. */
 	{
-		const uint a = ADDRESS_68K(REG_PC), o = a - m68ki_fetch_lo;
+		const uint a = ADDRESS_68K(REG_PC), o = a - m68ki_cpu.fetch_lo;
 		REG_PC += 2;
 		AMIGA_STAT_FETCH(1);
 		AMIGA_ICACHE_FETCH(a);
-		if (o < m68ki_fetch_len) {
-			const unsigned char *p = m68ki_fetch_ptr + o;
+		if (o < m68ki_cpu.fetch_len) {
+			const unsigned char *p = m68ki_cpu.fetch_ptr + o;
 			return ((uint)p[0] << 8) | p[1];
 		}
 		return m68ki_fetch_slow16(a);
@@ -1177,13 +1192,13 @@ M68KI_HOT2 static inline uint m68ki_read_imm_32(void)
 	return temp_val;
 #elif defined(AMIGA_FETCH_WINDOW)
 	{
-		const uint a = ADDRESS_68K(REG_PC), o = a - m68ki_fetch_lo;
+		const uint a = ADDRESS_68K(REG_PC), o = a - m68ki_cpu.fetch_lo;
 		REG_PC += 4;
 		AMIGA_STAT_FETCH(2);
 		AMIGA_ICACHE_FETCH(a);
 		AMIGA_ICACHE_FETCH(a + 2);
-		if (o + 4 <= m68ki_fetch_len && o < m68ki_fetch_len) {
-			const unsigned char *p = m68ki_fetch_ptr + o;
+		if (o + 4 <= m68ki_cpu.fetch_len && o < m68ki_cpu.fetch_len) {
+			const unsigned char *p = m68ki_cpu.fetch_ptr + o;
 			return ((uint)p[0] << 24) | ((uint)p[1] << 16) | ((uint)p[2] << 8) | p[3];
 		}
 		return (m68ki_fetch_slow16(a) << 16) | m68ki_fetch_slow16(a + 2);

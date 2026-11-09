@@ -339,6 +339,10 @@ int m68k_cycles_remaining(void);        /* Number of cycles left */
 void m68k_modify_timeslice(int cycles); /* Modify cycles left */
 void m68k_end_timeslice(void);          /* End timeslice now */
 
+/* PICO-AMIGA PATCH: the instruction fetch window (m68kcpu.h, AMIGA_FETCH_WINDOW):
+ * addresses [lo, lo + len) fetch from ptr + (address - lo); len 0 closes it. */
+void m68k_set_fetch_window(const unsigned char *ptr, unsigned int lo, unsigned int len);
+
 /* Set the IPL0-IPL2 pins on the CPU (IRQ).
  * A transition from < 7 to 7 will cause a non-maskable interrupt (NMI).
  * Setting IRQ to 0 will clear an interrupt request.

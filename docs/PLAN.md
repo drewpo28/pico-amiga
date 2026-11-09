@@ -74,7 +74,7 @@ verified on the host bench; "hw" means verified on a board.
       data accesses + 3/4 of a 32-bit fetch per instruction; Machine > A1200 > Chip
       bus: With cache = 1/4, which keeps Roots' frame-loop music at 50 Hz but costs
       a third more core 0 time; --bus-tune to try others) need
-      beyond that is added to its time after each 16-clock slice.  The copper's
+      beyond that is added to its time after each slice (SLICE_CC).  The copper's
       cycles are not counted.  Roots ran 50k instructions a frame with the CPU
       free (2.5 MIPS: a stock A1200 does ~1.3), i.e. the demo's CPU-bound parts
       ran faster than on the machine, at 17-27 ms of board time a frame

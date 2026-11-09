@@ -34,7 +34,14 @@
 - **Instruction fetch reads a window, not the memory map** (AMIGA_FETCH_WINDOW,
   m68kcpu.h / mem.c): m68ki_read_imm_16/32 read the 64 KB bank the code runs in
   straight from its RAM / ROM; a miss goes through m68ki_fetch_slow16, which moves
-  the window; map() / map_low() close it. Musashi's test driver builds without it.
+  the window (m68k_set_fetch_window); map() / map_low() close it. Musashi's test
+  driver builds without it. The window lives in m68ki_cpu_core (its address is in
+  a register in every handler, so a fetch loads no literals), ADDRESS_68K is the
+  constant 24-bit mask, m68k_execute counts instructions in a register, and the
+  68020 instruction-cache tags (`--bus-tune 255,C`) are compiled into the bench
+  only: a word fetch on the board went from ~27 instructions to ~13 (2026-11-09,
+  Roots' zigzag: 1.4 words fetched an instruction, the fetch was the single
+  biggest bucket of the PC profile).
 - **Musashi samples interrupts only on entry to m68k_execute()** (and on SR
   writes): `amiga_update_ipl()` calls m68k_end_timeslice() when the level rises
   inside the CPU, otherwise an interrupt would wait for the end of the slice.
@@ -198,8 +205,8 @@
 - **The A1200's CPU waits for the chip bus** (amiga.c bus_wait, Machine > A1200 >
   Chip bus waits, on by default; the bench: `--a1200` has it, `--fast-bus` /
   `--chip-bus` override; `--bus-tune F,C` sets the eighths; the menu's Machine >
-  A1200 > Chip bus: Stock = 6,16, With cache = 2,16, Off): after each 16-clock
-  slice the 68EC020's chip accesses (mem.c counts the data ones per bank, the
+  A1200 > Chip bus: Stock = 6,16, With cache = 2,16, Off): after each slice
+  (SLICE_CC, 32 clocks) the 68EC020's chip accesses (mem.c counts the data ones per bank, the
   fetches are 3/4 of an access per instruction) beyond one per two colour clocks
   of what the bitplane DMA
   (denise_bus_busy8: planes x words per unit / bus width), a running blit and

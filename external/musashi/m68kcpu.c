@@ -1022,6 +1022,9 @@ M68KI_HOT int m68k_execute(int num_cycles)
 		m68ki_check_bus_error_trap();
 
 		/* Main loop.  Keep going until we run out of clock cycles */
+#ifdef AMIGA_FETCH_WINDOW
+		unsigned instr = 0;   /* PICO-AMIGA PATCH: the chip bus model's instruction count, in a register */
+#endif
 		do
 		{
 			int i;
@@ -1051,7 +1054,7 @@ M68KI_HOT int m68k_execute(int num_cycles)
 			/* Read an instruction and call its handler */
 			REG_IR = m68ki_read_imm_16();
 #ifdef AMIGA_FETCH_WINDOW
-			amiga_bus_instr++;               /* PICO-AMIGA PATCH: the chip bus model counts instructions */
+			instr++;
 #endif
 #if M68K_CONST_TABLES
 			/* PICO-AMIGA PATCH: the cycles of the handler (index 0, illegal,
@@ -1072,6 +1075,9 @@ M68KI_HOT int m68k_execute(int num_cycles)
 			/* Trace m68k_exception, if necessary */
 			m68ki_exception_if_trace(); /* auto-disable (see m68kcpu.h) */
 		} while(GET_CYCLES() > 0);
+#ifdef AMIGA_FETCH_WINDOW
+		amiga_bus_instr += instr;
+#endif
 
 		/* set previous PC to current PC for the next entry into the loop */
 		REG_PPC = REG_PC;
@@ -1087,6 +1093,18 @@ M68KI_HOT int m68k_execute(int num_cycles)
 M68KI_HOT int m68k_cycles_run(void)
 {
 	return m68ki_initial_cycles - GET_CYCLES();
+}
+
+/* PICO-AMIGA PATCH: mem.c moves the fetch window (a bank change closes it). */
+void m68k_set_fetch_window(const unsigned char *ptr, unsigned int lo, unsigned int len)
+{
+#ifdef AMIGA_FETCH_WINDOW
+	m68ki_cpu.fetch_ptr = ptr;
+	m68ki_cpu.fetch_lo = lo;
+	m68ki_cpu.fetch_len = len;
+#else
+	(void)ptr; (void)lo; (void)len;
+#endif
 }
 
 int m68k_cycles_remaining(void)

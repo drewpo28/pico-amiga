@@ -12,11 +12,16 @@
 #include "amiga_int.h"
 #include "m68k.h"
 
+// 32 (2026-11-09, was 16): a slice's fixed cost (the copper's and the CPU's
+// entries, idle_skip, bus_wait, the profile switches, ~300 cycles) was ~11% of
+// core 0 in Roots' heavy parts at 14 slices a line; 8 a line halve it.
 #ifndef SLICE_CC
-#define SLICE_CC 16
+#define SLICE_CC 32
+#endif
 // The sprite DMA slots ($15-$34) are fetched after this slice: a DMACON write
 // before them (the copper's at $10) has been seen.
-#define SPRITE_DMA_CC (2 * SLICE_CC)
+#ifndef SPRITE_DMA_CC
+#define SPRITE_DMA_CC 32
 #endif
 
 amiga_t A;
@@ -89,8 +94,9 @@ AMIGA_HOT static void bus_wait(int h0, int h1) {
     const uint32_t miss = amiga_icache_miss - miss_last;
     instr_last = amiga_bus_instr; data_last = A.bus_data; miss_last = amiga_icache_miss;
     if (!instr && !data) return;
-    // bus_fetch8 255: the instruction cache's misses are the fetches (one
-    // longword access each), instead of a flat share of an access an instruction.
+    // bus_fetch8 255 (the bench's --bus-tune only: the tags are kept under
+    // AMIGA_STATS, m68kcpu.h): the instruction cache's misses are the fetches
+    // (one longword access each), instead of a flat share of an access an instruction.
     const uint32_t fetch8 = bus_fetch8 == 255 ? miss * 8 : instr * bus_fetch8;
     const uint32_t acc8 = data * 8 + (mem_fetch_chip ? fetch8 : 0);
     int busy8 = denise_bus_busy8(h0, h1) + BUS_FIXED8;
