@@ -92,6 +92,22 @@ static void mir_vblank(void) {
     mir_cand = COP_MIR_NONE; mir_cand_n = 0;
 }
 
+// The read-ahead: a list outside the windows (Roots' sprite part alternates two
+// lists of 56 KB, 14,000 instructions a frame) was an XIP miss every second
+// instruction, each a PSRAM transfer of its own with the CPU's between them:
+// ~510 ns a line, 2.8 ms a frame (PC profile, 2026-11-10).  Lines read one after
+// another continue one transfer - the board's boot line "PSRAM ns/line" has 141
+// in order against 270 taking turns - so a fetch outside everything reads the
+// COP_RA_SIZE bytes from its line on in one run and the copper goes on from SRAM.
+uint8_t  cop_ra[COP_RA_SIZE] __attribute__((aligned(4)));
+uint32_t cop_ra_lo = COP_MIR_NONE;
+AMIGA_HOT static void ra_load(uint32_t a) {
+    const uint32_t lo = a & ~7u;
+    const uint8_t *src = A.cfg.chip_ram + lo;
+    for (uint32_t i = 0; i < COP_RA_SIZE; i += 4) { uint32_t w; memcpy(&w, src + i, 4); memcpy(cop_ra + i, &w, 4); }
+    cop_ra_lo = lo;
+}
+
 // Both words of an instruction in one read: the list is in PSRAM, and a copper
 // background runs ~13,000 instructions a frame (State of the Art).
 AMIGA_HOT static inline uint32_t fetch(uint32_t addr) {
@@ -104,8 +120,13 @@ AMIGA_HOT static inline uint32_t fetch(uint32_t addr) {
         const uint32_t i = a - cop_mir_lo[m];
         if (i <= COP_MIR_SIZE - 4) { AMIGA_STAT(copper_stat_mir); memcpy(&w, cop_mir[m] + i, 4); return __builtin_bswap32(w); }
     }
-    if (a + 4 > A.chip_mask + 1) return ((uint32_t)chip_rw(a) << 16) | chip_rw(a + 2);
-    memcpy(&w, A.cfg.chip_ram + a, 4);
+    uint32_t i = a - cop_ra_lo;
+    if (i > COP_RA_SIZE - 4) {
+        if ((a & ~7u) + COP_RA_SIZE > A.chip_mask + 1) return ((uint32_t)chip_rw(a) << 16) | chip_rw(a + 2);
+        ra_load(a);
+        i = a - cop_ra_lo;
+    }
+    memcpy(&w, cop_ra + i, 4);
     return __builtin_bswap32(w);
 }
 static int      state = COP_STOP;
@@ -152,7 +173,81 @@ AMIGA_HOT static int wait_until(int from, int to) {
     return h;
 }
 
-AMIGA_HOT void copper_run(int until) {
+// A frame that is not drawn (amiga_set_render_skip) does not run its list: the
+// colours, bitplane and sprite registers it programs show in no picture, and the
+// next drawn frame runs its list from the top again.  Roots' sprite part runs
+// 14,000 instructions a frame, 8.5 ms of the board's core 0 - a skipped frame
+// cost what a drawn one did (cpu 16 + cop 8.5 of 20 ms) and the part ran at 34
+// fps whatever was skipped.  What a list does besides the display must still
+// happen (Roots' sets the copper interrupt in INTREQ every frame): each frame
+// that runs records its MOVEs to other registers - where in the list, at which
+// beam position - under the list's start (COP_REC_N lists: two that alternate),
+// and a skipped frame whose list has a record replays those from the list as it
+// is now, at their positions.  A list with more than COP_EV_MAX of them, or
+// without a record yet, runs in full; one whose layout changed is recorded anew
+// at the next drawn frame (5 frames at most).
+#define COP_REC_N  2
+#define COP_EV_MAX 8
+typedef struct {
+    uint32_t key;                                       // the list's start (COP1LC at the frame's start)
+    uint8_t  n;
+    bool     on, over;
+    struct { uint32_t pc; uint16_t vpos; uint8_t h; } ev[COP_EV_MAX];
+} cop_rec_t;
+static cop_rec_t  cop_rec[COP_REC_N], cop_cur;          // by list; the frame running
+static const cop_rec_t *cop_play;                      // the skipped frame's record, or NULL: the copper runs
+static int        cop_play_i, cop_rec_next;
+static bool       cop_ran;
+static inline bool display_only(uint32_t reg) {
+    return (reg >= 0x0E0 && reg < 0x180) || (reg >= 0x08E && reg <= 0x094) ||
+           reg == R_COPJMP1 || reg == R_COPJMP2 || reg == 0x1E4 || reg == 0x1FC || reg == 0x1FE;
+}
+
+// The skipped frame's side: the recorded MOVEs whose position is before `until`.
+static void cop_replay(int until) {
+    const cop_rec_t *r = cop_play;
+    for (; cop_play_i < r->n; cop_play_i++) {
+        const int v = r->ev[cop_play_i].vpos, h = r->ev[cop_play_i].h;
+        if (v > A.vpos || (v == A.vpos && h >= until)) break;
+        if (v < A.vpos) continue;                       // its line went by without the copper (DMA off)
+        const uint16_t i1 = chip_rw(r->ev[cop_play_i].pc), i2 = chip_rw(r->ev[cop_play_i].pc + 2);
+        const uint32_t reg = i1 & 0x1FE;
+        if ((i1 & 1) || display_only(reg) || reg < 0x40 || (reg < 0x80 && !(A.copcon & 2))) continue;
+        custom_write(reg, i2, h, true);
+    }
+}
+
+static void cop_frame(void) {
+    if (cop_ran) {                                      // the frame that ran: its record, over its list's old one
+        int w = -1;
+        for (int k = 0; k < COP_REC_N; k++) if (cop_rec[k].on && cop_rec[k].key == cop_cur.key) w = k;
+        if (w < 0) { w = cop_rec_next; cop_rec_next = (cop_rec_next + 1) % COP_REC_N; }
+        cop_rec[w] = cop_cur;
+        cop_rec[w].on = true;
+    }
+    cop_ran = false;
+    cop_cur.key = lc[0]; cop_cur.n = 0; cop_cur.over = false;
+    cop_play = NULL; cop_play_i = 0;
+    if (!A.render_skip) return;
+    for (int k = 0; k < COP_REC_N; k++)
+        if (cop_rec[k].on && cop_rec[k].key == lc[0] && !cop_rec[k].over) cop_play = &cop_rec[k];
+}
+
+// The line has nothing for the copper (copper_line_start): stopped, its DMA off,
+// waiting for a later line, or a skipped frame without a recorded MOVE on this
+// line - the scheduler then leaves copper_run and its profile switches out of
+// the line's slices (4,400 a frame: ~0.9 ms of a skipped frame on the board).
+// A COPJMP strobe or a DMACON write wakes it; `from` is where the slice starts.
+bool copper_asleep;
+
+AMIGA_HOT void copper_run(int from, int until) {
+    if (cop_h < from) cop_h = from;
+    if (cop_play) {
+        if (copper_on()) cop_replay(until);
+        if (cop_h < until) cop_h = until;
+        return;
+    }
+    cop_ran = true;
     if (!copper_on() || state == COP_STOP) {
         if (cop_h < until) cop_h = until;
         return;
@@ -184,6 +279,14 @@ AMIGA_HOT void copper_run(int until) {
                 AMIGA_TRACE_REG(reg, ir2, cop_h, 1);
                 denise_bplpt(reg, ir2, cop_h);
             } else {
+                if (!display_only(reg)) {
+                    if (cop_cur.n < COP_EV_MAX) {
+                        cop_cur.ev[cop_cur.n].pc = pc - 4;
+                        cop_cur.ev[cop_cur.n].vpos = (uint16_t)A.vpos;
+                        cop_cur.ev[cop_cur.n].h = (uint8_t)cop_h;
+                        cop_cur.n++;
+                    } else cop_cur.over = true;
+                }
                 custom_write(reg, ir2, cop_h, true);
             }
             cop_h += 4;
@@ -201,16 +304,23 @@ AMIGA_HOT void copper_run(int until) {
 
 AMIGA_HOT void copper_line_start(void) {
     cop_h = cop_h >= AMIGA_CC_PER_LINE ? cop_h - AMIGA_CC_PER_LINE : 0;
+    if (cop_play) {
+        while (cop_play_i < cop_play->n && cop_play->ev[cop_play_i].vpos < A.vpos) cop_play_i++;
+        copper_asleep = !(cop_play_i < cop_play->n && cop_play->ev[cop_play_i].vpos == A.vpos);
+    } else {
+        copper_asleep = state == COP_STOP || !copper_on() || (state == COP_WAIT && cmp_v() < 0);
+    }
 }
 
 void copper_vblank(void) {
+    cop_frame();
     pc = lc[0];
     state = COP_RUN;
     cop_h = 0;
     mir_vblank();
 }
 
-void copper_dma_changed(void) {}
+void copper_dma_changed(void) { copper_asleep = false; }
 
 AMIGA_HOT void copper_write(uint32_t reg, uint16_t v) {
     switch (reg) {
@@ -218,13 +328,14 @@ AMIGA_HOT void copper_write(uint32_t reg, uint16_t v) {
     case R_COP1LCL: lc[0] = (lc[0] & 0xFFFF0000) | (v & 0xFFFE); break;
     case R_COP2LCH: lc[1] = (lc[1] & 0xFFFF) | ((uint32_t)(v & 0x1F) << 16); break;
     case R_COP2LCL: lc[1] = (lc[1] & 0xFFFF0000) | (v & 0xFFFE); break;
-    case R_COPJMP1: pc = lc[0]; state = COP_RUN; break;
-    case R_COPJMP2: pc = lc[1]; state = COP_RUN; break;
+    case R_COPJMP1: pc = lc[0]; state = COP_RUN; copper_asleep = false; break;
+    case R_COPJMP2: pc = lc[1]; state = COP_RUN; copper_asleep = false; break;
     default: break;
     }
 }
 
 uint32_t copper_pc(void) { return pc; }
+uint32_t copper_list(void) { return lc[0]; }
 
 void copper_state(st_t *s) {
     st_u32(s, &lc[0]); st_u32(s, &lc[1]); st_u32(s, &pc);
@@ -237,6 +348,9 @@ void copper_reset(void) {
     state = COP_STOP;
     cop_h = 0;
     for (int w = 0; w < COP_MIR_N; w++) cop_mir_lo[w] = COP_MIR_NONE;   // chip RAM changed under it (reset, a snapshot)
+    cop_ra_lo = COP_MIR_NONE;
+    memset(cop_rec, 0, sizeof cop_rec);
+    cop_play = NULL; cop_ran = false;
     mir_cand = COP_MIR_NONE; mir_cand_n = 0;
     memset(mir_cnt, 0, sizeof mir_cnt);
     memset(mir_acc, 0, sizeof mir_acc);

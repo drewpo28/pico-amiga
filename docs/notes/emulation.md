@@ -269,8 +269,9 @@
   overflow the 64-entry IDX8 palette as a rule, and paid for the indices and the
   conversion first (w_index + w_to_direct ~8% of core 1 in Roots' hires parts).
 - **Frame skipping** (amiga_set_render_skip; main.c: Video > Picture > Skip frames
-  when late, after a frame over 20 ms, never two in a row; the bench's
-  `--skip-odd`): the DMA side only moves the bitplane pointers (aligned as a drawn
+  when late: a frame that starts over 1 ms behind the 20 ms grid is not drawn,
+  up to 4 in a row, so the emulation holds 50 frames a second and a drawn frame
+  starts on the grid; the bench's `--skip-odd`): the DMA side only moves the bitplane pointers (aligned as a drawn
   frame's), the fetch stage spreads nothing, the output stage takes no framebuffer
   row (fbrow NULL).  The frame's display writes are not queued: the last value of
   each register and colour entry is kept and queued as one batch at the frame's
@@ -350,3 +351,52 @@
   field blanked the first one's line until it was drawn and overflowed again - a
   black line every other field across the CD32 boot screen's disc (hires, laced,
   8 planes). The overflowing field tries LACE4 again each time it is drawn.
+- **Tried and reverted (2026-11-10): a line's bitplane words read a plane at a
+  time** (at the line's first unit, each plane's words for the rest of the line in
+  address order, straight into the ring slots its units publish), hoping that
+  XIP misses in address order continue one PSRAM transfer (QMI COOLDOWN) where
+  eight planes taking turns start one per 8-byte line.  Host frames were
+  byte-identical; on the board Roots' hires 8-plane FMODE 3 title (180 KB of
+  planes, ~22k misses a drawn frame) kept its rd of ~10 ms a drawn frame (logs
+  13:00 against 13:19).  The read order is not what a miss costs.  Do not retry.
+- **The copper reads ahead outside its mirror windows** (copper.c ra_load, cop_ra:
+  256 bytes from the missed fetch's XIP line on, read in one run, kept current by
+  the mirror's writer hooks; 2026-11-10).  Roots' sprite part alternates two
+  copper lists of 56 KB ($4C000 and $5A000, 13,974 instructions a frame): the two
+  12 KB windows sit in one of them and served 22% of the fetches, the rest was a
+  miss every second instruction at ~510 ns (the PC profile's one bucket of
+  `fetch`: 2.8 ms of a 28.8 ms frame).  On the board (log 13:43): that bucket
+  2.8 -> 2.2 ms, cop 8.8 -> 8.5: the run's victims are dirty lines (the CPU
+  rewrites the list every frame), ~315 ns a line instead of the 141 of clean ones.
+- **A skipped frame does not run the copper's list** (copper.c cop_frame /
+  cop_replay, 2026-11-10): what the list programs is the display's, which a frame
+  that is not drawn does not show, and the next drawn frame runs its list from
+  the top.  Its MOVEs to anything else (display_only() says which registers are
+  the display's) are recorded by each frame that runs - list address and beam
+  position, up to 8, under the list's start, for two lists - and replayed on the
+  skipped frame from the list as it is then: Roots sets the copper interrupt in
+  INTREQ from its list every frame.  A list with more of them, or not recorded
+  yet, runs in full.  Roots' sprite part: a skipped frame cost what a drawn one
+  did (cpu 16 + cop 8.5 ms: 34 fps whatever was skipped).  Bench `--skip-odd`:
+  the copper's fetches halve, drawn frames byte-identical to an unskipped run
+  (31 frames of 11 programs, Roots' sprite part too), instructions a frame and
+  audw unchanged.  Not measured on the board yet.
+- **A line with nothing for the copper leaves it out of the slices** (copper_asleep,
+  set by copper_line_start: stopped, DMA off, a WAIT for a later line, a skipped
+  frame's line without a recorded MOVE; a COPJMP strobe or a DMACON write wakes
+  it, copper_run then starts at the slice's `from`).  The call and its profile
+  switches ran 4,400 times a frame for nothing: ~0.9 ms of each skipped frame in
+  Roots' sprite part (the board's cop bucket: 3.0 ms average over 14 drawn frames
+  of 8.5 and 36 skipped ones).  Screens unchanged (42 frames, 31 with --skip-odd).
+- **Chip bus "Stock, cache for music"** (amiga_set_chip_bus_auto, amiga.c
+  bus_auto_frame; the bench's `--bus-auto`; Config::chip_bus 3; 2026-11-10): the
+  stock parameters (6,16) until the last 16 frames have five or more with an
+  AUDx write and no two of them in a row - a music routine called from the frame
+  loop, running every other frame - then the cache's fetch credit (2) for at
+  least 250 frames and until COP1LC is a list the last frames did not run.
+  Roots, instructions a frame / audw: 20-24k / 10 in the light parts as under
+  Stock, 42-43k / 10 in the zigzag part (Stock 27k / 5), 43k / 6 in the sprite
+  part (Stock 27k / 3; 6 is all that tune writes there, a free CPU gives 6 too).
+  The cache-accurate model (`--bus-tune 255,16`) runs 45-46k there: the real
+  machine is that fast, "Stock" is the economy model.  3,16 now keeps the music
+  everywhere too (40k), 4,16 only in the zigzag part.

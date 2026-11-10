@@ -204,6 +204,15 @@ static bool pcprof_c1_set(uint8_t want) {
     return s_c1_have == want;
 }
 
+// The tables live in PSRAM when main.c has 4 KB of it for them (2 x 2 KB): the
+// heap is ~16 KB and with the menu open, a hard disk and the UART ring it had no
+// 4 KB left - and the SDK's calloc panics ("Out of memory") rather than fail.
+// A sample is one or two XIP accesses, 160 a frame a core: nothing next to the
+// emulation's 12-35k misses.  Without PSRAM room: the heap, by __real_calloc.
+static uint32_t *s_pmem;
+void board_pcprof_mem(void *psram4k) { s_pmem = (uint32_t *)psram4k; }
+extern void *__real_calloc(size_t, size_t);
+
 bool board_pcprof(bool on) {
     static bool installed;
     systick_hw->csr = 0;
@@ -211,12 +220,18 @@ bool board_pcprof(bool on) {
     for (int c = 0; c < 2; c++) {
         uint32_t *old = s_pkey[c];
         s_pkey[c] = NULL;
-        free(old);
+        if (!s_pmem) free(old);
     }
     if (!on) return true;
-    uint32_t *t0 = (uint32_t *)calloc(2 * PCPROF_SLOTS, sizeof(uint32_t));
-    uint32_t *t1 = (uint32_t *)calloc(2 * PCPROF_SLOTS, sizeof(uint32_t));
-    if (!t0 || !t1) { free(t0); free(t1); return false; }
+    uint32_t *t0, *t1;
+    if (s_pmem) {
+        t0 = s_pmem; t1 = s_pmem + 2 * PCPROF_SLOTS;
+        memset(s_pmem, 0, 4 * PCPROF_SLOTS * sizeof(uint32_t));
+    } else {
+        t0 = (uint32_t *)__real_calloc(2 * PCPROF_SLOTS, sizeof(uint32_t));
+        t1 = (uint32_t *)__real_calloc(2 * PCPROF_SLOTS, sizeof(uint32_t));
+        if (!t0 || !t1) { free(t0); free(t1); return false; }
+    }
     if (!installed) { exception_set_exclusive_handler(SYSTICK_EXCEPTION, pcprof_isr); installed = true; }
     for (int c = 0; c < 2; c++) s_ptotal[c] = s_plost[c] = 0;
     s_pkey[0] = t0;
@@ -263,6 +278,86 @@ void board_pcprof_dump(void) {
     if (clock_get_hz(clk_sys) != s_phz) pcprof_reload();
     else systick_hw->csr |= 0x2u;
 }
+
+// ---- PSRAM timing at boot (the UART log's "PSRAM" line) ------------------------------
+// What an XIP miss costs is what the heavy A1200 scenes cost (bitplane DMA,
+// the copper's list, the CPU's data), and guesses about it were wrong twice
+// (2026-11-05 uncached line copies, 2026-11-10 plane-order reads).  Measured
+// on the running board, ns per 8-byte XIP line over 32 KB of chip RAM each
+// (reads, and writes of the value read: the contents stay):
+//   seq    cached, lines in address order, victims clean
+//   8str   cached, eight streams 4 KB apart taking turns (bitplane DMA's order)
+//   dirty  cached, in order, every victim dirty (a write-back per miss)
+//   write  cached, one word written per line (fill + write-back)
+//   unc    the uncached alias, both words of each line, in order
+//   unc1   the uncached alias, one word per line (a transfer each)
+//   hit    cached, lines already there
+// then seq / unc again with QMI COOLDOWN 0 and 3 (ours is 1).
+// Built only with -DPSRAM_BENCH=1 (320 bytes of SRAM code): the numbers of
+// PICO_DV at 504 MHz are in docs/notes/board.md.
+#ifdef PSRAM_BENCH
+#define PB_LINES 4096u
+static void __no_inline_not_in_flash_func(pb_clean)(void) {
+    for (uintptr_t o = 0x04000000u - 0x4000u; o < 0x04000000u; o += 8) *(volatile uint8_t *)(XIP_MAINTENANCE_BASE + o + 1) = 0;
+    __asm volatile("dsb\n isb");
+}
+static uint32_t __no_inline_not_in_flash_func(pb_read)(const volatile uint32_t *p, uint32_t n, uint32_t step) {
+    uint32_t sum = 0;
+    const uint32_t t = time_us_32();
+    for (uint32_t i = 0; i < n; i++, p += step) sum += *p;
+    (void)sum;
+    return time_us_32() - t;
+}
+static uint32_t __no_inline_not_in_flash_func(pb_read8)(const volatile uint32_t *p) {
+    uint32_t sum = 0;
+    const uint32_t t = time_us_32();
+    for (uint32_t i = 0; i < PB_LINES / 8; i++)
+        for (uint32_t s = 0; s < 8; s++) sum += p[s * 1024 + i * 2];
+    (void)sum;
+    return time_us_32() - t;
+}
+static uint32_t __no_inline_not_in_flash_func(pb_write)(volatile uint32_t *p, uint32_t n) {
+    const uint32_t t = time_us_32();
+    for (uint32_t i = 0; i < n; i++, p += 2) *p = *p;
+    return time_us_32() - t;
+}
+static void __no_inline_not_in_flash_func(pb_cooldown)(uint32_t c) {
+    hw_write_masked(&qmi_hw->m[1].timing, c << QMI_M1_TIMING_COOLDOWN_LSB, QMI_M1_TIMING_COOLDOWN_BITS);
+}
+#define PB_NS(us) ((unsigned)((us) * 1000u / PB_LINES))
+void board_psram_bench(uint8_t *ram) {
+    volatile uint32_t *r = (volatile uint32_t *)ram;                   // 64 KB a test
+    const volatile uint32_t *u = (const volatile uint32_t *)(ram - XIP_BASE + XIP_NOCACHE_NOALLOC_BASE);
+#define PB_R(k) (r + (k) * 16384u)
+#define PB_U(k) (u + (k) * 16384u)
+    pb_clean();
+    const uint32_t seq = pb_read(PB_R(0), PB_LINES, 2);
+    const uint32_t hit = pb_read(PB_R(0) + PB_LINES, PB_LINES / 2, 2);  // its second half: still there
+    pb_clean();
+    const uint32_t str = pb_read8(PB_R(1));
+    pb_write(PB_R(2), 2048);                                           // the cache: all dirty
+    const uint32_t dirty = pb_read(PB_R(3), PB_LINES, 2);
+    pb_clean();
+    const uint32_t wr = pb_write(PB_R(4), PB_LINES);
+    pb_clean();
+    const uint32_t unc = pb_read(PB_U(5), PB_LINES * 2, 1);
+    const uint32_t unc1 = pb_read(PB_U(6), PB_LINES, 2);
+    uint32_t cs[2], cu[2];
+    for (int k = 0; k < 2; k++) {
+        pb_cooldown(k ? 3 : 0);
+        pb_clean();
+        cs[k] = pb_read(PB_R(7 + 2 * k), PB_LINES, 2);
+        cu[k] = pb_read(PB_U(8 + 2 * k), PB_LINES * 2, 1);
+    }
+    pb_cooldown(1);
+    pb_clean();
+    printf("PSRAM ns/line: seq %u 8str %u dirty %u write %u unc %u unc1 %u hit %u | cooldown 0: seq %u unc %u | 3: seq %u unc %u\n",
+           PB_NS(seq), PB_NS(str), PB_NS(dirty), PB_NS(wr), PB_NS(unc), PB_NS(unc1), PB_NS(hit * 2),
+           PB_NS(cs[0]), PB_NS(cu[0]), PB_NS(cs[1]), PB_NS(cu[1]));
+}
+#else
+void board_psram_bench(uint8_t *ram) { (void)ram; }
+#endif
 
 // ---- system info (Win+F1) -------------------------------------------------------------
 static uint8_t flash_jedec[4];

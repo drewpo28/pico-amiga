@@ -91,6 +91,7 @@ extern "C" void settings_apply_video(void) {
 extern "C" void settings_apply_chip_bus(void) {
     amiga_set_chip_bus(Config::chip_bus != 0);
     amiga_set_chip_bus_params(Config::chip_bus == 2 ? 2 : 6, 16);
+    amiga_set_chip_bus_auto(Config::chip_bus == 3);   // Stock, the cache's speed while the music lags
 }
 
 extern "C" void settings_apply_sound(void) {

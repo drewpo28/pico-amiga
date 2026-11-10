@@ -12,7 +12,9 @@
 //   +2.0 MB  16 KB: the Win+F8 band's pixels (UiStats.cpp), the floppy's MFM track,
 //            at +32 KB the audio ring (16 KB: Paula writes it, the audio tick reads
 //            it - no DMA; 16 KB of SRAM given back, 2026-11-09)
-//   +2.0 MB + 48 KB  DMS images: the decoder's work area, then 880 KB per drive
+//            at +48 KB the PC profiler's tables (4 KB: the heap had no 4 KB left
+//            with the menu open, and the SDK's calloc panics)
+//   +2.0 MB + 52 KB  DMS images: the decoder's work area, then 880 KB per drive
 //            (machine.cpp; DF0..DF3 fit in 8 MB, a 2 MB PSRAM takes no DMS
 //            and has no Win+F8 band)
 // With 8 MB or more the chip RAM area is 2 MB (the A600 with an A601: Machine >
@@ -181,8 +183,8 @@ int main(void) {
     // 2 MB PSRAM has no band, and its track comes from the heap.
     const uint32_t chip_area = psram >= 8 * MB ? 2 * MB : 1 * MB;
     uint8_t *const hi = ps + chip_area + 1 * MB;
-    const uint32_t misc = 48 * KB;
-    if (ui_stats_buffer_size() > 16 * KB || AMIGA_TRACK_WORDS * 2 > misc - 16 * KB)
+    const uint32_t misc = 52 * KB;
+    if (ui_stats_buffer_size() > 16 * KB || AMIGA_TRACK_WORDS * 2 > 16 * KB)
         fail(0xF00);                 // a build error in all but name
     const bool more = psram > chip_area + 1 * MB + misc;
     if (more) ui_stats_buffer(hi);
@@ -190,6 +192,7 @@ int main(void) {
     if (!cfg.track) fail(0xF00);
     int16_t *audio_ring = more ? (int16_t *)(hi + 32 * KB) : malloc(AUDIO_FRAMES * 4);
     if (!audio_ring) fail(0xF00);
+    if (more) board_pcprof_mem(hi + 48 * KB);   // Debug > PC profiler's tables (4 KB)
     machine_init(ps + chip_area, ps + chip_area + 512 * KB, more ? hi + misc : NULL,
                  more ? psram - (chip_area + 1 * MB) - misc : 0, chip_area);
 
@@ -209,11 +212,13 @@ int main(void) {
     BOOT_STEP("amiga up: %s, %s", machine_name(), machine_rom_name());
     if (card) machine_restore_disks();
 
+    if (dbg_uart_active() && psram >= 8 * MB) board_psram_bench(ps + 1 * MB);   // chip RAM's upper half, before anything runs in it
     BOOT_STEP("disks restored, audio next");
     audio_out_start(audio_ring, AUDIO_FRAMES, settings_audio_out());
     settings_apply_sound();
     settings_apply_video();
-    printf("%s (%u KB chip), kickstart %s, audio %s\n", machine_name(), (unsigned)(machine_chip_size() / KB), machine_rom_name(), audio_out_name());
+    printf("%s (%u KB chip, %u KB fast), kickstart %s, audio %s\n", machine_name(), (unsigned)(machine_chip_size() / KB),
+           (unsigned)(machine_fast_size() / KB), machine_rom_name(), audio_out_name());
     if (card) ui_video_mode_confirm();
 
     // A frame starts when the scanout is 70% into its picture.  There is one
@@ -238,19 +243,24 @@ int main(void) {
         input_frame();
         if (input_reset_requested()) amiga_reset(false);
         amiga_set_profiling(dbg_uart_active() || ui_stats_active());   // the PERF line or Win+F8 reads it
-        // Video > Picture > Skip frames when late: a frame that overran its 20 ms
-        // (the render, usually: 8 AGA planes) is followed by one that is emulated
-        // but not drawn, never two in a row - the emulation keeps its speed, the
-        // picture drops to 25 Hz in such a scene instead of the whole thing slowing.
-        static bool skipped;
-        static uint32_t emu_last;
-        const bool skip = settings_frame_skip() && !skipped && emu_last > 20000;
+        // Video > Picture > Skip frames when late: a frame that starts over a
+        // millisecond behind its grid is emulated but not drawn (no bitplane reads,
+        // nothing for core 1), until the emulation is back on the grid - it keeps
+        // its 50 frames a second and the picture gives way, as little as it takes:
+        // drawn frames of 21 ms skip one in three or four, of 26 ms with skipped
+        // ones of 16.5 two in three (Roots' 8-plane hires title; skipping every
+        // other frame and never two in a row left it at 45 fps, its music
+        // dragging).  A drawn frame so starts on the grid, where the scanout does
+        // not cross it.  After SKIP_MAX in a row one is drawn whatever the delay:
+        // when the CPU alone takes over 20 ms the picture still moves.
+        enum { SKIP_MAX = 4 };
+        static uint8_t skipped;
+        const bool skip = settings_frame_skip() && late > total / 20 && skipped < SKIP_MAX;
         amiga_set_render_skip(skip);
-        skipped = skip;
+        skipped = skip ? skipped + 1 : 0;
         const uint32_t t_emu = time_us_32();
         amiga_run_frame();
         const uint32_t emu_us = time_us_32() - t_emu;
-        emu_last = emu_us;
         ui_stats_frame(emu_us);
         machine_frame();
         perf_log_frame(emu_us, skip);

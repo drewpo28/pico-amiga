@@ -33,7 +33,8 @@
 - Built-in ROMs (Machine: DiagROM; A500 > KS 1.2/1.3/2.04/2.05/3.1; A500+ > KS
   2.04/2.05/3.1; A600 > KS 2.05/3.1; A1200 > Kickstart KS 3.1/3.0 (ks31a12, ks30a12: a 68EC020,
   2 MB chip, Gayle $D1, AGA; Config::machine 3, `--a1200 --aga` on the bench; A1200 >
-  Chip bus waits = amiga_set_chip_bus, Config::chip_bus);
+  Chip bus = amiga_set_chip_bus, Config::chip_bus: Stock, Stock with the cache for
+  music (3, amiga_set_chip_bus_auto), With cache, Off);
   Custom ROM = a file from the card, Config::kick_file,
   Config::machine = 1: ECS, 1 MB chip RAM over the slow RAM's PSRAM, 2: the same plus
   Gayle (machine.h MACHINE_*), Machine > A600 chip RAM 1 or 2 MB (an A601, Config::a600_chip;

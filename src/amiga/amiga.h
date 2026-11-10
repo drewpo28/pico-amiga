@@ -245,6 +245,9 @@ void amiga_set_chip_bus(bool on);
 // instruction cache credit, the default; 2: a quarter, the cache serving the
 // rest - a faster CPU, ~35% more emulation time) and colour clocks per access (16).
 void amiga_set_chip_bus_params(int fetch8, int cost8);
+// The stock parameters, the cache's fetch credit while the program's music
+// routine runs every other frame only (amiga.c bus_auto_frame).
+void amiga_set_chip_bus_auto(bool on);
 
 // The geometry the drive reports in IDENTIFY (0s: no drive).
 void amiga_hdf_geometry(int unit, uint16_t *cyls, uint8_t *heads, uint8_t *sectors);

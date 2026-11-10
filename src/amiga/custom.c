@@ -72,7 +72,7 @@ AMIGA_HOT void custom_write(uint32_t reg, uint16_t v, int hpos, bool from_copper
     (void)from_copper;
     if (display_reg(reg)) { denise_write(reg, v, hpos); return; }
     if (reg >= R_BLTCON0 && reg <= R_BLTADAT) { blitter_write(reg, v); return; }
-    if (reg >= R_AUD0LCH && reg < R_AUD0LCH + 0x40) { AMIGA_STAT(amiga_stat_audw); paula_write(reg, v); return; }
+    if (reg >= R_AUD0LCH && reg < R_AUD0LCH + 0x40) { AMIGA_STAT(amiga_stat_audw); amiga_aud_written = true; paula_write(reg, v); return; }
     switch (reg) {
     case R_DMACON: {
         uint16_t old = A.dmacon;

@@ -706,9 +706,11 @@ static const Node kA600[] = {
 // area: 8 MB of PSRAM), and how its 68EC020 waits for the chip bus
 // (amiga_set_chip_bus): as a stock A1200's (~1.3 MIPS, the cheapest to emulate),
 // with its instruction cache counted (~1.7 MIPS, a third more emulation work a
-// frame), or not at all (as with fast RAM, twice the work).
+// frame), or not at all (as with fast RAM, twice the work).  "Stock, cache for
+// music" is the stock one that takes the cache's speed while the program's
+// music routine runs every other frame only (amiga_set_chip_bus_auto).
 static const Option opt_chip_bus[] = {
-    { "Stock A1200", 1, "Stock" }, { "With cache", 2, "Cache" }, { "Off (fast RAM)", 0, "Off" },
+    { "Stock A1200", 1, "Stock" }, { "Stock, cache for music", 3, "Auto" }, { "With cache", 2, "Cache" }, { "Off (fast RAM)", 0, "Off" },
 };
 static const Node kA1200[] = {
     NM_RADIO_DE  ("Kickstart",   SET_KICK, a1200Opts, nullptr, machine_a600_2mb_ok),

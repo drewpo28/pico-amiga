@@ -473,6 +473,7 @@ static void mirror_sync(uint32_t off, uint32_t n) {
         const uint32_t a = off > lo ? off : lo, b = off + n < lo + COP_MIR_SIZE ? off + n : lo + COP_MIR_SIZE;
         memcpy(cop_mir[w] + (a - lo), A.cfg.chip_ram + a, b - a);
     }
+    if (cop_ra_lo != COP_MIR_NONE && off + n > cop_ra_lo && off < cop_ra_lo + COP_RA_SIZE) cop_ra_lo = COP_MIR_NONE;
 }
 
 // 96 bytes of subchannel with Q in bit 6 of each, from 12 bytes of Q.

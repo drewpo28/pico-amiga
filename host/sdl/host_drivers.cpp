@@ -36,6 +36,8 @@ extern "C" uint32_t board_cycles_per_us(void) { return 1000; }
 // No XIP cache and no SysTick profiler on a PC.
 extern "C" void board_xip_counts(uint32_t *hit, uint32_t *acc) { *hit = *acc = 0; }
 extern "C" bool board_pcprof(bool on) { (void)on; return false; }
+extern "C" void board_pcprof_mem(void *p) { (void)p; }
+extern "C" void board_psram_bench(uint8_t *p) { (void)p; }
 extern "C" void board_pcprof_dump(void) {}
 extern "C" volatile uint8_t board_pcprof_c1_want;
 volatile uint8_t board_pcprof_c1_want;

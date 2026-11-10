@@ -32,6 +32,10 @@ void     board_xip_counts(uint32_t *hit, uint32_t *acc);
 // this copies the set of cpu (AMIGA_CPU_*) in from flash.  Call with the CPU
 // stopped, from core 0, before amiga_reset().
 void     board_load_cpu_overlay(int cpu);
+// The UART log's "PSRAM" line: what XIP misses cost, measured over 704 KB from
+// ram (cached PSRAM; contents kept).  Before the emulation starts.
+void     board_psram_bench(uint8_t *ram);
+void     board_pcprof_mem(void *psram4k);  // 4 KB of PSRAM for the tables (else the heap)
 bool     board_pcprof(bool on);           // false: no heap for the table
 void     board_pcprof_dump(void);
 extern volatile uint8_t board_pcprof_c1_want;

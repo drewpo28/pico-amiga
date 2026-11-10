@@ -89,6 +89,40 @@ AMIGA_HOT static void cpu_until(uint64_t target) {
 // default and the menu offers the other (Machine > A1200 > Chip bus).
 static unsigned bus_fetch8 = 6, bus_cost8 = 16;
 void amiga_set_chip_bus_params(int fetch8, int cost8) { bus_fetch8 = (unsigned)fetch8; bus_cost8 = (unsigned)cost8; }
+
+// amiga_set_chip_bus_auto: the stock parameters, and the cache's (2) while the
+// program's music routine falls behind.  A player called from the program's
+// frame loop (Roots) runs every other frame once the loop takes two: Paula's
+// registers are then written in every second frame at most.  The last 16 frames
+// say so - no two in a row with a write to AUDx, five or more with one - and the
+// CPU gets the cache's fetch credit: Roots' zigzag part 27k -> 42k instructions
+// a frame and its music back at 50 Hz (bench audw 5 -> 10; the sprite part 3 ->
+// 6, all its tune writes).  It stays for BUS_HOLD frames at least and until the
+// copper's list is one the last frames did not run (a new part), then the stock
+// model is tried again.  A tune that really ticks every other frame keeps the
+// faster CPU: that costs emulation time, nothing else.
+#define BUS_HOLD 250
+bool amiga_aud_written;                          // custom.c: an AUDx register was written this frame
+static bool     bus_auto, bus_boost;
+static uint16_t aud_hist = 0xFFFF, bus_hold;
+static uint32_t bus_key[2];
+void amiga_set_chip_bus_auto(bool on) { bus_auto = on; bus_boost = false; aud_hist = 0xFFFF; }
+static void bus_auto_frame(void) {
+    aud_hist = (uint16_t)(aud_hist << 1 | (amiga_aud_written ? 1 : 0));
+    amiga_aud_written = false;
+    const uint32_t key = copper_list();
+    const bool known = key == bus_key[0] || key == bus_key[1];
+    if (!known) { bus_key[1] = bus_key[0]; bus_key[0] = key; }
+    if (!bus_auto) return;
+    if (!bus_boost) {
+        if (!(aud_hist & (aud_hist >> 1)) && __builtin_popcount(aud_hist) >= 5) { bus_boost = true; bus_hold = BUS_HOLD; }
+    } else if (bus_hold) {
+        bus_hold--;
+    } else if (!known) {
+        bus_boost = false;
+        aud_hist = 0xFFFF;
+    }
+}
 AMIGA_HOT static void bus_wait(int h0, int h1) {
     static uint32_t instr_last, data_last, miss_last;
     const uint32_t instr = amiga_bus_instr - instr_last, data = A.bus_data - data_last;
@@ -98,7 +132,7 @@ AMIGA_HOT static void bus_wait(int h0, int h1) {
     // bus_fetch8 255 (the bench's --bus-tune only: the tags are kept under
     // AMIGA_STATS, m68kcpu.h): the instruction cache's misses are the fetches
     // (one longword access each), instead of a flat share of an access an instruction.
-    const uint32_t fetch8 = bus_fetch8 == 255 ? miss * 8 : instr * bus_fetch8;
+    const uint32_t fetch8 = bus_fetch8 == 255 ? miss * 8 : instr * (bus_boost ? 2u : bus_fetch8);
     const uint32_t acc8 = data * 8 + (mem_fetch_chip ? fetch8 : 0);
     int busy8 = denise_bus_busy8(h0, h1) + BUS_FIXED8;
     if (blitter_busy()) busy8 += (h1 - h0) * ((A.dmacon & DMAF_BLTPRI) ? 8 : 6);
@@ -272,8 +306,10 @@ AMIGA_HOT __attribute__((noinline)) static void run_line(void) {
     copper_line_start();
     for (int h = SLICE_CC, h0 = 0; ; h0 = h, h += SLICE_CC) {
         if (h > AMIGA_CC_PER_LINE) h = AMIGA_CC_PER_LINE;
-        prof_switch(AMIGA_PROF_COPPER);
-        copper_run(h);
+        if (!copper_asleep) {
+            prof_switch(AMIGA_PROF_COPPER);
+            copper_run(h0, h);
+        }
         prof_switch(AMIGA_PROF_CPU);
         cpu_until(A.line_cyc + 2u * (uint32_t)h);
         if (A.chip_bus && A.cpu_clock > 1) bus_wait(h0, h);
@@ -306,6 +342,7 @@ void amiga_run_frame(void) {
     if (A.cfg.prof_clock) { prof_t = A.cfg.prof_clock(); prof_cur = AMIGA_PROF_OTHER; }
     for (A.vpos = 0; A.vpos < A.lines; A.vpos++) run_line();
     denise_sync();                   // the frame is complete before anyone looks at it
+    bus_auto_frame();
     prof_switch(AMIGA_PROF_OTHER);
     A.vpos = 0;
     A.frame++;

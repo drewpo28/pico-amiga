@@ -176,7 +176,7 @@ void Config::load() {
     nvs_get_u8 ("fast_ram",      fast_ram,     sts);
     if (fast_ram != 1 && fast_ram != 2 && fast_ram != 4) fast_ram = 0;
     nvs_get_u8 ("chip_bus",      chip_bus,     sts);
-    if (chip_bus > 2) chip_bus = 1;
+    if (chip_bus > 3) chip_bus = 1;
     if (machine > 4) machine = 0;                 // machine.h MACHINE_COUNT
     nvs_get_str("kick",          kick,         sts);
     nvs_get_str("kick_file",     kick_file,    sts);

@@ -221,11 +221,18 @@ static inline uint16_t chip_rw(uint32_t addr) {
 #define COP_MIR_NONE 0x80000000u            // no window: off - lo is huge for any chip offset
 extern uint8_t  cop_mir[COP_MIR_N][COP_MIR_SIZE];
 extern uint32_t cop_mir_lo[COP_MIR_N];      // chip offset of each window, or COP_MIR_NONE
+// The read-ahead (copper.c fetch): COP_RA_SIZE bytes from cop_ra_lo, read in one
+// run when the copper leaves the windows; kept current by the same writers.
+#define COP_RA_SIZE  256
+extern uint8_t  cop_ra[COP_RA_SIZE];
+extern uint32_t cop_ra_lo;
 static inline void cop_mir_w8(uint32_t off, uint8_t v) {
     for (int w = 0; w < COP_MIR_N; w++) {
         const uint32_t i = off - cop_mir_lo[w];
         if (i < COP_MIR_SIZE) cop_mir[w][i] = v;
     }
+    const uint32_t i = off - cop_ra_lo;
+    if (i < COP_RA_SIZE) cop_ra[i] = v;
 }
 static inline void cop_mir_w16(uint32_t off, uint16_t v) {   // v big-endian already; off may be odd
     for (int w = 0; w < COP_MIR_N; w++) {
@@ -233,6 +240,9 @@ static inline void cop_mir_w16(uint32_t off, uint16_t v) {   // v big-endian alr
         if (i < COP_MIR_SIZE - 1) memcpy(cop_mir[w] + i, &v, 2);
         else if (i == COP_MIR_SIZE - 1) cop_mir[w][i] = (uint8_t)v;   // its low byte is outside
     }
+    const uint32_t i = off - cop_ra_lo;
+    if (i < COP_RA_SIZE - 1) memcpy(cop_ra + i, &v, 2);
+    else if (i == COP_RA_SIZE - 1) cop_ra[i] = (uint8_t)v;
 }
 static inline void chip_ww(uint32_t addr, uint16_t v) {
     const uint32_t off = addr & A.chip_mask & ~1u;
@@ -248,9 +258,12 @@ void     custom_reset(void);
 
 // ---- copper (copper.c) -----------------------------------------------------
 void     copper_reset(void);
+uint32_t copper_list(void);                         // COP1LC
+extern bool amiga_aud_written;                      // amiga.c: an AUDx write this frame
 void     copper_vblank(void);                       // restart from COP1LC at line 0
 void     copper_line_start(void);
-void     copper_run(int until_h);                   // execute up to colour clock `until_h`
+void     copper_run(int from_h, int until_h);       // execute the slice up to colour clock `until_h`
+extern bool copper_asleep;                          // nothing for it on this line: copper_run is not called
 void     copper_write(uint32_t reg, uint16_t v);    // COPxLC / COPJMPx / COPCON
 uint32_t copper_pc(void);
 void     copper_dma_changed(void);

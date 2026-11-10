@@ -408,7 +408,7 @@ int main(int argc, char **argv) {
     int frames = 250, status_every = 0, scale = 1, drives_opt = 0;
     bool slow = false, render_thread_on = false, plus = false, a600 = false, a601 = false, cpu020 = false, a1200 = false, aga = false, vcentre = false, write_back = false;
     int chip_bus = -1;                                 // --chip-bus / --fast-bus; default: on with --a1200
-    bool skip_odd = false;
+    bool skip_odd = false, bus_auto = false;
     int bus_fetch8 = 6, bus_cost8 = 16;
     const char *hist_path = NULL, *pchist_path = NULL;
     shot_t shots[64]; int nshots = 0;
@@ -453,6 +453,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--chip-bus")) chip_bus = 1;
         else if (!strcmp(a, "--fast-bus")) chip_bus = 0;
         else if (!strcmp(a, "--skip-odd")) skip_odd = true;     // odd frames not drawn (amiga_set_render_skip)
+        else if (!strcmp(a, "--bus-auto")) bus_auto = true;     // amiga_set_chip_bus_auto
         else if (!strcmp(a, "--bus-tune") && v) { sscanf(v, "%d,%d", &bus_fetch8, &bus_cost8); i++; }   // amiga_set_chip_bus_params
         else if (!strcmp(a, "--hist") && v) { hist_path = v; i++; }
         else if (!strcmp(a, "--pchist") && v) { pchist_path = v; i++; }   // the 64 hottest PCs (instructions run) at the end
@@ -521,6 +522,7 @@ int main(int argc, char **argv) {
     amiga_set_vcentre(vcentre);
     amiga_set_chip_bus(chip_bus < 0 ? a1200 || cd32 : chip_bus != 0);   // the A1200's 68EC020 waits for the chip bus
     amiga_set_chip_bus_params(bus_fetch8, bus_cost8);
+    amiga_set_chip_bus_auto(bus_auto);
     if (pchist_path) { extern unsigned int *amiga_pc_hist; amiga_pc_hist = calloc(1u << 20, sizeof *amiga_pc_hist); }
     if (render_thread_on) {
         pthread_t th;

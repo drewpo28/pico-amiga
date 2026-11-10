@@ -117,6 +117,23 @@
   function inlined into a flash caller runs from flash. run_line sat inside
   amiga_run_frame that way (now noinline), the blits inside blitter.c's start().
 
+## What an XIP miss on PSRAM costs (PICO_DV, 504 MHz, SCK 126 MHz, 2026-11-10)
+
+The UART log's boot line `PSRAM ns/line` (board.c board_psram_bench, built with -DPSRAM_BENCH=1: ns per
+8-byte XIP line over 32 KB of chip RAM, loop included): lines in address order
+with clean victims **141**; eight streams taking turns (bitplane DMA's order)
+**270**; in order with most victims dirty **260**; a word written per line **330**;
+the uncached alias in order 153 (no better than the cache), one word per line
+209; QMI COOLDOWN 0: 263 / 400, COOLDOWN 3 as 1.  So misses in address order do
+continue one transfer (COOLDOWN works for cache fills), a transfer of its own is
+~270, and a dirty victim adds a write-back and breaks the run.  The cache does
+not replace LRU: after 32 KB read in order, a pass over the last 16 KB still
+averaged 85 ns a line.  The heavy A1200 scenes pay 450-510 ns a line (Roots'
+title: 22k lines of planes a drawn frame in ~10 ms; its sprite part: the
+copper's list) - out-of-order fills with dirty victims.  Reading a line's planes
+in address order did not lower that on the board the same day (emulation.md),
+for a reason not found.
+
 ## SRAM map (PICO_DV, 2026-11-09, `nm -S --size-sort`)
 
 Of 520 KB: framebuffer `fb` 245 KB (288 rows x 852 B: mode, 64-colour palette,
