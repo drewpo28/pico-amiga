@@ -292,6 +292,7 @@ void     denise_frame_start(void);
 bool     denise_lace(void);                         // BPLCON0 LACE
 void     denise_status(amiga_status_t *st);          // bplcon0, fmode, dma_lines
 int      denise_bus_busy8(int h0, int h1);           // bitplane DMA's chip cycles in [h0, h1), in eighths
+int      denise_copper_slot(int h);                  // the copper's first free cycle from h on (bitplane DMA takes some)
 void     denise_sync(void);                         // wait for the render core (async)
 uint32_t denise_core1_ticks(void);
 

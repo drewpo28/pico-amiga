@@ -516,6 +516,7 @@ static inline uint16_t pf_color(uint8_t v, int *which) {
 //     that pair, BPLCON2's PF1P / PF2P.
 static uint16_t spr_col[32];
 static uint8_t  pf_front[3];
+static bool     spr_all_front;              // no playfield is in front of any pair: no test a pixel
 static bool     spr_mix_dirty = true;
 static inline uint16_t sprite_mix(int x, uint16_t c, int which) {
     const uint8_t s = spl[x];
@@ -530,6 +531,7 @@ AMIGA_HOT static void spr_mix_update(void) {
     pf_front[0] = 0;
     pf_front[1] = (uint8_t)(0xF << (bplcon2 & 7));             // pair >= PF1P
     pf_front[2] = (uint8_t)(0xF << ((bplcon2 >> 3) & 7));
+    spr_all_front = !((pf_front[1] | pf_front[2]) & 0xF);
 }
 // A colour write to entry n: the sprites' colours changed?
 static inline void spr_col_written(unsigned n) {
@@ -558,6 +560,12 @@ static inline bool lut_plain_aga(void) {
     return A.aga && !(bplcon0 & 0x0400) && res(bplcon0) != SHRES && planes(bplcon0) != 6;
 }
 
+// Roots' sprite part rebuilds the LUT 1,800 times a frame (BPLCON4 3-4 times a
+// line): what does not change with it is left alone - the playfield map of the
+// plain mode (lut_pf_plain: it is already that) and, in a DIRECT row, the
+// row's index map (w_put does not look at it there; w_begin resets it).
+static bool lut_pf_plain;
+static int  w_mode;
 AMIGA_HOT static void build_lut(void) {
     if (lut_plain_aga()) {
         // Only pf values below 1 << planes occur (a few stale ones after a
@@ -565,12 +573,16 @@ AMIGA_HOT static void build_lut(void) {
         // rewrites BPLCON4 3-4 times a line over one bitplane.
         const unsigned b = bplcon4 >> 8, n = 1u << planes(bplcon0);
         for (unsigned v = 0; v < n; v++) lut[v] = color[v ^ b];
-        lut_pf[0] = 0;
-        fill_bytes(lut_pf + 1, 2, 255);
+        if (!lut_pf_plain) {
+            lut_pf[0] = 0;
+            fill_bytes(lut_pf + 1, 2, 255);
+            lut_pf_plain = true;
+        }
         lut_dirty = false;
-        ilut_reset();
+        if (w_mode != AMIGA_ROW_DIRECT) ilut_reset();
         return;
     }
+    lut_pf_plain = false;
     const int n = A.aga ? 256 : 64;
     for (int v = 0; v < n; v++) {
         int w;
@@ -879,9 +891,24 @@ AMIGA_HOT static void output(int x0, int x1) {
     if (!hires) {
         if (w_mode == AMIGA_ROW_DIRECT) {        // the AGA rule: straight into the row (Roots'
             uint16_t *d = fbrow->px.rgb - f0;    // sprite part outputs ~14 ranges a line)
-            for (int x = wa; x < wb; x++) {
-                const uint8_t v = pf_o[x];
-                d[x] = sprite_mix(x, lut[v], lut_pf[v]);
+            if (spr_all_front) {                 // ...of sprites over everything: 83,000 pixels a frame
+                for (int x = wa; x < wb; x++) {
+                    const uint8_t s = spl[x];
+                    d[x] = (s & 0x80) ? spr_col[((s >> 2) & 16) | (s & 15)] : lut[pf_o[x]];
+                }
+            } else if (lut_pf_plain) {           // one playfield (colour 0 is behind every sprite):
+                const unsigned front = pf_front[2];   // its priority in a register, no lut_pf a pixel
+                for (int x = wa; x < wb; x++) {
+                    const uint8_t s = spl[x], v = pf_o[x];
+                    uint16_t c = lut[v];
+                    if ((s & 0x80) && (!v || !((front >> ((s >> 4) & 3)) & 1))) c = spr_col[((s >> 2) & 16) | (s & 15)];
+                    d[x] = c;
+                }
+            } else {
+                for (int x = wa; x < wb; x++) {
+                    const uint8_t v = pf_o[x];
+                    d[x] = sprite_mix(x, lut[v], lut_pf[v]);
+                }
             }
         } else {
             for (int x = wa; x < wb; x++) {
@@ -1070,7 +1097,10 @@ AMIGA_HOT static void sprite_compose_full(void) {
     }
 }
 
-// A new epoch: expand the armed sprites, note the line's sprite range.
+// A new epoch: expand the armed sprites, note the line's sprite range and each
+// pair's columns (pr_lo / pr_hi: sprites_to runs per output range, 5,400 times a
+// frame in Roots' sprite part, and looked them up from the two sprites each time).
+static int pr_lo[4], pr_hi[4];
 AMIGA_HOT static void sprite_epoch(void) {
     const int sres = A.aga ? (bplcon3 >> 6) & 3 : 0;
     spl_generic = sres >= 2;
@@ -1097,6 +1127,14 @@ AMIGA_HOT static void sprite_epoch(void) {
             d[3] = spr4[a & 15][b & 15];
         }
     }
+    for (int pair = 0; pair < 4; pair++) {
+        int plo = SPL_SIZE, phi = 0;
+        for (int s = 2 * pair; s <= 2 * pair + 1; s++) if (sb_w[s]) {
+            if (sb_x[s] < plo) plo = sb_x[s];
+            if (sb_x[s] + sb_w[s] > phi) phi = sb_x[s] + sb_w[s];
+        }
+        pr_lo[pair] = plo; pr_hi[pair] = phi;
+    }
     if (lo < 0) lo = 0;
     if (hi > SPL_SIZE) hi = SPL_SIZE;
     spl_lo = lo; spl_hi = hi < lo ? lo : hi;
@@ -1113,18 +1151,8 @@ AMIGA_HOT static void sprites_to(int a, int b) {
     clear_bytes(spl + a, b - a);
     for (int pair = 3; pair >= 0; pair--) {
         const int e = 2 * pair, o = e + 1;
-        if (!sb_w[e] && !sb_w[o]) continue;
-        int lo = a, hi = b;
-        {
-            int plo = SPL_SIZE, phi = 0;
-            for (int s = e; s <= o; s++) if (sb_w[s]) {
-                if (sb_x[s] < plo) plo = sb_x[s];
-                if (sb_x[s] + sb_w[s] > phi) phi = sb_x[s] + sb_w[s];
-            }
-            if (plo > lo) lo = plo;
-            if (phi < hi) hi = phi;
-        }
-        if (hi <= lo) continue;
+        const int lo = pr_lo[pair] > a ? pr_lo[pair] : a, hi = pr_hi[pair] < b ? pr_hi[pair] : b;
+        if (hi <= lo) continue;                    // not armed (pr_hi 0) or not in these columns
         const uint8_t *tab = spr_tab[(sprctl[o] & 0x80) ? 1 : 0][pair];
         const uint8_t *se = (const uint8_t *)sb32[e], *so = (const uint8_t *)sb32[o];
         const int xe = sb_x[e], xo = sb_x[o], xe1 = xe + sb_w[e], xo1 = xo + sb_w[o];
@@ -1763,6 +1791,36 @@ AMIGA_HOT int denise_bus_busy8(int h0, int h1) {
     const int wpc = fm == 0 ? 1 : fm == 3 ? 4 : 2;
     int busy8 = (b - a) * np * (2 << res(f->bplcon0)) / (2 * wpc);
     return busy8 > (b - a) * 8 ? (b - a) * 8 : busy8;
+}
+
+// The first colour clock from h on that the copper can have.  Its cycles are
+// the even ones, and the bitplane DMA takes some of those inside the DDF window
+// (the fetch unit's slots, HRM: lowres - 4 6 2 - 3 5 1, AGA's 8 planes
+// 8 4 6 2 7 3 5 1; hires 4 2 3 1): plane 5's and 6's in lowres, then 7's and
+// 8's, plane 3's and 4's in hires.  With five planes the copper has three of
+// four of its cycles there, with six half, with four in hires none.  Only the
+// plain bus (FMODE 0): a wider one leaves most of a unit free.
+// Agony (6 planes, dual playfield) turns COLOR00 into its sky's colour with a
+// WAIT for $42 and a MOVE on every line; without this the MOVE came 8 pixels
+// before the window's left edge and the sky showed there as a stripe.
+AMIGA_HOT int denise_copper_slot(int h) {
+    const agnus_t *f = &dma_st;
+    if (!f->bpl_dma || f->nunits <= 0 || fmode_i(f) != 0) return h;
+    const int np = planes(f->bplcon0), r = res(f->bplcon0);
+    if (r == LORES ? np <= 4 : r == HIRES ? np <= 2 : true) return h;
+    if (h < 0) h = 0;
+    h = (h + 1) & ~1;
+    const int a = f->ds, e = a + f->nunits * f->unit_cc;
+    for (; h >= a && h < e; h += 2) {
+        if (r == LORES) {
+            const int s = (h - a) & 7;
+            if (!((s == 6 && np >= 5) || (s == 2 && np >= 6) || (s == 4 && np >= 7) || (s == 0 && np >= 8))) break;
+        } else {
+            const int s = (h - a) & 3;
+            if (!((s == 2 && np >= 3) || (s == 0 && np >= 4))) break;
+        }
+    }
+    return h;
 }
 
 // Diagnostics (amiga_get_status): the DMA side's display registers and the

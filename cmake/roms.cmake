@@ -32,8 +32,8 @@ set(AMIGA_BUILTIN_ROMS
     "ks204|Kickstart 2.04|A500,A500+|Kickstarts/PUAE Bios/kick37175.A500"
     "ks205|Kickstart 2.05|A500,A500+,A600|Kickstarts/PUAE Bios/kick37350.A600"
     "ks31|Kickstart 3.1|A500,A500+,A600|Kickstarts/PUAE Bios/kick40063.A600"
-    "ks31a12|Kickstart 3.1|A1200|Kickstarts/PUAE Bios/kick40068.A1200"
     "ks30a12|Kickstart 3.0|A1200|Kickstarts/PUAE Bios/kick39106.A1200"
+    "ks31a12|Kickstart 3.1|A1200|Kickstarts/PUAE Bios/kick40068.A1200"
     "ks31cd32|Kickstart 3.1|CD32|Kickstarts/PUAE Bios/kick40060.CD32"
     "cd32ext|CD32 extended ROM|-|Kickstarts/PUAE Bios/kick40060.CD32.ext")
 

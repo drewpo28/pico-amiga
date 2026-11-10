@@ -126,8 +126,14 @@ static uint8_t romOpts(const char* machine, Option* opts, uint8_t max, const cha
     return n;
 }
 static const Option* diagOpts(uint8_t& cnt) {
+    // Its CPU is the choice: + 50 is UiStage's KICK_020 (Config::diag_cpu).
     static Option opts[2];
-    static uint8_t n = romOpts("DiagROM", opts, 2, "On", 0);
+    static uint8_t n = romOpts("DiagROM", opts, 1, "68000", 0);
+    if (n) {
+        opts[1] = { "68EC020, 14 MHz", opts[0].value + 50, "68020" };
+        opts[0].label = "68000, 7 MHz";
+        n = 2;
+    }
     cnt = n;
     return opts;
 }

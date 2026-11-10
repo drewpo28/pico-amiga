@@ -261,7 +261,7 @@ int main(void) {
         const uint32_t t_emu = time_us_32();
         amiga_run_frame();
         const uint32_t emu_us = time_us_32() - t_emu;
-        ui_stats_frame(emu_us);
+        ui_stats_frame(emu_us, skip);
         machine_frame();
         perf_log_frame(emu_us, skip);
         // LED: slow blink = no keyboard, fast blink = keyboard mounted, steady = key held.

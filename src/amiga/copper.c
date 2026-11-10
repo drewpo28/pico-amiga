@@ -7,8 +7,9 @@
 // though the CPU and copper are only interleaved at slice granularity.
 //
 // Timing: 4 colour clocks per instruction (two word fetches on the copper's
-// even slots), plus 2 to wake up from a WAIT.  Bitplane DMA stealing copper
-// slots is not modelled yet.
+// even slots), plus 2 to wake up from a WAIT.  The slots the bitplane DMA takes
+// (5 or more planes in lowres, 3 or 4 in hires; denise_copper_slot) are not the
+// copper's: an instruction's words wait for the next free ones.
 #include <string.h>
 #include "amiga_int.h"
 #include "m68k.h"
@@ -198,19 +199,22 @@ AMIGA_HOT static int wait_until(int from, int to) {
 // cost what a drawn one did (cpu 16 + cop 8.5 of 20 ms) and the part ran at 34
 // fps whatever was skipped.  What a list does besides the display must still
 // happen (Roots' sets the copper interrupt in INTREQ every frame): each frame
-// that runs records its MOVEs to other registers - where in the list, at which
-// beam position - under the list's start (COP_REC_N lists: two that alternate),
+// that runs records its MOVEs to other registers - where in the list, which
+// register, at which beam position - under the list's start (COP_REC_N lists: two that alternate),
 // and a skipped frame whose list has a record replays those from the list as it
 // is now, at their positions.  A list with more than COP_EV_MAX of them, or
 // without a record yet, runs in full; one whose layout changed is recorded anew
 // at the next drawn frame (5 frames at most).
 #define COP_REC_N  2
 #define COP_EV_MAX 8
+#define COP_JMP_MAX 4
 typedef struct {
     uint32_t key;                                       // the list's start (COP1LC at the frame's start)
     uint8_t  n;
     bool     on, over;
-    struct { uint32_t pc; uint16_t vpos; uint8_t h; } ev[COP_EV_MAX];
+    uint8_t  njmp;
+    struct { uint32_t pc; uint16_t vpos; uint16_t ir1; uint8_t h; } ev[COP_EV_MAX];   // ir1: the MOVE's first word
+    struct { uint32_t pc, to; uint16_t ir1; } jmp[COP_JMP_MAX];                       // the COPJMP strobes it ran: where, where to
 } cop_rec_t;
 static cop_rec_t  cop_rec[COP_REC_N], cop_cur;          // by list; the frame running
 static const cop_rec_t *cop_play;                      // the skipped frame's record, or NULL: the copper runs
@@ -230,6 +234,7 @@ static void cop_replay(int until) {
         if (v < A.vpos) continue;                       // its line went by without the copper (DMA off)
         const uint16_t i1 = chip_rw(r->ev[cop_play_i].pc), i2 = chip_rw(r->ev[cop_play_i].pc + 2);
         const uint32_t reg = i1 & 0x1FE;
+        if (i1 != r->ev[cop_play_i].ir1) continue;      // the list changed under it: not that MOVE any more
         if ((i1 & 1) || display_only(reg) || reg < 0x40 || (reg < 0x80 && !(A.copcon & 2))) continue;
         custom_write(reg, i2, h, true);
     }
@@ -244,11 +249,41 @@ static void cop_frame(void) {
         cop_rec[w].on = true;
     }
     cop_ran = false;
-    cop_cur.key = lc[0]; cop_cur.n = 0; cop_cur.over = false;
+    cop_cur.key = lc[0]; cop_cur.n = 0; cop_cur.njmp = 0; cop_cur.over = false;
     cop_play = NULL; cop_play_i = 0;
     if (!A.render_skip) return;
     for (int k = 0; k < COP_REC_N; k++)
         if (cop_rec[k].on && cop_rec[k].key == lc[0] && !cop_rec[k].over) cop_play = &cop_rec[k];
+    // The record is the list's only while the list is what it was.  Roots' plasma
+    // near its end has its list where the part before had one that jumped (COPJMP2)
+    // to a second list with a MOVE to DMACON in it; that part's record, replayed
+    // for the plasma's first skipped frame, read the MOVE from the second list -
+    // still in memory, never reached now - and set BLTPRI for good: the plasma's
+    // 128 blits a frame then overran each other and it was six stripes.  So each
+    // recorded MOVE must still be there, and each jump the record's list made
+    // still there and to the same place; if not, the list runs (and is recorded).
+    if (cop_play) {
+        const cop_rec_t *r = cop_play;
+        bool same = true;
+        for (int i = 0; i < r->n && same; i++) same = chip_rw(r->ev[i].pc) == r->ev[i].ir1;
+        for (int i = 0; i < r->njmp && same; i++)
+            same = chip_rw(r->jmp[i].pc) == r->jmp[i].ir1 && lc[(r->jmp[i].ir1 & 0x1FE) == R_COPJMP2] == r->jmp[i].to;
+        if (!same) cop_play = NULL;
+    }
+}
+
+// A COPJMP strobe in a frame that replays its record (the CPU's: the copper's own
+// are not replayed): the copper is somewhere else now and runs from there, the
+// record's MOVEs are not what it would do.  Roots sets up its plasma that way -
+// COP1LC, COPJMP1 - in the last frame of the part before, whose list sets BLTPRI
+// at line 32 every frame; replayed after the strobe, that MOVE left BLTPRI set
+// under the plasma's 128 blits a frame, which then overran each other: six
+// stripes for a picture (2026-11-10).  What this frame then runs is not its
+// list from the top: not a record to keep.
+static void replay_off(void) {
+    if (!cop_play) return;
+    cop_play = NULL;
+    cop_cur.over = true;
 }
 
 // The line has nothing for the copper (copper_line_start): stopped, its DMA off,
@@ -258,8 +293,10 @@ static void cop_frame(void) {
 // A COPJMP strobe or a DMACON write wakes it; `from` is where the slice starts.
 bool copper_asleep;
 
+static bool cop_defer;                  // cop_h is an instruction's that waits for its slice: not moved up
 AMIGA_HOT void copper_run(int from, int until) {
-    if (cop_h < from) cop_h = from;
+    if (cop_h < from && !cop_defer) cop_h = from;
+    cop_defer = false;
     if (cop_play) {
         if (copper_on()) cop_replay(until);
         if (cop_h < until) cop_h = until;
@@ -279,6 +316,15 @@ AMIGA_HOT void copper_run(int from, int until) {
             state = COP_RUN;
             continue;
         }
+        // The instruction's two words, each in a cycle the bitplane DMA leaves the
+        // copper (denise_copper_slot): the first from two clocks before cop_h on,
+        // a MOVE lands with the second - at cop_h when every cycle is free, as
+        // before.  One that lands in a later slice waits for that slice (this
+        // one's CPU writes come first), its first word's cycle kept.
+        const int s1 = denise_copper_slot(cop_h - 2);
+        const int s2 = denise_copper_slot(s1 + 2);
+        if (s2 >= until) { cop_h = s1 + 2; cop_defer = true; return; }
+        cop_h = s2;
         const uint32_t w = fetch(pc);
         ir1 = (uint16_t)(w >> 16);
         ir2 = (uint16_t)w;
@@ -297,10 +343,19 @@ AMIGA_HOT void copper_run(int from, int until) {
                 AMIGA_TRACE_REG(reg, ir2, cop_h, 1);
                 denise_bplpt(reg, ir2, cop_h);
             } else {
+                if (reg == R_COPJMP1 || reg == R_COPJMP2) {
+                    if (cop_cur.njmp < COP_JMP_MAX) {
+                        cop_cur.jmp[cop_cur.njmp].pc = pc - 4;
+                        cop_cur.jmp[cop_cur.njmp].ir1 = ir1;
+                        cop_cur.jmp[cop_cur.njmp].to = lc[reg == R_COPJMP2];
+                        cop_cur.njmp++;
+                    } else cop_cur.over = true;
+                }
                 if (!display_only(reg)) {
                     if (cop_cur.n < COP_EV_MAX) {
                         cop_cur.ev[cop_cur.n].pc = pc - 4;
                         cop_cur.ev[cop_cur.n].vpos = (uint16_t)A.vpos;
+                        cop_cur.ev[cop_cur.n].ir1 = ir1;
                         cop_cur.ev[cop_cur.n].h = (uint8_t)cop_h;
                         cop_cur.n++;
                     } else cop_cur.over = true;
@@ -322,6 +377,7 @@ AMIGA_HOT void copper_run(int from, int until) {
 
 AMIGA_HOT void copper_line_start(void) {
     cop_h = cop_h >= AMIGA_CC_PER_LINE ? cop_h - AMIGA_CC_PER_LINE : 0;
+    cop_defer = false;
     if (cop_play) {
         while (cop_play_i < cop_play->n && cop_play->ev[cop_play_i].vpos < A.vpos) cop_play_i++;
         copper_asleep = !(cop_play_i < cop_play->n && cop_play->ev[cop_play_i].vpos == A.vpos);
@@ -346,8 +402,8 @@ AMIGA_HOT void copper_write(uint32_t reg, uint16_t v) {
     case R_COP1LCL: lc[0] = (lc[0] & 0xFFFF0000) | (v & 0xFFFE); break;
     case R_COP2LCH: lc[1] = (lc[1] & 0xFFFF) | ((uint32_t)(v & 0x1F) << 16); break;
     case R_COP2LCL: lc[1] = (lc[1] & 0xFFFF0000) | (v & 0xFFFE); break;
-    case R_COPJMP1: pc = lc[0]; state = COP_RUN; copper_asleep = false; break;
-    case R_COPJMP2: pc = lc[1]; state = COP_RUN; copper_asleep = false; break;
+    case R_COPJMP1: pc = lc[0]; state = COP_RUN; copper_asleep = false; replay_off(); break;
+    case R_COPJMP2: pc = lc[1]; state = COP_RUN; copper_asleep = false; replay_off(); break;
     default: break;
     }
 }

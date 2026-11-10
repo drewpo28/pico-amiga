@@ -474,7 +474,45 @@
   did (cpu 16 + cop 8.5 ms: 34 fps whatever was skipped).  Bench `--skip-odd`:
   the copper's fetches halve, drawn frames byte-identical to an unskipped run
   (31 frames of 11 programs, Roots' sprite part too), instructions a frame and
-  audw unchanged.  Not measured on the board yet.
+  audw unchanged.  On the board: the sprite part 34 -> 50 fps.
+  The record is only good for the list it was taken from, run from its top
+  (2026-11-10 evening, Roots' plasma near its end shown as six stripes whenever
+  frames were skipped): a COPJMP strobe by the CPU during a replayed frame ends
+  the replay (replay_off: the copper runs from where it was sent, the frame's
+  record is not kept) - Roots sets the plasma's list up with COP1LC + COPJMP1 in
+  the last frame of the part before, whose list sets BLTPRI in DMACON at line 32
+  every frame; replayed after the strobe, that MOVE left BLTPRI set for the
+  plasma's 128 blits a frame, which then overran each other.  And before a
+  replay each recorded MOVE must still be in the list (its first word) and
+  each COPJMP the recorded frame's copper took still there and to the same
+  address; if not, the list runs.  Bench: `--skip-odd` over the whole of Roots
+  (28 frames looked at) and Arte.  Still wrong in that plasma, skipping or not:
+  the one line where its list changes BPLCON0 from 6 to 4 planes mid-line is
+  drawn ~60 pixels to the right, and the picture is ~32 pixels narrower than in
+  a recording of the real thing - not looked into yet.
+- **The bitplane DMA takes copper cycles** (denise_copper_slot, copper_run;
+  2026-11-10): with 5 or 6 planes in lowres (7, 8 on AGA) and 3 or 4 in hires
+  the fetch uses even colour clocks inside the DDF window, which are the
+  copper's - half of them with 6 planes, all with 4 hires planes (FMODE 0 only;
+  a wider bus is not modelled).  An instruction's two words take the next free
+  ones - the first from two clocks before cop_h on - and a MOVE lands with the
+  second, which is cop_h when every cycle is free: nothing moved for the lists
+  that were right.  Agony (6 planes, dual playfield) sets COLOR00 to its sky's
+  shade with WAIT $42 + MOVE on every line and back to black with WAIT $D6 +
+  MOVE: the first came at x 136, eight pixels left of its window ($90), a
+  stripe of sky down the left edge; its words now go at $44 and $48 (the cycles
+  between are plane 5's and 6's) and it lands at 144, the window's first pixel,
+  the second at 432, its last + 1.  A first version (the WAIT seen only in a
+  free cycle) put it at 148 and left the first 4 pixels' transparent ones
+  black: the comparator is not tied to the copper's cycles.  Checked against a
+  recording of the real thing by where the score line sits over the picture
+  (8.8% of its width in, there 8.7%; with the stripe 11.3%).  The pictures of
+  51 frames of 8 other programs did not move; State of the Art's final
+  snapshot did (5 and 6 planes: its copper runs on other cycles now).
+- **Agony's sky flickers by design**: it dithers its sky in time (two copper
+  lists in turn, two shades a frame apart on 278 lines); recordings of the real
+  machine flicker the same way.  Skipping frames in pairs for such programs was
+  tried and removed (2026-11-10): nothing to fix.
 - **A line with nothing for the copper leaves it out of the slices** (copper_asleep,
   set by copper_line_start: stopped, DMA off, a WAIT for a later line, a skipped
   frame's line without a recorded MOVE; a COPJMP strobe or a DMACON write wakes

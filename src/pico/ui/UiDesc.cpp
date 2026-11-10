@@ -268,17 +268,20 @@ static int describeOnOff(uint16_t setting, int32_t v, DescLine* out, int max) {
 static int describeKick(int32_t v, DescLine* out, int max) {
     if (v < 0 || v % 200 >= 100) return 0;
     const int m = v / 200;
-    const unsigned i = (unsigned)(v % 200);
+    const bool cpu020 = v % 200 >= 50;                 // DiagROM's second row (UiStage's KICK_020)
+    const unsigned i = (unsigned)(v % 200) - (cpu020 ? 50 : 0);
     if (i >= builtin_rom_count) return 0;
     const char* id = builtin_roms[i].id;
     int n = 0;
     if (!strcmp(id, "diag")) {
+        n = sub(out, n, max, "A500", cpu020 ? "OCS, 68EC020" : "OCS, 68000", DESC_PLAIN);
         n = rule(out, n, max, "Hardware test: memory,");
         n = rule(out, n, max, "chips, keyboard, audio");
         n = rule(out, n, max, "(not a Kickstart)");
+        n = rule(out, n, max, "A change restarts it");
         return n;
     }
-    static const char* const kSub[] = { "OCS, 512K+512K", "ECS, 1 MB chip", "ECS, 1 MB, IDE", "020, 2 MB, IDE", "020, 2 MB, CD" };
+    static const char* const kSub[] = { "OCS, 512K+512K", "ECS, 1 MB chip", "ECS, 1 MB, IDE", "AGA, 2 MB, IDE", "AGA, 2 MB, CD" };
     const bool a601 = m == MACHINE_A600 && Config::a600_chip == 2 && machine_a600_2mb_ok();
     n = sub(out, n, max, machine_model_name(m), a601 ? "ECS, 2 MB, IDE" : m < 5 ? kSub[m] : "", DESC_PLAIN);
     if (!strcmp(id, "ks12"))       { n = rule(out, n, max, "For old games that"); n = rule(out, n, max, "do not run on 1.3"); }

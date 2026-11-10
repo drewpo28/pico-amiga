@@ -57,6 +57,7 @@ public:
     static uint8_t  a600_chip;      // the A600's chip RAM in MB: 1, or 2 (an A601; 8 MB PSRAM)
     static uint8_t  fast_ram;       // Machine > A600 / A1200 > Fast RAM, MB: 0, 1, 2, 4 (a Zorro II board; PSRAM permitting)
     static uint8_t  chip_bus;       // Machine > A1200 > Chip bus: 0 off, 1 stock A1200, 2 with cache credit, 3 stock + cache while the music lags (amiga_set_chip_bus)
+    static uint8_t  diag_cpu;       // Machine > DiagROM: 0 a 68000, 1 a 68EC020 (in the A500 DiagROM runs on)
     static uint8_t  machine;        // 0 A500 (OCS, 512 KB chip + 512 KB slow), 1 A500+ (ECS, 1 MB chip), 2 A600 (A500+ + Gayle), 3 A1200, 4 CD32
     static std::string kick;        // built-in ROM id (roms.h), or "sd" = kick_file from the card
     static std::string kick_file;   // Machine > Custom ROM: the Kickstart image on the card

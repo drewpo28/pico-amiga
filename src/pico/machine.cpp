@@ -78,7 +78,8 @@ static void select_model(amiga_config_t *cfg) {
     cfg->chip_size = chip2 ? 2048 * KB : ecs ? 1024 * KB : 512 * KB;
     cfg->slow_size = ecs ? 0 : 512 * KB;
     cfg->gayle = m == MACHINE_A600 ? AMIGA_GAYLE_A600 : m == MACHINE_A1200 ? AMIGA_GAYLE_A1200 : 0;
-    cfg->cpu = aga ? AMIGA_CPU_EC020 : AMIGA_CPU_68000;
+    // DiagROM's CPU is a choice (Machine > DiagROM): its tests on a 68EC020 too.
+    cfg->cpu = aga || (Config::diag_cpu && Config::kick == "diag") ? AMIGA_CPU_EC020 : AMIGA_CPU_68000;
     cfg->akiko = m == MACHINE_CD32;
     // Fast RAM on the Gayle machines (a Zorro II board: PCMCIA / trapdoor RAM
     // as WHDLoad sees it), the size the PSRAM permits.

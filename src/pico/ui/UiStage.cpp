@@ -40,22 +40,29 @@ NM_BOOL_ACCESS(vgasolid,  ui_vga_solid)
 // Machine (DiagROM / A500 / A500+ / A600 rows): the built-in ROM's index, KICK_SD
 // the card's (Custom ROM, set by its own row: no radio lists it); KICK_STEP times
 // Config::machine added (the same ROM is listed under several machines, and only
-// the running machine's row shows it).
+// the running machine's row shows it).  DiagROM is listed twice: KICK_020 added
+// is DiagROM on a 68EC020 (Config::diag_cpu).
 #define KICK_SD   100
+#define KICK_020  50
 #define KICK_STEP 200
 static int32_t get_kick() {
     const int32_t m = Config::machine * KICK_STEP;
     if (Config::kick == "sd") return KICK_SD + m;
     for (unsigned i = 0; i < builtin_rom_count; i++)
-        if (Config::kick == builtin_roms[i].id) return (int32_t)i + m;
+        if (Config::kick == builtin_roms[i].id)
+            return (int32_t)i + m + (Config::diag_cpu && Config::kick == "diag" ? KICK_020 : 0);
     return -1;
 }
 static void put_kick(int32_t v) {
     if (v < 0) return;
     Config::machine = (uint8_t)(v / KICK_STEP);
     v %= KICK_STEP;
-    if (v == KICK_SD) Config::kick = "sd";
-    else if ((unsigned)v < builtin_rom_count) Config::kick = builtin_roms[v].id;
+    if (v == KICK_SD) { Config::kick = "sd"; return; }
+    const bool cpu020 = v >= KICK_020 && v < KICK_SD;
+    if (cpu020) v -= KICK_020;
+    if ((unsigned)v >= builtin_rom_count) return;
+    Config::kick = builtin_roms[v].id;
+    if (Config::kick == "diag") Config::diag_cpu = cpu020;
 }
 // A new ROM or machine means a cold start of the Amiga (the disk stays in).
 static bool hook_kick(int32_t, int32_t) { return machine_apply_kickstart(); }

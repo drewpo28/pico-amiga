@@ -115,6 +115,7 @@ struct Cfg {
     int machine = 0;
     int a600_chip = 1;                      // MB (older snapshots: none, i.e. 1)
     int fast_ram = 0;                       // MB (older snapshots: none)
+    int diag_cpu = 0;                       // DiagROM on a 68EC020 (older snapshots: a 68000)
     std::string kick, kick_file;
     uint32_t rom_crc = 0, ext_crc = 0;
     int drives = 0;
@@ -139,6 +140,7 @@ static std::string cfgText() {
     kn("machine", Config::machine);
     kn("a600_chip", Config::a600_chip);
     kn("fast_ram", machine_fast_size() >> 20);
+    kn("diag_cpu", Config::diag_cpu);
     kv("kick", Config::kick);
     kv("kick_file", Config::kick_file);
     snprintf(l, sizeof l, "%08X", (unsigned)rom); kv("rom_crc", l);
@@ -185,6 +187,7 @@ static void cfgParse(const std::string& t, Cfg& c) {
         if (k == "machine") c.machine = (int)n;
         else if (k == "a600_chip") c.a600_chip = (int)n;
         else if (k == "fast_ram") c.fast_ram = (int)n;
+        else if (k == "diag_cpu") c.diag_cpu = (int)n;
         else if (k == "kick") c.kick = v;
         else if (k == "kick_file") c.kick_file = v;
         else if (k == "rom_crc") c.rom_crc = (uint32_t)strtoul(v.c_str(), nullptr, 16);
@@ -326,7 +329,8 @@ void describe(const std::string& path, char* out, unsigned size) {
     } else {
         add(" Name      : %s\n", name.empty() ? "(none)" : name.c_str());
         add(" Machine   : %s%s\n", machine_model_desc(c->machine),
-            c->machine == MACHINE_A600 && c->a600_chip == 2 ? ", 2 MB (A601)" : "");
+            c->machine == MACHINE_A600 && c->a600_chip == 2 ? ", 2 MB (A601)" :
+            c->diag_cpu && c->kick == "diag" ? ", 68EC020" : "");
         if (c->fast_ram) add(" Fast RAM  : %d MB\n", c->fast_ram);
         add(" Kickstart : %s\n", machine_rom_label(c->kick, c->kick_file).c_str());
         if (!c->disks.set.empty())
@@ -372,6 +376,7 @@ bool load(const std::string& path, std::string& err, std::string& warn) {
     Config::machine = (uint8_t)c->machine;
     Config::a600_chip = c->a600_chip == 2 ? 2 : 1;
     Config::fast_ram = (uint8_t)(c->fast_ram == 1 || c->fast_ram == 2 || c->fast_ram == 4 ? c->fast_ram : 0);
+    if (c->kick == "diag") Config::diag_cpu = c->diag_cpu == 1;
     Config::kick = c->kick;
     Config::kick_file = c->kick_file;
     Config::drives = (uint8_t)c->drives;

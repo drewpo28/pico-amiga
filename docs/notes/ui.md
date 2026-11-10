@@ -12,7 +12,7 @@
   on a disk picks DF0..DF3, F9 makes a blank ADF, F1 on a disk shows what is on it
   (machine_disk_info: volume, filesystem, boot block, root, startup-sequence; a
   DMS is unpacked into the spare PSRAM slot after DF3's); a disk put into DF1..DF3 by hand
-  survives set and DF0 changes, Drive::manual; Win+F8 = the performance band,
+  survives set and DF0 changes, Drive::manual; Win+F8 = the performance band (its FPS in orange while frames are being skipped),
   pico-speccy's F8, its summary with the drive's TR/SEC line - or the IDE hard
   disk's block, RD/WR and rate, whichever moved data last: amiga_ide_status). The drive icon
   (pico-speccy's FDD lamp, Video > Picture > Drive icon, top right; the hard disk's beside it) and the band
@@ -30,7 +30,8 @@
 
 ## Built-in ROMs, machines and drives
 
-- Built-in ROMs (Machine: DiagROM; A500 > KS 1.2/1.3/2.04/2.05/3.1; A500+ > KS
+- Built-in ROMs (Machine: DiagROM > 68000 / 68EC020 (Config::diag_cpu: the A500 with
+  the A1200's CPU; the radio's second value is the ROM's index + 50); A500 > KS 1.2/1.3/2.04/2.05/3.1; A500+ > KS
   2.04/2.05/3.1; A600 > KS 2.05/3.1; A1200 > Kickstart KS 3.1/3.0 (ks31a12, ks30a12: a 68EC020,
   2 MB chip, Gayle $D1, AGA; Config::machine 3, `--a1200 --aga` on the bench; A1200 >
   Chip bus = amiga_set_chip_bus, Config::chip_bus: Stock, Stock with the cache for

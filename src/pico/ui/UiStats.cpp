@@ -10,7 +10,8 @@
 // Summary:
 //   EMU 14.2ms  141%    time amiga_run_frame() took, and the speed that makes
 //                       (100% = exactly the 20 ms of a PAL frame)
-//   FPS 50.0  378MHz    emulated frames per wall-clock second, the CPU clock
+//   FPS 50.0  378MHz    emulated frames per wall-clock second (orange while
+//                       some are not drawn: the frame skip), the CPU clock
 //   DF0 TR40.1 SEC05 RD the drive (pico-speccy's TR/SEC line): cylinder.head, the
 //                       sector the last disk DMA started at (-- for the gap),
 //                       RD / WR = disk DMA,
@@ -60,6 +61,9 @@ enum { BAND_COLS = 19, BAND_W = (BAND_COLS + 2) * UI_FONT_W + 4, BAND_H = 3 * UI
 static uint16_t (*s_px)[BAND_W];
 static int      s_bx, s_by, s_bw, s_bh;
 
+static uint8_t           s_skips;             // frames not drawn in this refresh period
+static bool              s_skipping;          // ...there were some in the last one: the FPS is orange
+
 static void drawBand() {
     gfxComputeSurface();
     gfxInstallPalette();
@@ -77,6 +81,21 @@ static void drawBand() {
     frame(x, y, w, h, C_SEP);
     for (int i = 0; i < s_lines; i++)      // one blank column of padding on the left
         text(x + 2 + g, y + 3 + i * UI_FONT_H, s_l[i], i ? C_TEXT : C_WHITE);
+    // "FPS nn.n" in orange while frames are being skipped (not drawn): the
+    // emulation keeps its 50 a second, the picture does not.  The framebuffer
+    // is 0x0RGB here, so the colour need not be one of the menu's.
+    if (s_page == 1 && s_skipping) {
+        const uint16_t* top = gfxRowDirect(Sf.oy + y + 1);
+        const uint16_t panel = top ? top[Sf.fbx + x + 1] : 0;
+        for (int r = 0; r < UI_FONT_H; r++) {
+            uint16_t* row = gfxRowDirect(Sf.oy + y + 3 + UI_FONT_H + r);
+            if (!row) break;
+            for (int i = 0; i < 8 * g; i++) {
+                uint16_t* px = &row[Sf.fbx + x + 2 + g + i];
+                if (*px != panel) *px = 0xF80;
+            }
+        }
+    }
     s_bx = Sf.fbx + x; s_by = Sf.oy + y;
     s_bw = w < BAND_W ? w : BAND_W;
     s_bh = h < BAND_H ? h : BAND_H;
@@ -231,7 +250,7 @@ static void hdLine(const amiga_ide_t& h, uint32_t rate, char* out, size_t n) {
              on ? (h.op == 2 ? "WR" : "RD") : "--", r);
 }
 
-extern "C" void ui_stats_frame(uint32_t emu_us) {
+extern "C" void ui_stats_frame(uint32_t emu_us, bool skipped) {
     using namespace nm;
     amiga_floppy_t fl;
     amiga_floppy_status(&fl);
@@ -263,7 +282,10 @@ extern "C" void ui_stats_frame(uint32_t emu_us) {
         if (strcmp(l, s_disk)) { snprintf(s_disk, sizeof s_disk, "%s", l); snprintf(s_l[2], sizeof s_l[2], "%s", l); s_dirty = true; }
     }
     s_emu_sum += emu_us;
+    s_skips += skipped;
     if (s_frames >= 25) {
+        if (s_page == 1) s_skipping = s_skips != 0;
+        s_skips = 0;
         const uint32_t now = time_us_32();
         const uint32_t avg = s_emu_sum / s_frames;
         const uint32_t pct = avg ? 2000000u / avg : 0;            // 20000 us = 100%

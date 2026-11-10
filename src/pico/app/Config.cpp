@@ -47,6 +47,7 @@ uint8_t  Config::machine      = 0;
 uint8_t  Config::a600_chip    = 1;
 uint8_t  Config::fast_ram     = 0;
 uint8_t  Config::chip_bus     = 1;
+uint8_t  Config::diag_cpu     = 0;
 std::string Config::kick      = "ks13";
 std::string Config::kick_file = "/pico-amiga/kick.rom";
 std::string Config::df0       = "";
@@ -177,6 +178,8 @@ void Config::load() {
     if (fast_ram != 1 && fast_ram != 2 && fast_ram != 4) fast_ram = 0;
     nvs_get_u8 ("chip_bus",      chip_bus,     sts);
     if (chip_bus > 3) chip_bus = 1;
+    nvs_get_u8 ("diag_cpu",      diag_cpu,     sts);
+    if (diag_cpu > 1) diag_cpu = 0;
     if (machine > 4) machine = 0;                 // machine.h MACHINE_COUNT
     nvs_get_str("kick",          kick,         sts);
     nvs_get_str("kick_file",     kick_file,    sts);
@@ -288,6 +291,7 @@ bool Config::save() {
     nvs_set_i(buf, "a600_chip",     a600_chip);
     nvs_set_i(buf, "fast_ram",      fast_ram);
     nvs_set_i(buf, "chip_bus",      chip_bus);
+    nvs_set_i(buf, "diag_cpu",      diag_cpu);
     nvs_set_str(buf, "kick",        kick.c_str());
     nvs_set_str(buf, "kick_file",   kick_file.c_str());
     nvs_set_str(buf, "df0",         df0.c_str());
