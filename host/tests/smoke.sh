@@ -191,4 +191,19 @@ if [ -f "$D/LHA/UFOEnemyUnknown_v1.1_CD32.lha" ] && [ -f "$KS/kick40068.A1200" ]
     check "whdload ufo a1200 fast ram" "frame 2000 .*pc=[2-9][0-9A-F]\{5\} " "$OUT/ufo.log"
 fi
 
+# 9. The CD32 (akiko.c, cdimage.c): only with the owner's files too (its Kickstart
+#    and extended ROM, a disc).  Cannon Fodder's sheet (a MODE1/2048 and a
+#    MODE2/2336 track, a file each) parses, the disc boots into the game's code,
+#    and a snapshot taken on the way continues to the same picture.
+CD="$D/CD32/Cannon Fodder (1993)(Virgin)[!][Amiga-CD32].cue"
+if [ -f "$CD" ] && [ -f "$KS/kick40060.CD32" ] && [ -f "$KS/kick40060.CD32.ext" ]; then
+    $BIN --rom "$KS/kick40060.CD32" --ext "$KS/kick40060.CD32.ext" --cd32 --cd "$CD" --frames 2500 --status 2500 \
+         --state-save 1500:"$OUT/cd32.state" --shot 2500:"$OUT/cd32-a.png" > "$OUT/cd32.log" 2>&1
+    check "cd32 cue sheet" "track 2 MODE2/2336, sectors 27459+12450" "$OUT/cd32.log"
+    check "cd32 boots the disc" "frame 2500 .*pc=0[0-9A-F]\{5\} " "$OUT/cd32.log"
+    $BIN --rom "$KS/kick40060.CD32" --ext "$KS/kick40060.CD32.ext" --cd32 --cd "$CD" --frames 1000 \
+         --state-load "$OUT/cd32.state" --shot 1000:"$OUT/cd32-b.png" > /dev/null 2>&1
+    if cmp -s "$OUT/cd32-a.png" "$OUT/cd32-b.png"; then echo "PASS cd32 snapshot round trip"; else echo "FAIL cd32 snapshot round trip"; fail=1; fi
+fi
+
 exit $fail

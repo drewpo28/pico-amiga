@@ -10,6 +10,10 @@
 #include "ide_mbr.h"
 #include "dms.h"
 #include "whdboot.h"
+#include "cdimage.h"
+#include <vector>
+#include <new>
+#include <ctype.h>
 #include "roms.h"
 #include "app/Config.h"
 #include "board.h"              // board_load_cpu_overlay
@@ -65,15 +69,17 @@ static uint32_t load_file(const char *path, uint8_t *dst, uint32_t max) {
 static void select_model(amiga_config_t *cfg) {
     const int m = Config::machine < MACHINE_COUNT ? (int)Config::machine : (int)MACHINE_A500;
     const bool ecs = m != MACHINE_A500;
-    cfg->chipset = m == MACHINE_A1200 ? AMIGA_AGA : ecs ? AMIGA_ECS : AMIGA_OCS;
+    const bool aga = m == MACHINE_A1200 || m == MACHINE_CD32;
+    cfg->chipset = aga ? AMIGA_AGA : ecs ? AMIGA_ECS : AMIGA_OCS;
     // An A600 with an A601 in its trapdoor: 2 MB of chip RAM (the 8375 Agnus
     // addresses it), where the PSRAM layout leaves room (machine_init).
     const bool chip2 = s_chip_area >= 2048 * KB &&
-                       (m == MACHINE_A1200 || (m == MACHINE_A600 && Config::a600_chip == 2));
+                       (aga || (m == MACHINE_A600 && Config::a600_chip == 2));
     cfg->chip_size = chip2 ? 2048 * KB : ecs ? 1024 * KB : 512 * KB;
     cfg->slow_size = ecs ? 0 : 512 * KB;
     cfg->gayle = m == MACHINE_A600 ? AMIGA_GAYLE_A600 : m == MACHINE_A1200 ? AMIGA_GAYLE_A1200 : 0;
-    cfg->cpu = m == MACHINE_A1200 ? AMIGA_CPU_EC020 : AMIGA_CPU_68000;
+    cfg->cpu = aga ? AMIGA_CPU_EC020 : AMIGA_CPU_68000;
+    cfg->akiko = m == MACHINE_CD32;
     // Fast RAM on the Gayle machines (a Zorro II board: PCMCIA / trapdoor RAM
     // as WHDLoad sees it), the size the PSRAM permits.
     uint32_t mb = cfg->gayle ? Config::fast_ram : 0;
@@ -83,11 +89,15 @@ static void select_model(amiga_config_t *cfg) {
 }
 
 static void drop_lost_dms(void);
+// The CD32's read-ahead buffer: the end of the DMS area (a CD32 has no fast RAM
+// board there), taken from the DMS slots while the machine is one.
+#define CD_AHEAD (32u * KB)
+static uint8_t *nvram_get(bool cd32);
 
-static const char *const kModelName[MACHINE_COUNT] = { "A500", "A500+", "A600", "A1200" };
+static const char *const kModelName[MACHINE_COUNT] = { "A500", "A500+", "A600", "A1200", "CD32" };
 static const char *const kModelDesc[MACHINE_COUNT] = {
     "A500 (OCS, 512 KB chip + 512 KB slow)", "A500+ (ECS, 1 MB chip RAM)", "A600 (ECS, 1 MB chip RAM, Gayle)",
-    "A1200 (AGA, 68EC020, 2 MB chip RAM, Gayle)" };
+    "A1200 (AGA, 68EC020, 2 MB chip RAM, Gayle)", "CD32 (AGA, 68EC020, 2 MB chip RAM, Akiko, CD)" };
 const char *machine_model_name(int m) { return m >= 0 && m < MACHINE_COUNT ? kModelName[m] : "?"; }
 const char *machine_model_desc(int m) { return m >= 0 && m < MACHINE_COUNT ? kModelDesc[m] : "?"; }
 uint32_t machine_chip_size(void) {
@@ -103,9 +113,10 @@ const char *machine_name(void) { return machine_model_name(Config::machine); }
 bool machine_select_rom(amiga_config_t *cfg) {
     select_model(cfg);
     s_fast_size = cfg->fast_size;
-    s_dms_size = s_dms_total - s_fast_size;
+    s_dms_size = s_dms_total - s_fast_size - (cfg->akiko && s_dms_total >= 2 * CD_AHEAD ? CD_AHEAD : 0);
     drop_lost_dms();
     board_load_cpu_overlay(cfg->cpu);
+    cfg->nvram = nvram_get(cfg->akiko);
     cfg->ext_rom = NULL;
     cfg->ext_size = 0;
     if (Config::kick == "sd") {
@@ -128,8 +139,168 @@ bool machine_select_rom(amiga_config_t *cfg) {
     cfg->rom = r->data;
     cfg->rom_size = r->size;
     s_rom_name = r->label;
+    if (cfg->akiko) {                           // the CD32's extended ROM goes with its Kickstart
+        const builtin_rom_t *e = builtin_rom_find("cd32ext");
+        if (e) { cfg->ext_rom = e->data; cfg->ext_size = e->size; }
+    }
     return true;
 }
+
+void machine_home_migrate(void) {
+    FILINFO fi;
+    if (f_stat("/pico-amiga", &fi) == FR_OK || f_stat("/amiga", &fi) != FR_OK || !(fi.fattrib & AM_DIR)) return;
+    if (f_rename("/amiga", "/pico-amiga") != FR_OK) return;
+    printf("card: /amiga is /pico-amiga now\n");
+    std::string *const paths[] = { &Config::kick_file, &Config::df0, &Config::hdf, &Config::hdf2, &Config::cd };
+    for (std::string *p : paths)
+        if (p->compare(0, 7, "/amiga/") == 0) p->replace(0, 6, "/pico-amiga");
+    Config::save();
+}
+
+// ---- the CD32: its NVRAM and its disc -----------------------------------------------
+// The NVRAM (1 KB: the games' saves) is on the heap while the machine is a CD32
+// and in /pico-amiga/cd32.nvram on the card; written back a second after the Amiga
+// last touched it (machine_frame).
+#define CD32_NVRAM "/pico-amiga/cd32.nvram"
+static uint8_t *s_nvram;
+static uint8_t s_nvram_wait;
+
+static uint8_t *nvram_get(bool cd32) {
+    if (!cd32) { free(s_nvram); s_nvram = NULL; return NULL; }
+    if (s_nvram) return s_nvram;
+    s_nvram = (uint8_t *)calloc(1, 1024);
+    if (s_nvram) load_file(CD32_NVRAM, s_nvram, 1024);
+    return s_nvram;
+}
+
+void machine_frame(void) {
+    if (!s_nvram) return;
+    if (amiga_cd_nvram_dirty()) s_nvram_wait = 50;
+    if (!s_nvram_wait || --s_nvram_wait) return;
+    FIL f;
+    UINT n;
+    f_mkdir("/pico-amiga");
+    if (f_open(&f, CD32_NVRAM, FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) return;
+    f_write(&f, s_nvram, 1024, &n);
+    f_close(&f);
+}
+
+// The disc: the TOC and one open track file on the heap while it is in (a sheet
+// with a file a track has one open at a time).  Akiko asks for a sector 75 or
+// 150 times a second (cd_sector, from the emulation).
+// Reading ahead: a sector asked for is read with the ones after it in one go
+// (CD_RUN: 16 KB of a 2048-byte track - one multi-block command, ~5 ms at the
+// card's 30 MHz) into PSRAM and the next ones come from there.  One command a
+// sector cost ~1.5-2.5 ms each, three a frame at double speed: Cannon Fodder's
+// loading fell to 40 fps (the PERF line's `oth` 8 ms, 2026-11-10).  The track
+// file has FatFs's cluster map (fast seek), as the HDF: a seek back does not
+// walk the FAT chain from the file's start.
+#define CD_RUN 8
+struct CdDisc {
+    cd_toc_t toc;
+    FIL f;
+    DWORD map[64];
+    int open;                           // the file f is, -1 = none
+    uint32_t c_lsn, c_n, c_ss;          // the sectors in the read-ahead buffer, their stored size
+    int c_mode;
+    std::string dir;
+    std::vector<std::string> names;     // the sheet's FILEs
+};
+static CdDisc *s_cd;
+static std::string s_cd_path;
+
+static uint32_t cd_file_cb(void *ctx, int index, const char *name) {
+    CdDisc *d = (CdDisc *)ctx;
+    std::string n = name;
+    const size_t cut = n.find_last_of("/\\");             // a sheet written elsewhere carries its paths
+    if (cut != std::string::npos) n = n.substr(cut + 1);
+    FILINFO fi;
+    if (f_stat((d->dir + n).c_str(), &fi) != FR_OK) return 0;
+    if ((int)d->names.size() <= index) d->names.resize(index + 1);
+    d->names[index] = n;
+    return (uint32_t)fi.fsize;
+}
+static bool cd_read_cb(void *ctx, int index, uint32_t off, void *dst, uint32_t len) {
+    CdDisc *d = (CdDisc *)ctx;
+    if (d->open != index) {
+        if (d->open >= 0) f_close(&d->f);
+        d->open = -1;
+        if (index >= (int)d->names.size() || f_open(&d->f, (d->dir + d->names[index]).c_str(), FA_READ) != FR_OK) return false;
+        d->open = index;
+        d->f.cltbl = d->map;                         // fast seek, or the plain one
+        d->map[0] = sizeof d->map / sizeof d->map[0];
+        if (f_lseek(&d->f, CREATE_LINKMAP) != FR_OK) d->f.cltbl = NULL;
+    }
+    UINT n = 0;
+    return f_lseek(&d->f, off) == FR_OK && f_read(&d->f, dst, len, &n) == FR_OK && n == len;
+}
+static int cd_sector(void *, uint32_t lsn, uint8_t *dst) {
+    CdDisc *d = s_cd;
+    if (!d) return -1;
+    uint8_t *buf = s_dms_area && s_dms_size + CD_AHEAD <= s_dms_total - s_fast_size ? s_dms_area + s_dms_total - CD_AHEAD : NULL;
+    if (!buf) return cd_read_sector(&d->toc, lsn, dst, cd_read_cb, d);
+    if (lsn < d->c_lsn || lsn >= d->c_lsn + d->c_n) {
+        int file, mode;
+        uint32_t off, ss, run;
+        d->c_n = 0;
+        if (!cd_locate(&d->toc, lsn, &file, &off, &ss, &mode, &run)) return -1;
+        uint32_t n = run < CD_RUN ? run : CD_RUN;
+        if (n * ss > CD_AHEAD) n = CD_AHEAD / ss;
+        if (!cd_read_cb(d, file, off, buf, n * ss)) return -1;
+        d->c_lsn = lsn; d->c_n = n; d->c_ss = ss; d->c_mode = mode;
+    }
+    cd_unpack_sector(buf + (lsn - d->c_lsn) * d->c_ss, d->c_ss, dst);
+    return d->c_mode;
+}
+static void cd_track(void *, int n, uint32_t *lsn, uint8_t *ctrl) {
+    if (!s_cd || n < 1 || n > s_cd->toc.tracks) return;
+    *lsn = s_cd->toc.t[n - 1].lsn;
+    *ctrl = s_cd->toc.t[n - 1].mode ? 4 : 0;
+}
+
+bool machine_set_cd(const char *path) {
+    amiga_set_cd(NULL);
+    if (s_cd) {
+        if (s_cd->open >= 0) f_close(&s_cd->f);
+        delete s_cd;
+        s_cd = NULL;
+    }
+    s_cd_path.clear();
+    if (!path || !*path) return true;
+    CdDisc *d = new (std::nothrow) CdDisc;
+    if (!d) return false;
+    d->open = -1;
+    d->c_n = 0;
+    const std::string p = path;
+    d->dir = p.substr(0, p.find_last_of('/') + 1);
+    const size_t dot = p.find_last_of('.');
+    std::string ext = dot == std::string::npos ? "" : p.substr(dot);
+    for (char &c : ext) c = (char)tolower((unsigned char)c);
+    bool ok = false;
+    FILINFO fi;
+    if (ext == ".cue") {
+        if (f_stat(path, &fi) == FR_OK && fi.fsize && fi.fsize <= 16384) {
+            char *text = (char *)malloc((size_t)fi.fsize);
+            if (text) {
+                if (load_file(path, (uint8_t *)text, (uint32_t)fi.fsize) == fi.fsize)
+                    ok = cd_parse_cue(text, (uint32_t)fi.fsize, &d->toc, cd_file_cb, d);
+                free(text);
+            }
+        }
+    } else if (f_stat(path, &fi) == FR_OK) {
+        d->names.push_back(p.substr(p.find_last_of('/') + 1));
+        ok = cd_from_iso((uint32_t)fi.fsize, &d->toc);
+    }
+    if (!ok) { delete d; return false; }
+    s_cd = d;
+    s_cd_path = path;
+    printf("cd: %s, %d track%s, %u MB\n", path, d->toc.tracks, d->toc.tracks == 1 ? "" : "s",
+           (unsigned)(d->toc.leadout / 512));
+    const amiga_cd_t cd = { cd_sector, cd_track, NULL, (uint8_t)d->toc.tracks, d->toc.leadout };
+    amiga_set_cd(&cd);
+    return true;
+}
+const char *machine_cd(void) { return s_cd_path.c_str(); }
 
 // ---- the A600's hard disk --------------------------------------------------------
 // The HDF stays open while it is in; reads and writes go a sector at a time
@@ -393,6 +564,7 @@ bool machine_apply_kickstart(void) {
     amiga_set_machine(c.chipset, c.chip_size, c.slow_size, c.gayle);
     amiga_set_fast(c.fast_ram, c.fast_size);
     amiga_set_cpu(c.cpu);
+    amiga_set_akiko(c.akiko, c.nvram);
     board_load_cpu_overlay(c.cpu);
     settings_apply_chip_bus();
     hdf_attach(0);
@@ -696,10 +868,10 @@ bool machine_format_adf(const char *path, const char *volume) {
 }
 
 bool machine_new_disk(const char *volume, char *path_out, unsigned path_size) {
-    // Where: beside the set's .m3u, else beside DF0's disk, else /amiga/disks/.
+    // Where: beside the set's .m3u, else beside DF0's disk, else /pico-amiga/disks/.
     std::string dir = s_set_count ? Config::df0 : s_drv[0].path;
     dir = dir.substr(0, dir.find_last_of('/') + 1);
-    if (dir.empty()) { dir = "/amiga/disks/"; if (!file_exists("/amiga/disks")) dir = "/amiga/"; }
+    if (dir.empty()) { dir = "/pico-amiga/disks/"; if (!file_exists("/pico-amiga/disks")) dir = "/pico-amiga/"; }
     std::string base = volume;
     for (char &c : base)
         if (strchr(":/\\*?\"<>|", c) || (unsigned char)c < 32) c = '_';
@@ -1050,6 +1222,7 @@ void machine_restore_disks(void) {
             img.clear();
         }
     }
+    if (!Config::cd.empty() && !machine_set_cd(Config::cd.c_str())) Config::cd.clear();
     if (!Config::df0.empty()) {
         const bool ok = is_m3u(Config::df0)
             ? machine_load_set(Config::df0.c_str(), Config::df0_disk)
@@ -1058,17 +1231,17 @@ void machine_restore_disks(void) {
         machine_apply_drives();
         return;
     }
-    // The card layout before the menu existed: /amiga/df0.adf goes in by itself.
-    machine_insert(0, "/amiga/df0.adf", false);
+    // The card layout before the menu existed: /pico-amiga/df0.adf goes in by itself.
+    machine_insert(0, "/pico-amiga/df0.adf", false);
 }
 
 // ---- LHA archives: WHDLoad installs as the hard disk (whdboot.c) -------------------------
-// The volume is built into /amiga/whdload/images/<name>.hdf with the DMS area as
+// The volume is built into /pico-amiga/whdload/images/<name>.hdf with the DMS area as
 // the builder's arena (the floppies are ejected first: DF0 would boot before the
 // hard disk, and their DMS slots are the arena).  Block 0 after "DOS\1" carries
 // a stamp: the archive's size and date, so an unchanged archive boots its image
 // again (the game's saves are in it), and what the build found out about it.
-#define WHD_DIR     "/amiga/whdload"
+#define WHD_DIR     "/pico-amiga/whdload"
 #define WHD_IMAGES  WHD_DIR "/images"
 #define WHD_CARD_MAX 64
 
@@ -1082,7 +1255,7 @@ struct WhdStamp {               // big-endian on the card, at byte 16 of block 0
 };
 #define WHD_STAMP_VERSION 1
 
-struct WhdCard { char path[96]; char full[128]; char tag[24]; };   // a file of the card's /amiga/whdload/
+struct WhdCard { char path[96]; char full[128]; char tag[24]; };   // a file of the card's /pico-amiga/whdload/
 #define WHD_EXTRA_MAX (WHD_CARD_MAX + 48 + 16)
 #define WHD_WALK_DEPTH 4
 
@@ -1155,7 +1328,7 @@ static uint32_t fat_to_unix(uint16_t date, uint16_t time) {
     return days * 86400u + (time >> 11) * 3600u + ((time >> 5) & 63u) * 60u + (time & 31u) * 2u;
 }
 
-// The card's /amiga/whdload/ tree (but images/), depth-first.
+// The card's /pico-amiga/whdload/ tree (but images/), depth-first.
 static void whd_walk(WhdBuild &b, const char *rel, int depth) {
     if (depth >= WHD_WALK_DEPTH) return;
     char dir[160];

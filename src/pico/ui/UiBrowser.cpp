@@ -6,7 +6,7 @@
 //  +-----------------------------------------------------+
 //  | [rainbow] Open file                          12/345 |  header
 //  |-----------------------------------------------------|
-//  | SD:/amiga/games/                                     |  path bar
+//  | SD:/pico-amiga/games/                                     |  path bar
 //  |----------------------------------+------------------|
 //  | .. (up)                        » | game.tap         |  info pane: full name,
 //  | demos                          » | Tape image       |  size, date, then the
@@ -63,6 +63,7 @@ static BrowseTypeState s_types[BROWSE_COUNT] = {
     { "" },                                      // BROWSE_CFG
     { ".pas" },                                  // BROWSE_SNAP (snapshot.cpp)
     { ".hdf,.lha,.lzh" },                        // BROWSE_HDF (the A600's hard disk; an LHA: machine_boot_lha)
+    { ".iso,.cue" },                             // BROWSE_CD (the CD32's disc)
 };
 
 static string lcExt(const string& name) {
@@ -274,6 +275,7 @@ static const char* typeLabel(const string& lcext) {
     if (lcext == "rom" || lcext == "bin" || lcext == "a500" || lcext == "a600" ||
         lcext == "a1000" || lcext == "cdtv")                return "ROM image";
     if (lcext == "hdf")                                     return "Hard disk image";
+    if (lcext == "iso" || lcext == "cue")                   return "CD image";
     if (lcext == "lha" || lcext == "lzh" || lcext == "zip") return "Archive";
     if (lcext == "mod")                                     return "Module";
     if (lcext == "nvs")                                     return "Saved config";

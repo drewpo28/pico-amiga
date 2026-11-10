@@ -501,6 +501,12 @@ void input_frame(void) {
                    (kbd.isVKDown(fabgl::VirtualKey::VK_DPAD_LEFT)  ? 4 : 0) |
                    (kbd.isVKDown(fabgl::VirtualKey::VK_DPAD_RIGHT) ? 8 : 0);
     amiga_joystick(1, dirs, kbd.isVKDown(fabgl::VirtualKey::VK_DPAD_FIRE));
+    // The CD32's pad (the same port): fire is red, the second button (Right Ctrl
+    // with the cursor keys as a joystick) blue, Start play / pause, Select green.
+    amiga_cd32_pad((uint8_t)((kbd.isVKDown(fabgl::VirtualKey::VK_DPAD_FIRE)    ? AMIGA_PAD_RED : 0) |
+                             (kbd.isVKDown(fabgl::VirtualKey::VK_DPAD_ALTFIRE) ? AMIGA_PAD_BLUE : 0) |
+                             (kbd.isVKDown(fabgl::VirtualKey::VK_DPAD_START)   ? AMIGA_PAD_PLAY : 0) |
+                             (kbd.isVKDown(fabgl::VirtualKey::VK_DPAD_SELECT)  ? AMIGA_PAD_GREEN : 0)));
 
     // Port 1 mouse: hid_app.cpp accumulates Mouse::x / y (y up-positive).
     static int32_t last_x, last_y;

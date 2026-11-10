@@ -323,3 +323,26 @@
   its instructions in such loops (the bench's PC histogram); its CPU time fell 2x,
   3-4x under the A1200 load test, and IK+, Cannon Fodder, Exolon, State of the Art and
   KS 1.3 stayed byte-identical at frames 500/1500/3000. The bench prints `idle N%`.
+- **The CD32 is Akiko at $B80000 on the A1200's chips without Gayle** (akiko.c, after
+  WinUAE's akiko.cpp; cfg.akiko, the bench's `--cd32 --rom kick40060.CD32 --ext
+  kick40060.CD32.ext --cd x.cue`). The drive is a byte protocol through two 256-byte
+  rings in chip RAM (commands at base + $200, replies at base); sectors arrive by
+  DMA into 4 KB blocks, the highest PBX bit first (Lotus 3 needs that order), as
+  the raw 2352 bytes with the first four replaced by a counter - the platform's
+  read callback puts the 2336 bytes after the header straight into chip RAM
+  (cdimage.c: `.iso`, or a `.cue` with BINARY files of 2048 / 2336 / 2352 bytes a
+  sector; Cannon Fodder's second track is MODE2/2336 behind a 3 s PREGAP). One
+  sector a 1/75 s (1/150 at double speed), counted in lines; no cache, no thread.
+  The TOC goes out one entry a sector time after a seek to before the disc. A long
+  access to Akiko is ONE access (akiko_read32 / write32 from mem.c): the C2P
+  register counts accesses, two word halves would step it twice. The NVRAM is a
+  24C08 bit-banged on $B80030 (1 KB of the platform's; machine.cpp keeps it in
+  /pico-amiga/cd32.nvram). The pad (port 2): POTGO pin 5 as an output and low
+  makes it a shift register clocked by CIA-A PRA bit 7, read on POTGOR bit 14 -
+  blue, red, yellow, green, forward, reverse, play, then 1, then 0s. CD audio:
+  the play command, its notifications and subcode Q run, no samples are mixed.
+- **An interlaced row with one field over 16 colours stays DIRECT for both** (w_begin,
+  amiga_row_t.pad = 1 + the field that overflowed): entering LACE4 for the other
+  field blanked the first one's line until it was drawn and overflowed again - a
+  black line every other field across the CD32 boot screen's disc (hires, laced,
+  8 planes). The overflowing field tries LACE4 again each time it is drawn.

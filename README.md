@@ -18,6 +18,7 @@ picture and sound over HDMI, or picture over VGA.
 | A500 | 68000 at 7.09 MHz, OCS, 512 KB chip RAM + 512 KB slow RAM |
 | A500+ | ECS (super-hires, the 8375 Agnus / 8373 Denise IDs), 1 MB chip RAM, battery clock |
 | A600 | as the A500+, with Gayle and no clock; IDE hard disks (master and slave): an HDF (with an RDB or one bare partition) or an SD card partition |
+| CD32 | AGA, a 68EC020, 2 MB chip RAM, Akiko: the CD drive (an `.iso`, or a `.cue` with its BINARY track files), the NVRAM for saves, chunky-to-planar, the pad. CD audio tracks play silently for now |
 | Display | lowres, hires at its full 640 pixels, HAM, interlace with both fields, sprites, copper, blitter |
 | Sound | Paula, 4 DMA channels |
 | Disks | DF0-DF3: ADF streamed from the SD card and written back to it; DMS unpacked into PSRAM (write-protected); `.m3u` disk sets |
@@ -70,13 +71,19 @@ describes each mode beside the list.
 ## SD card
 
 ```
-/amiga/            a good place for disks (.adf, .dms, .m3u sets) and Kickstart files;
+/pico-amiga/            a good place for disks (.adf, .dms, .m3u sets) and Kickstart files;
                    the menu's file browser reaches the whole card
-/amiga/df0.adf     goes into DF0 by itself if nothing else was picked
-/amiga/whdload/    optional: files put onto every WHDLoad volume (S/WHDLoad.prefs,
+/pico-amiga/df0.adf     goes into DF0 by itself if nothing else was picked
+/pico-amiga/whdload/    optional: files put onto every WHDLoad volume (S/WHDLoad.prefs,
                    Devs/Kickstarts/..., a newer C/WHDLoad); images/ holds the built volumes
+/pico-amiga/snapshots/  the quick slots
+/pico-amiga/cd32.nvram  the CD32's NVRAM (its games' saves)
 /.config/pico-amiga/<board>/storage.nvs   the settings (pico-speccy's format)
 ```
+
+The folder was `/amiga` before: a card with `/amiga` and no `/pico-amiga` has it renamed at the next boot (the settings' paths follow).
+
+A CD image (`.iso`, `.cue`) opened with Win+F5 or Devices > CD drive runs on the CD32: the machine is switched to it when it is another. The pad: fire is red, the second button (Right Ctrl with the cursor keys as a joystick) blue, Start play, Select green.
 
 A Kickstart picked from the card (Machine > Custom ROM) can have a 512 KB
 `ext.rom` beside it (AROS needs one). An `.m3u` is a list of disk files, one per
@@ -88,7 +95,7 @@ or run short of memory with more drives (Gobliiins: `#DRIVES:1`).
 An `.lha` (a WHDLoad install, or any program packed with LhA), or a bare Amiga
 executable (an intro, a demo: Win+F5 knows it by its hunk header), opened on the A600
 or A1200 (Win+F5, or Devices > Hard disk > Master > Mount...) boots as the hard
-disk: the first time it is unpacked into `/amiga/whdload/images/<name>.hdf`, an
+disk: the first time it is unpacked into `/pico-amiga/whdload/images/<name>.hdf`, an
 FFS volume with WHDLoad, the Kickstart images the slave names (from the built-in
 ROMs, with their `.RTB` files) and a startup-sequence that runs the slave with the
 icon's tooltypes; later it boots that image again (saved games stay in it) until
@@ -104,7 +111,7 @@ F1-F10 are the Amiga's. The rest follow WinUAE and pico-speccy:
 
 | Key | |
 |---|---|
-| F12 | the menu: Help, Machine, Devices (disks, input), Video, Audio, Options, Reset, Debug |
+| F12 | the menu: Help, Machine, Devices (floppy drives, hard disk, CD drive, input), Video, Audio, Options, Reset, Debug |
 | Ctrl+F12 | pick the disk in DF0 |
 | F11 or Shift+F12 | reset the Amiga |
 | Win+F11 | reboot the board |
@@ -142,7 +149,7 @@ test bench:
 
 ```sh
 cmake -S host -B build-host && cmake --build build-host -j
-build-host/pico-amiga --root ~/pico-amiga          # the folder holds amiga/ as the card does
+build-host/pico-amiga --root ~/pico-amiga          # the folder holds pico-amiga/ as the card does
 host/tests/fetch_test_roms.sh roms                 # AROS + DiagROM, from the vAmiga repository
 host/tests/smoke.sh roms                           # DiagROM, keyboard, audio, AROS, ECS
 build-host/pico-amiga-host --rom kick.rom --adf game.adf --frames 1500 --shot 1500:game.png
@@ -167,7 +174,8 @@ src/amiga/     the emulator: platform-independent C11, shared by the firmware an
   floppy.c       drives, ADF <-> MFM track codec, disk DMA
   rtc.c          the A500+ battery clock
   gayle.c        the A600's Gayle: ID, IDE port and PCMCIA registers
-  ide.c          the A600's IDE hard disk (HDF, virtual RDB for a bare partition)
+  ide.c          the A600's IDE hard disks (HDF, virtual RDB for a bare partition)
+  akiko.c        the CD32's Akiko: CD drive, NVRAM, chunky-to-planar
 src/pico/      RP2350 firmware: video (HSTX, PIO HDMI, VGA), HDMI audio, PSRAM,
                clocks, input, disks and DMS, ui/ (the menu, pico-speccy's)
 host/          the PC builds (SDL2 firmware, test bench) and the tests

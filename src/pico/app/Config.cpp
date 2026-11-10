@@ -47,12 +47,13 @@ uint8_t  Config::a600_chip    = 1;
 uint8_t  Config::fast_ram     = 0;
 uint8_t  Config::chip_bus     = 1;
 std::string Config::kick      = "ks13";
-std::string Config::kick_file = "/amiga/kick.rom";
+std::string Config::kick_file = "/pico-amiga/kick.rom";
 std::string Config::df0       = "";
 std::string Config::hdf       = "";
 std::string Config::hdf_raw   = "";
 std::string Config::hdf2      = "";
 std::string Config::hdf2_raw  = "";
+std::string Config::cd        = "";
 bool     Config::df0_wp       = false;
 uint8_t  Config::df0_disk     = 0;
 uint8_t  Config::persist_slot = 1;
@@ -157,16 +158,17 @@ void Config::load() {
     if (fast_ram != 1 && fast_ram != 2 && fast_ram != 4) fast_ram = 0;
     nvs_get_u8 ("chip_bus",      chip_bus,     sts);
     if (chip_bus > 2) chip_bus = 1;
-    if (machine > 3) machine = 0;                 // machine.h MACHINE_COUNT
+    if (machine > 4) machine = 0;                 // machine.h MACHINE_COUNT
     nvs_get_str("kick",          kick,         sts);
     nvs_get_str("kick_file",     kick_file,    sts);
-    if (kick_file.empty()) kick_file = "/amiga/kick.rom";
+    if (kick_file.empty()) kick_file = "/pico-amiga/kick.rom";
     if (!nvs_get_str("df0",      df0,          sts)) df0.clear();
     nvs_get_b  ("df0_wp",        df0_wp,       sts);
     if (!nvs_get_str("hdf",      hdf,          sts)) hdf.clear();
     if (!nvs_get_str("hdf_raw",  hdf_raw,      sts)) hdf_raw.clear();
     if (!nvs_get_str("hdf2",     hdf2,         sts)) hdf2.clear();
     if (!nvs_get_str("hdf2_raw", hdf2_raw,     sts)) hdf2_raw.clear();
+    if (!nvs_get_str("cd",       cd,           sts)) cd.clear();
     nvs_get_u8 ("df0_disk",      df0_disk,     sts);
     nvs_get_u8 ("persist_slot",  persist_slot, sts);
     if (persist_slot < 1 || persist_slot > 40) persist_slot = 1;
@@ -267,6 +269,7 @@ bool Config::save() {
     nvs_set_str(buf, "hdf_raw",     hdf_raw.c_str());
     nvs_set_str(buf, "hdf2",        hdf2.c_str());
     nvs_set_str(buf, "hdf2_raw",    hdf2_raw.c_str());
+    nvs_set_str(buf, "cd",          cd.c_str());
     nvs_set_i(buf, "df0_disk",      df0_disk);
     nvs_set_i(buf, "persist_slot",  persist_slot);
     nvs_set_i(buf, "drives",        drives);

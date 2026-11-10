@@ -46,7 +46,7 @@ enum { AMIGA_ROW_DIRECT = 0, AMIGA_ROW_IDX8 = 1, AMIGA_ROW_LACE4 = 2 };
 typedef struct {
     uint8_t  mode;          // AMIGA_ROW_*
     uint8_t  ncol[2];       // palette entries in use (LACE4: per field line)
-    uint8_t  pad;
+    uint8_t  pad;           // Denise's: an interlaced row kept DIRECT (1 + the field whose line overflowed)
     uint16_t pal[64];       // IDX8: 0..63; LACE4: field 0 = 0..15, field 1 = 16..31
     union {
         uint16_t rgb[AMIGA_FB_W];        // DIRECT
@@ -117,6 +117,11 @@ typedef struct {
     // is ignored), as WinUAE maps them.
     uint8_t   gayle;
     uint8_t   cpu;           // AMIGA_CPU_68000 / AMIGA_CPU_EC020 (amiga_set_cpu)
+    // The CD32 (amiga_set_akiko): Akiko at $B80000 - the CD drive (amiga_set_cd),
+    // the chunky-to-planar register and the NVRAM, 1024 bytes of the platform's
+    // (NULL: none fitted) - and a CD32 pad in port 2 (amiga_cd32_pad).
+    bool      akiko;
+    uint8_t  *nvram;
     const uint8_t *rom;      uint32_t rom_size;    // 256 KB (mirrored) or 512 KB at $F80000
     const uint8_t *ext_rom;  uint32_t ext_size;    // 0 or 512 KB at $E00000 (AROS ext)
     // Fast RAM on a Zorro II autoconfig board (mem.c): 0 or 1 / 2 / 4 / 8 MB,
@@ -186,6 +191,40 @@ void amiga_set_drives(int n);
 // drive.  unit 0 is the master, 1 the slave (a bare partition there is DH1).
 // Kickstart looks for them at reset, so a change wants one (hard).
 void amiga_set_hdf(int unit, const amiga_disk_t *disk);
+// The CD32's Akiko (akiko.c) on or off, with its 1 KB NVRAM (NULL: none).  Takes
+// effect at the next amiga_reset(), a hard one.
+void amiga_set_akiko(bool on, uint8_t *nvram);
+// True once after the Amiga wrote the NVRAM (the platform saves it).
+bool amiga_cd_nvram_dirty(void);
+// The disc in the CD32's drive: its tracks and a sector reader.  read() puts the
+// 2336 bytes that follow a sector's 16-byte header at dst (a MODE1 sector: its
+// 2048 data bytes, the rest as it comes) and returns the sector's mode (1 or 2),
+// or a negative number when it cannot be read.  track() gives track n's (1..tracks)
+// first sector and control nibble (4 = data, 0 = audio).  NULL or no tracks: no
+// disc.  May change while the Amiga runs (the drive reports the change).
+typedef struct {
+    int  (*read)(void *ctx, uint32_t lsn, uint8_t *dst);
+    void (*track)(void *ctx, int n, uint32_t *lsn, uint8_t *ctrl);
+    void *ctx;
+    uint8_t  tracks;         // 1..99
+    uint32_t leadout;        // the sector after the last track
+} amiga_cd_t;
+void amiga_set_cd(const amiga_cd_t *cd);
+// The CD drive's activity, for the platform's disk line and icon.
+typedef struct {
+    bool     present;        // a disc is in
+    bool     led;            // the drive's LED, as the ROM set it
+    bool     playing;        // CD audio
+    uint32_t lsn;            // the last sector read (or the one playing)
+    uint32_t idle;           // frames since a sector was read
+    uint32_t sectors;        // read since the disc went in
+} amiga_cdst_t;
+void amiga_cd_status(amiga_cdst_t *st);
+// The CD32 pad's buttons (port 2; the directions go through amiga_joystick, whose
+// fire is the red button too).
+enum { AMIGA_PAD_PLAY = 1, AMIGA_PAD_RWD = 2, AMIGA_PAD_FFW = 4, AMIGA_PAD_GREEN = 8,
+       AMIGA_PAD_YELLOW = 16, AMIGA_PAD_RED = 32, AMIGA_PAD_BLUE = 64 };
+void amiga_cd32_pad(uint8_t buttons);
 // The CPU (AMIGA_CPU_*): takes effect at the next amiga_reset(), a hard one.
 void amiga_set_cpu(int cpu);
 // The chip bus (a 68EC020 machine; the 68000's is not modelled): on, the CPU

@@ -42,7 +42,9 @@ bool machine_apply_kickstart(void);
 // over chip_ram and slow_ram) and adds Gayle.
 // The A1200: a 68EC020 at 14 MHz, 2 MB of chip RAM (needs the 2 MB chip area:
 // machine_a600_2mb_ok), Gayle ($D1), AGA (Alice / Lisa).
-enum { MACHINE_A500 = 0, MACHINE_A500P = 1, MACHINE_A600 = 2, MACHINE_A1200 = 3, MACHINE_COUNT = 4 };
+// The CD32: the A1200's chips and CPU without Gayle, Akiko (the CD drive, NVRAM,
+// C2P) and its own Kickstart with the extended ROM.
+enum { MACHINE_A500 = 0, MACHINE_A500P = 1, MACHINE_A600 = 2, MACHINE_A1200 = 3, MACHINE_CD32 = 4, MACHINE_COUNT = 5 };
 const char *machine_model_name(int m);   // "A600"
 const char *machine_model_desc(int m);   // "A600 (ECS, 1 MB chip RAM, Gayle)"
 // What is running, for the menu's sub-header ("A500+", "Kickstart 2.04").
@@ -61,7 +63,7 @@ bool machine_disk_ro(int drive);       // the Amiga cannot write the disk in it
 bool machine_disk_dms(int drive);      // it is a DMS (unpacked, read-only)
 // The disk in `drive` again, write-protected or not (a disk set stays loaded).
 bool machine_write_protect(int drive, bool on);
-// At boot: put Config::df0 back (or the legacy /amiga/df0.adf); an .m3u there
+// At boot: put Config::df0 back (or the legacy /pico-amiga/df0.adf); an .m3u there
 // brings its disk set back with disk Config::df0_disk in the drive.
 void machine_restore_disks(void);
 
@@ -78,7 +80,7 @@ bool machine_set_select(int i);         // swap disk i into DF0
 
 // Devices > Floppy drives > New blank disk: an empty formatted 880 KB ADF (OFS, not bootable, as a
 // quick Format leaves it) named after the volume, next to the loaded disk set
-// (or DF0's disk, else in /amiga/disks/). With a set loaded it joins the set
+// (or DF0's disk, else in /pico-amiga/disks/). With a set loaded it joins the set
 // (machine_set_add); otherwise it goes into DF0. Its path goes to path_out.
 bool machine_new_disk(const char *volume, char *path_out, unsigned path_size);
 // The ADF itself: an empty formatted volume at `path` (which must not exist).
@@ -92,10 +94,10 @@ void machine_disk_info(const char *path, char *out, unsigned size);
 bool machine_set_add(const char *path);
 
 // An LHA archive (a WHDLoad install, or any program) as the A600's / A1200's
-// hard disk (whdboot.c): built once into /amiga/whdload/images/<name>.hdf (an
+// hard disk (whdboot.c): built once into /pico-amiga/whdload/images/<name>.hdf (an
 // FFS volume: the archive, C/WHDLoad, the Kickstart images the slave names from
 // the built-in ROMs with their .RTB files, a startup-sequence that runs it, and
-// the files of the card's /amiga/whdload/ folder) and used again while the
+// the files of the card's /pico-amiga/whdload/ folder) and used again while the
 // archive is unchanged (the game's saves stay).  The floppies are ejected (DF0
 // would boot first) and the image becomes Config::hdf, the master; the caller saves Config
 // and resets.  False with the reason in msg; true with msg "" or a warning (the
@@ -104,6 +106,23 @@ bool machine_set_add(const char *path);
 // same way: the volume holds it alone and the startup-sequence runs it.
 bool machine_boot_lha(const char *path, char *msg, unsigned msg_size);
 bool machine_is_program(const char *path);   // the file starts with HUNK_HEADER ($3F3)
+
+// The CD32's disc: an .iso (one data track) or a .cue sheet with its BINARY
+// track files beside it (cdimage.c).  "" takes it out; false when it cannot be
+// read (the drive is then empty).  The drive tells the Amiga of the change: no
+// reset is needed, though a CD32 boots a disc only at its start.  Config::cd is
+// the caller's to keep.
+bool machine_set_cd(const char *path);
+const char *machine_cd(void);           // the image's path, "" = none
+// Once a frame (main.c): the CD32's NVRAM goes to /pico-amiga/cd32.nvram when the
+// Amiga wrote it.
+void machine_frame(void);
+
+// The card's folder was /amiga before it took pico-speccy's layout (/pico-speccy:
+// ours is /pico-amiga, with snapshots/, whdload/, disks/ in it): once, at boot,
+// an /amiga with no /pico-amiga beside it is renamed and the paths Config keeps
+// follow.  Before machine_select_rom (Config::kick_file).
+void machine_home_migrate(void);
 
 // Connect the drives Config::drives asks for (0 = Auto: one per disk of a set,
 // up to 4; one otherwise) and put the set's disks 2.. into DF1.. . True when

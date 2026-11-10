@@ -10,6 +10,9 @@
 //                   [--hdf disk.hdf] (the A600's IDE drive, read from the file a sector at a time;
 //                    written to it only with --write-back, otherwise the drive's writes fail)
 //                   [--hdf2 disk.hdf] (the IDE slave, the same way)
+//                   [--cd32] (the CD32: AGA, a 68EC020, 2 MB, Akiko; --rom its Kickstart, --ext its extended ROM)
+//                   [--cd disc.iso|disc.cue] (the disc in its drive) [--pad N:buttons]... (its pad from frame N on:
+//                    1 play, 2 reverse, 4 forward, 8 green, 16 yellow, 32 red, 64 blue)
 //                   [--write-back] (disks the Amiga wrote are saved to their files at the end)
 //                   [--fast MB] (a Zorro II fast RAM board: 1, 2, 4 or 8 MB)
 //                   [--lha game.lha|program [--whd DIR] [--lha-out img.hdf]] (the archive, or an Amiga executable, as a bootable
@@ -41,6 +44,8 @@
 #include "amiga_int.h"
 #include "dms.h"
 #include "whdboot.h"
+#include "cdimage.h"
+#include <strings.h>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -210,6 +215,55 @@ static int hdf_write(void *ctx, uint32_t off, const void *src, uint32_t len) {
     return fseek(f, (long)off, SEEK_SET) || fwrite(src, 1, len, f) != len ? -1 : 0;
 }
 
+// ---- --cd: a CD image in the CD32's drive (cdimage.c) --------------------------------
+static cd_toc_t cd_toc;
+static FILE *cd_files[CD_MAX_TRACKS];
+static char cd_dir[512];
+static uint32_t cd_file(void *ctx __attribute__((unused)), int index, const char *name) {
+    char path[1024];
+    const char *base = strrchr(name, '/');                 // sheets written elsewhere carry paths
+    const char *b2 = strrchr(name, '\\');
+    if (b2 && (!base || b2 > base)) base = b2;
+    snprintf(path, sizeof path, "%s%s", cd_dir, base ? base + 1 : name);
+    FILE *f = index < CD_MAX_TRACKS ? fopen(path, "rb") : NULL;
+    if (!f) { fprintf(stderr, "cd: %s: cannot open\n", path); return 0; }
+    cd_files[index] = f;
+    fseek(f, 0, SEEK_END);
+    return (uint32_t)ftell(f);
+}
+static bool cd_fread(void *ctx __attribute__((unused)), int index, uint32_t off, void *dst, uint32_t len) {
+    FILE *f = cd_files[index];
+    return f && !fseek(f, (long)off, SEEK_SET) && fread(dst, 1, len, f) == len;
+}
+static int cd_sector(void *ctx __attribute__((unused)), uint32_t lsn, uint8_t *dst) { return cd_read_sector(&cd_toc, lsn, dst, cd_fread, NULL); }
+static void cd_track(void *ctx __attribute__((unused)), int n, uint32_t *lsn, uint8_t *ctrl) {
+    *lsn = cd_toc.t[n - 1].lsn;
+    *ctrl = cd_toc.t[n - 1].mode ? 4 : 0;
+}
+static bool cd_open(const char *path) {
+    const char *slash = strrchr(path, '/');
+    snprintf(cd_dir, sizeof cd_dir, "%.*s", slash ? (int)(slash - path + 1) : 0, path);
+    const char *ext = strrchr(path, '.');
+    bool ok;
+    if (ext && !strcasecmp(ext, ".cue")) {
+        uint32_t n;
+        uint8_t *text = load(path, &n);
+        ok = cd_parse_cue((const char *)text, n, &cd_toc, cd_file, NULL);
+        free(text);
+    } else {
+        const uint32_t size = cd_file(NULL, 0, slash ? slash + 1 : path);
+        ok = size && cd_from_iso(size, &cd_toc);
+    }
+    if (!ok) { fprintf(stderr, "%s: not a CD image this reads\n", path); return false; }
+    for (int i = 0; i < cd_toc.tracks; i++)
+        fprintf(stderr, "cd: track %d %s/%u, sectors %u+%u, file %u at %u\n", i + 1,
+                cd_toc.t[i].mode ? cd_toc.t[i].mode == 1 ? "MODE1" : "MODE2" : "AUDIO", cd_toc.t[i].secsize,
+                cd_toc.t[i].lsn, cd_toc.t[i].sectors, cd_toc.t[i].file, cd_toc.t[i].foff);
+    const amiga_cd_t cd = { cd_sector, cd_track, NULL, (uint8_t)cd_toc.tracks, cd_toc.leadout };
+    amiga_set_cd(&cd);
+    return true;
+}
+
 // ---- --lha: an LHA archive as a bootable hard disk (whdboot.c) ---------------------------
 static uint32_t lha_fread(void *ctx, uint32_t off, void *dst, uint32_t len) {
     FILE *f = ctx;
@@ -338,7 +392,9 @@ static int64_t rtc_time(void *ctx) {
 int main(int argc, char **argv) {
     const char *rom_path = NULL, *ext_path = NULL, *wav_path = NULL;
     const char *adf_path[8] = {0}; int nadf = 0;
-    const char *hdf_path = NULL, *hdf2_path = NULL;
+    const char *hdf_path = NULL, *hdf2_path = NULL, *cd_path = NULL;
+    bool cd32 = false;
+    inev_t pads[256]; int npads = 0;                   // --pad frame:buttons (AMIGA_PAD_*)
     const char *lha_path = NULL, *whd_dir = NULL, *lha_out = NULL;
     int fast_mb = 0;
     int load_test = 0;        // the first 4 go in DF0..DF3, the rest wait for --swap
@@ -381,6 +437,12 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--cpu020")) cpu020 = true;
         else if (!strcmp(a, "--aga")) aga = true;
         else if (!strcmp(a, "--a1200")) plus = a600 = a601 = cpu020 = a1200 = true;
+        else if (!strcmp(a, "--cd32")) plus = a601 = cpu020 = aga = cd32 = true;   // AGA, a 68EC020, 2 MB, Akiko
+        else if (!strcmp(a, "--cd") && v) { cd_path = v; i++; }
+        else if (!strcmp(a, "--pad") && v && npads < 256) {
+            if (sscanf(v, "%d:%i", &pads[npads].frame, &pads[npads].a) == 2) npads++;
+            i++;
+        }
         else if (!strcmp(a, "--chip-bus")) chip_bus = 1;
         else if (!strcmp(a, "--fast-bus")) chip_bus = 0;
         else if (!strcmp(a, "--skip-odd")) skip_odd = true;     // odd frames not drawn (amiga_set_render_skip)
@@ -434,6 +496,8 @@ int main(int argc, char **argv) {
     if (a600) cfg.gayle = a1200 ? AMIGA_GAYLE_A1200 : AMIGA_GAYLE_A600;
     if (cpu020) cfg.cpu = AMIGA_CPU_EC020;
     if (plus) { cfg.chipset = AMIGA_ECS; cfg.rtc_time = rtc_time; }
+    static uint8_t nvram[1024];
+    if (cd32) { cfg.akiko = true; cfg.nvram = nvram; cfg.rtc_time = NULL; }
     else if (slow) { cfg.slow_size = 512 * 1024; cfg.slow_ram = calloc(1, cfg.slow_size); }
     if (aga) cfg.chipset = AMIGA_AGA;          // after the model's ECS
     uint32_t rs; cfg.rom = load(rom_path, &rs); cfg.rom_size = rs;
@@ -448,7 +512,7 @@ int main(int argc, char **argv) {
     if (fast_mb) { cfg.fast_size = (uint32_t)fast_mb << 20; cfg.fast_ram = calloc(1, cfg.fast_size); }
     amiga_init(&cfg);
     amiga_set_vcentre(vcentre);
-    amiga_set_chip_bus(chip_bus < 0 ? a1200 : chip_bus != 0);   // the A1200's 68EC020 waits for the chip bus
+    amiga_set_chip_bus(chip_bus < 0 ? a1200 || cd32 : chip_bus != 0);   // the A1200's 68EC020 waits for the chip bus
     amiga_set_chip_bus_params(bus_fetch8, bus_cost8);
     if (pchist_path) { extern unsigned int *amiga_pc_hist; amiga_pc_hist = calloc(1u << 20, sizeof *amiga_pc_hist); }
     if (render_thread_on) {
@@ -468,6 +532,7 @@ int main(int argc, char **argv) {
     }
     if (ndrv > 1) { amiga_set_drives(ndrv); amiga_reset(true); }   // Kickstart finds DF1+ at reset
     if (load_test) amiga_set_load_test(load_test >= 3 ? 3 : 2, load_test == 2 || load_test == 4);
+    if (cd_path && !cd_open(cd_path)) return 1;
     FILE *hdf = NULL;
     if (hdf_path) {
         hdf = fopen(hdf_path, write_back ? "r+b" : "rb");
@@ -504,6 +569,7 @@ int main(int argc, char **argv) {
     for (int f = 0; f < frames; f++) {
         for (int k = 0; k < nkeys; k++) if (keys[k].frame == f) amiga_key((uint8_t)keys[k].code, keys[k].down);
         for (int k = 0; k < njoys; k++) if (joys[k].frame == f) amiga_joystick(1, (uint8_t)joys[k].a, joys[k].b);
+        for (int k = 0; k < npads; k++) if (pads[k].frame == f) amiga_cd32_pad((uint8_t)pads[k].a);
         for (int k = 0; k < nmice; k++)
             if (mice[k].frame == f) amiga_mouse(mice[k].a, mice[k].b, mice[k].c & 1, mice[k].c & 2);
         for (int k = 0; k < nswaps; k++)

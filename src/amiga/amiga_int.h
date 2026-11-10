@@ -100,6 +100,9 @@ typedef struct {
     uint16_t joy0dat, joy1dat;
     bool     mouse_lmb, mouse_rmb, joy_fire[2];
     uint8_t  joy_dirs[2];
+    // The CD32 pad in port 2 (cfg.akiko): its buttons (AMIGA_PAD_*), its shift
+    // register's position (8 = the first button, blue) and the clock line as last seen.
+    uint8_t  pad_buttons, pad_shift, pad_clk;
 } amiga_t;
 
 extern amiga_t A;
@@ -181,6 +184,7 @@ void     denise_state(st_t *s);
 void     paula_state(st_t *s);
 void     floppy_state(st_t *s);
 void     gayle_state(st_t *s);
+void     akiko_state(st_t *s);
 
 // Current horizontal position in colour clocks (0..226), from the CPU's clock.
 uint16_t amiga_hpos(void);
@@ -309,6 +313,16 @@ void     gayle_write16(uint32_t a, uint16_t v);
 uint8_t  gayle_id_read(uint32_t a);                 // $DD0000-$DEFFFF
 void     gayle_id_write(void);
 void     gayle_line(void);                          // per line: the IDE interrupt
+
+// ---- Akiko: the CD32's CD drive, NVRAM and C2P (akiko.c; cfg.akiko) ----------
+void     akiko_reset(void);
+uint8_t  akiko_read(uint32_t a);                    // $B80000-$B8FFFF
+uint16_t akiko_read16(uint32_t a);
+uint32_t akiko_read32(uint32_t a);                  // a long is one access (the C2P counts them)
+void     akiko_write(uint32_t a, uint8_t v);
+void     akiko_write16(uint32_t a, uint16_t v);
+void     akiko_write32(uint32_t a, uint32_t v);
+void     akiko_line(void);                          // per line: the drive, its interrupt
 
 // ---- the IDE drive behind Gayle (ide.c) ------------------------------------
 void     ide_insert(int unit, const amiga_disk_t *d);   // 0 master, 1 slave; NULL: no drive

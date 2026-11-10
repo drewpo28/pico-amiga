@@ -13,6 +13,7 @@
 //   With Gayle (A600, cfg.gayle): CIAs at $BF0000 only, nothing at $A00000-$BEFFFF
 //   (the PCMCIA slot's space, empty) or $C00000-$D7FFFF, Gayle at $D80000-$DDFFFF,
 //   its ID at $DD0000-$DEFFFF, no clock ($DC0000 reads 0) - WinUAE's map
+//   With Akiko (the CD32, cfg.akiko): Akiko at $B80000-$B8FFFF, no clock
 //   $DF0000-$DFFFFF  custom chips
 //   $E00000-$E7FFFF  extended ROM (AROS) if supplied
 //   $E80000-$EFFFFF  Zorro II autoconfig space: the fast RAM board (cfg.fast_size)
@@ -23,7 +24,7 @@
 #include "amiga_int.h"
 #include "m68k.h"
 
-enum { B_NONE = 0, B_CIA, B_CUSTOM, B_RTC, B_GAYLE, B_GAYLE_ID, B_AUTOCONF };
+enum { B_NONE = 0, B_CIA, B_CUSTOM, B_RTC, B_GAYLE, B_GAYLE_ID, B_AUTOCONF, B_AKIKO };
 
 typedef struct {
     const uint8_t *rd;   // direct read base, or NULL
@@ -145,7 +146,8 @@ void mem_init(void) {
     } else {
         map(0xA0, 0x20, NULL, NULL, 0, B_CIA);
         map(0xC0, 0x18, NULL, NULL, 0, B_CUSTOM);      // $C00000-$D7FFFF mirror
-        if (c->rtc_time) map(0xDC, 0x01, NULL, NULL, 0, B_RTC);
+        if (c->rtc_time && !c->akiko) map(0xDC, 0x01, NULL, NULL, 0, B_RTC);
+        if (c->akiko) map(0xB8, 0x01, NULL, NULL, 0, B_AKIKO);
     }
     if (c->slow_ram && c->slow_size)
         map(0xC0, (int)(c->slow_size >> 16), c->slow_ram, c->slow_ram, c->slow_size - 1, B_NONE);
@@ -205,6 +207,8 @@ AMIGA_HOT static uint8_t io_read8(uint32_t a, int io) {
         return gayle_id_read(a);
     case B_AUTOCONF:
         return z2_read8(a);
+    case B_AKIKO:
+        return akiko_read(a);
     default:
         return 0;
     }
@@ -223,6 +227,8 @@ AMIGA_HOT static uint16_t io_read16(uint32_t a, int io) {
         return rtc_read((int)(a >> 2) & 15);
     case B_GAYLE:
         return gayle_read16(a);
+    case B_AKIKO:
+        return akiko_read16(a);
     case B_GAYLE_ID:                // a byte at a time, the high one first, as WinUAE
     case B_AUTOCONF:
         return (uint16_t)((io_read8(a, io) << 8) | io_read8(a + 1, io));
@@ -253,6 +259,9 @@ AMIGA_HOT static void io_write8(uint32_t a, uint8_t v, int io) {
     case B_AUTOCONF:
         z2_write8(a, v);
         break;
+    case B_AKIKO:
+        akiko_write(a, v);
+        break;
     default:
         break;
     }
@@ -272,6 +281,9 @@ AMIGA_HOT static void io_write16(uint32_t a, uint16_t v, int io) {
         break;
     case B_GAYLE:
         gayle_write16(a, v);
+        break;
+    case B_AKIKO:
+        akiko_write16(a, v);
         break;
     case B_GAYLE_ID:
         io_write8(a, (uint8_t)(v >> 8), io);
@@ -379,6 +391,7 @@ AMIGA_HOT unsigned int m68k_read_memory_32(unsigned int a) {
         const uint8_t *p = b->rd + (a & b->mask);
         return ((uint32_t)ld16(p) << 16) | ld16(p + 2);
     }
+    if (!b->rd && b->io == B_AKIKO) return akiko_read32(a);     // one access: the C2P counts them
     uint32_t hi = m68k_read_memory_16(a);
     return (hi << 16) | m68k_read_memory_16(a + 2);
 }
@@ -410,6 +423,7 @@ AMIGA_HOT void m68k_write_memory_16(unsigned int a, unsigned int v) {
 }
 
 AMIGA_HOT void m68k_write_memory_32(unsigned int a, unsigned int v) {
+    if (banks[(a >> 16) & 0xFF].io == B_AKIKO && !banks[(a >> 16) & 0xFF].rd) { akiko_write32(a & 0xFFFFFF, v); return; }
     m68k_write_memory_16(a, v >> 16);
     m68k_write_memory_16(a + 2, v & 0xFFFF);
 }

@@ -97,7 +97,10 @@ void cia_reset(void) {
 static uint8_t pra_inputs(int w) {
     if (w) return 0xFF;
     uint8_t v = 0xFF;
-    if (A.joy_fire[1]) v &= ~0x80;
+    if (A.cfg.akiko) {                  // the pad's red button; in shift mode the line is its clock
+        const bool shift = (A.potgo & 0x2000) && !(A.potgo & 0x1000);
+        if (!shift && (A.joy_fire[1] || (A.pad_buttons & AMIGA_PAD_RED))) v &= ~0x80;
+    } else if (A.joy_fire[1]) v &= ~0x80;
     if (A.mouse_lmb || A.joy_fire[0]) v &= ~0x40;
     v = (uint8_t)((v & ~0x3C) | (floppy_cia_pra() & 0x3C));
     return v;
@@ -142,6 +145,12 @@ static void port_outputs(int w) {
     if (w == 0) {
         bool ovl = (c->ddra & 1) ? (c->pra & 1) : true;
         mem_set_overlay(ovl);
+        if (A.cfg.akiko) {              // the CD32 pad's clock: pin 6 of port 2 as an output, falling
+            const uint8_t clk = c->ddra & c->pra & 0x80;
+            if ((A.potgo & 0x2000) && !(A.potgo & 0x1000) && (c->ddra & 0x80) && clk != A.pad_clk && !clk && A.pad_shift)
+                A.pad_shift--;
+            A.pad_clk = clk;
+        }
     } else {
         floppy_cia_prb((uint8_t)((c->prb & c->ddrb) | (0xFF & ~c->ddrb)));
     }

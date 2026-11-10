@@ -7,8 +7,8 @@
 //   vsync  - the output frame clock video_frames() counts (host_drivers.cpp);
 //   main   - SDL: window, events, presenting the framebuffer; the audio callback.
 // The "SD card" is a folder, ~/pico-amiga by default (--root DIR picks another):
-// host_fatfs.cpp is the FatFs API over it, so the firmware reads /amiga/kick.rom
-// and /amiga/df0.adf from <root>/amiga/ exactly as from a card.
+// host_fatfs.cpp is the FatFs API over it, so the firmware reads /pico-amiga/kick.rom
+// and /pico-amiga/df0.adf from <root>/pico-amiga/ exactly as from a card.
 // Keyboard: SDL scancodes are USB HID usages, so keys become HID boot reports for
 // the firmware's own process_kbd_report() (input.cpp) on core0.  Mouse: click into
 // the window to capture it (relative mode), middle button releases it.
@@ -41,8 +41,8 @@ extern const char *host_sd_path;        // host_disk.cpp: --sd, the raw card's i
 
 static void usage(const char *argv0) {
     fprintf(stderr, "usage: %s [--root DIR] [--sd card.img]\n"
-                    "  DIR is the SD card folder (default ~/pico-amiga): DIR/amiga/kick.rom,\n"
-                    "  DIR/amiga/ext.rom, DIR/amiga/df0.adf as on the card.\n"
+                    "  DIR is the SD card folder (default ~/pico-amiga): DIR/pico-amiga/kick.rom,\n"
+                    "  DIR/pico-amiga/ext.rom, DIR/pico-amiga/df0.adf as on the card.\n"
                     "  card.img: the card's raw sectors (its MBR and partitions), for the\n"
                     "  A600's hard disk on an SD partition.\n", argv0);
 }

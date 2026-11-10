@@ -20,11 +20,11 @@
 //
 // ROMs: the built-in ones (roms.h, picked in the Machine menu), or from the card:
 //   Machine > Custom ROM picks a 256 or 512 KB Kickstart image on the card
-//   (default /amiga/kick.rom; AROS works); an ext.rom in its folder is the 512 KB
+//   (default /pico-amiga/kick.rom; AROS works); an ext.rom in its folder is the 512 KB
 //   extended ROM at $E00000 (optional, AROS needs it)
 // Disks: Devices > Floppy drives > DF0 picks an ADF on the card (streamed from it) or a DMS (unpacked
 //   into PSRAM, write-protected); without a pick,
-//   /amiga/df0.adf goes into DF0 by itself.
+//   /pico-amiga/df0.adf goes into DF0 by itself.
 // Settings: /.config/pico-amiga/<board>/storage.nvs (app/Config.h).
 //
 // Boot failures paint the screen one colour and blink the LED:
@@ -197,6 +197,7 @@ int main(void) {
     // built-in ROM the machine also boots without one.
     ui_init(fb);                     // the menu draws into fb
     BOOT_STEP("menu up, picking the ROM");
+    if (card) machine_home_migrate();
     if (!machine_select_rom(&cfg)) fail(card ? 0x00F : 0xF0F);
 
     cfg.framebuffer = fb;
@@ -251,6 +252,7 @@ int main(void) {
         const uint32_t emu_us = time_us_32() - t_emu;
         emu_last = emu_us;
         ui_stats_frame(emu_us);
+        machine_frame();
         perf_log_frame(emu_us, skip);
         // LED: slow blink = no keyboard, fast blink = keyboard mounted, steady = key held.
         led(input_key_held() || (frame & (input_keyboard_mounted() ? 8 : 32)) != 0);

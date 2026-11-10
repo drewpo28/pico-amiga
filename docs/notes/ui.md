@@ -66,7 +66,7 @@
   anything changes. `src/pico/snapshot.cpp` is the file: "PAS1" header, NAME
   (renamed in place), CFG (model, Kickstart, the drives' disks with size and date),
   then the core's blocks; the disks' contents are not in it. Snapshots > Load from
-  file / Quick slots (40, `/amiga/snapshots/persistN.pas`, `ui/UiSnap.cpp`);
+  file / Quick slots (40, `/pico-amiga/snapshots/persistN.pas`, `ui/UiSnap.cpp`);
   Win+F3 / Win+F4 open the slots (Enter loads / saves), Alt+Win+F3 / Alt+Win+F4
   load / save `Config::persist_slot` at once; a `.pas` opens from Win+F5 (no F2
   key). The bench: `--state-save N:file` / `--state-load file` (the core's blocks
@@ -81,7 +81,7 @@
   it - the archive, `C/WHDLoad`, the Kickstart images the slave names (a
   case-insensitive search of the slave for "40068.A1200" etc.; UFO CD32 lists three)
   from the built-in ROMs under their WHDLoad names (`builtin_rom_t.file`) with
-  their `.RTB`, the files of the card's `/amiga/whdload/` (first wins), and
+  their `.RTB`, the files of the card's `/pico-amiga/whdload/` (first wins), and
   `S/Startup-Sequence`: `CD` into the slave's folder, `C:WHDLoad SLAVE=x PRELOAD`
   plus the icon's tooltypes (the icon whose `SLAVE=` names a slave; WHDLoad's own
   local options only, `$hex` made decimal as its CLI wants, MMU / Snoop / Chk left
@@ -90,7 +90,7 @@
   starts with $000003F3, `machine_is_program`) gets a volume of its own the same way
   (`whd_job_t.run`, no archive). Every volume has empty C, S, L, Libs, Devs, Fonts:
   the boot assigns only folders that exist, and a missing LIBS: asks for a volume.
-- The image is `/amiga/whdload/images/<name>.hdf`, built once (the DMS area is the
+- The image is `/pico-amiga/whdload/images/<name>.hdf`, built once (the DMS area is the
   arena: the floppies are ejected - DF0 would boot first - and the build runs on
   an 8 KB heap stack, pico-speccy's zipCallOnStack) and stamped at byte 16 of block 0
   with the archive's size and date: an unchanged archive boots its image again
@@ -111,3 +111,17 @@
   use under the cursor; no partition table: straight to the browser). An LHA goes
   to the master only (it is the boot drive; the slave holding that image lets go
   of it); one file or one writable window never sits in both drives.
+- The card's folder is `/pico-amiga` (pico-speccy's layout: snapshots/, whdload/,
+  disks/ in it); it was `/amiga`, which machine_home_migrate renames once at boot,
+  Config's paths following.
+- The CD32 (Config::machine 4, Machine > CD32: `ks31cd32` with `cd32ext` mapped at
+  $E00000 - roms.cmake's machine "-" lists a ROM under no row; a Custom ROM takes
+  ext.rom from its folder). Devices > CD drive (Config::cd, `machine_set_cd`): an
+  `.iso` or `.cue` (BROWSE_CD); Win+F5 on one switches the machine to the CD32
+  first (insertCd). The disc's TOC and one open track file are on the heap while
+  it is in. The NVRAM (1 KB on the heap while the machine is a CD32) goes to
+  /pico-amiga/cd32.nvram a second after the Amiga last wrote it (machine_frame).
+  The pad comes from the VK_DPAD_* keys (input.cpp): fire red, ALTFIRE blue, START
+  play, SELECT green; yellow and the shoulder buttons have no key yet. Win+F8's
+  disk line and the drive icon show the CD as they do the hard disk (UiStats
+  diskStatus).

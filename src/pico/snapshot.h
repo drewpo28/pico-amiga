@@ -3,7 +3,7 @@
 #pragma once
 #include <string>
 
-#define SNAP_DIR      "/amiga/snapshots"
+#define SNAP_DIR      "/pico-amiga/snapshots"
 #define SNAP_SLOTS    40                       // Snapshots > Quick slots: persist1..40.pas
 #define SNAP_NAME_LEN 64
 

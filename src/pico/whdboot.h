@@ -11,7 +11,7 @@
 //                                caller has them (built-in ROMs + relocation tables)
 //   S/Startup-Sequence           CD into the slave's folder, WHDLoad SLAVE=x
 //                                PRELOAD plus the icon's tooltypes as options
-//   and whatever other extra files the caller adds (the card's /amiga/whdload/
+//   and whatever other extra files the caller adds (the card's /pico-amiga/whdload/
 //   folder: S/WHDLoad.prefs, more Kickstarts).  An archive with its own
 //   S/Startup-Sequence (a whole system) keeps it.
 #pragma once

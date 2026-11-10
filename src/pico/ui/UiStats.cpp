@@ -97,8 +97,14 @@ static const char* const kHdd[8] = {
     "........", "BBBBBBBB", "BLLLLLLB", "BBBBBBBB",
     "BBBBBBBB", "BBBBBAAB", "BBBBBBBB", "........",
 };
+// The CD32's drive: a disc, its inner ring light, the hole showing the picture.
+static const char* const kCd[8] = {
+    "..BBBB..", ".BBBBBB.", "BBBLLBBB", "BBL..LBB",
+    "BBL..LBB", "BBBLLBBB", ".BBBBBB.", "..BBBB..",
+};
 static volatile bool     s_lamp;              // either icon shown (the overlay rows)
 static volatile bool     s_fd_on, s_hd_on;    // which
+static volatile bool     s_is_cd;             // the second one is the CD32's drive (diskStatus)
 static volatile uint16_t s_lamp_col, s_hd_col;// body colours
 static int               s_lx, s_ly;          // framebuffer column / row of the corner icon's top left (the HDD's: 12 left of the floppy's)
 static int               s_ov[2][2];          // the overlay ranges as last set
@@ -130,6 +136,23 @@ extern "C" void ui_stats_buffer(void* p) { nm::s_px = (uint16_t (*)[nm::BAND_W])
 
 extern "C" bool ui_stats_active(void) { return nm::s_px && nm::s_page != 0; }
 
+// The hard disk's activity - or, on the CD32 (machine 4, machine.h: no IDE port),
+// the CD drive's in the same shape: its sector as the block, four 512-byte
+// blocks a sector for the rate.  The line then says CD, the icon is a disc (kCd).
+static void diskStatus(amiga_ide_t& hd) {
+    nm::s_is_cd = Config::machine == 4;
+    if (!nm::s_is_cd) { amiga_ide_status(&hd); return; }
+    amiga_cdst_t cd;
+    amiga_cd_status(&cd);
+    hd.present = cd.present;
+    hd.op = cd.sectors ? 1 : 0;
+    hd.busy = false;
+    hd.lba = cd.lsn;
+    hd.idle = cd.idle;
+    hd.rd_blocks = cd.sectors * 4;
+    hd.wr_blocks = 0;
+}
+
 extern "C" void ui_stats_toggle(void) {
     using namespace nm;
     if (!s_px) return;                  // no PSRAM to spare (a 2 MB chip): no band
@@ -138,7 +161,7 @@ extern "C" void ui_stats_toggle(void) {
     s_t0 = time_us_32();
     amiga_get_profile(&s_prof, false);
     amiga_ide_t hd;
-    amiga_ide_status(&hd);
+    diskStatus(hd);
     s_lines = 3;
     for (int i = 0; i < 3; i++) snprintf(s_l[i], sizeof s_l[i], "  --");
     s_disk[0] = 0;
@@ -170,7 +193,7 @@ extern "C" void ui_stats_row(void*, int row, amiga_row_t* r) {
             }
         }
         if (s_hd_on) {
-            const char* g = kHdd[row - s_ly];
+            const char* g = (s_is_cd ? kCd : kHdd)[row - s_ly];
             const uint16_t body = s_hd_col;
             for (int i = 0; i < 8; i++) {
                 const int x = s_lx - (s_fd_on ? 12 : 0) + i;   // the corner when the floppy's is off
@@ -204,7 +227,8 @@ static void hdLine(const amiga_ide_t& h, uint32_t rate, char* out, size_t n) {
     if (k < 1000) snprintf(r, sizeof r, "%3uK", (unsigned)k);
     else snprintf(r, sizeof r, "%u.%uM", (unsigned)(k / 1024), (unsigned)(k % 1024 * 10 / 1024));
     const bool on = h.busy || h.idle <= 10;
-    snprintf(out, n, "HD %07u %s %s", (unsigned)(h.lba % 10000000u), on ? (h.op == 2 ? "WR" : "RD") : "--", r);
+    snprintf(out, n, "%s %07u %s %s", nm::s_is_cd ? "CD" : "HD", (unsigned)(h.lba % 10000000u),
+             on ? (h.op == 2 ? "WR" : "RD") : "--", r);
 }
 
 extern "C" void ui_stats_frame(uint32_t emu_us) {
@@ -212,7 +236,7 @@ extern "C" void ui_stats_frame(uint32_t emu_us) {
     amiga_floppy_t fl;
     amiga_floppy_status(&fl);
     amiga_ide_t hd;
-    amiga_ide_status(&hd);
+    diskStatus(hd);
     // The icons: while the DMA (the transfer) runs and 10 frames after (track by
     // track reads leave short gaps; they should not blink through them).
     const bool fd = Config::disk_led && fl.drive >= 0 && fl.idle <= 10;

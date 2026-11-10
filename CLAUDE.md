@@ -1,6 +1,6 @@
 # pico-amiga — project notes
 
-Amiga 500 / 500+ / 600 / 1200 (OCS / ECS / AGA, PAL) emulator for RP2350 + QSPI PSRAM.
+Amiga 500 / 500+ / 600 / 1200 / CD32 (OCS / ECS / AGA, PAL) emulator for RP2350 + QSPI PSRAM.
 Sister project of pico-speccy (same owner, same boards): reuse its drivers and
 schemes rather than rewriting. Details that only some tasks need are in docs/notes/
 (see the end); docs/PLAN.md is the roadmap with what was measured.
@@ -18,7 +18,7 @@ schemes rather than rewriting. Details that only some tasks need are in docs/not
 - `build-host/pico-amiga` is the firmware on a PC (SDL2: `src/pico/main.c` against
   `host/sdl/`, `--root` = the card folder, default ~/pico-amiga);
   `build-host/pico-amiga-host` is the headless bench (`--a500plus --a600 --a601
-  --a1200 --aga --cpu020 --adf --hdf --hdf2 --drives --status --shot --state-save/load`,
+  --a1200 --cd32 --cd x.iso|x.cue --pad --aga --cpu020 --adf --hdf --hdf2 --drives --status --shot --state-save/load`,
   `--fast MB`, `--lha x.lha --whd debug/WHDLoad [--lha-out x.hdf]`).
   `PICO_AMIGA_SHOT=f.bmp:N` saves a frame, `PICO_AMIGA_KEYS=150:F12,...` presses
   keys, `SDL_VIDEODRIVER=offscreen` runs headless. `--render-thread` screens must
@@ -57,7 +57,7 @@ Debug > PC profiler adds PROF (core 0) and PROF1 (core 1) lines, resolved with
 - `docs/notes/ui.md`: the menu's keys, drives and disks (.m3u, DMS, blank disks),
   snapshots and quick slots, built-in ROMs and machines, Config storage.
 - `docs/notes/emulation.md`: what was not obvious in the chipset emulation (fetch
-  units, Denise's stages, AGA, floppy, Gayle/IDE, sprites, the chip-bus model,
+  units, Denise's stages, AGA, floppy, Gayle/IDE, Akiko/CD32, sprites, the chip-bus model,
   idle loops). Read before touching denise.c, floppy.c, mem.c or amiga.c.
 - `docs/notes/board.md`: video modes and the TMDS/HSTX scanouts, PSRAM/XIP/DMA
   constraints, the RAM budget, measured frame times. Read before touching

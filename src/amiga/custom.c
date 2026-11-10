@@ -36,6 +36,19 @@ AMIGA_HOT uint16_t custom_read(uint32_t reg) {
     case R_POT0DAT: case R_POT1DAT: return 0;
     case R_POTGOR:
         // Pot pins read high unless driven; the right mouse button pulls DATLY low.
+        if (A.cfg.akiko) {
+            // The CD32 pad in port 2 (WinUAE's inputdevice.cpp): pin 5 an output and
+            // low makes it a shift register - pin 6 (CIA-A PRA bit 7, cia.c) clocks
+            // it, pin 9 (DATRY) reads blue, red, yellow, green, forward, reverse,
+            // play, then a 1 and 0s, a pressed button as 0.  Pin 5 high or floating
+            // holds the register at its first bit: blue is the second fire button.
+            uint16_t v = (uint16_t)(0xFF00 & ~(A.mouse_rmb ? 0x0400 : 0));
+            v = (uint16_t)((v & ~0x1000) | (A.potgo & 0x1000));       // pin 5 floats: what was written
+            if (!(A.potgo & 0x2000) || (A.potgo & 0x1000)) A.pad_shift = 8;
+            const int s = A.pad_shift;
+            if (s == 0 || (s >= 2 && (A.pad_buttons & (1u << (s - 2))))) v &= (uint16_t)~0x4000;
+            return v;
+        }
         return (uint16_t)(0xFF00 & ~(A.mouse_rmb ? 0x0400 : 0));
     case R_SERDATR: return 0x3800;                       // TBE | TSRE | RXD idle
     case R_DSKBYTR: return floppy_read(reg);

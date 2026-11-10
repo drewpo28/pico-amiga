@@ -8,11 +8,12 @@
 # Each entry: id|label|machines|file (file relative to ROMS_DIR). The id is what
 # storage.nvs keeps (Config::kick), so never reuse one for a different ROM. The
 # machines are the Machine menu rows the ROM is listed under, comma-separated
-# (DiagROM, A500, A500+, A600, A1200).
+# (DiagROM, A500, A500+, A600, A1200, CD32; "-": none - the CD32's extended ROM,
+# which machine.cpp maps at $E00000 beside the CD32 Kickstart).
 # 2.04 is the A500+'s own Kickstart; 2.05 and 3.1 (the A600's images) run on
 # all three; the A600 lists only those two (2.05 is its own, the first with
 # Gayle's IDE). The A1200's 3.0 and 3.1 are its own (68020 code); the A3000 /
-# A4000 / CD32 ROMs are not listed.
+# A4000 ROMs are not listed.  The CD32's is its own (cd.device, Akiko).
 # The file's own name ("kick40068.A1200") is what WHDLoad looks for in
 # Devs:Kickstarts (whdboot.c puts the ones a slave names on its volume).
 #
@@ -32,7 +33,9 @@ set(AMIGA_BUILTIN_ROMS
     "ks205|Kickstart 2.05|A500,A500+,A600|Kickstarts/PUAE Bios/kick37350.A600"
     "ks31|Kickstart 3.1|A500,A500+,A600|Kickstarts/PUAE Bios/kick40063.A600"
     "ks31a12|Kickstart 3.1|A1200|Kickstarts/PUAE Bios/kick40068.A1200"
-    "ks30a12|Kickstart 3.0|A1200|Kickstarts/PUAE Bios/kick39106.A1200")
+    "ks30a12|Kickstart 3.0|A1200|Kickstarts/PUAE Bios/kick39106.A1200"
+    "ks31cd32|Kickstart 3.1|CD32|Kickstarts/PUAE Bios/kick40060.CD32"
+    "cd32ext|CD32 extended ROM|-|Kickstarts/PUAE Bios/kick40060.CD32.ext")
 
 function(amiga_builtin_roms target)
     set(gen ${CMAKE_BINARY_DIR}/gen)

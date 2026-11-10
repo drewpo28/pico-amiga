@@ -1,6 +1,7 @@
 # The emulation core (src/amiga + Musashi) as a static library, shared by the
 # firmware and the host build.  ROOT must point at the repository root.
 set(AMIGA_CORE_SRC
+    ${ROOT}/src/amiga/akiko.c
     ${ROOT}/src/amiga/amiga.c
     ${ROOT}/src/amiga/blitter.c
     ${ROOT}/src/amiga/cia.c

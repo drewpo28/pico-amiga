@@ -148,6 +148,12 @@ static const Option* a1200Opts(uint8_t& cnt) {
     cnt = n;
     return opts;
 }
+static const Option* cd32Opts(uint8_t& cnt) {
+    static Option opts[2];
+    static uint8_t n = romOpts("CD32", opts, 2, nullptr, 800);
+    cnt = n;
+    return opts;
+}
 static const Option* a600Opts(uint8_t& cnt) {
     static Option opts[8];
     static uint8_t n = romOpts("A600", opts, 8, nullptr, 400);
@@ -254,11 +260,11 @@ static bool insertDf0(const std::string& path) {
 }
 
 static bool df0PickAndInsert() {
-    // Start where the last disk came from, else in /amiga/.
+    // Start where the last disk came from, else in /pico-amiga/.
     static std::string dir;
     if (dir.empty()) {
         const std::string cur = machine_disk(0);
-        dir = cur.empty() ? std::string("/amiga/") : cur.substr(0, cur.find_last_of('/') + 1);
+        dir = cur.empty() ? std::string("/pico-amiga/") : cur.substr(0, cur.find_last_of('/') + 1);
         FILINFO fi;
         if (dir != "/" && f_stat(dir.substr(0, dir.size() - 1).c_str(), &fi) != FR_OK) dir = "/";
     }
@@ -283,7 +289,7 @@ static bool runRomFile(const std::string& path) {
         gfxEnd();
         return false;
     }
-    static const char* const kMachines[] = { "A500", "A500+", "A600", "A1200" };
+    static const char* const kMachines[] = { "A500", "A500+", "A600", "A1200", "CD32 (ext.rom beside it)" };
     const int m = uiPickList("Run it on", kMachines, MACHINE_COUNT, Config::machine);
     gfxEnd();
     if (m < 0) return false;
@@ -329,6 +335,33 @@ static bool bootLha(const std::string& path) {
     if (msg[0]) uiToast(msg, true, 3000);
     return true;
 }
+static bool isCdExt(const std::string& e) { return e == ".iso" || e == ".cue"; }
+
+// A CD image into the CD32's drive, the machine made a CD32 first when it is
+// another (its built-in Kickstart; none linked: a toast).  The CD32 restarts
+// and boots the disc.  True when it does.
+static bool insertCd(const std::string& path) {
+    if (Config::machine != MACHINE_CD32) {
+        if (!builtin_rom_find("ks31cd32") || !machine_a600_2mb_ok()) {
+            uiToast("A CD needs the CD32: Machine > CD32", true, 2500);
+            return false;
+        }
+        Config::machine = MACHINE_CD32;
+        Config::kick = "ks31cd32";
+        if (!machine_apply_kickstart()) { uiToast("The CD32's ROM cannot be used", true, 2000); return false; }
+    }
+    if (!machine_set_cd(path.c_str())) {
+        Config::cd.clear();
+        Config::save();
+        uiToast("Not a CD image this reads (ISO, CUE + BIN)", true, 2500);
+        return false;
+    }
+    Config::cd = path;
+    Config::save();
+    uiAmigaReset();
+    return true;
+}
+
 static bool isRomExt(const std::string& e) {
     return e == ".rom" || e == ".bin" || e == ".a500" || e == ".a600" || e == ".a1000" || e == ".cdtv";
 }
@@ -366,7 +399,7 @@ void runOpenFile() {
     static std::string dir;
     if (dir.empty()) {
         const std::string cur = machine_disk(0);
-        dir = cur.empty() ? std::string("/amiga/") : cur.substr(0, cur.find_last_of('/') + 1);
+        dir = cur.empty() ? std::string("/pico-amiga/") : cur.substr(0, cur.find_last_of('/') + 1);
         FILINFO fi;
         if (dir != "/" && f_stat(dir.substr(0, dir.size() - 1).c_str(), &fi) != FR_OK) dir = "/";
     }
@@ -380,10 +413,11 @@ void runOpenFile() {
         if (r[0] == 'P') done = toDrive(path);                  // F5: a disk image (the browser checked)
         else if (isDiskExt(ext) || ext == ".m3u") done = insertDf0(path);
         else if (isLhaExt(ext)) done = bootLha(path);
+        else if (isCdExt(ext)) done = insertCd(path);
         else if (isRomExt(ext)) done = runRomFile(path);
         else if (ext == ".pas") done = snapLoadPath(path);
         else if (machine_is_program(path.c_str())) done = bootLha(path);   // an Amiga executable
-        else uiToast("Not an Amiga disk, disk set, archive, program, Kickstart or snapshot", true, 2000);
+        else uiToast("Not an Amiga disk, disk set, CD, archive, program, Kickstart or snapshot", true, 2000);
         gfxEnd();
         if (done) return;                                       // back to the Amiga
     }
@@ -474,7 +508,7 @@ static bool drivePickAndInsert(int d) {
     static std::string dir;
     if (dir.empty()) {
         const std::string cur = machine_disk(0);
-        dir = cur.empty() ? std::string("/amiga/") : cur.substr(0, cur.find_last_of('/') + 1);
+        dir = cur.empty() ? std::string("/pico-amiga/") : cur.substr(0, cur.find_last_of('/') + 1);
         FILINFO fi;
         if (dir != "/" && f_stat(dir.substr(0, dir.size() - 1).c_str(), &fi) != FR_OK) dir = "/";
     }
@@ -567,7 +601,7 @@ static void page_hotkeys() {
         "Shift+F12   Reset the Amiga\n"
         "Win+F11     Reboot the board (asked, Yes by default)\n"
         "Win+F1      System info: board, memory, chip temperature\n"
-        "Win+F5      Open file: disks, disk sets, Kickstarts, snapshots;\n"
+        "Win+F5      Open file: disks, disk sets, CDs, Kickstarts, snapshots;\n"
         "            F5 on a disk picks the drive (DF0..DF3)\n"
         "Win+F3      Snapshots: the quick slots, Enter loads\n"
         "Win+F4      Snapshots: the quick slots, Enter saves\n"
@@ -586,6 +620,9 @@ static void page_hotkeys() {
         "  Win / PgDn / PgUp   left / left / right Amiga\n"
         "  Insert              Help\n"
         "  Home, End           keypad ( )\n"
+        "\n"
+        "CD32 pad: fire is red, Right Ctrl / button B blue,\n"
+        "  Start play, Select green.\n"
         "\n"
         "Mouse: port 1. A USB/XInput/NES pad drives port 2.");
 }
@@ -626,7 +663,8 @@ static const char* sysInfoText() {
     add(" PSRAM          : %u MB, SCK <= %d MHz\n", (unsigned)(psram_size() >> 20), settings_psram_mhz());
     add(" Machine        : %s, %s\n", machine_name(), machine_rom_name());
     if (Config::machine == MACHINE_A500) add(" Amiga RAM      : 512 KB chip + 512 KB slow (OCS)\n");
-    else add(" Amiga RAM      : %u MB chip (ECS)\n", (unsigned)(machine_chip_size() >> 20));
+    else add(" Amiga RAM      : %u MB chip (%s)\n", (unsigned)(machine_chip_size() >> 20),
+             Config::machine >= MACHINE_A1200 ? "AGA" : "ECS");
     add(" Floppy drives  : %d\n", machine_drives());
     add(" Audio          : %s\n", audio_out_name());
     const unsigned s = (unsigned)(time_us_64() / 1000000);
@@ -682,6 +720,7 @@ static const Node kMachine[] = {
     NM_RADIO_D   ("A500+",       SET_KICK, a500pOpts, nullptr),
     NM_SUB       ("A600",        kA600,    nullptr),
     NM_SUB       ("A1200",       kA1200,   nullptr),
+    NM_RADIO_DE  ("CD32",        SET_KICK, cd32Opts, nullptr, machine_a600_2mb_ok),
     NM_ACTIONV   ("Custom ROM",  act_custom_rom, customRomLabel, nullptr),
 };
 
@@ -718,7 +757,7 @@ static bool hdMountImage(int u) {
     static std::string dir;
     if (dir.empty()) {
         const std::string cur = machine_hdf_is_raw(u) ? "" : machine_hdf(u);
-        dir = cur.empty() ? std::string("/amiga/") : cur.substr(0, cur.find_last_of('/') + 1);
+        dir = cur.empty() ? std::string("/pico-amiga/") : cur.substr(0, cur.find_last_of('/') + 1);
         FILINFO fi;
         if (dir != "/" && f_stat(dir.substr(0, dir.size() - 1).c_str(), &fi) != FR_OK) dir = "/";
     }
@@ -843,6 +882,62 @@ static const Node kHardDisk[] = {
     NM_PICK  ("Master", SET_NONE, hdOpts0, hdKey0, hdShort0, opt_drive_foot, nullptr),
     NM_PICK  ("Slave",  SET_NONE, hdOpts1, hdKey1, hdShort1, opt_drive_foot, nullptr),
 };
+
+// Devices > CD drive (the CD32): the disc's name; its pane the disc, Insert
+// disc... (an .iso, or a .cue with its track files) and Eject.
+static bool p_cd32() { return Config::machine == MACHINE_CD32; }
+static const char* cdShort() {
+    const char* p = machine_cd();
+    return *p ? baseName(p) : "empty";
+}
+static const Option* cdOpts(uint8_t& cnt) {
+    static Option o[3];
+    static char name[64];
+    uint8_t n = 0;
+    const char* p = machine_cd();
+    if (*p) {
+        snprintf(name, sizeof name, "%s", baseName(p));
+        o[n++] = { name, DRV_T_INFO, nullptr };
+    }
+    o[n++] = { "Insert disc...", DRV_T_INSERT, nullptr };
+    if (*p) o[n++] = { "Eject", DRV_T_EJECT, nullptr };
+    cnt = n;
+    return o;
+}
+static void cdKey(int32_t tag, uint8_t key) {
+    if (key) return;
+    switch (tag) {
+    case DRV_T_INFO: {
+        FILINFO fi;
+        char msg[96];
+        const char* p = machine_cd();
+        if (!*p || f_stat(p, &fi) != FR_OK) return;
+        snprintf(msg, sizeof msg, "%s", baseName(p));
+        uiToast(msg, false, 2500);
+        return;
+    }
+    case DRV_T_INSERT: {
+        static std::string dir;
+        if (dir.empty()) {
+            const std::string cur = machine_cd();
+            dir = cur.empty() ? std::string("/pico-amiga/") : cur.substr(0, cur.find_last_of('/') + 1);
+            FILINFO fi;
+            if (dir != "/" && f_stat(dir.substr(0, dir.size() - 1).c_str(), &fi) != FR_OK) dir = "/";
+        }
+        const std::string r = browseFile(dir, "CD drive", BROWSE_CD);
+        if (r.size() < 2 || r[0] != 'R') return;
+        if (insertCd(dir + r.substr(1))) requestClose();
+        return;
+    }
+    case DRV_T_EJECT:
+        machine_set_cd("");
+        Config::cd.clear();
+        Config::save();
+        return;
+    default:
+        return;
+    }
+}
 
 static const Node kDisks[] = {
     NM_PICK  ("DF0", SET_DF0_DISK, driveOpts0, driveKey0, driveShort0, opt_drive_foot, nullptr),
@@ -996,6 +1091,7 @@ const Node* persistNodeFor() {
 static const Node kDevices[] = {
     NM_SUB("Floppy drives", kDisks,    nullptr),
     NM_SUB("Hard disk",     kHardDisk, p_a600),
+    NM_PICK("CD drive",     SET_NONE, cdOpts, cdKey, cdShort, opt_drive_foot, p_cd32),
     NM_SUB("Input",     kInput,     nullptr),
 };
 

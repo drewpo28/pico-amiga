@@ -145,6 +145,29 @@ static int describeHard(int u, int32_t tag, DescLine* out, int max) {
     return n;
 }
 
+// Devices > CD drive (the CD32).
+static int describeCd(int32_t tag, DescLine* out, int max) {
+    int n = 0;
+    switch (tag) {
+    case DRV_T_INFO:
+        n = sub(out, n, max, "CD image", "", DESC_PLAIN);
+        n = rule(out, n, max, "Read-only");
+        break;
+    case DRV_T_INSERT:
+        n = sub(out, n, max, "Takes", "ISO, CUE", DESC_PLAIN);
+        n = rule(out, n, max, "A .cue with its track");
+        n = rule(out, n, max, "files beside it");
+        n = rule(out, n, max, "The CD32 restarts");
+        n = rule(out, n, max, "CD audio is silent");
+        break;
+    case DRV_T_EJECT:
+        n = rule(out, n, max, "The drive is empty");
+        break;
+    default: break;
+    }
+    return n;
+}
+
 // Devices > Floppy drives > Drives.
 static int describeDrives(int32_t v, DescLine* out, int max) {
     int n = 0;
@@ -256,9 +279,9 @@ static int describeKick(int32_t v, DescLine* out, int max) {
         n = rule(out, n, max, "(not a Kickstart)");
         return n;
     }
-    static const char* const kSub[] = { "OCS, 512K+512K", "ECS, 1 MB chip", "ECS, 1 MB, IDE", "020, 2 MB, IDE" };
+    static const char* const kSub[] = { "OCS, 512K+512K", "ECS, 1 MB chip", "ECS, 1 MB, IDE", "020, 2 MB, IDE", "020, 2 MB, CD" };
     const bool a601 = m == MACHINE_A600 && Config::a600_chip == 2 && machine_a600_2mb_ok();
-    n = sub(out, n, max, machine_model_name(m), a601 ? "ECS, 2 MB, IDE" : m < 4 ? kSub[m] : "", DESC_PLAIN);
+    n = sub(out, n, max, machine_model_name(m), a601 ? "ECS, 2 MB, IDE" : m < 5 ? kSub[m] : "", DESC_PLAIN);
     if (!strcmp(id, "ks12"))       { n = rule(out, n, max, "For old games that"); n = rule(out, n, max, "do not run on 1.3"); }
     else if (!strcmp(id, "ks13"))  { n = rule(out, n, max, "The A500's own: most"); n = rule(out, n, max, "games expect it"); }
     else if (!strcmp(id, "ks204")) { n = rule(out, n, max, "The A500+'s own;"); n = rule(out, n, max, "Workbench 2.0"); }
@@ -266,6 +289,7 @@ static int describeKick(int32_t v, DescLine* out, int max) {
     else if (!strcmp(id, "ks31"))  { n = rule(out, n, max, "Workbench 3.1; some"); n = rule(out, n, max, "old games fail on it"); }
     else if (!strcmp(id, "ks31a12")) { n = rule(out, n, max, "The A1200's 3.1;"); n = rule(out, n, max, "AGA, 68EC020"); }
     else if (!strcmp(id, "ks30a12")) { n = rule(out, n, max, "The A1200's own 3.0;"); n = rule(out, n, max, "AGA, 68EC020"); }
+    else if (!strcmp(id, "ks31cd32")) { n = rule(out, n, max, "The CD32's 3.1 with its"); n = rule(out, n, max, "extended ROM; boots a"); n = rule(out, n, max, "disc (Devices > CD)"); }
     n = rule(out, n, max, "A change restarts it");
     return n;
 }
@@ -357,6 +381,7 @@ int describe(const Node& n, int32_t value, DescLine* out, int max) {
         n.setting == SET_FRAME_SKIP)
         return describeOnOff(n.setting, value, out, max);
     if (n.setting == SET_DRIVES) return describeDrives(value, out, max);
+    if (n.kind == K_PICK && !strcmp(n.label, "CD drive")) return describeCd(value, out, max);
     if (n.kind == K_PICK && !strcmp(n.label, "Master")) return describeHard(0, value, out, max);
     if (n.kind == K_PICK && !strcmp(n.label, "Slave")) return describeHard(1, value, out, max);
     if (n.kind == K_PICK && n.label[0] == 'D' && n.label[1] == 'F')

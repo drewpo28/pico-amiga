@@ -122,6 +122,7 @@ struct Cfg {
     std::string hdf;                        // the A600's hard disk, "" = none
     std::string hdf_raw;                    // or its SD window (Config::hdf_raw)
     std::string hdf2, hdf2_raw;             // the IDE slave's (older snapshots: none)
+    std::string cd;                         // the CD32's disc (older snapshots: none)
     MachineDisks disks;
     uint32_t size[4] = {}, stamp[4] = {};   // the disks' files as they were (stamp: fdate << 16 | ftime)
 };
@@ -148,6 +149,7 @@ static std::string cfgText() {
     kv("hdf_raw", machine_hdf_is_raw(0) ? Config::hdf_raw : std::string());
     kv("hdf2", machine_hdf_is_raw(1) ? "" : machine_hdf(1));
     kv("hdf2_raw", machine_hdf_is_raw(1) ? Config::hdf2_raw : std::string());
+    kv("cd", machine_cd());
     kv("set", d.set);
     kn("set_index", (unsigned)d.set_index);
     for (int i = 0; i < 4; i++) {
@@ -194,6 +196,7 @@ static void cfgParse(const std::string& t, Cfg& c) {
         else if (k == "hdf_raw") c.hdf_raw = v;
         else if (k == "hdf2") c.hdf2 = v;
         else if (k == "hdf2_raw") c.hdf2_raw = v;
+        else if (k == "cd") c.cd = v;
         else if (k == "set_index") c.disks.set_index = (int)n;
         else if (k.size() >= 3 && k.compare(0, 2, "df") == 0 && k[2] >= '0' && k[2] <= '3') {
             const int d = k[2] - '0';
@@ -258,7 +261,7 @@ std::string defaultName() {
 }
 
 bool save(const std::string& path, const std::string& name) {
-    f_mkdir("/amiga");
+    f_mkdir("/pico-amiga");
     f_mkdir(SNAP_DIR);
     const std::string tmp = path + ".tmp";
     Io* io = io_open(tmp.c_str(), FA_WRITE | FA_CREATE_ALWAYS);
@@ -335,6 +338,8 @@ void describe(const std::string& path, char* out, unsigned size) {
             add(" Hard disk : %s\n", baseName(c->hdf));
         if (!c->hdf2.empty())
             add(" HD slave  : %s\n", baseName(c->hdf2));
+        if (!c->cd.empty())
+            add(" CD        : %s\n", baseName(c->cd));
         FILINFO fi;
         if (f_stat(path.c_str(), &fi) == FR_OK)
             add(" Saved     : %04u-%02u-%02u %02u:%02u\n", (fi.fdate >> 9) + 1980u, (fi.fdate >> 5) & 15u,
@@ -380,6 +385,7 @@ bool load(const std::string& path, std::string& err, std::string& warn) {
     amiga_set_machine(ac.chipset, ac.chip_size, ac.slow_size, ac.gayle);
     amiga_set_fast(ac.fast_ram, ac.fast_size);
     amiga_set_cpu(ac.cpu);
+    amiga_set_akiko(ac.akiko, ac.nvram);
     board_load_cpu_overlay(ac.cpu);
 
     std::string missing, changed;
@@ -403,6 +409,9 @@ bool load(const std::string& path, std::string& err, std::string& warn) {
             craw.clear();
         }
     }
+    // The disc before the state too: Akiko's block is the drive's.
+    if (!machine_set_cd(c->cd.c_str())) missing += (missing.empty() ? "" : ", ") + std::string(baseName(c->cd));
+    Config::cd = machine_cd();
     for (int i = 0; i < 4; i++) {
         const std::string& p = c->disks.path[i];
         FILINFO fi;

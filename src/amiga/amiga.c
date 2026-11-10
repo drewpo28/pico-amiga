@@ -198,6 +198,8 @@ void amiga_set_roms(const uint8_t *rom, uint32_t rom_size, const uint8_t *ext, u
 }
 
 void amiga_set_cpu(int cpu) { A.cfg.cpu = (uint8_t)cpu; }
+void amiga_set_akiko(bool on, uint8_t *nvram) { A.cfg.akiko = on; A.cfg.nvram = on ? nvram : NULL; }
+void amiga_cd32_pad(uint8_t buttons) { A.pad_buttons = buttons; }
 
 void amiga_set_machine(int chipset, uint32_t chip_size, uint32_t slow_size, uint8_t gayle) {
     A.cfg.chipset = (uint8_t)chipset;
@@ -230,6 +232,8 @@ void amiga_reset(bool hard) {
     cia_reset();
     rtc_reset();
     gayle_reset();
+    akiko_reset();
+    A.pad_shift = 8; A.pad_clk = 0;
     idle_reset();
     copper_reset();
     blitter_reset();
@@ -291,6 +295,7 @@ AMIGA_HOT __attribute__((noinline)) static void run_line(void) {
     prof_switch(AMIGA_PROF_OTHER);
     cia_line();
     if (A.cfg.gayle) gayle_line();
+    if (A.cfg.akiko) { prof_switch(AMIGA_PROF_DISK); akiko_line(); prof_switch(AMIGA_PROF_OTHER); }   // its sector reads
     keyboard_line();
     A.line_cyc += 2u * AMIGA_CC_PER_LINE;
 }

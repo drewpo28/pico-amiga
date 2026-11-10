@@ -595,6 +595,13 @@ static uint16_t last_c = 0xFFFF;
 static uint8_t  last_i;
 
 AMIGA_HOT static void w_begin(amiga_row_t *row, int mode, int field) {
+    // Interlace with one field's line over its 16 colours (row->pad: 1 + that
+    // field): the row stays DIRECT for the other field's line too.  Entering
+    // LACE4 for it blanked the first one's line until it was drawn again and
+    // overflowed again - a black line every other field (the CD32's boot screen:
+    // 8 planes, hires, laced).  The field that overflowed tries again each time.
+    if (mode == AMIGA_ROW_LACE4 && row->mode == AMIGA_ROW_DIRECT && row->pad == 2 - field) mode = AMIGA_ROW_DIRECT;
+    else row->pad = 0;
     ilut_reset();
     if (++map_gen == 1024) { clear_bytes((uint8_t *)map, (int)sizeof map); map_gen = 1; }   // every ~3 frames
     last_c = 0xFFFF;
@@ -630,6 +637,7 @@ AMIGA_HOT static void w_to_direct(amiga_row_t *row) {
         for (int x = 0; x < AMIGA_FB_W; x++)
             row->px.rgb[x] = avg(row->pal[row->px.idx[2 * x]], row->pal[row->px.idx[2 * x + 1]]);
     } else if (w_mode == AMIGA_ROW_LACE4) {
+        row->pad = (uint8_t)(1 + w_field);
         memcpy(tmp, row->px.nib[w_field], sizeof tmp);
         for (int x = 0; x < AMIGA_FB_W; x++)
             row->px.rgb[x] = avg(row->pal[w_base + (tmp[x] >> 4)], row->pal[w_base + (tmp[x] & 15)]);
