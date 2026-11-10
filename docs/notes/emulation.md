@@ -227,6 +227,13 @@
   that stops it puts rot_pos at start + the words that read time covers.
   RoboCop's loader looks at a sector's header and restarts at once for a sector
   it does not want; with the head at the read's end it saw every other sector.
+- **A card command a block makes loading skip frames** (the Win+F8 band's FPS
+  orange while a disk is read; PERF `dsk` 2 ms a frame, 2026-11-10): a track is
+  read in one go into the end of the track buffer and encoded in place
+  (floppy.c encode_track), the hard disk's blocks are read ahead 16 KB at a
+  time once a transfer's second block is asked for (machine.cpp hd_read, PSRAM
+  taken from the DMS area on the Gayle machines), as the CD's (cd_cached).
+  Not measured on a board yet.
 - **A swapped disk must be seen gone** (floppy.c, SWAP_LINES): Kickstart polls
   /CHNG now and then, and the menu swaps with no emulated time in between, so
   the core keeps the drive empty 2 s before the new disk is in (KS 1.3 needs

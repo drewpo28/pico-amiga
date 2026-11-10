@@ -102,13 +102,29 @@ static uint32_t rd32(const uint8_t *p) {
     return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | p[3];
 }
 
+// The track's 11 sectors come from the image in one read, into the end of the
+// track buffer, and are encoded from there towards it: sector by sector (11
+// single-block reads from an SD card) a track took most of a frame's spare
+// time, the frames after it started late and were skipped (dsk 2 ms a frame in
+// the PERF line while a game loaded).  A sector is copied out before it is
+// encoded, and the words of the sectors before it end below the next one's
+// bytes (the assert).  A read that fails is tried again sector by sector.
+#define TRACK_BYTES (SECTORS * 512)
+_Static_assert((SECTORS - 1) * (SECTOR_WORDS * 2 - 512) <= TRACK_WORDS * 2 - TRACK_BYTES,
+               "encode_track: the MFM words would run over the sectors not yet encoded");
+
 static void encode_track(int d, int tnum) {
     uint8_t sec[512];
+    const uint8_t *raw = (const uint8_t *)A.cfg.track + TRACK_WORDS * 2 - TRACK_BYTES;
+    const uint32_t toff = (uint32_t)tnum * TRACK_BYTES;
+    const bool whole = drv[d].disk.read && toff + TRACK_BYTES <= drv[d].disk.size &&
+                       !drv[d].disk.read(drv[d].disk.ctx, toff, (void *)raw, TRACK_BYTES);
     wpos = 0; mfm_prev = 0;
     for (int s = 0; s < SECTORS; s++) {
-        uint32_t off = ((uint32_t)tnum * SECTORS + (uint32_t)s) * 512u;
-        if (!drv[d].disk.read || off + 512 > drv[d].disk.size ||
-            drv[d].disk.read(drv[d].disk.ctx, off, sec, 512))
+        uint32_t off = toff + (uint32_t)s * 512u;
+        if (whole) memcpy(sec, raw + s * 512, sizeof sec);
+        else if (!drv[d].disk.read || off + 512 > drv[d].disk.size ||
+                 drv[d].disk.read(drv[d].disk.ctx, off, sec, 512))
             memset(sec, 0, sizeof sec);
 
         put_data16(0); put_data16(0);         // AAAA AAAA

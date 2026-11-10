@@ -10,8 +10,9 @@
 // Summary:
 //   EMU 14.2ms  141%    time amiga_run_frame() took, and the speed that makes
 //                       (100% = exactly the 20 ms of a PAL frame)
-//   FPS 50.0  378MHz    emulated frames per wall-clock second (orange while
-//                       some are not drawn: the frame skip), the CPU clock
+//   FPS 46.2/50 378MHz  frames drawn / frames emulated per wall-clock second
+//                       (the drawn ones orange while some are skipped: the
+//                       frame skip), the CPU clock
 //   DF0 TR40.1 SEC05 RD the drive (pico-speccy's TR/SEC line): cylinder.head, the
 //                       sector the last disk DMA started at (-- for the gap),
 //                       RD / WR = disk DMA,
@@ -81,7 +82,7 @@ static void drawBand() {
     frame(x, y, w, h, C_SEP);
     for (int i = 0; i < s_lines; i++)      // one blank column of padding on the left
         text(x + 2 + g, y + 3 + i * UI_FONT_H, s_l[i], i ? C_TEXT : C_WHITE);
-    // "FPS nn.n" in orange while frames are being skipped (not drawn): the
+    // "FPS nn.n" (the drawn frames) in orange while some are being skipped: the
     // emulation keeps its 50 a second, the picture does not.  The framebuffer
     // is 0x0RGB here, so the colour need not be one of the menu's.
     if (s_page == 1 && s_skipping) {
@@ -186,6 +187,8 @@ extern "C" void ui_stats_toggle(void) {
     s_disk[0] = 0;
     s_hd_blocks = hd.rd_blocks + hd.wr_blocks;
     s_hd_rate = 0;
+    s_skips = 0;
+    s_skipping = false;                 // not the last showing's
     s_dirty = true;
     s_bh = 0;
     updateOverlay();
@@ -285,11 +288,13 @@ extern "C" void ui_stats_frame(uint32_t emu_us, bool skipped) {
     s_skips += skipped;
     if (s_frames >= 25) {
         if (s_page == 1) s_skipping = s_skips != 0;
+        const uint32_t drawn = s_frames - s_skips;
         s_skips = 0;
         const uint32_t now = time_us_32();
         const uint32_t avg = s_emu_sum / s_frames;
         const uint32_t pct = avg ? 2000000u / avg : 0;            // 20000 us = 100%
         const uint32_t fps10 = (uint32_t)((uint64_t)s_frames * 10000000u / (now - s_t0 ? now - s_t0 : 1));
+        const uint32_t drawn10 = (uint32_t)((uint64_t)drawn * 10000000u / (now - s_t0 ? now - s_t0 : 1));
         // the hard disk's rate: blocks moved since the last refresh, over the wall clock
         const uint32_t blocks = hd.rd_blocks + hd.wr_blocks;
         s_hd_rate = (uint32_t)((uint64_t)(blocks - s_hd_blocks) * 512u * 1000000u / (now - s_t0 ? now - s_t0 : 1));
@@ -297,8 +302,8 @@ extern "C" void ui_stats_frame(uint32_t emu_us, bool skipped) {
         if (s_page == 1) {
             snprintf(s_l[0], sizeof s_l[0], "EMU %2u.%01ums %4u%%", (unsigned)(avg / 1000),
                      (unsigned)(avg % 1000 / 100), (unsigned)pct);
-            snprintf(s_l[1], sizeof s_l[1], "FPS %2u.%01u  %3uMHz", (unsigned)(fps10 / 10),
-                     (unsigned)(fps10 % 10), (unsigned)Config::cpu_mhz);
+            snprintf(s_l[1], sizeof s_l[1], "FPS %2u.%01u/%u %3uM", (unsigned)(drawn10 / 10),
+                     (unsigned)(drawn10 % 10), (unsigned)((fps10 + 5) / 10), (unsigned)Config::cpu_mhz);
         } else {
             amiga_profile_t p, now_p;
             amiga_get_profile(&now_p, false);

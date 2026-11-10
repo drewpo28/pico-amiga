@@ -93,6 +93,10 @@ static void drop_lost_dms(void);
 // The CD32's read-ahead buffer: the end of the DMS area (a CD32 has no fast RAM
 // board there), taken from the DMS slots while the machine is one.
 #define CD_AHEAD (32u * KB)
+// The hard disk's (hd_read): below the fast RAM board, on the Gayle machines.
+#define HD_AHEAD (16u * KB)
+static void hd_ahead_drop(void);
+static bool s_hd_ahead;                  // the area has it (machine_select_rom)
 static uint8_t *nvram_get(bool cd32);
 
 static const char *const kModelName[MACHINE_COUNT] = { "A500", "A500+", "A600", "A1200", "CD32" };
@@ -115,6 +119,9 @@ bool machine_select_rom(amiga_config_t *cfg) {
     select_model(cfg);
     s_fast_size = cfg->fast_size;
     s_dms_size = s_dms_total - s_fast_size - (cfg->akiko && s_dms_total >= 2 * CD_AHEAD ? CD_AHEAD : 0);
+    s_hd_ahead = cfg->gayle && s_dms_size >= 2 * HD_AHEAD;
+    if (s_hd_ahead) s_dms_size -= HD_AHEAD;
+    hd_ahead_drop();
     drop_lost_dms();
     board_load_cpu_overlay(cfg->cpu);
     cfg->nvram = nvram_get(cfg->akiko);
@@ -339,29 +346,73 @@ struct Hd {
 };
 static Hd s_hd[2] = { { NULL, false, false, "", false, { 0, 0 }, "" }, { NULL, false, false, "", false, { 0, 0 }, "" } };
 
-static int raw_read(void *ctx, uint32_t off, void *dst, uint32_t len) {
+// Reading ahead, as the CD's (cd_cached): ide.c asks for a block at a time, and a
+// card command a block (~1.5-2.5 ms each, a block every line or two of a
+// transfer) left no frame on time while the disk loaded - the Win+F8 band's FPS
+// orange, the frames skipped.  A block that follows the one asked for before it
+// (a transfer's second block on) is read with the ones after it in one
+// multi-block command into PSRAM (HD_AHEAD, in the DMS area below the fast RAM;
+// taken from it on the Gayle machines) and the next ones come from there.  A
+// block on its own - a directory, a bitmap - stays one command.  One buffer for
+// both drives; a write to either, a drive attached or a machine set up drops it.
+static struct { void *ctx; uint32_t blk, n, next; } s_hda;   // blocks blk..blk+n-1 of ctx's drive; next: the one after the last asked for
+static void hd_ahead_drop(void) { s_hda.ctx = NULL; s_hda.n = 0; }
+static uint8_t *hd_ahead_buf(void) {
+    return s_hd_ahead ? s_dms_area + s_dms_size : NULL;
+}
+// rd: the drive's reader, blocks: its size.  Only whole single blocks go through the buffer.
+static int hd_read(int (*rd)(void *, uint32_t, void *, uint32_t), void *ctx, uint32_t blocks,
+                   uint32_t off, void *dst, uint32_t len) {
+    uint8_t *buf = hd_ahead_buf();
+    const uint32_t blk = off / 512;
+    if (!buf || len != 512 || (off & 511) || blk >= blocks) return rd(ctx, off, dst, len);
+    const bool follows = s_hda.ctx == ctx && s_hda.next == blk;
+    if (s_hda.ctx != ctx) s_hda.n = 0;
+    s_hda.ctx = ctx;
+    s_hda.next = blk + 1;
+    if (blk < s_hda.blk || blk >= s_hda.blk + s_hda.n) {
+        if (!follows) return rd(ctx, off, dst, len);
+        uint32_t n = HD_AHEAD / 512;
+        if (n > blocks - blk) n = blocks - blk;
+        s_hda.n = 0;
+        if (rd(ctx, off, buf, n * 512) != 0) return rd(ctx, off, dst, len);
+        s_hda.blk = blk; s_hda.n = n;
+    }
+    memcpy(dst, buf + (blk - s_hda.blk) * 512, 512);
+    return 0;
+}
+
+static int raw_read_(void *ctx, uint32_t off, void *dst, uint32_t len) {
     const RawWin *w = (const RawWin *)ctx;
     const uint32_t s = off / 512, n = len / 512;
     if ((off | len) & 511 || s + n > w->count) return -1;
     return disk_read(0, (BYTE *)dst, (LBA_t)(w->start + s), n) == RES_OK ? 0 : -1;
 }
+static int raw_read(void *ctx, uint32_t off, void *dst, uint32_t len) {
+    return hd_read(raw_read_, ctx, ((const RawWin *)ctx)->count, off, dst, len);
+}
 static int raw_write(void *ctx, uint32_t off, const void *src, uint32_t len) {
     const RawWin *w = (const RawWin *)ctx;
     const uint32_t s = off / 512, n = len / 512;
     if ((off | len) & 511 || s + n > w->count) return -1;
+    hd_ahead_drop();
     if (disk_write(0, (const BYTE *)src, (LBA_t)(w->start + s), n) != RES_OK) return -1;
     for (uint32_t i = 0; i < n; i++)                  // FatFs's cached copy, if it has one
         ff_raw_write_notify(0, (LBA_t)(w->start + s + i), (const BYTE *)src + i * 512);
     return 0;
 }
 
-static int hdf_read(void *ctx, uint32_t off, void *dst, uint32_t len) {
+static int hdf_read_(void *ctx, uint32_t off, void *dst, uint32_t len) {
     FIL *f = (FIL *)ctx; UINT n;
     if (f_lseek(f, off) != FR_OK || f_read(f, dst, len, &n) != FR_OK || n != len) return -1;
     return 0;
 }
+static int hdf_read(void *ctx, uint32_t off, void *dst, uint32_t len) {
+    return hd_read(hdf_read_, ctx, (uint32_t)(f_size((FIL *)ctx) / 512), off, dst, len);
+}
 static int hdf_write(void *ctx, uint32_t off, const void *src, uint32_t len) {
     FIL *f = (FIL *)ctx; UINT n;
+    hd_ahead_drop();
     if (f_lseek(f, off) != FR_OK || f_write(f, src, len, &n) != FR_OK || n != len) return -1;
     f_sync(f);
     return 0;
@@ -429,6 +480,7 @@ static void hdf_log_parts(int (*rd)(void *, uint32_t, void *, uint32_t), void *c
 
 static void hdf_attach(int u) {
     Hd &h = s_hd[u];
+    hd_ahead_drop();
     if ((Config::machine != MACHINE_A600 && Config::machine != MACHINE_A1200) || (!h.open && !h.raw)) {
         amiga_set_hdf(u, NULL);
         return;

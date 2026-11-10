@@ -12,7 +12,7 @@
   on a disk picks DF0..DF3, F9 makes a blank ADF, F1 on a disk shows what is on it
   (machine_disk_info: volume, filesystem, boot block, root, startup-sequence; a
   DMS is unpacked into the spare PSRAM slot after DF3's); a disk put into DF1..DF3 by hand
-  survives set and DF0 changes, Drive::manual; Win+F8 = the performance band (its FPS in orange while frames are being skipped),
+  survives set and DF0 changes, Drive::manual; Win+F8 = the performance band (FPS drawn/emulated, the drawn ones in orange while frames are being skipped),
   pico-speccy's F8, its summary with the drive's TR/SEC line - or the IDE hard
   disk's block, RD/WR and rate, whichever moved data last: amiga_ide_status). The drive icon
   (pico-speccy's FDD lamp, Video > Picture > Drive icon, top right; the hard disk's beside it) and the band
