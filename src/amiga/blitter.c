@@ -92,6 +92,80 @@ static inline uint16_t shift_desc(uint16_t nw, uint16_t old, int sh) {
     return (uint16_t)((((uint32_t)nw << 16) | old) >> (16 - sh));
 }
 
+// The copper list mirror's side of a word written straight to chip RAM (rare:
+// out of the loops).
+__attribute__((noinline)) static void mir_w16(uint32_t off, uint16_t v) { cop_mir_w16(off, v); }
+
+// The words as they are - no shift, no mask, no fill, ascending: the minterm
+// works on them as chip RAM stores them (big-endian, no swaps), the rows
+// through pointers, a channel that is off or not looked at a constant with
+// a stride of 0.  Roots' plasma is 128 blits of D = A | B | C a frame, 20
+// words x 4 rows each: the loop below took 108 ARM instructions a word, 6 ms
+// of the board's frame.  Same order of reads and writes, word by word; a row
+// that would wrap at the end of chip RAM leaves the rest to area_blit's loop
+// (the rows done are returned).  A function of its own: inlined, the minterm's
+// eight masks and the four pointers cost area_blit 1.2 KB of SRAM in spills.
+AMIGA_HOT __attribute__((noinline, optimize("Os"))) static int area_plain(const mt_t *mtp, bool needA, bool needC, bool *z) {
+    const bool useA = con0 & 0x0800, useB = con0 & 0x0400, useC = con0 & 0x0200;
+    const int w = bw, h = bh;
+    const uint32_t m0 = mtp->m0, m2 = mtp->m2, m4 = mtp->m4, m6 = mtp->m6;
+    const uint32_t k10 = mtp->k10, k32 = mtp->k32, k54 = mtp->k54, k76 = mtp->k76;
+    uint8_t *cr = A.cfg.chip_ram;
+    const uint32_t cm = A.chip_mask & ~1u, top = A.cfg.chip_size - 2u * (uint32_t)w;
+    // k: the constants (BLTxDAT as stored); v: the words last read.
+    const uint16_t k[3] = { __builtin_bswap16(adat), __builtin_bswap16(useB ? bdat : bhold), __builtin_bswap16(cdat) };
+    uint16_t v[3] = { k[0], k[1], k[2] };
+    const int sa = useA && needA ? 2 : 0, sb = useB ? 2 : 0, sc = useC && needC ? 2 : 0;
+    uint16_t any = 0;
+    int y0 = 0;
+    for (; y0 < h; y0++) {
+        const uint32_t oa = pt[BA] & cm, ob = pt[BB] & cm, oc = pt[BC] & cm, od = pt[BD] & cm;
+        if ((useA && oa > top) || (useB && ob > top) || (useC && oc > top) || od > top) break;
+        const uint8_t *pa = sa ? cr + oa : (const uint8_t *)&k[0];
+        const uint8_t *pb = sb ? cr + ob : (const uint8_t *)&k[1];
+        const uint8_t *pc = sc ? cr + oc : (const uint8_t *)&k[2];
+        uint8_t *pd = cr + od;
+        // The blit's last word in a pass of its own: BLTxDAT end up holding
+        // the last words, also those of a channel the minterm does not look at.
+        int n = y0 == h - 1 ? w - 1 : w;
+        for (int pass = 0; pass < 2; pass++) {
+            for (; n > 0; n--, pa += sa, pb += sb, pc += sc, pd += 2) {
+                uint16_t o;
+                memcpy(&v[0], pa, 2); memcpy(&v[1], pb, 2); memcpy(&v[2], pc, 2);
+                // mt_eval, in the registers' width
+                const uint32_t va = v[0], vb = v[1], vc = v[2];
+                const uint32_t l0 = m0 ^ (vc & k10), l1 = m2 ^ (vc & k32);
+                const uint32_t h0 = m4 ^ (vc & k54), h1 = m6 ^ (vc & k76);
+                const uint32_t gl = l0 ^ (vb & (l1 ^ l0)), gh = h0 ^ (vb & (h1 ^ h0));
+                const uint16_t d = (uint16_t)(gl ^ (va & (gh ^ gl)));
+                any |= d;
+                memcpy(&o, pd, 2);
+                // A word that is already there is not written: its cache line stays
+                // clean and is not written back to PSRAM (Hero Quest copies and clears
+                // the same 40,000 words every frame, 89% of them unchanged).  The
+                // copper list mirror follows a write, as it does chip_ww (Arte clears
+                // and fills its copper lists with blits).
+                if (o != d) { memcpy(pd, &d, 2); if (M68K_FAST_WPAGE(m68k_fast_wmap, (uint32_t)(pd - cr))) mir_w16((uint32_t)(pd - cr), d); }
+            }
+            if (pass || y0 != h - 1) break;
+            const uint32_t l = 2u * (uint32_t)(w - 1);
+            if (useA) pa = cr + oa + l;
+            if (useC) pc = cr + oc + l;
+            n = 1;
+        }
+        if (useA) pt[BA] += 2u * (uint32_t)w + mod[BA];
+        if (useB) pt[BB] += 2u * (uint32_t)w + mod[BB];
+        if (useC) pt[BC] += 2u * (uint32_t)w + mod[BC];
+        pt[BD] += 2u * (uint32_t)w + mod[BD];
+    }
+    const uint16_t a = v[0], b = v[1], c = v[2];
+    if (useA) adat = __builtin_bswap16(a);
+    if (useB) { bdat = __builtin_bswap16(b); bold = bhold = bdat; }
+    if (useC) cdat = __builtin_bswap16(c);
+    if (any) *z = false;
+    return y0;
+}
+
 // In SRAM: run from flash, the blits competed with chip RAM (PSRAM) for the XIP
 // cache (State of the Art's intro clears and fills ~12,000 words a frame).
 AMIGA_HOT static uint32_t area_blit(void) {
@@ -105,56 +179,18 @@ AMIGA_HOT static uint32_t area_blit(void) {
     uint16_t aold = 0;
     bool z = true;
 
-    // Whole-screen clears and copies (minterm 00 / FF; F0 with A unshifted and
-    // unmasked; Hero Quest's language screen does a 20x1000 of each a frame):
-    // word by word in the order of the loop below, without its shifts, masks
-    // and byte swaps - chip RAM is big-endian on both sides.  BLTADAT ends up
-    // holding the last A word, as after the DMA.
-    if (useD && !useB && !useC && !dofill &&
-        (lf == 0x00 || lf == 0xFF || (lf == 0xF0 && useA && !ash && afwm == 0xFFFF && alwm == 0xFFFF))) {
-        uint8_t *cr = A.cfg.chip_ram;
-        const uint32_t cm = A.chip_mask & ~1u;
-        const bool copy = lf == 0xF0;
-        const uint16_t k = lf ? 0xFFFF : 0;
-        uint16_t any = 0;
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                uint16_t v = k;
-                if (copy) memcpy(&v, cr + (pt[BA] & cm), 2);
-                else if (useA && y == h - 1 && x == w - 1) adat = chip_rw(pt[BA]);
-                if (useA) pt[BA] += inc;
-                any |= v;
-                // A word that is already there is not written: its cache line
-                // stays clean and is not written back to PSRAM (Hero Quest's
-                // language screen copies and clears the same 40,000 words every
-                // frame, 89% of them unchanged).
-                const uint32_t off = pt[BD] & cm;
-                uint8_t *d = cr + off;
-                uint16_t o;
-                memcpy(&o, d, 2);
-                // ...and the copper list mirror follows it, as it does chip_ww:
-                // Arte clears and fills its copper lists with such blits, and the
-                // copper went on with the mirror's old words (its tunnel's walls
-                // missing or left over; seen once frames were skipped).
-                if (o != v) { memcpy(d, &v, 2); if (M68K_FAST_WPAGE(m68k_fast_wmap, off)) cop_mir_w16(off, v); }
-                pt[BD] += inc;
-                if (copy && y == h - 1 && x == w - 1) adat = __builtin_bswap16(v);
-            }
-            if (useA) pt[BA] += desc ? -mod[BA] : mod[BA];
-            pt[BD] += desc ? -mod[BD] : mod[BD];
-        }
-        zero = !any;
-        int ch = useA + useD; if (ch < 2) ch = 2;
-        return (uint32_t)(w * h * ch);
-    }
-
     // A and C words the minterm does not look at are not read (Hero Quest
     // clears with A on and minterm 00), except the last: BLTxDAT ends up as
     // after the DMA.  B is always read, its shifter state outlives the blit.
     const bool needA = (lf >> 4) != (lf & 15);
     const bool needC = ((lf >> 1) & 0x55) != (lf & 0x55);
     const mt_t mt = mt_make(lf);
-    for (int y = 0; y < h; y++) {
+    int y0 = 0;
+    // (A's shift and masks are nothing to a minterm that does not look at A:
+    // Hero Quest's language screen clears 20x1000 words a frame with A on.)
+    if (useD && !dofill && !desc && (!needA || (!ash && afwm == 0xFFFF && alwm == 0xFFFF)) && (!useB || !bsh))
+        y0 = area_plain(&mt, needA, needC, &z);
+    for (int y = y0; y < h; y++) {
         bool carry = (con1 & 0x0004) != 0;
         uint16_t mask = afwm;
         const bool last_row = y == h - 1;
@@ -249,6 +285,7 @@ AMIGA_HOT __attribute__((noinline)) static void start(void) {       // the blits
     nblits++;
     busy = true;
     done_cyc = amiga_now() + 2ull * cc;
+    amiga_slice_cut();
 }
 
 AMIGA_HOT void blitter_poll(void) {

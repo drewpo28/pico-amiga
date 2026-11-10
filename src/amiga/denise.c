@@ -77,8 +77,13 @@ typedef struct {
 } agnus_t;
 #define AGNUS_INIT { .diwstrt = 0x2C81, .diwstop = 0xF4C1, .ddfstrt = 0x38, .ddfstop = 0xD0 }
 static agnus_t  dma_st = AGNUS_INIT, fetch_st = AGNUS_INIT;
-uint32_t denise_stat_compose, denise_stat_oto, denise_stat_ev;   // AMIGA_STATS counters (the bench's status)
+// The bench's status (AMIGA_STATS: the host).  Not in the firmware: the table
+// was 2 KB of the board's SRAM, a seventh of the menu's heap, for nothing -
+// the Snapshots list ran out of memory again when the heap fell to 13 KB.
+#ifdef AMIGA_STATS
+uint32_t denise_stat_compose, denise_stat_oto, denise_stat_ev;
 uint32_t denise_stat_evk[0x200];                                 // events by register / kind
+#endif
 // amiga_set_render_skip: this frame's picture is not drawn - the DMA side only
 // moves the pointers, the fetch stage spreads nothing, the output stage keeps
 // its registers (colours, BPLCON, sprites) and touches no framebuffer row.
@@ -775,9 +780,10 @@ AMIGA_HOT static inline void ham_step(unsigned v, bool ham8) {
     }
 }
 
-AMIGA_HOT static void output_ham(int x0, int x1, bool hires) {
-    const bool ham8 = A.aga && planes(bplcon0) == 8;
-    const unsigned xr = A.aga ? (unsigned)(bplcon4 >> 8) & (ham8 ? 0xFF : 0x3F) : 0;
+// The general loop: hires, the columns under sprites, those outside the
+// framebuffer.  In flash since ham_plain took over the lowres window (768 bytes
+// of SRAM, which is the menu's heap).
+static void output_ham_px(int x0, int x1, bool hires, bool ham8, unsigned xr) {
     for (int x = x0; x < x1; x++) {
         if (!ham_in) { ham_col = color[0]; ham_in = true; }
         const uint8_t v0 = hires ? pf_o[2 * x] : pf_o[x];
@@ -796,6 +802,77 @@ AMIGA_HOT static void output_ham(int x0, int x1, bool hires) {
             w_put(fx, c0, c1);
         }
     }
+}
+
+// Lowres columns [x0, x1) no sprite covers, the row DIRECT (a lowres HAM row
+// always is) or no row at all: the colour in a register, the pixel straight
+// into the row.  Roots' plasma is HAM6 over the whole screen, and the general
+// loop below (the colour in memory, sprite_mix and w_put a pixel: 47 ARM
+// instructions) took 24 ms of the render core for a frame of it - four frames
+// in five were skipped on the board (2026-11-10).
+// HAM6 through a table, value -> (the bits the pixel keeps) << 16 | the bits it
+// sets: a palette colour keeps none, a modify keeps the other two guns.  Eight
+// instructions a pixel; the 16 palette entries are refreshed for every run.
+static uint32_t ham6_tab[64];
+AMIGA_HOT static uint16_t ham6_run(const uint8_t *s, uint16_t *d, int n, uint32_t col, unsigned xr) {
+    uint32_t *t = ham6_tab;
+    if (!t[16]) {
+        for (unsigned i = 0; i < 16; i++) {
+            t[16 + i] = 0xFF0u << 16 | i;
+            t[32 + i] = 0x0FFu << 16 | i << 8;
+            t[48 + i] = 0xF0Fu << 16 | i << 4;
+        }
+    }
+    for (unsigned i = 0; i < 16; i++) t[i] = color[i];
+    for (int i = 0; i < n; i++) {
+        const uint32_t e = t[(s[i] ^ xr) & 63];
+        col = (col & (e >> 16)) | e;                // its top half is cut by the next pixel's mask
+        d[i] = (uint16_t)col;
+    }
+    return (uint16_t)col;
+}
+// HAM8: the same by arithmetic (a table would be 1 KB of SRAM).
+AMIGA_HOT static uint16_t ham8_run(const uint8_t *s, uint16_t *d, int n, uint32_t col, unsigned xr) {
+    for (int i = 0; i < n; i++) {
+        const unsigned v = s[i] ^ xr, ctl = v & 3;
+        if (!ctl) col = color[v >> 2];
+        else {
+            const unsigned sh = (0x4800u >> (4 * ctl)) & 15;       // blue 0, red 8, green 4
+            col = (col & ~(15u << sh)) | (v >> 4) << sh;
+        }
+        d[i] = (uint16_t)col;
+    }
+    return (uint16_t)col;
+}
+static void output_ham_px(int x0, int x1, bool hires, bool ham8, unsigned xr);
+AMIGA_HOT static void ham_plain(int x0, int x1, bool ham8, unsigned xr) {
+    // The columns left and right of the framebuffer (a few, or all of them
+    // without a row) change the colour only: the general loop's.
+    const int f0 = fb_x0, f1 = fb_x0 + AMIGA_FB_W;
+    const int a = !fbrow ? x1 : x0 > f0 ? x0 : f0 < x1 ? f0 : x1;
+    const int b = !fbrow ? x1 : x1 < f1 ? x1 : f1 > a ? f1 : a;
+    if (a > x0) output_ham_px(x0, a, false, ham8, xr);
+    if (b > a) {
+        if (!ham_in) { ham_col = color[0]; ham_in = true; }
+        uint16_t *d = fbrow->px.rgb + (a - f0);
+        ham_col = ham8 ? ham8_run(pf_o + a, d, b - a, ham_col, xr) : ham6_run(pf_o + a, d, b - a, ham_col, xr);
+    }
+    if (x1 > b) output_ham_px(b, x1, false, ham8, xr);
+}
+
+AMIGA_HOT static void output_ham(int x0, int x1, bool hires) {
+    const bool ham8 = A.aga && planes(bplcon0) == 8;
+    const unsigned xr = A.aga ? (unsigned)(bplcon4 >> 8) & (ham8 ? 0xFF : 0x3F) : 0;
+    if (!hires && (!fbrow || w_mode == AMIGA_ROW_DIRECT)) {
+        // Only the columns sprites cover take the per-pixel path.
+        const int lo = spl_lo < x0 ? x0 : spl_lo > x1 ? x1 : spl_lo;
+        const int hi = spl_hi > x1 ? x1 : spl_hi < lo ? lo : spl_hi;
+        if (hi <= lo) { ham_plain(x0, x1, ham8, xr); return; }
+        if (lo > x0) ham_plain(x0, lo, ham8, xr);
+        if (hi < x1) { output_ham_px(lo, hi, hires, ham8, xr); ham_plain(hi, x1, ham8, xr); return; }
+        x0 = lo;
+    }
+    output_ham_px(x0, x1, hires, ham8, xr);
 }
 
 // HAM: lowres with 6 planes; AGA also HAM8 (8 planes) and hires (not super-hires).
@@ -1792,6 +1869,14 @@ AMIGA_HOT int denise_bus_busy8(int h0, int h1) {
     const int wpc = fm == 0 ? 1 : fm == 3 ? 4 : 2;
     int busy8 = (b - a) * np * (2 << res(f->bplcon0)) / (2 * wpc);
     return busy8 > (b - a) * 8 ? (b - a) * 8 : busy8;
+}
+
+// The bitplane fetch's colour clocks on this line, [*ds, *de): empty without it.
+AMIGA_HOT void denise_bus_window(int *ds, int *de) {
+    const agnus_t *f = &dma_st;
+    const bool on = f->bpl_dma && f->nunits > 0;
+    *ds = on ? f->ds : 0;
+    *de = on ? f->ds + f->nunits * f->unit_cc : 0;
 }
 
 // The first colour clock from h on that the copper can have.  Its cycles are

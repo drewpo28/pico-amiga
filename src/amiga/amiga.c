@@ -45,7 +45,9 @@ static uint32_t prof_frames;
 AMIGA_HOT uint64_t amiga_now(void) {
     if (!A.in_cpu) return A.cpu_cyc;
     const int run = m68k_cycles_run();
-    return A.cpu_cyc + (uint64_t)(A.cpu_mul > 1 ? run / A.cpu_mul : run);
+    // With the part of a cycle the last slice left over (cpu_rem): "now" does not
+    // depend on where the slices were cut.
+    return A.cpu_cyc + (uint64_t)(A.cpu_mul > 1 ? ((unsigned)run + A.cpu_rem) / A.cpu_mul : (unsigned)run);
 }
 
 AMIGA_HOT uint16_t amiga_hpos(void) {
@@ -55,7 +57,15 @@ AMIGA_HOT uint16_t amiga_hpos(void) {
     return (uint16_t)(h >= AMIGA_CC_PER_LINE ? AMIGA_CC_PER_LINE - 1 : h);
 }
 
-AMIGA_HOT static void cpu_until(uint64_t target) {
+// A slice longer than SLICE_CC (run_line merges them while the copper waits)
+// ends where the CPU does something the short ones bounded the delay of: starts
+// a blit (its end's interrupt), writes the copper's registers or DMACON.
+static bool slice_long, slice_cut;
+AMIGA_HOT void amiga_slice_cut(void) {
+    if (slice_long && A.in_cpu) { slice_cut = true; m68k_end_timeslice(); }
+}
+
+AMIGA_HOT __attribute__((noinline)) static void cpu_until(uint64_t target) {    // noinline: run_line is in SRAM, and smaller this way
     const unsigned mul = A.cpu_mul > 1 ? A.cpu_mul : 1;
     if (idle_skip(target)) return;                                 // a busy-wait loop (idle.c)
     while (A.cpu_cyc < target) {
@@ -63,10 +73,13 @@ AMIGA_HOT static void cpu_until(uint64_t target) {
         int used = m68k_execute((int)(target - A.cpu_cyc) * (int)mul);
         A.in_cpu = false;
         if (used <= 0) { A.cpu_cyc = target; break; }
-        if (mul == 1) { A.cpu_cyc += (uint64_t)used; continue; }
-        const unsigned u = (unsigned)used + A.cpu_rem;           // load test: mul cycles per one
-        A.cpu_cyc += u / mul;
-        A.cpu_rem = (uint8_t)(u % mul);
+        if (mul == 1) A.cpu_cyc += (uint64_t)used;
+        else {
+            const unsigned u = (unsigned)used + A.cpu_rem;       // load test: mul cycles per one
+            A.cpu_cyc += u / mul;
+            A.cpu_rem = (uint8_t)(u % mul);
+        }
+        if (slice_cut) break;
     }
 }
 
@@ -139,16 +152,46 @@ AMIGA_HOT static void bus_wait(int h0, int h1) {
     // (one longword access each), instead of a flat share of an access an instruction.
     const uint32_t fetch8 = bus_fetch8 == 255 ? miss * 8 : instr * (bus_boost ? 2u : bus_fetch8);
     const uint32_t acc8 = data * 8 + (mem_fetch_chip ? fetch8 : 0);
-    int busy8 = denise_bus_busy8(h0, h1) + BUS_FIXED8;
-    if (blitter_busy()) busy8 += (h1 - h0) * ((A.dmacon & DMAF_BLTPRI) ? 8 : 6);
-    int free8 = (h1 - h0) * 8 - busy8;
-    if (free8 < 0) free8 = 0;
     const int need8 = (int)(acc8 * bus_cost8 / 8);                   // bus_cost8 / 8 clocks an access
-    if (need8 <= free8) return;
-    // A slice's CPU time is 4 x 16 clocks at most: more than 8 slices of wait is
-    // a count from before the model was switched on, not a slice's.
-    uint32_t over8 = (uint32_t)(need8 - free8);
-    if (over8 > (uint32_t)(h1 - h0) * 64u) over8 = (uint32_t)(h1 - h0) * 64u;
+    const int blit8 = blitter_busy() ? ((A.dmacon & DMAF_BLTPRI) ? 8 : 6) : 0;
+    uint32_t over8;
+    if (h1 - h0 <= SLICE_CC) {
+        int free8 = (h1 - h0) * (8 - blit8) - denise_bus_busy8(h0, h1) - BUS_FIXED8;
+        if (free8 < 0) free8 = 0;
+        if (need8 <= free8) return;
+        // A slice's CPU time is 4 x 16 clocks at most: more than 8 slices of wait is
+        // a count from before the model was switched on, not a slice's.
+        over8 = (uint32_t)(need8 - free8);
+        if (over8 > (uint32_t)(h1 - h0) * 64u) over8 = (uint32_t)(h1 - h0) * 64u;
+    } else {
+        // A merged slice (run_line): the accesses spread evenly along it, and each
+        // stretch's free clocks are its own - before the bitplanes' fetch, in it,
+        // after it - as the short slices had it: what the border leaves free is
+        // of no use to the accesses inside the window.  No blit ran when it began
+        // (run_line); one the CPU started cut it short and has the bus in the
+        // last SLICE_CC clocks only.
+        int ds, de;
+        denise_bus_window(&ds, &de);
+        const int hx = blit8 ? h1 - SLICE_CC : h1;
+        int cut[5] = { h0, ds, de, hx, h1 };
+        for (int i = 1; i < 4; i++) cut[i] = cut[i] < h0 ? h0 : cut[i] > h1 ? h1 : cut[i];
+        if (cut[3] < cut[2]) { const int t = cut[3]; cut[3] = cut[2]; cut[2] = t; }
+        if (cut[2] < cut[1]) { const int t = cut[2]; cut[2] = cut[1]; cut[1] = t; }
+        over8 = 0;
+        for (int i = 0; i < 4; i++) {
+            const int a = cut[i], b = cut[i + 1];
+            if (b <= a) continue;
+            const int bl8 = a < hx ? 0 : blit8;
+            int free8 = (b - a) * (8 - bl8) - denise_bus_busy8(a, b) - BUS_FIXED8 * (b - a) / SLICE_CC;
+            if (free8 < 0) free8 = 0;
+            const int n8 = (int)((int64_t)need8 * (b - a) / (h1 - h0));
+            if (n8 <= free8) continue;
+            uint32_t o = (uint32_t)(n8 - free8);
+            if (o > (uint32_t)(b - a) * 64u) o = (uint32_t)(b - a) * 64u;
+            over8 += o;
+        }
+        if (!over8) return;
+    }
     const uint32_t stall8 = over8 + A.bus_rem8;
     const uint32_t cc = stall8 / 8;
     A.bus_rem8 = (uint8_t)(stall8 % 8);
@@ -310,13 +353,50 @@ AMIGA_HOT __attribute__((noinline)) static void run_line(void) {
     prof_switch(AMIGA_PROF_OTHER);
     copper_line_start();
     for (int h = SLICE_CC, h0 = 0; ; h0 = h, h += SLICE_CC) {
+        // A slice bounds how stale the copper's and the CPU's views of each other
+        // are, so it need not end before the copper has anything to do: it waits
+        // for a later clock or for another line through most of most lines, and
+        // the slices' fixed cost (the CPU's entry and exit, the bus model, the
+        // idle test: ~330 ARM instructions each, 2,250 a frame) was more than the
+        // CPU loop's own.  The merged slice ends on the same grid, at the start of
+        // the slice the copper's next move or a running blit's end (its interrupt)
+        // is in, and where the CPU cuts it (amiga_slice_cut): the machine's state
+        // stays what the short slices made it, bit for bit (checked with idle.c
+        // off: a wait loop is noticed a slice later, a few cycles' difference),
+        // but for the bus model's waits (bus_wait).  The first slice stays as it
+        // is (the sprite DMA follows it).
+        if (h0 >= SPRITE_DMA_CC && h < AMIGA_CC_PER_LINE) {
+            int n = copper_next(h);
+            const uint64_t done = blitter_done_cyc();
+            if (done) {
+                // Under the bus model a blit keeps the short slices: the CPU is held
+                // back slice by slice there, and a long one let it run ahead of the
+                // bus it does not have (Roots' plasma: 4% fewer instructions a frame
+                // for the busy-flag polls it then had time for).
+                const int hb = A.chip_bus && A.cpu_clock > 1 ? h
+                             : done > A.line_cyc ? (int)((done - A.line_cyc + 1) / 2) : 0;
+                if (hb < n) n = hb;
+            }
+            n = n / SLICE_CC * SLICE_CC;
+            if (n > h) h = n;
+        }
         if (h > AMIGA_CC_PER_LINE) h = AMIGA_CC_PER_LINE;
+        slice_long = h - h0 > SLICE_CC;
+        slice_cut = false;
         if (!copper_asleep) {
             prof_switch(AMIGA_PROF_COPPER);
             copper_run(h0, h);
         }
         prof_switch(AMIGA_PROF_CPU);
-        cpu_until(A.line_cyc + 2u * (uint32_t)h);
+        for (;;) {
+            cpu_until(A.line_cyc + 2u * (uint32_t)h);
+            if (!slice_cut) break;
+            // Cut: back to the slices' grid from where the CPU is, and on to there.
+            slice_cut = slice_long = false;
+            const uint64_t now = A.cpu_cyc > A.line_cyc ? A.cpu_cyc - A.line_cyc : 0;
+            const int hc = ((int)(now / 2) / SLICE_CC + 1) * SLICE_CC;
+            if (hc < h) h = hc;
+        }
         if (A.chip_bus && A.cpu_clock > 1) bus_wait(h0, h);
         prof_switch(AMIGA_PROF_OTHER);
         blitter_poll();

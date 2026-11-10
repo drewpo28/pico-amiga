@@ -189,7 +189,10 @@ AMIGA_HOT static int wait_until(int from, int to) {
     if (cv < 0) return -1;
     int h = from;
     if (cv == 0) {
-        for (; h < to && !cmp_h(h); h++) {}
+        // The usual mask ($FE: every bit compared) needs no walk along the line:
+        // the first clock at or after the WAIT's position.
+        if ((ir2 & 0xFE) == 0xFE) { const int hp = ir1 & 0xFE; if ((h & 0xFE) < hp) h = hp; }
+        else for (; h < to && !cmp_h(h); h++) {}
         if (h >= to) return -1;
     }
     if (!(ir2 & 0x8000) && blitter_busy()) {          // BFD = 0: also wait for the blitter
@@ -375,6 +378,24 @@ AMIGA_HOT void copper_run(int from, int until) {
     }
 }
 
+// The first colour clock from h on at which the copper may have something to do
+// on this line (AMIGA_CC_PER_LINE: nothing more): the scheduler's slices need
+// not be cut finer than that (amiga.c run_line).
+AMIGA_HOT int copper_next(int h) {
+    if (copper_asleep) return AMIGA_CC_PER_LINE;
+    if (cop_play) {
+        if (cop_play_i < cop_play->n && cop_play->ev[cop_play_i].vpos == A.vpos)
+            return cop_play->ev[cop_play_i].h > h ? cop_play->ev[cop_play_i].h : h;
+        return AMIGA_CC_PER_LINE;
+    }
+    if (!copper_on() || state == COP_STOP) return AMIGA_CC_PER_LINE;
+    if (state == COP_WAIT) {
+        const int w = wait_until(cop_h > h ? cop_h : h, AMIGA_CC_PER_LINE);
+        return w < 0 ? AMIGA_CC_PER_LINE : w;
+    }
+    return h;
+}
+
 AMIGA_HOT void copper_line_start(void) {
     cop_h = cop_h >= AMIGA_CC_PER_LINE ? cop_h - AMIGA_CC_PER_LINE : 0;
     cop_defer = false;
@@ -406,6 +427,7 @@ AMIGA_HOT void copper_write(uint32_t reg, uint16_t v) {
     case R_COPJMP2: pc = lc[1]; state = COP_RUN; copper_asleep = false; replay_off(); break;
     default: break;
     }
+    amiga_slice_cut();
 }
 
 uint32_t copper_pc(void) { return pc; }

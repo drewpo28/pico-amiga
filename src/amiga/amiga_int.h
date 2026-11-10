@@ -189,6 +189,7 @@ void     akiko_state(st_t *s);
 
 // Current horizontal position in colour clocks (0..226), from the CPU's clock.
 uint16_t amiga_hpos(void);
+void     amiga_slice_cut(void);         // amiga.c: the CPU did something a long slice must not sit on
 uint64_t amiga_now(void);              // absolute CPU cycles "now"
 void     amiga_update_ipl(void);       // recompute the 68000 interrupt level
 void     amiga_set_intreq(uint16_t bits);
@@ -266,6 +267,7 @@ extern bool amiga_aud_written;                      // amiga.c: an AUDx write th
 void     copper_vblank(void);                       // restart from COP1LC at line 0
 void     copper_line_start(void);
 void     copper_run(int from_h, int until_h);       // execute the slice up to colour clock `until_h`
+int      copper_next(int h);                        // its next colour clock with work on this line, from h on
 extern bool copper_asleep;                          // nothing for it on this line: copper_run is not called
 void     copper_write(uint32_t reg, uint16_t v);    // COPxLC / COPJMPx / COPCON
 uint32_t copper_pc(void);
@@ -293,6 +295,7 @@ void     denise_frame_start(void);
 bool     denise_lace(void);                         // BPLCON0 LACE
 void     denise_status(amiga_status_t *st);          // bplcon0, fmode, dma_lines
 int      denise_bus_busy8(int h0, int h1);           // bitplane DMA's chip cycles in [h0, h1), in eighths
+void     denise_bus_window(int *ds, int *de);         // the bitplane fetch on this line, [ds, de) in colour clocks
 int      denise_copper_slot(int h);                  // the copper's first free cycle from h on (bitplane DMA takes some)
 // ...and whether the bitplane DMA can take any on this line now (5+ lowres or 3+
 // hires planes, FMODE 0, the line fetching): the copper asks only then.  Roots'

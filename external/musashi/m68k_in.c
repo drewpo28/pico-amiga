@@ -9510,7 +9510,14 @@ M68KMAKE_OP(stop, 0, ., .)
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
 		CPU_STOPPED |= STOP_LEVEL_STOP;
 		m68ki_set_sr(new_sr);
-		/* PICO-AMIGA: through the macros (the cycles may be in a register, m68kregs.h) */
+		/* PICO-AMIGA: through the macros (the cycles may be in a register, m68kregs.h).
+		 * And only a CPU that did stop gives the rest of its slice away: with an
+		 * interrupt already pending that the new mask lets in, m68ki_set_sr has
+		 * taken it, and its handler starts now, not at the next slice (exec's idle
+		 * STOP with the blitter's interrupt raised just before it: the handler ran
+		 * as much later as the scheduler's slice was long). */
+		if(!CPU_STOPPED)
+			return;
 		if(GET_CYCLES() >= CYC_INSTRUCTION[REG_IR])
 			SET_CYCLES(CYC_INSTRUCTION[REG_IR]);
 		else

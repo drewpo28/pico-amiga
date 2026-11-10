@@ -148,6 +148,39 @@
 - **Musashi samples interrupts only on entry to m68k_execute()** (and on SR
   writes): `amiga_update_ipl()` calls m68k_end_timeslice() when the level rises
   inside the CPU, otherwise an interrupt would wait for the end of the slice.
+- **HAM in lowres has its own loop** (denise.c ham_plain, 2026-11-10): the
+  colour in a register, the pixel straight into the DIRECT row, for the
+  columns no sprite covers; the general loop (output_ham_px: hires, under
+  sprites, outside the framebuffer) is in flash.  Roots' plasma is HAM6 full
+  screen: 47 -> 10 ARM instructions a pixel (HAM6 through a 64-entry table of
+  keep-mask / set-bits, ham6_run; HAM8 by arithmetic); before, a drawn frame
+  was ~24 ms of the render core and the board skipped four frames in five.
+- **Blits without shift, mask or fill have their own loop** (blitter.c
+  area_plain, 2026-11-10): the minterm on the words as chip RAM stores them,
+  the rows through pointers, a channel that is off or not looked at a constant
+  with stride 0; it also took over the old clear / copy path.  Roots' plasma:
+  128 blits of D = A | B | C a frame, 108 -> ~55 ARM instructions a word.  Its
+  own function at -Os: inlined at -O2 it cost 1.4 KB of SRAM.
+- **The slices are merged while the copper waits** (amiga.c run_line,
+  2026-11-10): a slice costs ~330 ARM instructions whatever runs in it, so
+  from the second one on it is as long as the copper's next move
+  (copper_next), a running blit's end and the line allow, always ending on the
+  32-clock grid; the CPU cuts it (amiga_slice_cut) when it starts a blit or
+  writes COPxLC / COPJMP / DMACON.  The state is then what the short slices
+  made it, bit for bit - checked on five runs with idle.c switched off in both
+  builds (idle.c notices a loop a slice later, a few cycles' difference).
+  What it took to get there, each one a dependence on where slices end:
+  Musashi's STOP gave the rest of the slice away even when m68ki_set_sr had
+  just taken a pending interrupt (exec's idle STOP, the handler a slice late);
+  amiga_now() dropped cpu_rem (a CIA timer one tick off on the 68EC020); after
+  a cut the CPU must still be run to the shortened end.  The bus model
+  (bus_wait) sums a long slice by stretch - before, in and after the bitplane
+  fetch - and a blit keeps the short slices under it (the CPU ran ahead of a
+  bus it did not have: Roots' plasma lost 4% of its instructions to busy-flag
+  polls).  With it Roots' parts run within 3% of the instructions they had,
+  the music at the same rate, pictures a few frames out of phase.  QEMU, ARM
+  instructions a frame: zigzag -3.5%, 8-plane part -5.5%, plasma -0.8%,
+  sprite part 0; SRAM +752 bytes.
 - **Musashi's trace emulation must stay on** (`M68K_EMULATE_TRACE`): trace-vector
   decoders decrypt code one instruction at a time from the Trace exception. With it
   off, Cannon Fodder's disk 2 code spun forever with SR.T set (black screen).
