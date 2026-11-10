@@ -132,8 +132,11 @@ void amiga_set_load_test(int cpu_mul, bool extra_planes) {
 }
 
 // The 68000 RESET instruction asserts the reset line for the peripherals.
+// The expansion boards drop their configuration: Kickstart's ColdReboot (RESET,
+// then the ROM's entry) configures them again.
 void amiga_cpu_reset_instr(void) {
     cia_reset();
+    mem_autoconfig_reset();
 }
 
 // ---- keyboard controller ---------------------------------------------------------
@@ -183,7 +186,7 @@ void amiga_joystick(int port, uint8_t dirs, bool fire) {
 void amiga_insert_disk(int drive, const amiga_disk_t *disk) { floppy_insert(drive, disk); }
 void amiga_eject_disk(int drive) { floppy_eject(drive); }
 void amiga_set_drives(int n) { floppy_set_drives(n); }
-void amiga_set_hdf(const amiga_disk_t *disk) { ide_insert(disk); ide_reset(); }
+void amiga_set_hdf(int unit, const amiga_disk_t *disk) { ide_insert(unit, disk); ide_reset(); }
 void amiga_floppy_status(amiga_floppy_t *st) { floppy_status(st); }
 // Read from the output IRQs (audio_out.c, hdmi_audio.c), hence AMIGA_HOT.
 AMIGA_HOT uint32_t amiga_audio_write_pos(void) { return paula_audio_pos(); }
@@ -203,6 +206,11 @@ void amiga_set_machine(int chipset, uint32_t chip_size, uint32_t slow_size, uint
     A.cfg.slow_size = slow_size;
 }
 
+void amiga_set_fast(uint8_t *ram, uint32_t size) {
+    A.cfg.fast_ram = size ? ram : NULL;
+    A.cfg.fast_size = ram ? size : 0;
+}
+
 void amiga_reset(bool hard) {
     A.ecs = A.cfg.chipset == AMIGA_ECS || A.cfg.chipset == AMIGA_AGA;
     A.aga = A.cfg.chipset == AMIGA_AGA;
@@ -215,6 +223,7 @@ void amiga_reset(bool hard) {
     if (hard) {
         memset(A.cfg.chip_ram, 0, A.cfg.chip_size);
         if (A.cfg.slow_ram && A.cfg.slow_size) memset(A.cfg.slow_ram, 0, A.cfg.slow_size);
+        if (A.cfg.fast_ram && A.cfg.fast_size) memset(A.cfg.fast_ram, 0, A.cfg.fast_size);
     }
     mem_init();
     custom_reset();

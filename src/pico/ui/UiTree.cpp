@@ -87,6 +87,12 @@ static const Option opt_psram_freq[] = {
 static const Option opt_a600_chip[] = {
     { "1 MB (as it came)", 1, "1 MB" }, { "2 MB (A601 trapdoor)", 2, "2 MB" },
 };
+// A Zorro II fast RAM board (WHDLoad's "other memory"); the PSRAM's DMS area
+// gives it: with 4 MB, DMS images no longer fit (machine_fast_max).
+static const Option opt_fast_ram[] = {
+    { "None (as it came)", 0, "None" }, { "1 MB", 1 }, { "2 MB", 2 }, { "4 MB (no DMS disks)", 4, "4 MB" },
+};
+static bool p_fast_ok() { return machine_fast_max() > 0; }
 
 static const Option opt_drives[] = {
     { "Auto (one per disk of an .m3u set)", 0, "Auto" },
@@ -156,7 +162,7 @@ static const char* baseName(const char* p) {
     return s ? s + 1 : p;
 }
 
-// Devices > Disks > DF0 with an .m3u disk set loaded: the row shows the set, the right
+// Devices > Floppy drives > DF0 with an .m3u disk set loaded: the row shows the set, the right
 // pane its disks (the one in DF0 marked; a disk in another drive says which),
 // Enter swaps the chosen one into DF0.
 static bool p_diskSet() { return machine_set_count() > 1; }
@@ -228,7 +234,7 @@ static std::string extOf(const std::string& path) {
 }
 
 // An ADF or DMS into DF0, or an .m3u set (RetroArch's playlist: disk 1 goes in,
-// the rest wait in Devices > Disks > DF0, the right pane, and Ctrl+F12), as
+// the rest wait in Devices > Floppy drives > DF0, the right pane, and Ctrl+F12), as
 // Config keeps it. False, with a toast, when it cannot be opened.
 static bool insertDf0(const std::string& path) {
     const bool set = extOf(path) == ".m3u";
@@ -308,6 +314,21 @@ static void act_custom_rom() {
 // drive picker - DF0..DF3 with what is in them; a drive past the connected ones
 // connects that many (Kickstart counts them at reset).
 static bool isDiskExt(const std::string& e) { return e == ".adf" || e == ".dms"; }
+static bool isLhaExt(const std::string& e) { return e == ".lha" || e == ".lzh"; }
+
+// An LHA (a WHDLoad install, or any program) as the hard disk: built into an
+// HDF on the card the first time (machine_boot_lha), then the Amiga restarts
+// from it.  True when it boots.
+static bool bootLha(const std::string& path) {
+    char msg[96];
+    uiBusy("Preparing the hard disk...");
+    const bool ok = machine_boot_lha(path.c_str(), msg, sizeof msg);
+    Config::save();
+    if (!ok) { uiToast(msg[0] ? msg : "The archive cannot be used", true, 2500); return false; }
+    uiAmigaReset();
+    if (msg[0]) uiToast(msg, true, 3000);
+    return true;
+}
 static bool isRomExt(const std::string& e) {
     return e == ".rom" || e == ".bin" || e == ".a500" || e == ".a600" || e == ".a1000" || e == ".cdtv";
 }
@@ -358,9 +379,11 @@ void runOpenFile() {
         bool done = false;
         if (r[0] == 'P') done = toDrive(path);                  // F5: a disk image (the browser checked)
         else if (isDiskExt(ext) || ext == ".m3u") done = insertDf0(path);
+        else if (isLhaExt(ext)) done = bootLha(path);
         else if (isRomExt(ext)) done = runRomFile(path);
         else if (ext == ".pas") done = snapLoadPath(path);
-        else uiToast("Not an Amiga disk, disk set, Kickstart or snapshot", true, 2000);
+        else if (machine_is_program(path.c_str())) done = bootLha(path);   // an Amiga executable
+        else uiToast("Not an Amiga disk, disk set, archive, program, Kickstart or snapshot", true, 2000);
         gfxEnd();
         if (done) return;                                       // back to the Amiga
     }
@@ -376,7 +399,7 @@ void runDiskInsert(int drive) {
     gfxEnd();
 }
 
-// Devices > Disks > New blank disk: a formatted empty ADF on the card. With a disk set
+// Devices > Floppy drives > New blank disk: a formatted empty ADF on the card. With a disk set
 // loaded it joins the set (Ctrl+F12 swaps it in, e.g. when a game's own
 // save-disk formatter asks for a disk); otherwise it goes into DF0.
 static void act_new_disk() {
@@ -408,7 +431,7 @@ static void act_df0_eject() {
     Config::save();
 }
 
-// ── Devices > Disks: a row per connected drive ─────────────────────────────────
+// ── Devices > Floppy drives: a row per connected drive ─────────────────────────────────
 // The row shows the disk's name; its right pane the drive's list: the disk itself
 // (Enter: what is on it), Insert, Eject, Write protect - and in DF0 with an .m3u
 // set loaded, the set's disks first (Enter swaps one in) in place of the name.
@@ -636,6 +659,7 @@ static void page_about() {
 static const Node kA600[] = {
     NM_RADIO_D   ("Kickstart",   SET_KICK, a600Opts, nullptr),
     NM_RADIO_EN  ("Chip RAM",    SET_A600_CHIP, opt_a600_chip, nullptr, machine_a600_2mb_ok),
+    NM_RADIO_EN  ("Fast RAM",    SET_FAST_RAM, opt_fast_ram, nullptr, p_fast_ok),
 };
 
 // Machine > A1200: its Kickstarts (its 2 MB of chip RAM needs the 2 MB chip
@@ -649,6 +673,7 @@ static const Option opt_chip_bus[] = {
 static const Node kA1200[] = {
     NM_RADIO_DE  ("Kickstart",   SET_KICK, a1200Opts, nullptr, machine_a600_2mb_ok),
     NM_RADIO     ("Chip bus",    SET_CHIP_BUS, opt_chip_bus, nullptr),
+    NM_RADIO_EN  ("Fast RAM",    SET_FAST_RAM, opt_fast_ram, nullptr, p_fast_ok),
 };
 
 static const Node kMachine[] = {
@@ -660,39 +685,127 @@ static const Node kMachine[] = {
     NM_ACTIONV   ("Custom ROM",  act_custom_rom, customRomLabel, nullptr),
 };
 
-// Devices > Disks > Hard disk (the A600's IDE port): the HDF's name; its pane
-// the file (Enter: name and size), Choose an HDF..., SD card partition... (the
-// card's own sectors, pico-speccy's raw IDE window), Remove.  Kickstart looks
-// for the drive at reset, so a change restarts the Amiga.
+// Devices > Hard disk (Gayle's IDE port: the A600, the A1200): Master and Slave,
+// each row the drive's name; its pane the drive (Enter: name and size), Mount...
+// and Remove.  Mount... is one list, pico-speccy's source pick: an image file
+// (an HDF, or an LHA / a program built into one: the master only) or one of the
+// card's partitions (its own sectors, pico-speccy's raw IDE window).  Kickstart
+// looks for the drives at reset, so a change restarts the Amiga.
 static bool p_a600() { return Config::machine == MACHINE_A600 || Config::machine == MACHINE_A1200; }   // Gayle
-static const char* hdShort() {
-    const char* p = machine_hdf();
+static std::string& hdCfgImg(int u) { return u ? Config::hdf2 : Config::hdf; }
+static std::string& hdCfgRaw(int u) { return u ? Config::hdf2_raw : Config::hdf_raw; }
+static const char* hdShort(int u) {
+    const char* p = machine_hdf(u);
     return *p ? baseName(p) : "none";
 }
-static const Option* hdOpts(uint8_t& cnt) {
-    static Option o[4];
+static const Option* hdOpts(int u, uint8_t& cnt) {
+    static Option o[3];
     static char name[64];
     uint8_t n = 0;
-    const char* p = machine_hdf();
+    const char* p = machine_hdf(u);
     if (*p) {
-        snprintf(name, sizeof name, "%s: %s%s", baseName(p), machine_hdf_kind(), machine_hdf_ro() ? ", RO" : "");
+        snprintf(name, sizeof name, "%s: %s%s", baseName(p), machine_hdf_kind(u), machine_hdf_ro(u) ? ", RO" : "");
         o[n++] = { name, DRV_T_INFO, nullptr };
     }
-    o[n++] = { "HDF file...", DRV_T_INSERT, nullptr };
-    o[n++] = { "SD partition...", DRV_T_PART, nullptr };
+    o[n++] = { "Mount...", DRV_T_INSERT, nullptr };
     if (*p) o[n++] = { "Remove", DRV_T_EJECT, nullptr };
     cnt = n;
     return o;
 }
-static void hdKey(int32_t tag, uint8_t key) {
+
+// An image file from the browser into drive u.  True when the Amiga restarts with it.
+static bool hdMountImage(int u) {
+    static std::string dir;
+    if (dir.empty()) {
+        const std::string cur = machine_hdf_is_raw(u) ? "" : machine_hdf(u);
+        dir = cur.empty() ? std::string("/amiga/") : cur.substr(0, cur.find_last_of('/') + 1);
+        FILINFO fi;
+        if (dir != "/" && f_stat(dir.substr(0, dir.size() - 1).c_str(), &fi) != FR_OK) dir = "/";
+    }
+    const std::string r = browseFile(dir, u ? "Hard disk: slave" : "Hard disk: master", BROWSE_HDF);
+    if (r.size() < 2 || r[0] != 'R') return false;
+    const std::string path = dir + r.substr(1);
+    if (isLhaExt(extOf(path))) {                       // an archive: its built image, the boot drive
+        if (u) { uiToast("An archive boots from the master", true, 2500); return false; }
+        return bootLha(path);
+    }
+    if (path == machine_hdf(u ^ 1)) {
+        uiToast(u ? "That image is the master's" : "That image is the slave's", true, 2500);
+        return false;
+    }
+    if (!machine_set_hdf(u, path.c_str())) {
+        hdCfgImg(u).clear();
+        hdCfgRaw(u).clear();
+        Config::save();
+        uiToast("That HDF cannot be opened", true, 2000);
+        return false;
+    }
+    hdCfgImg(u) = path;
+    hdCfgRaw(u).clear();
+    Config::save();
+    uiAmigaReset();
+    return true;
+}
+
+// Mount...: the source list.  True when the Amiga restarts with a new drive.
+static bool hdMount(int u) {
+    MachinePart parts[8];
+    const int found = machine_sd_parts(parts);
+    if (found <= 0) return hdMountImage(u);            // no card sectors to offer: an image is the only source
+    static char labels[8][56];
+    const char* items[9];
+    int map[9], k = 0, initial = 0;
+    unsigned cm = 0, cp = 0, cl = 0, cn = 0;           // the window in use, for the cursor
+    if (machine_hdf_is_raw(u)) sscanf(hdCfgRaw(u).c_str(), "%u:%u:%u:%u", &cm, &cp, &cl, &cn);
+    items[k] = "Image file (HDF, LHA)...";
+    map[k++] = -1;
+    for (int i = 0; i < 8; i++) {
+        if (!parts[i].sectors) continue;
+        const uint32_t mb = parts[i].sectors / 2048;
+        if (mb >= 1024)
+            snprintf(labels[i], sizeof labels[i], "SD card: part %d  %u.%u GB, %s%s", parts[i].no, (unsigned)(mb / 1024),
+                     (unsigned)(mb % 1024 * 10 / 1024), parts[i].kind, parts[i].files ? " (files)" : "");
+        else
+            snprintf(labels[i], sizeof labels[i], "SD card: part %d  %u MB, %s%s", parts[i].no, (unsigned)mb,
+                     parts[i].kind, parts[i].files ? " (files)" : "");
+        if (cm && parts[i].lba == cl && parts[i].sectors == cn) initial = k;
+        items[k] = labels[i];
+        map[k++] = i;
+    }
+    const int c = uiPickList(u ? "Hard disk: slave" : "Hard disk: master", items, k, initial);
+    if (c < 0) return false;
+    if (map[c] < 0) return hdMountImage(u);
+    const MachinePart& q = parts[map[c]];
+    // The card's own files are never written under FatFs; another partition asks.
+    static const char* const kMode[] = { "Read-only", "Writable" };
+    const int m = q.files ? 0 : uiPickList("The Amiga may", kMode, 2, 0);
+    if (m < 0) return false;
+    if (!machine_set_hdf_raw(u, q.no, q.lba, q.sectors, m == 1)) {
+        hdCfgRaw(u).clear();
+        hdCfgImg(u).clear();
+        Config::save();
+        uiToast("That partition cannot be used", true, 2000);
+        return false;
+    }
+    char v[48];
+    snprintf(v, sizeof v, "%d:%u:%u:%u", machine_hdf_ro(u) ? 1 : 2, (unsigned)q.no, (unsigned)q.lba, (unsigned)q.sectors);
+    hdCfgRaw(u) = v;
+    hdCfgImg(u).clear();
+    Config::save();
+    uiAmigaReset();
+    if (m == 1 && machine_hdf_ro(u)) uiToast("Read-only: the other drive has it", true, 2500);
+    return true;
+}
+
+static void hdKey(int u, int32_t tag, uint8_t key) {
     if (key) return;
-    const char* p = machine_hdf();
+    const char* p = machine_hdf(u);
     switch (tag) {
     case DRV_T_INFO: {
         FILINFO fi;
         char msg[96];
-        if (machine_hdf_is_raw()) {
-            snprintf(msg, sizeof msg, "%s: %s%s", p, machine_hdf_kind(), machine_hdf_ro() ? ", read-only" : "");
+        if (machine_hdf_is_raw(u)) {
+            snprintf(msg, sizeof msg, "%s: %s%s", p, machine_hdf_kind(u), machine_hdf_ro(u) ? ", read-only" : "");
             uiToast(msg, false, 2500);
             return;
         }
@@ -702,73 +815,13 @@ static void hdKey(int32_t tag, uint8_t key) {
         uiToast(msg, false, 2500);
         return;
     }
-    case DRV_T_INSERT: {
-        static std::string dir;
-        if (dir.empty()) {
-            const std::string cur = p;
-            dir = cur.empty() ? std::string("/amiga/") : cur.substr(0, cur.find_last_of('/') + 1);
-            FILINFO fi;
-            if (dir != "/" && f_stat(dir.substr(0, dir.size() - 1).c_str(), &fi) != FR_OK) dir = "/";
-        }
-        const std::string r = browseFile(dir, "Hard disk (IDE)", BROWSE_HDF);
-        if (r.size() < 2 || r[0] != 'R') return;
-        const std::string path = dir + r.substr(1);
-        if (!machine_set_hdf(path.c_str())) {
-            Config::hdf.clear();
-            Config::save();
-            uiToast("That HDF cannot be opened", true, 2000);
-            return;
-        }
-        Config::hdf = path;
-        Config::hdf_raw.clear();
-        Config::save();
-        uiAmigaReset();
-        requestClose();
+    case DRV_T_INSERT:
+        if (hdMount(u)) requestClose();               // back to the Amiga, booting with it
         return;
-    }
-    case DRV_T_PART: {
-        MachinePart parts[8];
-        const int found = machine_sd_parts(parts);
-        if (found < 0) { uiToast("The card cannot be read", true, 2000); return; }
-        if (found == 0) { uiToast("The card has no partition table", true, 2500); return; }
-        static char labels[8][48];
-        const char* items[8];
-        int map[8], k = 0;
-        for (int i = 0; i < 8; i++) {
-            if (!parts[i].sectors) continue;
-            const uint32_t mb = parts[i].sectors / 2048;
-            const bool gb = mb >= 10240;
-            snprintf(labels[k], sizeof labels[k], "%d: %02X, %u %s, %s%s", parts[i].no, parts[i].type,
-                     (unsigned)(gb ? mb / 1024 : mb), gb ? "GB" : "MB", parts[i].kind,
-                     parts[i].files ? " (files)" : "");
-            items[k] = labels[k];
-            map[k++] = i;
-        }
-        const int c = uiPickList("Hard disk: SD partition", items, k, 0);
-        if (c < 0) return;
-        const MachinePart& q = parts[map[c]];
-        static const char* const kMode[] = { "Read-only", "Writable" };
-        const int m = q.files ? 0 : uiPickList("The Amiga may", kMode, 2, 0);
-        if (m < 0) return;
-        if (!machine_set_hdf_raw(q.no, q.lba, q.sectors, m == 1)) {
-            Config::hdf_raw.clear();
-            Config::save();
-            uiToast("That partition cannot be used", true, 2000);
-            return;
-        }
-        char v[48];
-        snprintf(v, sizeof v, "%d:%u:%u:%u", m == 1 ? 2 : 1, (unsigned)q.no, (unsigned)q.lba, (unsigned)q.sectors);
-        Config::hdf_raw = v;
-        Config::hdf.clear();
-        Config::save();
-        uiAmigaReset();
-        requestClose();
-        return;
-    }
     case DRV_T_EJECT:
-        machine_set_hdf("");
-        Config::hdf.clear();
-        Config::hdf_raw.clear();
+        machine_set_hdf(u, "");
+        hdCfgImg(u).clear();
+        hdCfgRaw(u).clear();
         Config::save();
         uiAmigaReset();
         requestClose();
@@ -778,13 +831,25 @@ static void hdKey(int32_t tag, uint8_t key) {
     }
 }
 
+#define HD_ROW(u)                                                                       \
+    static const Option* hdOpts##u(uint8_t& cnt) { return hdOpts(u, cnt); }           \
+    static void hdKey##u(int32_t tag, uint8_t key) { hdKey(u, tag, key); }              \
+    static const char* hdShort##u() { return hdShort(u); }
+HD_ROW(0)
+HD_ROW(1)
+#undef HD_ROW
+
+static const Node kHardDisk[] = {
+    NM_PICK  ("Master", SET_NONE, hdOpts0, hdKey0, hdShort0, opt_drive_foot, nullptr),
+    NM_PICK  ("Slave",  SET_NONE, hdOpts1, hdKey1, hdShort1, opt_drive_foot, nullptr),
+};
+
 static const Node kDisks[] = {
     NM_PICK  ("DF0", SET_DF0_DISK, driveOpts0, driveKey0, driveShort0, opt_drive_foot, nullptr),
     NM_PICK  ("DF1", SET_NONE,     driveOpts1, driveKey1, driveShort1, opt_drive_foot, p_drive1),
     NM_PICK  ("DF2", SET_NONE,     driveOpts2, driveKey2, driveShort2, opt_drive_foot, p_drive2),
     NM_PICK  ("DF3", SET_NONE,     driveOpts3, driveKey3, driveShort3, opt_drive_foot, p_drive3),
-    NM_PICK  ("Hard disk", SET_NONE, hdOpts,   hdKey,     hdShort,     opt_drive_foot, p_a600),
-    NM_RADIO ("Floppy drives", SET_DRIVES, opt_drives, nullptr),
+    NM_RADIO ("Drives", SET_DRIVES, opt_drives, nullptr),
     NM_ACTION("New blank disk", act_new_disk, nullptr),
 };
 
@@ -929,7 +994,8 @@ const Node* persistNodeFor() {
 
 // Devices: what is plugged into the Amiga (pico-speccy's Devices row).
 static const Node kDevices[] = {
-    NM_SUB("Disks",     kDisks,     nullptr),
+    NM_SUB("Floppy drives", kDisks,    nullptr),
+    NM_SUB("Hard disk",     kHardDisk, p_a600),
     NM_SUB("Input",     kInput,     nullptr),
 };
 

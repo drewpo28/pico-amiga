@@ -13,6 +13,16 @@
 # all three; the A600 lists only those two (2.05 is its own, the first with
 # Gayle's IDE). The A1200's 3.0 and 3.1 are its own (68020 code); the A3000 /
 # A4000 / CD32 ROMs are not listed.
+# The file's own name ("kick40068.A1200") is what WHDLoad looks for in
+# Devs:Kickstarts (whdboot.c puts the ones a slave names on its volume).
+#
+# WHDLoad's files: everything under ROMS_DIR/WHDLoad/ (C/WHDLoad,
+# Devs/Kickstarts/kickN.M.RTB, S/WHDLoad.prefs ...) is linked too, with its path
+# there as its path on a WHDLoad volume (machine.cpp: an LHA opened on an A600 /
+# A1200).  WHDLoad is Bert Jahn's (all rights reserved, no commercial use) and the
+# .RTB files come from SKick (aminet util/boot/skick346.lha): like the
+# Kickstarts, they stay out of git.  None there: the card's /amiga/whdload/ must
+# hold them.
 set(ROMS_DIR "${CMAKE_CURRENT_LIST_DIR}/../debug" CACHE PATH "Where the built-in ROM images are")
 set(AMIGA_BUILTIN_ROMS
     "diag|DiagROM|DiagROM|DiagROM/diagrom.rom"
@@ -46,20 +56,47 @@ function(amiga_builtin_roms target)
         string(APPEND asm ".section .rodata.builtin_rom_${id},\"a\"\n.balign 4096\n"
                           ".global builtin_rom_${id}\nbuiltin_rom_${id}:\n.incbin \"${path}\"\n")
         string(APPEND tab "extern const uint8_t builtin_rom_${id}[];\n")
-        string(APPEND rows "    { \"${id}\", \"${label}\", \"${machine}\", builtin_rom_${id}, ${size}u },\n")
+        get_filename_component(fname "${file}" NAME)
+        string(APPEND rows "    { \"${id}\", \"${label}\", \"${machine}\", builtin_rom_${id}, ${size}u, \"${fname}\" },\n")
         math(EXPR n "${n} + 1")
         set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${path}")
     endforeach()
     # The PC host's linker wants the no-exec-stack note; the firmware's does not.
     string(APPEND asm "#if defined(__x86_64__) || defined(__aarch64__)\n.section .note.GNU-stack,\"\",%progbits\n#endif\n")
     if(n EQUAL 0)
-        string(APPEND tab "const builtin_rom_t builtin_roms[1] = { { 0, 0, 0, 0, 0 } };\n")
+        string(APPEND tab "const builtin_rom_t builtin_roms[1] = { { 0, 0, 0, 0, 0, 0 } };\n")
     else()
         string(APPEND tab "const builtin_rom_t builtin_roms[] = {\n${rows}};\n")
     endif()
     string(APPEND tab "const unsigned builtin_rom_count = ${n};\n")
+    # WHDLoad's files
+    file(GLOB_RECURSE whd RELATIVE "${ROMS_DIR}/WHDLoad" "${ROMS_DIR}/WHDLoad/*")
+    list(SORT whd)
+    set(wrows "")
+    set(w 0)
+    foreach(rel ${whd})
+        if(rel MATCHES "(^|/)\\." OR rel MATCHES "\\.(info|txt|html|md)$")
+            continue()
+        endif()
+        set(path "${ROMS_DIR}/WHDLoad/${rel}")
+        file(SIZE "${path}" size)
+        string(APPEND asm ".section .rodata.builtin_whd_${w},\"a\"\n.balign 4\n"
+                          ".global builtin_whd_${w}\nbuiltin_whd_${w}:\n.incbin \"${path}\"\n")
+        string(APPEND tab "extern const uint8_t builtin_whd_${w}[];\n")
+        string(APPEND wrows "    { \"${rel}\", builtin_whd_${w}, ${size}u },\n")
+        math(EXPR w "${w} + 1")
+        set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${path}")
+    endforeach()
+    if(w EQUAL 0)
+        message(WARNING "no WHDLoad files in ${ROMS_DIR}/WHDLoad - the card's /amiga/whdload/ must have them")
+        string(APPEND tab "const builtin_whd_t builtin_whd[1] = { { 0, 0, 0 } };\n")
+    else()
+        string(APPEND tab "const builtin_whd_t builtin_whd[] = {\n${wrows}};\n")
+    endif()
+    string(APPEND tab "const unsigned builtin_whd_count = ${w};\n")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${ROMS_DIR}/WHDLoad")
     file(WRITE ${gen}/builtin_roms.S "${asm}")
     file(WRITE ${gen}/builtin_roms.c "${tab}")
     target_sources(${target} PRIVATE ${gen}/builtin_roms.S ${gen}/builtin_roms.c)
-    message(STATUS "pico-amiga: ${n} built-in ROM(s) from ${ROMS_DIR}")
+    message(STATUS "pico-amiga: ${n} built-in ROM(s), ${w} WHDLoad file(s) from ${ROMS_DIR}")
 endfunction()

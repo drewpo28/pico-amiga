@@ -148,5 +148,47 @@ import sys
 d = open(sys.argv[1], 'rb').read()
 sys.exit(0 if d[68 * 512:69 * 512] == b'\x12\x34' * 256 else 1)
 PY
+# The slave: the same checks with the image there alone, then beside a master (an
+# RDB image: a read from the wrong drive finds no "DOS\\1" at block 32).
+python3 host/tests/make_hdf.py "$OUT/ide-s.hdf" --blocks 8032
+python3 host/tests/make_hdf.py "$OUT/ide-m.hdf" --blocks 8064 --rdb
+python3 host/tests/make_ide_adf.py --slave "$OUT/ide-s.adf"
+$BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --a600 --adf "$OUT/ide-s.adf" \
+     --hdf2 "$OUT/ide-s.hdf" --write-back --frames 1200 > "$OUT/ide-s1.log" 2>&1
+check "a600 ide slave alone" "IDE OK" "$OUT/ide-s1.log"
+$BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --a600 --adf "$OUT/ide-s.adf" \
+     --hdf "$OUT/ide-m.hdf" --hdf2 "$OUT/ide-s.hdf" --write-back --frames 1200 > "$OUT/ide-s2.log" 2>&1
+check "a600 ide slave with a master" "IDE OK" "$OUT/ide-s2.log"
+python3 - "$OUT/ide-s.hdf" "$OUT/ide-m.hdf" <<'PY' && echo "PASS a600 ide slave write-back" || { echo "FAIL a600 ide slave write-back"; fail=1; }
+import sys
+s = open(sys.argv[1], 'rb').read(); m = open(sys.argv[2], 'rb').read()
+sys.exit(0 if s[68 * 512:69 * 512] == b'\x12\x34' * 256 and b'\x12\x34' * 256 not in m else 1)
+PY
+
+# 8. LHA archives as hard disks (whdboot.c, lha.c, ffs.c) and the Zorro II fast
+#    RAM board: only with the owner's files (debug/: the archives, Kickstarts and
+#    WHDLoad are not in git), skipped otherwise.  Every archive unpacks with its
+#    CRCs right; HeroQuest boots through WHDLoad on an A600 (KS 3.1) to its title;
+#    UFO CD32 (1.5 MB ExpMem) runs from the fast RAM on an A1200 with 4 MB.
+D=debug
+KS="$D/Kickstarts/PUAE Bios"
+if ls "$D"/LHA/*.lha > /dev/null 2>&1; then
+    for a in "$D"/LHA/*.lha; do
+        if build-host/lhatest "$a" > "$OUT/lha.log" 2>&1; then echo "PASS lha $(basename "$a")"; else echo "FAIL lha $(basename "$a")"; fail=1; fi
+    done
+fi
+if [ -f "$D/LHA/HeroQuest_v1.3a_0127.lha" ] && [ -f "$KS/kick40063.A600" ] && [ -d "$D/WHDLoad" ]; then
+    $BIN --rom "$KS/kick40063.A600" --a600 --lha "$D/LHA/HeroQuest_v1.3a_0127.lha" --whd "$D/WHDLoad" \
+         --lha-out "$OUT/hq.hdf" --frames 3000 --status 3000 --shot 3000:"$OUT/hq.png" > "$OUT/hq.log" 2>&1
+    if python3 host/tests/ffs_check.py "$OUT/hq.hdf" > "$OUT/hq-ffs.log" 2>&1; then echo "PASS whdload volume"; else echo "FAIL whdload volume"; fail=1; fi
+    check "whdload heroquest a600" "frame 3000 .*dmacon=07DF" "$OUT/hq.log"
+fi
+if [ -f "$D/LHA/UFOEnemyUnknown_v1.1_CD32.lha" ] && [ -f "$KS/kick40068.A1200" ] && [ -d "$D/WHDLoad" ]; then
+    mkdir -p "$OUT/whd" "$OUT/whd/Devs/Kickstarts"
+    cp -r "$D/WHDLoad/." "$OUT/whd/" && cp "$KS/kick40068.A1200" "$OUT/whd/Devs/Kickstarts/"
+    $BIN --rom "$KS/kick40068.A1200" --a1200 --aga --fast 4 --lha "$D/LHA/UFOEnemyUnknown_v1.1_CD32.lha" \
+         --whd "$OUT/whd" --frames 2000 --status 2000 > "$OUT/ufo.log" 2>&1
+    check "whdload ufo a1200 fast ram" "frame 2000 .*pc=[2-9][0-9A-F]\{5\} " "$OUT/ufo.log"
+fi
 
 exit $fail

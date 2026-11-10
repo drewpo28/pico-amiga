@@ -76,7 +76,9 @@ enum SettingFlags : uint16_t {
     /* Machine > A1200 > Chip bus waits: amiga_set_chip_bus */ \
     X(SET_CHIP_BUS,    AC_LIVE, 0,                             get_chipbus,   put_chipbus,   hook_chipbus) \
     /* Video > Picture > Skip frames when late: main.c reads it every frame */ \
-    X(SET_FRAME_SKIP,  AC_PURE, 0,                             get_frameskip, put_frameskip, nullptr)
+    X(SET_FRAME_SKIP,  AC_PURE, 0,                             get_frameskip, put_frameskip, nullptr) \
+    /* Machine > A600 / A1200 > Fast RAM: a Zorro II board; a cold start of either */ \
+    X(SET_FAST_RAM,    AC_LIVE, 0,                             get_fastram,   put_fastram,   hook_fastram)
 
 #define NM_X_ENUM(id, cls, flags, g, p, h) id,
 enum SettingId : uint16_t {

@@ -107,9 +107,11 @@ static void mach_state(st_t *s) {
     st_u8(s, &gayle);
     uint8_t cpu = A.cfg.cpu;                // after it: older snapshots read 0 (a 68000)
     st_u8(s, &cpu);
+    uint32_t fast = A.cfg.fast_ram ? A.cfg.fast_size : 0;   // after it: older ones read 0 (none)
+    st_u32(s, &fast);
     if (s->mode == ST_LOAD &&
         (ver != STATE_VERSION || chipset != A.cfg.chipset || gayle != A.cfg.gayle || cpu != A.cfg.cpu ||
-         chip != A.cfg.chip_size ||
+         chip != A.cfg.chip_size || fast != (A.cfg.fast_ram ? A.cfg.fast_size : 0) ||
          slow != (A.cfg.slow_ram ? A.cfg.slow_size : 0) || rom != rom_now || ext != ext_now))
         s->ok = false;
 }
@@ -144,6 +146,9 @@ static void chip_state(st_t *s) { st_raw(s, A.cfg.chip_ram, A.cfg.chip_size); }
 static void slow_state(st_t *s) {
     if (A.cfg.slow_ram && A.cfg.slow_size) st_raw(s, A.cfg.slow_ram, A.cfg.slow_size);
 }
+static void fast_state(st_t *s) {
+    if (A.cfg.fast_ram && A.cfg.fast_size) st_raw(s, A.cfg.fast_ram, A.cfg.fast_size);
+}
 
 // In this order on save; a load takes them in the file's (MACH first).
 static const struct { char id[5]; void (*fn)(st_t *); } kBlocks[] = {
@@ -152,6 +157,7 @@ static const struct { char id[5]; void (*fn)(st_t *); } kBlocks[] = {
     { "RTC ", rtc_state },    { "COPR", copper_state },    { "BLIT", blitter_state },
     { "DENI", denise_state }, { "PAUL", paula_state },     { "FLOP", floppy_state },
     { "CHIP", chip_state },   { "SLOW", slow_state },      { "GAYL", gayle_state },
+    { "FAST", fast_state },
 };
 #define NBLOCKS (int)(sizeof kBlocks / sizeof kBlocks[0])
 // Blocks a snapshot cannot do without (bits of kBlocks).

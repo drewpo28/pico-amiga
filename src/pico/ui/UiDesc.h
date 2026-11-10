@@ -38,7 +38,7 @@ struct DescLine {
 
 constexpr int DESC_MAX_LINES = 10;
 
-// PICO-AMIGA: Devices > Disks > DFn's list (UiTree.cpp): the rows that are not one
+// PICO-AMIGA: Devices > Floppy drives > DFn's list (UiTree.cpp): the rows that are not one
 // of DF0's disk set (those are tagged with the disk's number).
 enum : int32_t { DRV_T_INFO = 1000, DRV_T_INSERT, DRV_T_EJECT, DRV_T_WP, DRV_T_PART };
 

@@ -9,6 +9,7 @@
 #include "diskio.h"
 #include "ide_mbr.h"
 #include "dms.h"
+#include "whdboot.h"
 #include "roms.h"
 #include "app/Config.h"
 #include "board.h"              // board_load_cpu_overlay
@@ -23,7 +24,9 @@ static uint8_t *s_rom_buf, *s_ext_buf;
 // Static: these run deep in core 0's 4 KB stack.
 static FIL s_job;
 static uint8_t *s_dms_area;
-static uint32_t s_dms_size;
+static uint32_t s_dms_size;              // what the DMS slots may use: the area less the fast RAM
+static uint32_t s_dms_total;             // the whole area machine_init gave
+static uint32_t s_fast_size;             // the fast RAM board running, at the area's end (0: none)
 static const char *s_rom_name = "";
 static std::string s_file_name;          // s_rom_name of a Custom ROM
 
@@ -34,8 +37,17 @@ void machine_init(uint8_t *rom_buf, uint8_t *ext_buf, uint8_t *dms_area, uint32_
     s_rom_buf = rom_buf;
     s_ext_buf = ext_buf;
     s_dms_area = dms_area;
-    s_dms_size = dms_size;
+    s_dms_size = s_dms_total = dms_size;
 }
+
+// The fast RAM board: the end of the DMS area, as long as the rest still holds
+// the WHDLoad builder's arena (machine_boot_lha) - 4 MB with 8 MB of PSRAM.
+uint32_t machine_fast_max(void) {
+    for (uint32_t mb = 8; mb; mb >>= 1)
+        if (s_dms_area && (mb << 20) + WHD_ARENA_MIN + 64 * KB <= s_dms_total) return mb;
+    return 0;
+}
+uint32_t machine_fast_size(void) { return s_fast_size; }
 
 static uint32_t load_file(const char *path, uint8_t *dst, uint32_t max) {
     FIL f;
@@ -62,7 +74,15 @@ static void select_model(amiga_config_t *cfg) {
     cfg->slow_size = ecs ? 0 : 512 * KB;
     cfg->gayle = m == MACHINE_A600 ? AMIGA_GAYLE_A600 : m == MACHINE_A1200 ? AMIGA_GAYLE_A1200 : 0;
     cfg->cpu = m == MACHINE_A1200 ? AMIGA_CPU_EC020 : AMIGA_CPU_68000;
+    // Fast RAM on the Gayle machines (a Zorro II board: PCMCIA / trapdoor RAM
+    // as WHDLoad sees it), the size the PSRAM permits.
+    uint32_t mb = cfg->gayle ? Config::fast_ram : 0;
+    while (mb > machine_fast_max()) mb >>= 1;
+    cfg->fast_size = mb << 20;
+    cfg->fast_ram = mb ? s_dms_area + s_dms_total - cfg->fast_size : NULL;
 }
+
+static void drop_lost_dms(void);
 
 static const char *const kModelName[MACHINE_COUNT] = { "A500", "A500+", "A600", "A1200" };
 static const char *const kModelDesc[MACHINE_COUNT] = {
@@ -82,6 +102,9 @@ const char *machine_name(void) { return machine_model_name(Config::machine); }
 
 bool machine_select_rom(amiga_config_t *cfg) {
     select_model(cfg);
+    s_fast_size = cfg->fast_size;
+    s_dms_size = s_dms_total - s_fast_size;
+    drop_lost_dms();
     board_load_cpu_overlay(cfg->cpu);
     cfg->ext_rom = NULL;
     cfg->ext_size = 0;
@@ -116,24 +139,32 @@ bool machine_select_rom(amiga_config_t *cfg) {
 // The FIL and its cluster map come from the heap while an HDF is open only
 // (pico-speccy's rule for IDE): ~870 bytes of SRAM nobody else can use otherwise.
 struct HdfFile { FIL f; DWORD map[64]; };
-static HdfFile *s_hdf;
-static bool s_hdf_open, s_hdf_ro;
-static std::string s_hdf_path;          // the file, or the SD window's name
-static bool s_raw;                      // the SD window (machine_set_hdf_raw)
-static uint32_t s_raw_start, s_raw_count;
-static uint32_t s_raw_keep_start, s_raw_keep_count;   // machine_sd_parts borrows the two above
+// A window of the card's own sectors (raw_read's ctx).
+struct RawWin { uint32_t start, count; };
+// The two drives of the port: [0] the master, [1] the slave.
+struct Hd {
+    HdfFile *file;
+    bool open, ro;
+    std::string path;                   // the file, or the SD window's name
+    bool raw;                           // the SD window (machine_set_hdf_raw)
+    RawWin win;
+    const char *kind;
+};
+static Hd s_hd[2] = { { NULL, false, false, "", false, { 0, 0 }, "" }, { NULL, false, false, "", false, { 0, 0 }, "" } };
 
-static int raw_read(void *, uint32_t off, void *dst, uint32_t len) {
+static int raw_read(void *ctx, uint32_t off, void *dst, uint32_t len) {
+    const RawWin *w = (const RawWin *)ctx;
     const uint32_t s = off / 512, n = len / 512;
-    if ((off | len) & 511 || s + n > s_raw_count) return -1;
-    return disk_read(0, (BYTE *)dst, (LBA_t)(s_raw_start + s), n) == RES_OK ? 0 : -1;
+    if ((off | len) & 511 || s + n > w->count) return -1;
+    return disk_read(0, (BYTE *)dst, (LBA_t)(w->start + s), n) == RES_OK ? 0 : -1;
 }
-static int raw_write(void *, uint32_t off, const void *src, uint32_t len) {
+static int raw_write(void *ctx, uint32_t off, const void *src, uint32_t len) {
+    const RawWin *w = (const RawWin *)ctx;
     const uint32_t s = off / 512, n = len / 512;
-    if ((off | len) & 511 || s + n > s_raw_count) return -1;
-    if (disk_write(0, (const BYTE *)src, (LBA_t)(s_raw_start + s), n) != RES_OK) return -1;
+    if ((off | len) & 511 || s + n > w->count) return -1;
+    if (disk_write(0, (const BYTE *)src, (LBA_t)(w->start + s), n) != RES_OK) return -1;
     for (uint32_t i = 0; i < n; i++)                  // FatFs's cached copy, if it has one
-        ff_raw_write_notify(0, (LBA_t)(s_raw_start + s + i), (const BYTE *)src + i * 512);
+        ff_raw_write_notify(0, (LBA_t)(w->start + s + i), (const BYTE *)src + i * 512);
     return 0;
 }
 
@@ -174,7 +205,6 @@ static const char *disk_kind(int (*rd)(void *, uint32_t, void *, uint32_t), void
     free(b);
     return k;
 }
-static const char *s_hdf_kind = "";
 
 // The RDB's partitions, for the log: name, cylinders, size, and whether one ends
 // past the image (HDToolBox partitions to the drive's last cylinder: a drive
@@ -210,68 +240,73 @@ static void hdf_log_parts(int (*rd)(void *, uint32_t, void *, uint32_t), void *c
     free(b);
 }
 
-static void hdf_attach(void) {
-    if ((Config::machine != MACHINE_A600 && Config::machine != MACHINE_A1200) || (!s_hdf_open && !s_raw)) {
-        amiga_set_hdf(NULL);
+static void hdf_attach(int u) {
+    Hd &h = s_hd[u];
+    if ((Config::machine != MACHINE_A600 && Config::machine != MACHINE_A1200) || (!h.open && !h.raw)) {
+        amiga_set_hdf(u, NULL);
         return;
     }
-    const amiga_disk_t d = s_raw
-        ? amiga_disk_t{ raw_read, s_hdf_ro ? NULL : raw_write, NULL, s_raw_count * 512u }
-        : amiga_disk_t{ hdf_read, s_hdf_ro ? NULL : hdf_write, &s_hdf->f, (uint32_t)f_size(&s_hdf->f) };
-    s_hdf_kind = disk_kind(d.read, d.ctx, d.size / 512);
-    printf("hard disk: %s, %u MB%s, %s", s_hdf_path.c_str(), (unsigned)(d.size >> 20),
-           s_hdf_ro ? ", read-only" : "", s_hdf_kind);
-    if (s_raw) printf(" (card sectors %u+%u)", (unsigned)s_raw_start, (unsigned)s_raw_count);
+    const amiga_disk_t d = h.raw
+        ? amiga_disk_t{ raw_read, h.ro ? NULL : raw_write, &h.win, h.win.count * 512u }
+        : amiga_disk_t{ hdf_read, h.ro ? NULL : hdf_write, &h.file->f, (uint32_t)f_size(&h.file->f) };
+    h.kind = disk_kind(d.read, d.ctx, d.size / 512);
+    printf("hard disk %d: %s, %u MB%s, %s", u, h.path.c_str(), (unsigned)(d.size >> 20),
+           h.ro ? ", read-only" : "", h.kind);
+    if (h.raw) printf(" (card sectors %u+%u)", (unsigned)h.win.start, (unsigned)h.win.count);
     printf("\n");
-    amiga_set_hdf(&d);
-    uint16_t c; uint8_t h, sp;
-    amiga_hdf_geometry(&c, &h, &sp);
-    printf("hard disk: IDENTIFY %u x %u x %u = %u of %u blocks\n", c, h, sp,
-           (unsigned)((uint32_t)c * h * sp), (unsigned)(d.size / 512));
+    amiga_set_hdf(u, &d);
+    uint16_t c; uint8_t hh, sp;
+    amiga_hdf_geometry(u, &c, &hh, &sp);
+    printf("hard disk: IDENTIFY %u x %u x %u = %u of %u blocks\n", c, hh, sp,
+           (unsigned)((uint32_t)c * hh * sp), (unsigned)(d.size / 512));
     hdf_log_parts(d.read, d.ctx, d.size / 512);
 }
-const char *machine_hdf_kind(void) { return s_hdf_kind; }
+const char *machine_hdf_kind(int u) { return s_hd[u & 1].kind; }
 
-static void hdf_close(void) {
-    if (s_hdf_open) { f_close(&s_hdf->f); s_hdf_open = false; }
-    free(s_hdf);
-    s_hdf = NULL;
-    s_raw = false;
-    s_hdf_ro = false;
-    s_hdf_path.clear();
-    s_hdf_kind = "";
+static void hdf_close(int u) {
+    Hd &h = s_hd[u];
+    if (h.open) { f_close(&h.file->f); h.open = false; }
+    free(h.file);
+    h.file = NULL;
+    h.raw = false;
+    h.ro = false;
+    h.path.clear();
+    h.kind = "";
 }
 
-bool machine_set_hdf(const char *path) {
-    hdf_close();
+bool machine_set_hdf(int u, const char *path) {
+    u &= 1;
+    hdf_close(u);
+    Hd &h = s_hd[u];
     bool ok = true;
     if (path && *path) {
-        s_hdf = (HdfFile *)malloc(sizeof *s_hdf);
-        if (!s_hdf) { hdf_attach(); return false; }
-        FIL *f = &s_hdf->f;
-        s_hdf_ro = false;
+        if (s_hd[u ^ 1].open && s_hd[u ^ 1].path == path) { hdf_attach(u); return false; }   // one file, one drive
+        h.file = (HdfFile *)malloc(sizeof *h.file);
+        if (!h.file) { hdf_attach(u); return false; }
+        FIL *f = &h.file->f;
         FRESULT r = f_open(f, path, FA_READ | FA_WRITE);
-        if (r == FR_DENIED || r == FR_WRITE_PROTECTED) { s_hdf_ro = true; r = f_open(f, path, FA_READ); }
+        if (r == FR_DENIED || r == FR_WRITE_PROTECTED) { h.ro = true; r = f_open(f, path, FA_READ); }
         ok = r == FR_OK && f_size(f) >= 1024 && f_size(f) <= 0xFFFFFE00u;
         if (r == FR_OK && !ok) f_close(f);
         if (ok) {
-            s_hdf_open = true;
-            s_hdf_path = path;
-            f->cltbl = s_hdf->map;                   // fast seek, or the plain one
-            s_hdf->map[0] = sizeof s_hdf->map / sizeof s_hdf->map[0];
+            h.open = true;
+            h.path = path;
+            f->cltbl = h.file->map;                  // fast seek, or the plain one
+            h.file->map[0] = sizeof h.file->map / sizeof h.file->map[0];
             if (f_lseek(f, CREATE_LINKMAP) != FR_OK) f->cltbl = NULL;
         } else {
-            free(s_hdf);
-            s_hdf = NULL;
+            free(h.file);
+            h.file = NULL;
+            h.ro = false;
         }
     }
-    hdf_attach();
+    hdf_attach(u);
     return ok;
 }
 
-const char *machine_hdf(void) { return s_hdf_path.c_str(); }
-bool machine_hdf_is_raw(void) { return s_raw; }
-bool machine_hdf_ro(void) { return s_hdf_ro; }
+const char *machine_hdf(int u) { return s_hd[u & 1].path.c_str(); }
+bool machine_hdf_is_raw(int u) { return s_hd[u & 1].raw; }
+bool machine_hdf_ro(int u) { return s_hd[u & 1].ro; }
 
 // The sector FatFs mounted the card's files from (0 when it cannot tell).
 static uint32_t files_base(void) {
@@ -309,17 +344,17 @@ int machine_sd_parts(MachinePart out[8]) {
         out[i].files = fb && p[i].sectors && p[i].lba == fb;
         out[i].kind = "";
         if (p[i].sectors) {
-            s_raw_start = p[i].lba; s_raw_count = p[i].sectors;     // raw_read's window, for the look
-            out[i].kind = disk_kind(raw_read, NULL, p[i].sectors);
+            RawWin w = { p[i].lba, p[i].sectors };                  // raw_read's window, for the look
+            out[i].kind = disk_kind(raw_read, &w, p[i].sectors);
         }
     }
-    s_raw_start = s_raw ? s_raw_keep_start : 0;
-    s_raw_count = s_raw ? s_raw_keep_count : 0;
     return n;
 }
 
-bool machine_set_hdf_raw(int part, uint32_t lba, uint32_t len, bool writable) {
-    hdf_close();
+bool machine_set_hdf_raw(int u, int part, uint32_t lba, uint32_t len, bool writable) {
+    u &= 1;
+    hdf_close(u);
+    Hd &h = s_hd[u];
     LBA_t card = 0;
     bool ok = disk_ioctl(0, GET_SECTOR_COUNT, &card) == RES_OK && card > lba;
     if (ok) {
@@ -329,23 +364,24 @@ bool machine_set_hdf_raw(int part, uint32_t lba, uint32_t len, bool writable) {
         ok = len >= 2;
     }
     if (ok) {
-        // Never a writable window over the card's own files.
+        // Never a writable window over the card's own files, or over the other drive's.
         const uint32_t fb = files_base();
         MachinePart parts[8];
         bool over = fb >= lba && fb < lba + len;
         if (!over && machine_sd_parts(parts) > 0)
             for (const MachinePart &q : parts)
                 if (q.files && q.lba < lba + len && lba < q.lba + q.sectors) over = true;
-        s_raw = true;
-        s_raw_start = s_raw_keep_start = lba;
-        s_raw_count = s_raw_keep_count = len;
-        s_hdf_ro = !writable || over;
+        const Hd &o = s_hd[u ^ 1];
+        if (o.raw && o.win.start < lba + len && lba < o.win.start + o.win.count) over = true;
+        h.raw = true;
+        h.win = RawWin{ lba, len };
+        h.ro = !writable || over;
         char name[32];
-        if (part > 0) snprintf(name, sizeof name, "SD partition %d", part);
+        if (part > 0) snprintf(name, sizeof name, "SD part %d", part);
         else snprintf(name, sizeof name, "SD sectors %u+", (unsigned)lba);
-        s_hdf_path = name;
+        h.path = name;
     }
-    hdf_attach();
+    hdf_attach(u);
     return ok;
 }
 
@@ -355,10 +391,12 @@ bool machine_apply_kickstart(void) {
     if (!machine_select_rom(&c)) return false;
     amiga_set_roms(c.rom, c.rom_size, c.ext_rom, c.ext_size);
     amiga_set_machine(c.chipset, c.chip_size, c.slow_size, c.gayle);
+    amiga_set_fast(c.fast_ram, c.fast_size);
     amiga_set_cpu(c.cpu);
     board_load_cpu_overlay(c.cpu);
     settings_apply_chip_bus();
-    hdf_attach();
+    hdf_attach(0);
+    hdf_attach(1);
     amiga_reset(true);
     return true;
 }
@@ -444,6 +482,15 @@ bool machine_insert(int drive, const char *path, bool write_protect) {
     if (!insert_adf(drive, path, write_protect)) return false;
     s_drv[drive].manual = drive > 0;
     return true;
+}
+
+// The fast RAM grew over a DMS slot: that drive is emptied (its image is gone).
+static void drop_lost_dms(void) {
+    for (int d = 0; d < 4; d++)
+        if (s_drv[d].img && s_drv[d].img != dms_slot(d)) {
+            printf("DF%d: its DMS slot went to the fast RAM, ejected\n", d);
+            machine_eject(d);
+        }
 }
 
 
@@ -992,13 +1039,16 @@ std::string machine_rom_label(const std::string &kick, const std::string &file) 
 }
 
 void machine_restore_disks(void) {
-    if (!Config::hdf_raw.empty()) {
-        unsigned mode = 0, part = 0, lba = 0, len = 0;
-        if (sscanf(Config::hdf_raw.c_str(), "%u:%u:%u:%u", &mode, &part, &lba, &len) != 4 || !mode ||
-            !machine_set_hdf_raw((int)part, lba, len, mode == 2))
-            Config::hdf_raw.clear();
-    } else if (!Config::hdf.empty() && !machine_set_hdf(Config::hdf.c_str())) {
-        Config::hdf.clear();
+    for (int u = 0; u < 2; u++) {
+        std::string &img = u ? Config::hdf2 : Config::hdf, &raw = u ? Config::hdf2_raw : Config::hdf_raw;
+        if (!raw.empty()) {
+            unsigned mode = 0, part = 0, lba = 0, len = 0;
+            if (sscanf(raw.c_str(), "%u:%u:%u:%u", &mode, &part, &lba, &len) != 4 || !mode ||
+                !machine_set_hdf_raw(u, (int)part, lba, len, mode == 2))
+                raw.clear();
+        } else if (!img.empty() && !machine_set_hdf(u, img.c_str())) {
+            img.clear();
+        }
     }
     if (!Config::df0.empty()) {
         const bool ok = is_m3u(Config::df0)
@@ -1010,4 +1060,363 @@ void machine_restore_disks(void) {
     }
     // The card layout before the menu existed: /amiga/df0.adf goes in by itself.
     machine_insert(0, "/amiga/df0.adf", false);
+}
+
+// ---- LHA archives: WHDLoad installs as the hard disk (whdboot.c) -------------------------
+// The volume is built into /amiga/whdload/images/<name>.hdf with the DMS area as
+// the builder's arena (the floppies are ejected first: DF0 would boot before the
+// hard disk, and their DMS slots are the arena).  Block 0 after "DOS\1" carries
+// a stamp: the archive's size and date, so an unchanged archive boots its image
+// again (the game's saves are in it), and what the build found out about it.
+#define WHD_DIR     "/amiga/whdload"
+#define WHD_IMAGES  WHD_DIR "/images"
+#define WHD_CARD_MAX 64
+
+struct WhdStamp {               // big-endian on the card, at byte 16 of block 0
+    char     magic[4];          // "PAWH"
+    uint8_t  version;           // the builder's (a new one rebuilds the images)
+    uint8_t  pad[3];
+    uint32_t lha_size, lha_date;// fdate << 16 | ftime
+    uint32_t base_mem, exp_mem;
+    char     missing[24];       // the Kickstarts the slave named that were not there
+};
+#define WHD_STAMP_VERSION 1
+
+struct WhdCard { char path[96]; char full[128]; char tag[24]; };   // a file of the card's /amiga/whdload/
+#define WHD_EXTRA_MAX (WHD_CARD_MAX + 48 + 16)
+#define WHD_WALK_DEPTH 4
+
+// Everything the build keeps, in PSRAM (the DMS area's start): the SRAM heap is
+// short while the menu is open, and the SDK's malloc panics rather than fail.
+// The SD driver moves data with the CPU (blocking SPI), so FatFs may use PSRAM.
+struct WhdBuild {
+    const char *lha;
+    const char *img;
+    char       *msg; unsigned msg_size;
+    FIL         in, out, card_f;
+    DIR         dirs[WHD_WALK_DEPTH];
+    FILINFO     fi;
+    WhdCard     card[WHD_CARD_MAX]; int ncard;
+    whd_extra_t extra[WHD_EXTRA_MAX]; int nextra;
+    whd_job_t   job;
+    uint8_t    *arena; uint32_t arena_size;
+    bool        ok;
+    bool        exe;                 // not an archive: an Amiga executable, run alone
+    char        exe_name[32];        // its name on the volume
+    char        whd_tags[48][24], rom_tags[16][24], rom_paths[16][48];   // the built-in extras' names
+};
+
+static void put_be32(uint8_t *p, uint32_t v) { p[0] = (uint8_t)(v >> 24); p[1] = (uint8_t)(v >> 16); p[2] = (uint8_t)(v >> 8); p[3] = (uint8_t)v; }
+static uint32_t get_be32(const uint8_t *p) { return (uint32_t)p[0] << 24 | (uint32_t)p[1] << 16 | (uint32_t)p[2] << 8 | p[3]; }
+
+static void stamp_to(uint8_t *b, const WhdStamp &s) {
+    memcpy(b, s.magic, 4); b[4] = s.version;
+    put_be32(b + 8, s.lha_size); put_be32(b + 12, s.lha_date);
+    put_be32(b + 16, s.base_mem); put_be32(b + 20, s.exp_mem);
+    memcpy(b + 24, s.missing, sizeof s.missing);
+}
+static bool stamp_from(const uint8_t *b, WhdStamp &s) {
+    memcpy(s.magic, b, 4); s.version = b[4];
+    s.lha_size = get_be32(b + 8); s.lha_date = get_be32(b + 12);
+    s.base_mem = get_be32(b + 16); s.exp_mem = get_be32(b + 20);
+    memcpy(s.missing, b + 24, sizeof s.missing);
+    s.missing[sizeof s.missing - 1] = 0;
+    return !memcmp(s.magic, "PAWH", 4) && s.version == WHD_STAMP_VERSION;
+}
+
+static uint32_t whd_lha_read(void *ctx, uint32_t off, void *dst, uint32_t len) {
+    FIL *f = (FIL *)ctx; UINT n = 0;
+    if (f_lseek(f, off) != FR_OK || f_read(f, dst, len, &n) != FR_OK) return 0;
+    return n;
+}
+static int whd_img_write(void *ctx, uint32_t off, const void *src, uint32_t len) {
+    FIL *f = (FIL *)ctx; UINT n = 0;
+    if (f_lseek(f, off) != FR_OK || f_write(f, src, len, &n) != FR_OK || n != len) return -1;
+    return 0;
+}
+static WhdBuild *s_whd;                  // the build running (its card_f reads the card's files)
+static uint32_t whd_card_read(void *ctx, uint32_t off, void *dst, uint32_t len) {
+    FIL *f = &s_whd->card_f;
+    UINT n = 0;
+    if (f_open(f, ((WhdCard *)ctx)->full, FA_READ) == FR_OK) {
+        if (f_lseek(f, off) == FR_OK) f_read(f, dst, len, &n);
+        f_close(f);
+    }
+    return n;
+}
+
+// A FAT date and time as seconds since 1970.
+static uint32_t fat_to_unix(uint16_t date, uint16_t time) {
+    static const uint16_t mdays[12] = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 };
+    const unsigned y = (date >> 9) + 1980u, m = (date >> 5) & 15u, d = date & 31u;
+    if (m < 1 || m > 12 || d < 1) return 0;
+    uint32_t days = (y - 1970) * 365 + (y - 1969) / 4 + mdays[m - 1] + d - 1;
+    if (m > 2 && y % 4 == 0) days++;
+    return days * 86400u + (time >> 11) * 3600u + ((time >> 5) & 63u) * 60u + (time & 31u) * 2u;
+}
+
+// The card's /amiga/whdload/ tree (but images/), depth-first.
+static void whd_walk(WhdBuild &b, const char *rel, int depth) {
+    if (depth >= WHD_WALK_DEPTH) return;
+    char dir[160];
+    snprintf(dir, sizeof dir, WHD_DIR "%s%s", rel[0] ? "/" : "", rel);
+    DIR *d = &b.dirs[depth];
+    FILINFO *fi = &b.fi;
+    if (f_opendir(d, dir) == FR_OK) {
+        while (b.ncard < WHD_CARD_MAX && f_readdir(d, fi) == FR_OK && fi->fname[0]) {
+            if (fi->fname[0] == '.' || (fi->fattrib & (AM_HID | AM_SYS))) continue;
+            char r[96];
+            if (snprintf(r, sizeof r, "%s%s%s", rel, rel[0] ? "/" : "", fi->fname) >= (int)sizeof r) continue;
+            if (fi->fattrib & AM_DIR) {
+                if (!rel[0] && !strcasecmp(fi->fname, "images")) continue;
+                whd_walk(b, r, depth + 1);
+                continue;
+            }
+            WhdCard &c = b.card[b.ncard];
+            strcpy(c.path, r);
+            snprintf(c.full, sizeof c.full, WHD_DIR "/%s", r);
+            whd_kick_tag(c.path, c.tag);
+            whd_extra_t &x = b.extra[b.nextra++];
+            memset(&x, 0, sizeof x);
+            x.path = c.path; x.size = (uint32_t)fi->fsize; x.rd = whd_card_read; x.ctx = &c; x.kick = c.tag;
+            b.ncard++;
+        }
+        f_closedir(d);
+    }
+}
+
+// The build itself (on its own stack: whd_call_on_stack).
+static void whd_build(void *arg) {
+    WhdBuild &b = *(WhdBuild *)arg;
+    // the extra files: the card's first (they win), the built-in WHDLoad files,
+    // the built-in Kickstarts under WHDLoad's names
+    whd_walk(b, "", 0);
+    char (*whd_tags)[24] = b.whd_tags, (*rom_tags)[24] = b.rom_tags, (*rom_paths)[48] = b.rom_paths;
+    for (unsigned i = 0; i < builtin_whd_count && i < 48 && b.nextra < WHD_EXTRA_MAX; i++) {
+        whd_extra_t &x = b.extra[b.nextra++];
+        memset(&x, 0, sizeof x);
+        x.path = builtin_whd[i].path; x.data = builtin_whd[i].data; x.size = builtin_whd[i].size;
+        x.kick = whd_kick_tag(x.path, whd_tags[i]);
+    }
+    for (unsigned i = 0; i < builtin_rom_count && i < 16; i++) {
+        const builtin_rom_t &r = builtin_roms[i];
+        if (!r.file || !*whd_kick_tag(r.file, rom_tags[i]) || b.nextra >= WHD_EXTRA_MAX) continue;
+        snprintf(rom_paths[i], sizeof rom_paths[i], "Devs/Kickstarts/%s", r.file);
+        whd_extra_t &x = b.extra[b.nextra++];
+        memset(&x, 0, sizeof x);
+        x.path = rom_paths[i]; x.data = r.data; x.size = r.size; x.kick = rom_tags[i];
+    }
+    // the volume's name: the archive's, without its extension
+    char vol[32];
+    const char *base = strrchr(b.lha, '/');
+    snprintf(vol, sizeof vol, "%s", base ? base + 1 : b.lha);
+    char *dot = strrchr(vol, '.');
+    if (dot) *dot = 0;
+    for (char *c = vol; *c; c++) if (*c == ':' || *c == '/') *c = '_';
+
+    // a lone program: one more extra file, read from the card like the folder's
+    if (b.exe && b.ncard < WHD_CARD_MAX && b.nextra < WHD_EXTRA_MAX) {
+        WhdCard &c = b.card[b.ncard++];
+        snprintf(c.path, sizeof c.path, "%s", b.exe_name);
+        snprintf(c.full, sizeof c.full, "%s", b.lha);
+        c.tag[0] = 0;
+        whd_extra_t &x = b.extra[b.nextra++];
+        memset(&x, 0, sizeof x);
+        x.path = c.path; x.size = (uint32_t)f_size(&b.in); x.rd = whd_card_read; x.ctx = &c; x.kick = c.tag;
+    }
+    whd_job_t &j = b.job;
+    memset(&j, 0, sizeof j);
+    j.rd = b.exe ? nullptr : whd_lha_read; j.rctx = &b.in;
+    j.run = b.exe ? b.exe_name : nullptr;
+    j.extra = b.extra; j.extra_count = b.nextra;
+    j.volume = vol;
+    FILINFO fi;
+    if (f_stat(b.lha, &fi) != FR_OK) memset(&fi, 0, sizeof fi);
+    j.unix_time = fat_to_unix(fi.fdate, fi.ftime);       // the volume's date: the archive's
+    int r = whd_plan(&j, b.arena, b.arena_size);
+    if (r == WHD_OK) {
+        const FSIZE_t size = (FSIZE_t)j.blocks * 512u;
+        if (f_open(&b.out, b.img, FA_READ | FA_WRITE | FA_CREATE_ALWAYS) != FR_OK) r = WHD_ERR_WRITE;
+        else {
+            // the clusters first, one contiguous run if the card has one (fast seek)
+            if (f_expand(&b.out, size, 1) != FR_OK && (f_lseek(&b.out, size) != FR_OK || f_tell(&b.out) != size))
+                r = WHD_ERR_WRITE;
+            if (r == WHD_OK) r = whd_write(&j, b.arena, whd_img_write, &b.out);
+            if (r == WHD_OK) {
+                uint8_t blk[512];
+                memset(blk, 0, sizeof blk);
+                memcpy(blk, "DOS\1", 4);
+                WhdStamp s;
+                memset(&s, 0, sizeof s);
+                memcpy(s.magic, "PAWH", 4);
+                s.version = WHD_STAMP_VERSION;
+                s.lha_size = (uint32_t)fi.fsize;
+                s.lha_date = (uint32_t)fi.fdate << 16 | fi.ftime;
+                s.base_mem = j.base_mem; s.exp_mem = j.exp_mem;
+                snprintf(s.missing, sizeof s.missing, "%.23s", j.missing);
+                stamp_to(blk + 16, s);
+                if (whd_img_write(&b.out, 0, blk, 512)) r = WHD_ERR_WRITE;
+            }
+            f_close(&b.out);
+            if (r != WHD_OK) f_unlink(b.img);
+        }
+    }
+    printf("whdload: %s -> %s: %s; slave %s (chip %u KB, other %u KB), program %s, kick %s%s%s; %s\n",
+           b.lha, b.img, whd_error(r), j.slave[0] ? j.slave : "-", (unsigned)(j.base_mem / 1024),
+           (unsigned)(j.exp_mem / 1024), j.program[0] ? j.program : "-", j.kicks[0] ? j.kicks : "-",
+           j.missing[0] ? ", missing " : "", j.missing, j.command);
+    if (r != WHD_OK) snprintf(b.msg, b.msg_size, "%s", whd_error(r));
+    b.ok = r == WHD_OK;
+}
+
+// pico-speccy's zipCallOnStack (fs/ZipExtract.cpp): fn(arg) on a heap stack,
+// MSPLIM off while SP crosses between the stacks.  The builder (FatFs, the LHA
+// decoder, the icon parser) is too deep for core 0's 4 KB stack under the menu.
+#if HOST_BUILD
+static void whd_call_on_stack(void *new_top, void (*fn)(void *), void *arg, void *new_bottom) {
+    (void)new_top; (void)new_bottom; fn(arg);
+}
+#else
+__attribute__((naked, noinline))
+static void whd_call_on_stack(void *new_top, void (*fn)(void *), void *arg, void *new_bottom) {
+    __asm volatile(
+        "mrs  r12, msplim       \n"
+        "push {r4}              \n"
+        "movs r4, #0            \n"
+        "msr  msplim, r4        \n"
+        "mov  r4, sp            \n"
+        "mov  sp, r0            \n"
+        "msr  msplim, r3        \n"
+        "push {r2, r4, r12, lr} \n"
+        "mov  r0, r2            \n"
+        "blx  r1                \n"
+        "pop  {r2, r4, r12, lr} \n"
+        "movs r1, #0            \n"
+        "msr  msplim, r1        \n"
+        "mov  sp, r4            \n"
+        "msr  msplim, r12       \n"
+        "pop  {r4}              \n"
+        "bx   lr                \n"
+    );
+}
+#endif
+
+static void whd_mkdirs(const char *path) {
+    char p[160];
+    snprintf(p, sizeof p, "%s", path);
+    for (char *s = strchr(p + 1, '/'); s; s = strchr(s + 1, '/')) { *s = 0; f_mkdir(p); *s = '/'; }
+    f_mkdir(p);
+}
+
+// The build's stack: SRAM (a stack in PSRAM would share the bus the video's
+// reads use), from the heap without the SDK's panic on failure (__wrap_malloc
+// panics; __real_malloc returns NULL).  None free: the build runs in place, as
+// pico-speccy's ZipExtract does then.
+#if HOST_BUILD
+static void *whd_try_malloc(size_t n) { return malloc(n); }
+#else
+extern "C" void *__real_malloc(size_t);
+static void *whd_try_malloc(size_t n) { return __real_malloc(n); }
+#endif
+
+bool machine_is_program(const char *path) {
+    FIL *f = (FIL *)whd_try_malloc(sizeof(FIL));
+    uint8_t m[4] = { 0 };
+    UINT n = 0;
+    if (f && f_open(f, path, FA_READ) == FR_OK) { f_read(f, m, 4, &n); f_close(f); }
+    free(f);
+    return n == 4 && m[0] == 0 && m[1] == 0 && m[2] == 3 && m[3] == 0xF3;
+}
+
+bool machine_boot_lha(const char *path, char *msg, unsigned msg_size) {
+    msg[0] = 0;
+    if (Config::machine != MACHINE_A600 && Config::machine != MACHINE_A1200) {
+        snprintf(msg, msg_size, "An LHA boots on the A600 or A1200 (Machine)");
+        return false;
+    }
+    FILINFO fi;
+    if (f_stat(path, &fi) != FR_OK) { snprintf(msg, msg_size, "The archive cannot be opened"); return false; }
+    // The floppies out (DF0 boots first; the DMS slots become the builder's PSRAM).
+    for (int d = 0; d < 4; d++) machine_eject(d);
+    Config::df0.clear();
+    machine_apply_drives();
+    const uint32_t head = (uint32_t)((sizeof(WhdBuild) + 4095) & ~4095u);
+    if (!s_dms_area || s_dms_size < head + WHD_ARENA_MIN) {
+        snprintf(msg, msg_size, "Not enough PSRAM to unpack it");
+        return false;
+    }
+    WhdBuild *b = (WhdBuild *)s_dms_area;
+    memset(b, 0, sizeof *b);
+    s_whd = b;
+
+    // the image's path
+    std::string name = path;
+    name = name.substr(name.find_last_of('/') + 1);
+    const size_t dot = name.find_last_of('.');
+    if (dot != std::string::npos && dot) name.resize(dot);
+    const std::string img = std::string(WHD_IMAGES "/") + name + ".hdf";
+
+    // Its image, if the archive has not changed since it was built.
+    WhdStamp s;
+    memset(&s, 0, sizeof s);
+    bool reuse = false;
+    if (f_open(&b->in, img.c_str(), FA_READ) == FR_OK) {
+        uint8_t blk[64];
+        UINT n = 0;
+        reuse = f_read(&b->in, blk, sizeof blk, &n) == FR_OK && n == sizeof blk && !memcmp(blk, "DOS\1", 4) &&
+                stamp_from(blk + 16, s) && s.lha_size == (uint32_t)fi.fsize &&
+                s.lha_date == ((uint32_t)fi.fdate << 16 | fi.ftime);
+        f_close(&b->in);
+    }
+
+    if (!reuse) {
+        machine_set_hdf(0, "");                          // it may be the one in use (and its FIL goes back to the heap)
+        Config::hdf.clear();
+        if (img == machine_hdf(1)) { machine_set_hdf(1, ""); Config::hdf2.clear(); }   // ...or the slave's
+        whd_mkdirs(WHD_IMAGES);
+        if (f_open(&b->in, path, FA_READ) != FR_OK) {
+            snprintf(msg, msg_size, "The archive cannot be opened");
+            return false;
+        }
+        b->lha = path; b->img = img.c_str(); b->msg = msg; b->msg_size = msg_size;
+        {   // an Amiga executable (a hunk file) rather than an archive
+            uint8_t m[4];
+            UINT n = 0;
+            b->exe = f_read(&b->in, m, 4, &n) == FR_OK && n == 4 && m[0] == 0 && m[1] == 0 && m[2] == 3 && m[3] == 0xF3;
+            const char *base = strrchr(path, '/');
+            snprintf(b->exe_name, sizeof b->exe_name, "%.30s", base ? base + 1 : path);
+            for (char *c = b->exe_name; *c; c++) if (*c == ':' || *c == '"') *c = '_';
+        }
+        b->arena = s_dms_area + head;
+        b->arena_size = s_dms_size - head;
+        uint32_t ssize = 8192;
+        uint8_t *stack = (uint8_t *)whd_try_malloc(ssize);
+        if (!stack) { ssize = 6144; stack = (uint8_t *)whd_try_malloc(ssize); }
+        printf("whdload: building %s (stack %s %u)\n", img.c_str(), stack ? "heap" : "in place", stack ? (unsigned)ssize : 0u);
+        if (stack) {
+            whd_call_on_stack((void *)(((uintptr_t)stack + ssize) & ~(uintptr_t)7), whd_build, b, stack);
+            free(stack);
+        } else {
+            whd_build(b);
+        }
+        f_close(&b->in);
+        if (!b->ok) return false;
+        s.base_mem = b->job.base_mem; s.exp_mem = b->job.exp_mem;
+        snprintf(s.missing, sizeof s.missing, "%.23s", b->job.missing);
+    }
+    if (img == machine_hdf(1)) { machine_set_hdf(1, ""); Config::hdf2.clear(); }   // the master boots it
+    if (!machine_set_hdf(0, img.c_str())) { snprintf(msg, msg_size, "The image cannot be opened"); return false; }
+    Config::hdf = img;
+    Config::hdf_raw.clear();
+    // What it will want (WHDLoad would say so in a requester): its ExpMem in fast
+    // RAM, or in the chip RAM its base memory leaves (~200 KB for the system).
+    amiga_config_t next;
+    memset(&next, 0, sizeof next);
+    select_model(&next);
+    if (s.exp_mem > next.fast_size && s.base_mem + s.exp_mem + 200 * KB > next.chip_size)
+        snprintf(msg, msg_size, "It needs %u KB of fast RAM: Machine > %s > Fast RAM",
+                 (unsigned)(s.exp_mem / 1024), machine_name());
+    else if (s.missing[0])
+        snprintf(msg, msg_size, "It needs Kickstart %s (none built in)", s.missing);
+    return true;
 }

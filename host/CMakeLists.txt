@@ -12,10 +12,15 @@ include(${ROOT}/cmake/amiga_core.cmake)
 # The bench's counters (amiga_status_t: instructions, accesses), host only.
 target_compile_definitions(amiga_core PUBLIC AMIGA_STATS=1)
 
-add_executable(pico-amiga-host main.c ${ROOT}/src/pico/dms.c)
+add_executable(pico-amiga-host main.c ${ROOT}/src/pico/dms.c ${ROOT}/src/pico/lha.c ${ROOT}/src/pico/ffs.c ${ROOT}/src/pico/whdboot.c)
 target_include_directories(pico-amiga-host PRIVATE ${ROOT}/src/pico)
 target_link_libraries(pico-amiga-host PRIVATE amiga_core pthread m)
 target_compile_options(pico-amiga-host PRIVATE -Wall -Wextra)
+
+# lha.c on the PC: list and unpack an archive (the decoder checked against 7z / lha).
+add_executable(lhatest tools/lhatest.c ${ROOT}/src/pico/lha.c)
+target_include_directories(lhatest PRIVATE ${ROOT}/src/pico)
+target_compile_options(lhatest PRIVATE -Wall -Wextra)
 
 # Musashi's disassembler on a binary (tools/memdump.py: the code around a board's PC).
 add_executable(m68kdis tools/m68kdis.c ${ROOT}/external/musashi/m68kdasm.c)
@@ -54,6 +59,9 @@ if(SDL2_FOUND)
         ${ROOT}/src/pico/machine.cpp
         ${ROOT}/src/pico/snapshot.cpp
         ${ROOT}/src/pico/dms.c
+        ${ROOT}/src/pico/lha.c
+        ${ROOT}/src/pico/ffs.c
+        ${ROOT}/src/pico/whdboot.c
         ${ROOT}/src/pico/roms.c
         ${ROOT}/src/pico/perf_log.c
         ${ROOT}/src/pico/video_modes.c

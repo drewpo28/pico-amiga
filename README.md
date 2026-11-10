@@ -17,7 +17,7 @@ picture and sound over HDMI, or picture over VGA.
 |---|---|
 | A500 | 68000 at 7.09 MHz, OCS, 512 KB chip RAM + 512 KB slow RAM |
 | A500+ | ECS (super-hires, the 8375 Agnus / 8373 Denise IDs), 1 MB chip RAM, battery clock |
-| A600 | as the A500+, with Gayle and no clock; IDE hard disk: an HDF (with an RDB or one bare partition) or an SD card partition |
+| A600 | as the A500+, with Gayle and no clock; IDE hard disks (master and slave): an HDF (with an RDB or one bare partition) or an SD card partition |
 | Display | lowres, hires at its full 640 pixels, HAM, interlace with both fields, sprites, copper, blitter |
 | Sound | Paula, 4 DMA channels |
 | Disks | DF0-DF3: ADF streamed from the SD card and written back to it; DMS unpacked into PSRAM (write-protected); `.m3u` disk sets |
@@ -73,15 +73,27 @@ describes each mode beside the list.
 /amiga/            a good place for disks (.adf, .dms, .m3u sets) and Kickstart files;
                    the menu's file browser reaches the whole card
 /amiga/df0.adf     goes into DF0 by itself if nothing else was picked
+/amiga/whdload/    optional: files put onto every WHDLoad volume (S/WHDLoad.prefs,
+                   Devs/Kickstarts/..., a newer C/WHDLoad); images/ holds the built volumes
 /.config/pico-amiga/<board>/storage.nvs   the settings (pico-speccy's format)
 ```
 
 A Kickstart picked from the card (Machine > Custom ROM) can have a 512 KB
 `ext.rom` beside it (AROS needs one). An `.m3u` is a list of disk files, one per
-line (as RetroArch reads them); Devices > Disks > Floppy drives "Auto" gives
+line (as RetroArch reads them); Devices > Floppy drives > Drives "Auto" gives
 each disk of a set its own drive, and Ctrl+F12 swaps them. A `#DRIVES:n` line in
 the `.m3u` (1-4) makes Auto connect n drives instead: for games that read DF0 only
 or run short of memory with more drives (Gobliiins: `#DRIVES:1`).
+
+An `.lha` (a WHDLoad install, or any program packed with LhA), or a bare Amiga
+executable (an intro, a demo: Win+F5 knows it by its hunk header), opened on the A600
+or A1200 (Win+F5, or Devices > Hard disk > Master > Mount...) boots as the hard
+disk: the first time it is unpacked into `/amiga/whdload/images/<name>.hdf`, an
+FFS volume with WHDLoad, the Kickstart images the slave names (from the built-in
+ROMs, with their `.RTB` files) and a startup-sequence that runs the slave with the
+icon's tooltypes; later it boots that image again (saved games stay in it) until
+the archive changes. Games that want "other memory" need Machine > A1200 (or
+A600) > Fast RAM (a Zorro II board; 4 MB leaves no room for DMS images).
 
 If the board cannot start, the screen turns one colour and the LED blinks:
 red = no PSRAM, magenta = no ROM and no SD card, blue = no ROM.
@@ -209,6 +221,26 @@ their licences:
 | PS/2, VGA | the Murmulator community |
 | I2S audio | Vincent Mistler (MIT) |
 | HSTX scanout structure | Raspberry Pi pico-examples (BSD-3) |
+| LHA unpacker | written for pico-amiga after LHa (Haruyasu Yoshizaki) and ar002 (Haruhiko Okumura) |
+| WHDLoad (built in when present at build time) | Bert Jahn, see below |
+| Kickstart relocation tables (`.RTB`) | SKick 3.46, Pavel Troller (aminet util/boot/skick346.lha) |
+
+WHDLoad is copyright 1995-2026 by Bert Jahn. All rights reserved. Commercial use
+is only allowed with an explicit, written permission by the author. THIS PRODUCT
+IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER EXPRESS OR IMPLIED,
+STATUTORY OR OTHERWISE, INCLUDING WITHOUT LIMITATION ANY IMPLIED WARRANTIES OF
+NON-INFRINGEMENT, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE
+ENTIRE RISK AS TO USE, RESULTS AND PERFORMANCE OF THE PRODUCT IS ASSUMED BY YOU
+AND IF THE PRODUCT SHOULD PROVE TO BE DEFECTIVE, YOU ASSUME THE ENTIRE COST OF
+ALL NECESSARY SERVICING, REPAIR OR OTHER REMEDIATION. UNDER NO CIRCUMSTANCES, CAN
+THE AUTHOR BE HELD RESPONSIBLE FOR ANY DAMAGE CAUSED IN ANY USUAL, SPECIAL, OR
+ACCIDENTAL WAY OR BY THE PROGRAM PACKAGE (INCLUDING BUT NOT RESTRICTED TO: THE
+LOSS OF DATA OR LOSSES CAUSED BY YOU OR A THIRD PARTY OR BY USAGE OF THIS
+PROGRAM FOR TASKS IN OR OUTSIDE MY SPECIFIED DECLARATION OF SUITABILITY), ALSO
+IF THE OWNER OR A THIRD PARTY HAS BEEN POINTED AT SUCH POSSIBILITIES OF DAMAGE.
+See https://whdload.de/docs/en/copy.html. pico-amiga is non-commercial; the
+WHDLoad binary is not in this repository (it is linked from the build machine's
+`debug/WHDLoad/`, as the Kickstarts are).
 
 Hardware behaviour was checked against the Amiga Hardware Reference Manual and,
 where it is vague, against how vAmiga (Dirk W. Hoffmann) and WinUAE (Toni Wilen)

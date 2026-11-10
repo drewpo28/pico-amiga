@@ -19,6 +19,12 @@ void machine_init(uint8_t *rom_buf, uint8_t *ext_buf, uint8_t *dms_area, uint32_
 // The chip RAM the running model has, and whether this board can give the A600 2 MB.
 uint32_t machine_chip_size(void);
 bool machine_a600_2mb_ok(void);
+// The A600's / A1200's fast RAM (Config::fast_ram, a Zorro II board): it takes
+// the end of the DMS area, so the drives that lose their DMS slot are emptied.
+// The largest board this PSRAM gives (MB, 0 = none: a 2 MB PSRAM) and the one
+// running (bytes, 0 = none).
+uint32_t machine_fast_max(void);
+uint32_t machine_fast_size(void);
 
 // Fill cfg->rom / ext_rom from Config::kick: a built-in ROM (roms.h, read in
 // place from flash), or "sd" = Config::kick_file from the card (Machine >
@@ -70,7 +76,7 @@ int  machine_set_index(void);           // the disk now in DF0
 const char *machine_set_disk(int i);    // its card path
 bool machine_set_select(int i);         // swap disk i into DF0
 
-// Devices > Disks > New blank disk: an empty formatted 880 KB ADF (OFS, not bootable, as a
+// Devices > Floppy drives > New blank disk: an empty formatted 880 KB ADF (OFS, not bootable, as a
 // quick Format leaves it) named after the volume, next to the loaded disk set
 // (or DF0's disk, else in /amiga/disks/). With a set loaded it joins the set
 // (machine_set_add); otherwise it goes into DF0. Its path goes to path_out.
@@ -84,6 +90,20 @@ bool machine_format_adf(const char *path, const char *volume);
 void machine_disk_info(const char *path, char *out, unsigned size);
 // Add a disk to the loaded set: to the .m3u on the card and to the swap list.
 bool machine_set_add(const char *path);
+
+// An LHA archive (a WHDLoad install, or any program) as the A600's / A1200's
+// hard disk (whdboot.c): built once into /amiga/whdload/images/<name>.hdf (an
+// FFS volume: the archive, C/WHDLoad, the Kickstart images the slave names from
+// the built-in ROMs with their .RTB files, a startup-sequence that runs it, and
+// the files of the card's /amiga/whdload/ folder) and used again while the
+// archive is unchanged (the game's saves stay).  The floppies are ejected (DF0
+// would boot first) and the image becomes Config::hdf, the master; the caller saves Config
+// and resets.  False with the reason in msg; true with msg "" or a warning (the
+// slave wants more fast RAM than there is, a Kickstart image is missing).
+// An Amiga executable (a hunk file: an intro, a demo, a cracked game) goes the
+// same way: the volume holds it alone and the startup-sequence runs it.
+bool machine_boot_lha(const char *path, char *msg, unsigned msg_size);
+bool machine_is_program(const char *path);   // the file starts with HUNK_HEADER ($3F3)
 
 // Connect the drives Config::drives asks for (0 = Auto: one per disk of a set,
 // up to 4; one otherwise) and put the set's disks 2.. into DF1.. . True when
@@ -104,28 +124,29 @@ struct MachineDisks {
     int set_index;             // its disk in DF0
 };
 void machine_get_disks(MachineDisks &d);
-// The A600's IDE hard disk: an HDF on the card (ide.c: a whole drive with its
-// RDB, or one bare partition), opened for reading and writing (read-only when
-// the file is).  machine_set_hdf: "" removes it; false when the file cannot be
-// opened (the drive is then empty).  Config::hdf is the caller's to keep.  The
-// core sees it on the A600 only and from the next reset on (Kickstart scans
-// the port at reset): the caller resets.
-bool machine_set_hdf(const char *path);
-const char *machine_hdf(void);          // the HDF's path, or "SD partition 3"; "" = none
-// The hard disk as a window of the SD card's own sectors (pico-speccy's raw IDE
+// The IDE port's hard disks (A600 / A1200), unit 0 the master, 1 the slave: an
+// HDF on the card (ide.c: a whole drive with its RDB, or one bare partition -
+// DH0, the slave's DH1), opened for reading and writing (read-only when the file
+// is).  machine_set_hdf: "" removes it; false when the file cannot be opened or
+// is the other drive's (the drive is then empty).  Config::hdf / hdf2 are the
+// caller's to keep.  The core sees them on a Gayle machine only and from the
+// next reset on (Kickstart scans the port at reset): the caller resets.
+bool machine_set_hdf(int unit, const char *path);
+const char *machine_hdf(int unit);      // the HDF's path, or "SD part 3"; "" = none
+// A hard disk as a window of the SD card's own sectors (pico-speccy's raw IDE
 // slot): the Amiga's block 0 is card sector `lba`, `len` sectors long (0 = to
 // the end; at most 4 GB: amiga_disk_t's byte offsets), no FAT, no file.  A
 // partition holding a whole Amiga drive (an HDF written onto it) or one bare
 // Amiga partition, as an HDF.  Writable only on request, and never over the FAT
-// volume the firmware itself mounted (that one is forced read-only).  `part`
-// (1-8, 0 = typed) only names it.  Writes reach FatFs's cache through
-// ff_raw_write_notify.  machine_set_hdf("") removes it too.
-bool machine_set_hdf_raw(int part, uint32_t lba, uint32_t len, bool writable);
-bool machine_hdf_is_raw(void);
+// volume the firmware itself mounted or the other drive's window (forced
+// read-only).  `part` (1-8, 0 = typed) only names it.  Writes reach FatFs's
+// cache through ff_raw_write_notify.  machine_set_hdf(unit, "") removes it too.
+bool machine_set_hdf_raw(int unit, int part, uint32_t lba, uint32_t len, bool writable);
+bool machine_hdf_is_raw(int unit);
 // What the hard disk holds for Kickstart: "RDB" or "Amiga partition" mount; anything
 // else ("FAT, not Amiga", "empty", ...) is a drive Workbench shows no icon for.
-const char *machine_hdf_kind(void);
-bool machine_hdf_ro(void);
+const char *machine_hdf_kind(int unit);
+bool machine_hdf_ro(int unit);
 // The card's partitions (ide_mbr.h: the four MBR entries, 5-8 the logical ones);
 // `files` marks the one FatFs mounted (the card's files).  Returns how many are
 // usable, 0 = no MBR (a card formatted without one), -1 = the card cannot be read.

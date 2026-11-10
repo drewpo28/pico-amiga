@@ -44,12 +44,15 @@ bool     Config::disk_led     = true;
 bool     Config::frame_skip   = true;
 uint8_t  Config::machine      = 0;
 uint8_t  Config::a600_chip    = 1;
+uint8_t  Config::fast_ram     = 0;
 uint8_t  Config::chip_bus     = 1;
 std::string Config::kick      = "ks13";
 std::string Config::kick_file = "/amiga/kick.rom";
 std::string Config::df0       = "";
 std::string Config::hdf       = "";
 std::string Config::hdf_raw   = "";
+std::string Config::hdf2      = "";
+std::string Config::hdf2_raw  = "";
 bool     Config::df0_wp       = false;
 uint8_t  Config::df0_disk     = 0;
 uint8_t  Config::persist_slot = 1;
@@ -150,6 +153,8 @@ void Config::load() {
     nvs_get_u8 ("machine",       machine,      sts);
     nvs_get_u8 ("a600_chip",     a600_chip,    sts);
     if (a600_chip != 2) a600_chip = 1;
+    nvs_get_u8 ("fast_ram",      fast_ram,     sts);
+    if (fast_ram != 1 && fast_ram != 2 && fast_ram != 4) fast_ram = 0;
     nvs_get_u8 ("chip_bus",      chip_bus,     sts);
     if (chip_bus > 2) chip_bus = 1;
     if (machine > 3) machine = 0;                 // machine.h MACHINE_COUNT
@@ -160,6 +165,8 @@ void Config::load() {
     nvs_get_b  ("df0_wp",        df0_wp,       sts);
     if (!nvs_get_str("hdf",      hdf,          sts)) hdf.clear();
     if (!nvs_get_str("hdf_raw",  hdf_raw,      sts)) hdf_raw.clear();
+    if (!nvs_get_str("hdf2",     hdf2,         sts)) hdf2.clear();
+    if (!nvs_get_str("hdf2_raw", hdf2_raw,     sts)) hdf2_raw.clear();
     nvs_get_u8 ("df0_disk",      df0_disk,     sts);
     nvs_get_u8 ("persist_slot",  persist_slot, sts);
     if (persist_slot < 1 || persist_slot > 40) persist_slot = 1;
@@ -250,6 +257,7 @@ bool Config::save() {
     nvs_set_b(buf, "hdmi_capture",  hdmi_capture);
     nvs_set_i(buf, "machine",       machine);
     nvs_set_i(buf, "a600_chip",     a600_chip);
+    nvs_set_i(buf, "fast_ram",      fast_ram);
     nvs_set_i(buf, "chip_bus",      chip_bus);
     nvs_set_str(buf, "kick",        kick.c_str());
     nvs_set_str(buf, "kick_file",   kick_file.c_str());
@@ -257,6 +265,8 @@ bool Config::save() {
     nvs_set_b(buf, "df0_wp",        df0_wp);
     nvs_set_str(buf, "hdf",         hdf.c_str());
     nvs_set_str(buf, "hdf_raw",     hdf_raw.c_str());
+    nvs_set_str(buf, "hdf2",        hdf2.c_str());
+    nvs_set_str(buf, "hdf2_raw",    hdf2_raw.c_str());
     nvs_set_i(buf, "df0_disk",      df0_disk);
     nvs_set_i(buf, "persist_slot",  persist_slot);
     nvs_set_i(buf, "drives",        drives);

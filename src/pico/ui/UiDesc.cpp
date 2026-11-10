@@ -70,7 +70,7 @@ static int describeVideoMode(int32_t vm, DescLine* out, int max) {
     return n;
 }
 
-// Devices > Disks > DFn: what the row under the cursor does, and what to know
+// Devices > Floppy drives > DFn: what the row under the cursor does, and what to know
 // about the disk (nothing is read from it here: that is "Enter: what is on it").
 static int describeDrive(int d, int32_t tag, DescLine* out, int max) {
     const bool dms = machine_disk_dms(d), ro = machine_disk_ro(d);
@@ -117,7 +117,7 @@ static int describeDrive(int d, int32_t tag, DescLine* out, int max) {
     return n;
 }
 
-// Devices > Disks > Floppy drives.
+// Devices > Floppy drives > Drives.
 static int describeDrives(int32_t v, DescLine* out, int max) {
     int n = 0;
     if (v == 0) {

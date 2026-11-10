@@ -15,11 +15,16 @@
 //                       sector the last disk DMA started at (-- for the gap),
 //                       RD / WR = disk DMA,
 //                       ON = motor, refreshed every 5 frames
+//   HD 0012345 RD 640K  or the IDE hard disk's, in the same line, whichever of the
+//                       two moved data last: the block the last transfer moved,
+//                       RD / WR while one runs (and a moment after), the rate over
+//                       the last refresh (K/s, M/s)
 //
 // The drive icon (pico-speccy's FDD lamp, Video > Picture > Drive icon): a floppy
 // in the top right corner while the disk DMA runs and a moment after; blue =
-// read, red = write. Its rows go through the same row_done hook as the band's
-// (the core's second overlay range).
+// read, red = write; the hard disk's icon left of it, the same way. Their rows
+// go through the same row_done hook as the band's (the core's second overlay
+// range).
 // Breakdown (amiga_get_profile, ms per Amiga frame):
 //   CPU  9.1 REN 22.3   the 68000 (blits excluded), the Denise render (on core 1
 //                       when it renders there)
@@ -44,7 +49,9 @@ static int      s_lines;
 static uint32_t s_frames, s_emu_sum, s_t0;
 static amiga_profile_t s_prof;       // the profile at the last refresh (perf_log.c keeps its own)
 static bool     s_dirty;            // the text changed: draw the band again
-static char     s_disk[24];         // the summary's disk line as last drawn
+static char     s_disk[24];         // the summary's disk line as last drawn (DF or HD)
+static uint32_t s_hd_blocks;        // its blocks moved at the last refresh
+static uint32_t s_hd_rate;          // bytes per second over the last refresh
 
 // The band as drawn: framebuffer rectangle and its pixels.
 enum { BAND_COLS = 19, BAND_W = (BAND_COLS + 2) * UI_FONT_W + 4, BAND_H = 3 * UI_FONT_H + 6 };
@@ -85,9 +92,15 @@ static const char* const kFloppy[8] = {
     "BBBBBBB.", "BB...BBB", "BB...BBB", "BBBBBBBB",
     "BLLLLLLB", "BLLLLLLB", "BLLLLLLB", "BBBBBBBB",
 };
-static volatile bool     s_lamp;              // shown
-static volatile uint16_t s_lamp_col;          // body colour
-static int               s_lx, s_ly;          // framebuffer column / row of its top left
+// The hard disk's: a drive with its activity light (A = the light).
+static const char* const kHdd[8] = {
+    "........", "BBBBBBBB", "BLLLLLLB", "BBBBBBBB",
+    "BBBBBBBB", "BBBBBAAB", "BBBBBBBB", "........",
+};
+static volatile bool     s_lamp;              // either icon shown (the overlay rows)
+static volatile bool     s_fd_on, s_hd_on;    // which
+static volatile uint16_t s_lamp_col, s_hd_col;// body colours
+static int               s_lx, s_ly;          // framebuffer column / row of the corner icon's top left (the HDD's: 12 left of the floppy's)
 static int               s_ov[2][2];          // the overlay ranges as last set
 
 static void setOverlay(int which, int y0, int y1) {
@@ -124,9 +137,13 @@ extern "C" void ui_stats_toggle(void) {
     s_frames = s_emu_sum = 0;
     s_t0 = time_us_32();
     amiga_get_profile(&s_prof, false);
+    amiga_ide_t hd;
+    amiga_ide_status(&hd);
     s_lines = 3;
     for (int i = 0; i < 3; i++) snprintf(s_l[i], sizeof s_l[i], "  --");
     s_disk[0] = 0;
+    s_hd_blocks = hd.rd_blocks + hd.wr_blocks;
+    s_hd_rate = 0;
     s_dirty = true;
     s_bh = 0;
     updateOverlay();
@@ -143,12 +160,23 @@ extern "C" void ui_stats_row(void*, int row, amiga_row_t* r) {
         for (int i = 0; i < s_bw; i++) d[s_bx + i] = s[i];
     }
     if (lamp) {
-        const char* g = kFloppy[row - s_ly];
-        const uint16_t body = s_lamp_col;
-        for (int i = 0; i < 8; i++) {
-            const int x = s_lx + i;
-            if (x < 0 || x >= AMIGA_FB_W || g[i] == '.') continue;
-            d[x] = g[i] == 'B' ? body : 0xEEE;
+        if (s_fd_on) {
+            const char* g = kFloppy[row - s_ly];
+            const uint16_t body = s_lamp_col;
+            for (int i = 0; i < 8; i++) {
+                const int x = s_lx + i;
+                if (x < 0 || x >= AMIGA_FB_W || g[i] == '.') continue;
+                d[x] = g[i] == 'B' ? body : 0xEEE;
+            }
+        }
+        if (s_hd_on) {
+            const char* g = kHdd[row - s_ly];
+            const uint16_t body = s_hd_col;
+            for (int i = 0; i < 8; i++) {
+                const int x = s_lx - (s_fd_on ? 12 : 0) + i;   // the corner when the floppy's is off
+                if (x < 0 || x >= AMIGA_FB_W || g[i] == '.') continue;
+                d[x] = g[i] == 'B' ? body : g[i] == 'A' ? 0x2E2 : 0xEEE;
+            }
         }
     }
 }
@@ -169,14 +197,31 @@ static void diskLine(const amiga_floppy_t& f, char* out, size_t n) {
              f.dma == 2 ? "WR" : f.dma == 1 ? "RD" : f.motor ? "ON" : "--");
 }
 
+// The summary's hard disk line: "HD 0012345 RD 640K".
+static void hdLine(const amiga_ide_t& h, uint32_t rate, char* out, size_t n) {
+    char r[8];
+    const uint32_t k = rate / 1024;
+    if (k < 1000) snprintf(r, sizeof r, "%3uK", (unsigned)k);
+    else snprintf(r, sizeof r, "%u.%uM", (unsigned)(k / 1024), (unsigned)(k % 1024 * 10 / 1024));
+    const bool on = h.busy || h.idle <= 10;
+    snprintf(out, n, "HD %07u %s %s", (unsigned)(h.lba % 10000000u), on ? (h.op == 2 ? "WR" : "RD") : "--", r);
+}
+
 extern "C" void ui_stats_frame(uint32_t emu_us) {
     using namespace nm;
     amiga_floppy_t fl;
     amiga_floppy_status(&fl);
-    // The icon: while the DMA runs and 10 frames after (track by track reads
-    // leave short gaps; it should not blink through them).
-    const bool lamp = Config::disk_led && fl.drive >= 0 && fl.idle <= 10;
-    if (lamp) s_lamp_col = fl.wrote ? 0xE22 : 0x28F;
+    amiga_ide_t hd;
+    amiga_ide_status(&hd);
+    // The icons: while the DMA (the transfer) runs and 10 frames after (track by
+    // track reads leave short gaps; they should not blink through them).
+    const bool fd = Config::disk_led && fl.drive >= 0 && fl.idle <= 10;
+    const bool hdl = Config::disk_led && hd.present && hd.op && (hd.busy || hd.idle <= 10);
+    if (fd) s_lamp_col = fl.wrote ? 0xE22 : 0x28F;
+    if (hdl) s_hd_col = hd.op == 2 ? 0xE22 : 0x28F;
+    s_fd_on = fd;
+    s_hd_on = hdl;
+    const bool lamp = fd || hdl;
     if (lamp != s_lamp) {
         if (lamp) placeLamp();
         s_lamp = lamp;
@@ -185,8 +230,12 @@ extern "C" void ui_stats_frame(uint32_t emu_us) {
     if (!s_page) return;
     s_frames++;
     if (s_page == 1 && s_frames % 5 == 0) {
+        // the drive that moved data last: the hard disk once it has, unless the
+        // floppy's DMA is more recent
         char l[24];
-        diskLine(fl, l, sizeof l);
+        const bool use_hd = hd.present && hd.op && (fl.drive < 0 || hd.busy || hd.idle <= fl.idle);
+        if (use_hd) hdLine(hd, s_hd_rate, l, sizeof l);
+        else diskLine(fl, l, sizeof l);
         if (strcmp(l, s_disk)) { snprintf(s_disk, sizeof s_disk, "%s", l); snprintf(s_l[2], sizeof s_l[2], "%s", l); s_dirty = true; }
     }
     s_emu_sum += emu_us;
@@ -195,6 +244,10 @@ extern "C" void ui_stats_frame(uint32_t emu_us) {
         const uint32_t avg = s_emu_sum / s_frames;
         const uint32_t pct = avg ? 2000000u / avg : 0;            // 20000 us = 100%
         const uint32_t fps10 = (uint32_t)((uint64_t)s_frames * 10000000u / (now - s_t0 ? now - s_t0 : 1));
+        // the hard disk's rate: blocks moved since the last refresh, over the wall clock
+        const uint32_t blocks = hd.rd_blocks + hd.wr_blocks;
+        s_hd_rate = (uint32_t)((uint64_t)(blocks - s_hd_blocks) * 512u * 1000000u / (now - s_t0 ? now - s_t0 : 1));
+        s_hd_blocks = blocks;
         if (s_page == 1) {
             snprintf(s_l[0], sizeof s_l[0], "EMU %2u.%01ums %4u%%", (unsigned)(avg / 1000),
                      (unsigned)(avg % 1000 / 100), (unsigned)pct);

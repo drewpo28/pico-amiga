@@ -168,7 +168,7 @@ overhead.  A faster CPU needs that overhead cut, not a faster fetch.
   tables/line buffers, of 520 KB): PICO_DV has ~8 KB between the end of .bss and
   __HeapLimit (2026-10-28, `nm` `end`); the old "~50 KB" was stale. That gap
   is the whole C/C++ heap (the menu's strings, the file browser): with ECS it
-  fell to 5.4 KB and Devices > Disks > DF0 panicked "Out of memory" on the board; the
+  fell to 5.4 KB and Devices > Floppy drives > DF0 panicked "Out of memory" on the board; the
   colour map's tag and index tables merged into one (-4 KB), the Win+F8
   band's pixels moved to PSRAM (16 KB at +2 MB, before the DMS area; a 2 MB
   PSRAM has no band) and the .m3u read through 256 bytes: 20.5 KB; System

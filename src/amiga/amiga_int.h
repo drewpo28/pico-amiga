@@ -191,6 +191,7 @@ void     amiga_set_intreq(uint16_t bits);
 // ---- memory (mem.c) --------------------------------------------------------
 void     mem_init(void);
 void     mem_set_overlay(bool on);
+void     mem_autoconfig_reset(void);  // the Zorro II board unconfigured (reset, RESET instruction)
 bool     mem_peek(uint32_t a, int size, uint32_t *v);   // a read with no side effect (idle.c)
 
 // ---- busy-wait loops (idle.c) ------------------------------------------------
@@ -310,7 +311,7 @@ void     gayle_id_write(void);
 void     gayle_line(void);                          // per line: the IDE interrupt
 
 // ---- the IDE drive behind Gayle (ide.c) ------------------------------------
-void     ide_insert(const amiga_disk_t *d);         // NULL: no drive
+void     ide_insert(int unit, const amiga_disk_t *d);   // 0 master, 1 slave; NULL: no drive
 void     ide_reset(void);
 bool     ide_present(void);
 uint8_t  ide_read(int reg);                         // 0-7 task file, 0x406/0x407 control block

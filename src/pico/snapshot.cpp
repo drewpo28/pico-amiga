@@ -114,12 +114,14 @@ static bool put_block(Io* io, const char* id, const void* data, uint32_t n) {
 struct Cfg {
     int machine = 0;
     int a600_chip = 1;                      // MB (older snapshots: none, i.e. 1)
+    int fast_ram = 0;                       // MB (older snapshots: none)
     std::string kick, kick_file;
     uint32_t rom_crc = 0, ext_crc = 0;
     int drives = 0;
     bool df0_wp = false;
     std::string hdf;                        // the A600's hard disk, "" = none
     std::string hdf_raw;                    // or its SD window (Config::hdf_raw)
+    std::string hdf2, hdf2_raw;             // the IDE slave's (older snapshots: none)
     MachineDisks disks;
     uint32_t size[4] = {}, stamp[4] = {};   // the disks' files as they were (stamp: fdate << 16 | ftime)
 };
@@ -135,14 +137,17 @@ static std::string cfgText() {
     const auto kn = [&](const char* k, unsigned v) { snprintf(l, sizeof l, "%u", v); kv(k, l); };
     kn("machine", Config::machine);
     kn("a600_chip", Config::a600_chip);
+    kn("fast_ram", machine_fast_size() >> 20);
     kv("kick", Config::kick);
     kv("kick_file", Config::kick_file);
     snprintf(l, sizeof l, "%08X", (unsigned)rom); kv("rom_crc", l);
     snprintf(l, sizeof l, "%08X", (unsigned)ext); kv("ext_crc", l);
     kn("drives", Config::drives);
     kn("df0_wp", Config::df0_wp);
-    kv("hdf", machine_hdf_is_raw() ? "" : machine_hdf());
-    kv("hdf_raw", machine_hdf_is_raw() ? Config::hdf_raw : std::string());
+    kv("hdf", machine_hdf_is_raw(0) ? "" : machine_hdf(0));
+    kv("hdf_raw", machine_hdf_is_raw(0) ? Config::hdf_raw : std::string());
+    kv("hdf2", machine_hdf_is_raw(1) ? "" : machine_hdf(1));
+    kv("hdf2_raw", machine_hdf_is_raw(1) ? Config::hdf2_raw : std::string());
     kv("set", d.set);
     kn("set_index", (unsigned)d.set_index);
     for (int i = 0; i < 4; i++) {
@@ -177,6 +182,7 @@ static void cfgParse(const std::string& t, Cfg& c) {
         const unsigned long n = strtoul(v.c_str(), nullptr, 10);
         if (k == "machine") c.machine = (int)n;
         else if (k == "a600_chip") c.a600_chip = (int)n;
+        else if (k == "fast_ram") c.fast_ram = (int)n;
         else if (k == "kick") c.kick = v;
         else if (k == "kick_file") c.kick_file = v;
         else if (k == "rom_crc") c.rom_crc = (uint32_t)strtoul(v.c_str(), nullptr, 16);
@@ -186,6 +192,8 @@ static void cfgParse(const std::string& t, Cfg& c) {
         else if (k == "set") c.disks.set = v;
         else if (k == "hdf") c.hdf = v;
         else if (k == "hdf_raw") c.hdf_raw = v;
+        else if (k == "hdf2") c.hdf2 = v;
+        else if (k == "hdf2_raw") c.hdf2_raw = v;
         else if (k == "set_index") c.disks.set_index = (int)n;
         else if (k.size() >= 3 && k.compare(0, 2, "df") == 0 && k[2] >= '0' && k[2] <= '3') {
             const int d = k[2] - '0';
@@ -316,6 +324,7 @@ void describe(const std::string& path, char* out, unsigned size) {
         add(" Name      : %s\n", name.empty() ? "(none)" : name.c_str());
         add(" Machine   : %s%s\n", machine_model_desc(c->machine),
             c->machine == MACHINE_A600 && c->a600_chip == 2 ? ", 2 MB (A601)" : "");
+        if (c->fast_ram) add(" Fast RAM  : %d MB\n", c->fast_ram);
         add(" Kickstart : %s\n", machine_rom_label(c->kick, c->kick_file).c_str());
         if (!c->disks.set.empty())
             add(" Disk set  : %s, disk %d\n", baseName(c->disks.set), c->disks.set_index + 1);
@@ -324,6 +333,8 @@ void describe(const std::string& path, char* out, unsigned size) {
                 add(" DF%d       : %s%s\n", i, baseName(c->disks.path[i]), c->disks.wp[i] ? " (protected)" : "");
         if (!c->hdf.empty())
             add(" Hard disk : %s\n", baseName(c->hdf));
+        if (!c->hdf2.empty())
+            add(" HD slave  : %s\n", baseName(c->hdf2));
         FILINFO fi;
         if (f_stat(path.c_str(), &fi) == FR_OK)
             add(" Saved     : %04u-%02u-%02u %02u:%02u\n", (fi.fdate >> 9) + 1980u, (fi.fdate >> 5) & 15u,
@@ -355,6 +366,7 @@ bool load(const std::string& path, std::string& err, std::string& warn) {
 
     Config::machine = (uint8_t)c->machine;
     Config::a600_chip = c->a600_chip == 2 ? 2 : 1;
+    Config::fast_ram = (uint8_t)(c->fast_ram == 1 || c->fast_ram == 2 || c->fast_ram == 4 ? c->fast_ram : 0);
     Config::kick = c->kick;
     Config::kick_file = c->kick_file;
     Config::drives = (uint8_t)c->drives;
@@ -366,21 +378,30 @@ bool load(const std::string& path, std::string& err, std::string& warn) {
     machine_select_rom(&ac);
     amiga_set_roms(ac.rom, ac.rom_size, ac.ext_rom, ac.ext_size);
     amiga_set_machine(ac.chipset, ac.chip_size, ac.slow_size, ac.gayle);
+    amiga_set_fast(ac.fast_ram, ac.fast_size);
     amiga_set_cpu(ac.cpu);
     board_load_cpu_overlay(ac.cpu);
 
     std::string missing, changed;
     machine_put_disks(c->disks, missing);
     // The hard disk before the state: the core's IDE block is the drive's.
-    unsigned rm = 0, rp = 0, rl = 0, rn = 0;
-    if (!c->hdf_raw.empty() && sscanf(c->hdf_raw.c_str(), "%u:%u:%u:%u", &rm, &rp, &rl, &rn) == 4 && rm) {
-        if (!machine_set_hdf_raw((int)rp, rl, rn, rm == 2)) missing += (missing.empty() ? "" : ", ") + std::string("the SD partition");
-        Config::hdf_raw = machine_hdf_is_raw() ? c->hdf_raw : std::string();
-        Config::hdf.clear();
-    } else {
-        if (!machine_set_hdf(c->hdf.c_str())) missing += (missing.empty() ? "" : ", ") + std::string(baseName(c->hdf));
-        Config::hdf = machine_hdf();
-        Config::hdf_raw.clear();
+    machine_set_hdf(0, "");                 // both out first: a file moves between the drives
+    machine_set_hdf(1, "");
+    for (int u = 0; u < 2; u++) {
+        const std::string& img = u ? c->hdf2 : c->hdf;
+        const std::string& raw = u ? c->hdf2_raw : c->hdf_raw;
+        std::string& cimg = u ? Config::hdf2 : Config::hdf;
+        std::string& craw = u ? Config::hdf2_raw : Config::hdf_raw;
+        unsigned rm = 0, rp = 0, rl = 0, rn = 0;
+        if (!raw.empty() && sscanf(raw.c_str(), "%u:%u:%u:%u", &rm, &rp, &rl, &rn) == 4 && rm) {
+            if (!machine_set_hdf_raw(u, (int)rp, rl, rn, rm == 2)) missing += (missing.empty() ? "" : ", ") + std::string("the SD partition");
+            craw = machine_hdf_is_raw(u) ? raw : std::string();
+            cimg.clear();
+        } else {
+            if (!machine_set_hdf(u, img.c_str())) missing += (missing.empty() ? "" : ", ") + std::string(baseName(img));
+            cimg = machine_hdf(u);
+            craw.clear();
+        }
     }
     for (int i = 0; i < 4; i++) {
         const std::string& p = c->disks.path[i];

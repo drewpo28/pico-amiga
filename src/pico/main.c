@@ -22,7 +22,7 @@
 //   Machine > Custom ROM picks a 256 or 512 KB Kickstart image on the card
 //   (default /amiga/kick.rom; AROS works); an ext.rom in its folder is the 512 KB
 //   extended ROM at $E00000 (optional, AROS needs it)
-// Disks: Devices > Disks > DF0 picks an ADF on the card (streamed from it) or a DMS (unpacked
+// Disks: Devices > Floppy drives > DF0 picks an ADF on the card (streamed from it) or a DMS (unpacked
 //   into PSRAM, write-protected); without a pick,
 //   /amiga/df0.adf goes into DF0 by itself.
 // Settings: /.config/pico-amiga/<board>/storage.nvs (app/Config.h).

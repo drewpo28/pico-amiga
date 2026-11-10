@@ -12,6 +12,7 @@ from make_hdf.py.  The bootblock drives the port directly and prints
   D  WRITE SECTORS, LBA 100: $1234 x 256, no error
   E  READ SECTORS, LBA 100: the words back
 
+--slave: the same on the slave drive (select bit 4).
 smoke.sh also checks the HDF file (--write-back): image block 68 is $1234s."""
 import struct, sys
 
@@ -37,6 +38,8 @@ def cmp_l(v, a): w(0x0CB9); l(v); l(a)            # cmpi.l #v,a
 def cmp_w(v, a): w(0x0C79, v); l(a)               # cmpi.w #v,a
 
 DATA, NSEC, SEC, LCYL, HCYL, SEL, CMD = 0, 8, 12, 16, 20, 24, 28
+SLAVE = 0x10 if "--slave" in sys.argv else 0          # the same checks on the slave drive
+args = [a for a in sys.argv[1:] if a != "--slave"]
 BUF = 0x70000
 
 w(0x4BF9); l(0xDA0000)                 # lea $DA0000,a5
@@ -45,7 +48,7 @@ w(0x33FC, 0x7FFF); l(0xDFF09C)         # INTREQ: all clear
 w(0x13FC, 0x0080); l(0xDAA000)         # Gayle INT: IDE
 
 step("A")
-reg_b(SEL, 0xA0); reg_b(CMD, 0xEC)
+reg_b(SEL, 0xA0 | SLAVE); reg_b(CMD, 0xEC)
 br(BSR, "wait")
 w(0x0800, 3); br(BEQ, "no")            # btst #3,d0 (DRQ)
 lea_a0(BUF); br(BSR, "read")
@@ -56,13 +59,13 @@ w(0x3039); l(0xDFF01E)                 # move.w INTREQR,d0
 w(0x0800, 3); br(BEQ, "no")            # PORTS
 
 step("B")
-reg_b(SEL, 0xE0); reg_b(SEC, 0); reg_b(LCYL, 0); reg_b(HCYL, 0); reg_b(NSEC, 1); reg_b(CMD, 0x20)
+reg_b(SEL, 0xE0 | SLAVE); reg_b(SEC, 0); reg_b(LCYL, 0); reg_b(HCYL, 0); reg_b(NSEC, 1); reg_b(CMD, 0x20)
 br(BSR, "wait")
 lea_a0(BUF); br(BSR, "read")
 cmp_l(0x5244534B, BUF); br(BNE, "no")  # "RDSK"
 
 step("C")
-reg_b(SEL, 0xA0); reg_b(SEC, 33); reg_b(LCYL, 0); reg_b(HCYL, 0); reg_b(NSEC, 2); reg_b(CMD, 0x20)
+reg_b(SEL, 0xA0 | SLAVE); reg_b(SEC, 33); reg_b(LCYL, 0); reg_b(HCYL, 0); reg_b(NSEC, 2); reg_b(CMD, 0x20)
 br(BSR, "wait")
 lea_a0(BUF); br(BSR, "read")
 br(BSR, "wait")
@@ -72,7 +75,7 @@ cmp_l(0x444F5301, BUF); br(BNE, "no")
 cmp_l(0x4D41524B, BUF + 512); br(BNE, "no")
 
 step("D")
-reg_b(SEL, 0xE0); reg_b(SEC, 100); reg_b(LCYL, 0); reg_b(HCYL, 0); reg_b(NSEC, 1); reg_b(CMD, 0x30)
+reg_b(SEL, 0xE0 | SLAVE); reg_b(SEC, 100); reg_b(LCYL, 0); reg_b(HCYL, 0); reg_b(NSEC, 1); reg_b(CMD, 0x30)
 br(BSR, "wait")
 w(0x0800, 3); br(BEQ, "no")            # DRQ
 w(0x323C, 255)                         # move.w #255,d1
@@ -81,7 +84,7 @@ br(BSR, "wait")
 w(0x0800, 0); br(BNE, "no")            # ERR
 
 step("E")
-reg_b(SEL, 0xE0); reg_b(SEC, 100); reg_b(LCYL, 0); reg_b(HCYL, 0); reg_b(NSEC, 1); reg_b(CMD, 0x20)
+reg_b(SEL, 0xE0 | SLAVE); reg_b(SEC, 100); reg_b(LCYL, 0); reg_b(HCYL, 0); reg_b(NSEC, 1); reg_b(CMD, 0x20)
 br(BSR, "wait")
 lea_a0(BUF); br(BSR, "read")
 cmp_w(0x1234, BUF); br(BNE, "no")
@@ -139,4 +142,4 @@ struct.pack_into(">I", boot, 4, (~s) & 0xFFFFFFFF)
 
 adf = bytearray(901120)
 adf[0:1024] = boot
-open(sys.argv[1] if len(sys.argv) > 1 else "ide-test.adf", "wb").write(adf)
+open(args[0] if args else "ide-test.adf", "wb").write(adf)

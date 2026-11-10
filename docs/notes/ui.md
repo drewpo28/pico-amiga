@@ -13,11 +13,12 @@
   (machine_disk_info: volume, filesystem, boot block, root, startup-sequence; a
   DMS is unpacked into the spare PSRAM slot after DF3's); a disk put into DF1..DF3 by hand
   survives set and DF0 changes, Drive::manual; Win+F8 = the performance band,
-  pico-speccy's F8, its summary with the drive's TR/SEC line). The drive icon
-  (pico-speccy's FDD lamp, Video > Picture > Drive icon, top right) and the band
+  pico-speccy's F8, its summary with the drive's TR/SEC line - or the IDE hard
+  disk's block, RD/WR and rate, whichever moved data last: amiga_ide_status). The drive icon
+  (pico-speccy's FDD lamp, Video > Picture > Drive icon, top right; the hard disk's beside it) and the band
   (bottom) take the core's two overlay row ranges (amiga_set_overlay_rows(which,
   ..): one range spanning both would send every row through row_done). Its
-  root follows pico-speccy's: Help, Machine, Devices (Disks, Input), Video, ... The engine (UiNav, UiRender,
+  root follows pico-speccy's: Help, Machine, Devices (Floppy drives, Hard disk on a Gayle machine, Input), Video, ... The engine (UiNav, UiRender,
   UiDialog, UiFont, UiModel, the Stage mechanism) is kept close to pico-speccy, with
   `PICO-AMIGA:` notes; `UiGfx.cpp` draws 0x0RGB straight into the Amiga framebuffer,
   turning each row it touches into a DIRECT one (the scanout keeps showing it; the emulator is stopped while the menu runs, and its
@@ -44,14 +45,14 @@
   git-ignored: the Kickstarts are Commodore's and must never be committed).
   `cmake/roms.cmake` lists them; an id there is what storage.nvs keeps, never
   reuse one. The firmware targets 16 MB flash; the core reads the ROM in place
-  (XIP). `machine.cpp` owns ROM selection and the drives: DF0..DF3 (Devices > Disks > Floppy
-  drives, Auto = one per disk of an `.m3u` set, or its `#DRIVES:n` line - ours:
+  (XIP). `machine.cpp` owns ROM selection and the drives: DF0..DF3 (Devices > Floppy drives >
+  Drives, Auto = one per disk of an `.m3u` set, or its `#DRIVES:n` line - ours:
   Gobliiins reads DF0 only and hangs short of memory with 3; Kickstart finds DF1+ by drive ID
   at reset). An ADF streams from the card; a `.dms` is unpacked at insert time by
   `src/pico/dms.c` (xDMS port, its ~100 KB work area in PSRAM) into a per-drive
   880 KB PSRAM slot above 2 MB, write-protected. The bench takes `--adf x.dms` too,
   up to 8 `--adf` (DF0..DF3, the rest for `--swap`), `--drives N` and `--write-back`
-  (written disks saved to their files). Devices > Disks > New blank disk formats an empty
+  (written disks saved to their files). Devices > Floppy drives > New blank disk formats an empty
   OFS ADF on the card (`machine_new_disk`); with an .m3u set loaded it is appended
   to the set (games' own save-disk formatters: swap it in with Ctrl+F12).
 
@@ -70,3 +71,43 @@
   load / save `Config::persist_slot` at once; a `.pas` opens from Win+F5 (no F2
   key). The bench: `--state-save N:file` / `--state-load file` (the core's blocks
   only); smoke checks a round trip mid-boot.
+
+## LHA archives and WHDLoad
+
+- An `.lha` / `.lzh` opened on the A600 / A1200 (Win+F5, or Devices > Hard disk >
+  Master > Mount... > Image file) boots as the IDE master (`machine_boot_lha`): `src/pico/lha.c`
+  unpacks it (lh0, lh4-lh7, header levels 0-2), `ffs.c` writes a bare DOS\1
+  partition (ide.c's virtual RDB goes in front), `whdboot.c` decides what goes on
+  it - the archive, `C/WHDLoad`, the Kickstart images the slave names (a
+  case-insensitive search of the slave for "40068.A1200" etc.; UFO CD32 lists three)
+  from the built-in ROMs under their WHDLoad names (`builtin_rom_t.file`) with
+  their `.RTB`, the files of the card's `/amiga/whdload/` (first wins), and
+  `S/Startup-Sequence`: `CD` into the slave's folder, `C:WHDLoad SLAVE=x PRELOAD`
+  plus the icon's tooltypes (the icon whose `SLAVE=` names a slave; WHDLoad's own
+  local options only, `$hex` made decimal as its CLI wants, MMU / Snoop / Chk left
+  out). No slave: the first hunk file near the top runs instead; an archive with
+  its own `S/Startup-Sequence` keeps it. A bare executable (Win+F5: any file that
+  starts with $000003F3, `machine_is_program`) gets a volume of its own the same way
+  (`whd_job_t.run`, no archive). Every volume has empty C, S, L, Libs, Devs, Fonts:
+  the boot assigns only folders that exist, and a missing LIBS: asks for a volume.
+- The image is `/amiga/whdload/images/<name>.hdf`, built once (the DMS area is the
+  arena: the floppies are ejected - DF0 would boot first - and the build runs on
+  an 8 KB heap stack, pico-speccy's zipCallOnStack) and stamped at byte 16 of block 0
+  with the archive's size and date: an unchanged archive boots its image again
+  with the saves in it. 2 MB are left free for them.
+- WHDLoad's files are linked from `ROMS_DIR/WHDLoad/` (cmake/roms.cmake: every file
+  there, its path there its path on the volume); none: the card folder must have
+  `C/WHDLoad`. WHDLoad 20.1 runs slaves on the 68000 with KS 2.05 / 3.1.
+- Machine > A600 / A1200 > Fast RAM (Config::fast_ram: 0, 1, 2, 4 MB): a Zorro II
+  board from the end of the DMS area (machine_fast_max keeps the builder's arena;
+  drives whose DMS slot it takes are ejected). WHDLoad's ExpMem ("other memory")
+  needs it: UFO CD32 asks for 1.5 MB ("Can't allocate ExpMem" without).
+- Checked: HeroQuest (A600 KS 2.05 / 3.1, A1200), UFO Enemy Unknown CD32 (A1200 + 4 MB);
+  install-only archives (HATE.lha: the installer and slave, no data) stop in
+  WHDLoad with "object not found", as on a real Amiga.
+- Devices > Hard disk (A600 / A1200): Master and Slave (`machine_set_hdf(unit, ..)`,
+  Config::hdf / hdf_raw and hdf2 / hdf2_raw). Mount... is one list, pico-speccy's
+  rawSourcePick: "Image file (HDF, LHA)..." then the card's partitions (the one in
+  use under the cursor; no partition table: straight to the browser). An LHA goes
+  to the master only (it is the boot drive; the slave holding that image lets go
+  of it); one file or one writable window never sits in both drives.

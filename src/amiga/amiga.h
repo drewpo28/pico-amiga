@@ -119,6 +119,9 @@ typedef struct {
     uint8_t   cpu;           // AMIGA_CPU_68000 / AMIGA_CPU_EC020 (amiga_set_cpu)
     const uint8_t *rom;      uint32_t rom_size;    // 256 KB (mirrored) or 512 KB at $F80000
     const uint8_t *ext_rom;  uint32_t ext_size;    // 0 or 512 KB at $E00000 (AROS ext)
+    // Fast RAM on a Zorro II autoconfig board (mem.c): 0 or 1 / 2 / 4 / 8 MB,
+    // where Kickstart puts it ($200000 on).  WHDLoad's "other memory".
+    uint8_t  *fast_ram;      uint32_t fast_size;
 
     amiga_row_t *framebuffer; // AMIGA_FB_H rows, or NULL (no video)
 
@@ -166,6 +169,9 @@ void amiga_set_roms(const uint8_t *rom, uint32_t rom_size, const uint8_t *ext, u
 // its ID), the buffers staying those of amiga_init().  Takes effect at the next
 // amiga_reset(), a hard one.
 void amiga_set_machine(int chipset, uint32_t chip_size, uint32_t slow_size, uint8_t gayle);
+// The Zorro II fast RAM board (amiga_config_t.fast_ram): size 0 removes it.
+// Takes effect at the next amiga_reset(), a hard one.
+void amiga_set_fast(uint8_t *ram, uint32_t size);
 void amiga_run_frame(void);              // one PAL frame (312 or 313 lines)
 
 void amiga_insert_disk(int drive, const amiga_disk_t *disk);  // drive 0..3
@@ -177,8 +183,9 @@ void amiga_set_drives(int n);
 // The A600's IDE hard disk (Gayle machines only): an HDF image, a whole drive
 // with its RDB or one bare partition (ide.c), read and written a 512-byte
 // sector at a time through the callbacks (write NULL: writes fail); NULL = no
-// drive.  Kickstart looks for it at reset, so a change wants one (hard).
-void amiga_set_hdf(const amiga_disk_t *disk);
+// drive.  unit 0 is the master, 1 the slave (a bare partition there is DH1).
+// Kickstart looks for them at reset, so a change wants one (hard).
+void amiga_set_hdf(int unit, const amiga_disk_t *disk);
 // The CPU (AMIGA_CPU_*): takes effect at the next amiga_reset(), a hard one.
 void amiga_set_cpu(int cpu);
 // The chip bus (a 68EC020 machine; the 68000's is not modelled): on, the CPU
@@ -195,7 +202,7 @@ void amiga_set_chip_bus(bool on);
 void amiga_set_chip_bus_params(int fetch8, int cost8);
 
 // The geometry the drive reports in IDENTIFY (0s: no drive).
-void amiga_hdf_geometry(uint16_t *cyls, uint8_t *heads, uint8_t *sectors);
+void amiga_hdf_geometry(int unit, uint16_t *cyls, uint8_t *heads, uint8_t *sectors);
 
 // Floppy activity, for the platform's disk line (Win+F8) and drive icon: the
 // drive selected (or the last one a DMA used), its head, and what the disk DMA
@@ -210,6 +217,19 @@ typedef struct {
     uint32_t idle;
 } amiga_floppy_t;
 void amiga_floppy_status(amiga_floppy_t *st);
+
+// Hard disk (IDE) activity, for the same: the block the last transfer moved, and
+// running totals the platform turns into a rate.  `idle` counts frames since
+// the last sector moved.
+typedef struct {
+    bool     present;        // a drive is there (either one)
+    uint8_t  op;             // the last transfer: 1 read, 2 write (0 none yet)
+    bool     busy;           // a transfer is running now
+    uint32_t lba;            // the last block it moved (the drive's, the virtual RDB included)
+    uint32_t idle;
+    uint32_t rd_blocks, wr_blocks;   // since the drive went in
+} amiga_ide_t;
+void amiga_ide_status(amiga_ide_t *st);
 
 // Input. Keycodes are Amiga raw keycodes ($00-$67); see src/amiga/keymap.h.
 void amiga_key(uint8_t amiga_code, bool down);

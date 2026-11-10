@@ -9,7 +9,12 @@
 //                   [--drives N] (fewer drives than --adf: the rest wait for --swap)
 //                   [--hdf disk.hdf] (the A600's IDE drive, read from the file a sector at a time;
 //                    written to it only with --write-back, otherwise the drive's writes fail)
+//                   [--hdf2 disk.hdf] (the IDE slave, the same way)
 //                   [--write-back] (disks the Amiga wrote are saved to their files at the end)
+//                   [--fast MB] (a Zorro II fast RAM board: 1, 2, 4 or 8 MB)
+//                   [--lha game.lha|program [--whd DIR] [--lha-out img.hdf]] (the archive, or an Amiga executable, as a bootable
+//                    hard disk, as the firmware builds it: whdboot.c; DIR's files go onto the
+//                    volume too - C/WHDLoad, Devs/Kickstarts/kickN.M + .RTB, S/WHDLoad.prefs)
 //                   [--frames N] [--shot N:file.png]... [--wav out.wav]
 //                   [--slow] [--a500plus | --a600] [--vcentre] [--key N:code:down]... [--status K]
 //                   [--joy N:dirs:fire]... [--mouse N:dx:dy:buttons]...
@@ -35,6 +40,10 @@
 #include "amiga.h"
 #include "amiga_int.h"
 #include "dms.h"
+#include "whdboot.h"
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "m68k.h"
 
 static amiga_row_t fb[AMIGA_FB_H];
@@ -201,6 +210,91 @@ static int hdf_write(void *ctx, uint32_t off, const void *src, uint32_t len) {
     return fseek(f, (long)off, SEEK_SET) || fwrite(src, 1, len, f) != len ? -1 : 0;
 }
 
+// ---- --lha: an LHA archive as a bootable hard disk (whdboot.c) ---------------------------
+static uint32_t lha_fread(void *ctx, uint32_t off, void *dst, uint32_t len) {
+    FILE *f = ctx;
+    if (fseek(f, (long)off, SEEK_SET)) return 0;
+    return (uint32_t)fread(dst, 1, len, f);
+}
+static int img_write(void *ctx, uint32_t off, const void *src, uint32_t len) {
+    return hdf_write(ctx, off, src, len);
+}
+static whd_extra_t whd_extra[256];
+static char whd_paths[256][400], whd_tags[256][24];
+static int whd_nextra;
+static void whd_walk(const char *root, const char *rel) {
+    char dir[600];
+    snprintf(dir, sizeof dir, "%s/%s", root, rel);
+    DIR *d = opendir(dir);
+    if (!d) return;
+    struct dirent *de;
+    while ((de = readdir(d)) && whd_nextra < 256) {
+        if (de->d_name[0] == '.') continue;
+        char r[400], full[1000];
+        snprintf(r, sizeof r, "%s%s%s", rel, rel[0] ? "/" : "", de->d_name);
+        snprintf(full, sizeof full, "%s/%s", root, r);
+        struct stat st;
+        if (stat(full, &st)) continue;
+        if (S_ISDIR(st.st_mode)) { whd_walk(root, r); continue; }
+        uint32_t size;
+        const int k = whd_nextra++;
+        whd_extra[k].data = load(full, &size);
+        whd_extra[k].size = size;
+        snprintf(whd_paths[k], sizeof whd_paths[k], "%s", r);
+        whd_extra[k].path = whd_paths[k];
+        whd_extra[k].kick = whd_kick_tag(r, whd_tags[k]);
+    }
+    closedir(d);
+}
+// The image into `out` (a file opened for writing); its size, 0 = failed.
+static uint32_t build_lha(const char *lha_path, const char *whd_dir, FILE *out) {
+    FILE *f = fopen(lha_path, "rb");
+    if (!f) { fprintf(stderr, "%s: cannot open\n", lha_path); return 0; }
+    if (whd_dir) whd_walk(whd_dir, "");   // before the lone program: whd_extra fills in order
+    whd_job_t job;
+    memset(&job, 0, sizeof job);
+    job.rd = lha_fread; job.rctx = f;
+    // an Amiga executable instead of an archive: it alone, run at boot
+    uint8_t magic[4] = { 0 };
+    if (fread(magic, 1, 4, f) == 4 && magic[0] == 0 && magic[1] == 0 && magic[2] == 3 && magic[3] == 0xF3 && whd_nextra < 256) {
+        const int k = whd_nextra++;
+        uint32_t size;
+        whd_extra[k].data = load(lha_path, &size);
+        whd_extra[k].size = size;
+        const char *b = strrchr(lha_path, '/');
+        snprintf(whd_paths[k], sizeof whd_paths[k], "%.30s", b ? b + 1 : lha_path);
+        whd_extra[k].path = whd_paths[k];
+        whd_extra[k].kick = "";
+        job.rd = NULL;
+        job.run = whd_paths[k];
+    }
+    job.extra = whd_extra; job.extra_count = whd_nextra;
+    char vol[64];
+    const char *b = strrchr(lha_path, '/');
+    snprintf(vol, sizeof vol, "%s", b ? b + 1 : lha_path);
+    char *dot = strrchr(vol, '.');
+    if (dot) *dot = 0;
+    vol[30] = 0;
+    job.volume = vol;
+    job.unix_time = (uint32_t)time(NULL);
+    const uint32_t arena_size = 4u << 20;
+    void *arena = malloc(arena_size);
+    int r = whd_plan(&job, arena, arena_size);
+    if (r == WHD_OK) {
+        if (ftruncate(fileno(out), (off_t)job.blocks * 512)) r = WHD_ERR_WRITE;
+        else r = whd_write(&job, arena, img_write, out);
+    }
+    fflush(out);
+    free(arena);
+    fclose(f);
+    fprintf(stderr, "lha: %s -> %u KB: %s; slave %s (chip %u KB, other %u KB), program %s, kick %s%s%s\n",
+            lha_path, job.blocks / 2, whd_error(r), job.slave[0] ? job.slave : "-",
+            job.base_mem / 1024, job.exp_mem / 1024, job.program[0] ? job.program : "-",
+            job.kicks[0] ? job.kicks : "-", job.missing[0] ? ", missing " : "", job.missing);
+    fprintf(stderr, "lha: boots with: %s\n", job.command);
+    return r == WHD_OK ? job.blocks * 512 : 0;
+}
+
 // --render-thread: Denise on a second thread, as the firmware runs it on core 1.
 static void *render_thread(void *arg) {
     (void)arg;
@@ -244,7 +338,9 @@ static int64_t rtc_time(void *ctx) {
 int main(int argc, char **argv) {
     const char *rom_path = NULL, *ext_path = NULL, *wav_path = NULL;
     const char *adf_path[8] = {0}; int nadf = 0;
-    const char *hdf_path = NULL;
+    const char *hdf_path = NULL, *hdf2_path = NULL;
+    const char *lha_path = NULL, *whd_dir = NULL, *lha_out = NULL;
+    int fast_mb = 0;
     int load_test = 0;        // the first 4 go in DF0..DF3, the rest wait for --swap
     int frames = 250, status_every = 0, scale = 1, drives_opt = 0;
     bool slow = false, render_thread_on = false, plus = false, a600 = false, a601 = false, cpu020 = false, a1200 = false, aga = false, vcentre = false, write_back = false;
@@ -268,6 +364,11 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--ext") && v) { ext_path = v; i++; }
         else if (!strcmp(a, "--adf") && v && nadf < 8) { adf_path[nadf++] = v; i++; }
         else if (!strcmp(a, "--hdf") && v) { hdf_path = v; i++; }
+        else if (!strcmp(a, "--hdf2") && v) { hdf2_path = v; i++; }          // the IDE slave
+        else if (!strcmp(a, "--lha") && v) { lha_path = v; i++; }
+        else if (!strcmp(a, "--fast") && v) { fast_mb = atoi(v); i++; }   // Zorro II fast RAM, MB (1/2/4/8)
+        else if (!strcmp(a, "--whd") && v) { whd_dir = v; i++; }
+        else if (!strcmp(a, "--lha-out") && v) { lha_out = v; i++; }
         else if (!strcmp(a, "--load-test") && v) { load_test = atoi(v); i++; }   // DF0, DF1, ...
         else if (!strcmp(a, "--frames") && v) { frames = atoi(v); i++; }
         else if (!strcmp(a, "--wav") && v) { wav_path = v; i++; }
@@ -344,6 +445,7 @@ int main(int argc, char **argv) {
     cfg.track = track;
     cfg.serial_out = serial_out;
     cfg.prof_clock = prof_clock;            // --status: the core's buckets, ns
+    if (fast_mb) { cfg.fast_size = (uint32_t)fast_mb << 20; cfg.fast_ram = calloc(1, cfg.fast_size); }
     amiga_init(&cfg);
     amiga_set_vcentre(vcentre);
     amiga_set_chip_bus(chip_bus < 0 ? a1200 : chip_bus != 0);   // the A1200's 68EC020 waits for the chip bus
@@ -372,7 +474,23 @@ int main(int argc, char **argv) {
         if (!hdf) { fprintf(stderr, "%s: cannot open\n", hdf_path); return 1; }
         fseek(hdf, 0, SEEK_END);
         const amiga_disk_t d = { hdf_read, write_back ? hdf_write : NULL, hdf, (uint32_t)ftell(hdf) };
-        amiga_set_hdf(&d);
+        amiga_set_hdf(0, &d);
+        amiga_reset(true);
+    }
+    if (hdf2_path) {
+        FILE *f2 = fopen(hdf2_path, write_back ? "r+b" : "rb");
+        if (!f2) { fprintf(stderr, "%s: cannot open\n", hdf2_path); return 1; }
+        fseek(f2, 0, SEEK_END);
+        const amiga_disk_t d = { hdf_read, write_back ? hdf_write : NULL, f2, (uint32_t)ftell(f2) };
+        amiga_set_hdf(1, &d);
+        amiga_reset(true);
+    }
+    if (lha_path) {
+        hdf = lha_out ? fopen(lha_out, "w+b") : tmpfile();
+        const uint32_t size = hdf ? build_lha(lha_path, whd_dir, hdf) : 0;
+        if (!size) return 1;
+        const amiga_disk_t d = { hdf_read, hdf_write, hdf, size };
+        amiga_set_hdf(0, &d);
         amiga_reset(true);
     }
     if (wav_path) wav_open(wav_path);

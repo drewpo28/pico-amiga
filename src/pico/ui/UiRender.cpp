@@ -435,7 +435,7 @@ static void drawRightRow(int visRow) {
             const bool on = (nodeValue(*n) == o.value);
             // Marker on the right, as in the design: hollow ring, filled when chosen.
             // PICO-AMIGA: a pick list marks only its current row - its other rows
-            // are verbs (Devices > Disks > DFn), not choices.
+            // are verbs (Devices > Floppy drives > DFn), not choices.
             if (n->kind != K_PICK || on)
                 radio(LY.rx + LY.rw - LY.pad - radioW(), y + (LY.row_h - 5) / 2, on,
                       sel ? C_WHITE : C_DISABLED, C_ACCENT);

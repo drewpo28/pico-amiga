@@ -15,13 +15,15 @@
 //   its ID at $DD0000-$DEFFFF, no clock ($DC0000 reads 0) - WinUAE's map
 //   $DF0000-$DFFFFF  custom chips
 //   $E00000-$E7FFFF  extended ROM (AROS) if supplied
-//   $E80000-$EFFFFF  Zorro II autoconfig space (empty: reads 0)
+//   $E80000-$EFFFFF  Zorro II autoconfig space: the fast RAM board (cfg.fast_size)
+//                    until Kickstart configures it, then empty (reads 0)
+//   $200000-$9FFFFF  that board's fast RAM, where Kickstart put it
 //   $F80000-$FFFFFF  Kickstart ROM (256 KB images appear twice)
 #include <string.h>
 #include "amiga_int.h"
 #include "m68k.h"
 
-enum { B_NONE = 0, B_CIA, B_CUSTOM, B_RTC, B_GAYLE, B_GAYLE_ID };
+enum { B_NONE = 0, B_CIA, B_CUSTOM, B_RTC, B_GAYLE, B_GAYLE_ID, B_AUTOCONF };
 
 typedef struct {
     const uint8_t *rd;   // direct read base, or NULL
@@ -63,6 +65,74 @@ static void map_low(void) {
     }
 }
 
+// ---- the Zorro II fast RAM board (WinUAE's expansion.cpp) ------------------------
+// Its autoconfig ROM at $E80000: each register byte as two nibbles, in the high
+// halves of the bytes at $00/$02, $04/$06, ..., inverted but for
+// er_Type ($00) and the base address registers ($40-$42).  Kickstart writes the
+// base's low nibble to $4A, then its high byte to $48, which configures the board;
+// $4C shuts it up.  Unconfigured by any reset (mem_init) and the RESET
+// instruction, as boards are.
+static uint8_t  z2_rom[128];
+static bool     z2_done;            // configured or shut up: the space reads empty
+static uint8_t  z2_lo;
+static uint32_t z2_base;            // 0: not mapped
+
+static void z2_reg(int r, uint8_t v) {
+    const bool plain = r == 0x00 || r == 0x40;
+    z2_rom[r]     = plain ? (uint8_t)(v & 0xF0) : (uint8_t)~(v & 0xF0);
+    z2_rom[r + 2] = plain ? (uint8_t)((v & 0x0F) << 4) : (uint8_t)~((v & 0x0F) << 4);
+}
+
+static void z2_init(void) {
+    const uint32_t size = A.cfg.fast_ram ? A.cfg.fast_size : 0;
+    uint8_t code = 0;                                        // 8 MB
+    if (size == 1u << 20) code = 5; else if (size == 2u << 20) code = 6; else if (size == 4u << 20) code = 7;
+    memset(z2_rom, 0xFF, sizeof z2_rom);
+    z2_reg(0x00, (uint8_t)(0xC0 | 0x20 | code));             // Zorro II, add to the free list, size
+    z2_reg(0x04, 0x51);                                      // er_Product
+    z2_reg(0x08, 0x00);                                      // er_Flags
+    z2_reg(0x10, 0x07); z2_reg(0x14, 0xDB);                  // er_Manufacturer (WinUAE's 2011)
+    for (int r = 0x18; r <= 0x2C; r += 4) z2_reg(r, 0x00);   // serial number, no diag ROM
+    z2_done = !size;
+    z2_lo = 0;
+}
+
+static void z2_unmap(void) {
+    if (!z2_base) return;
+    const uint32_t size = A.cfg.fast_size;
+    map((int)(z2_base >> 16), (int)(size >> 16), NULL, NULL, 0, B_NONE);
+    z2_base = 0;
+}
+
+static void z2_map(uint32_t base) {
+    const uint32_t size = A.cfg.fast_size;
+    if (base < 0x200000 || base + size > 0xA00000) return;   // Zorro II's 8 MB space only
+    z2_base = base;
+    map((int)(base >> 16), (int)(size >> 16), A.cfg.fast_ram, A.cfg.fast_ram, size - 1, B_NONE);
+}
+
+void mem_autoconfig_reset(void) {
+    z2_unmap();
+    z2_init();
+}
+
+static uint8_t z2_read8(uint32_t a) {
+    return z2_done ? 0 : z2_rom[a & 0x7F];
+}
+
+static void z2_write8(uint32_t a, uint8_t v) {
+    if (z2_done) return;
+    switch (a & 0xFF) {
+    case 0x4A: z2_lo = v; break;
+    case 0x48:
+        z2_map((uint32_t)(v | (z2_lo >> 4)) << 16);
+        z2_done = true;
+        break;
+    case 0x4C: z2_done = true; break;                        // shut up
+    default: break;
+    }
+}
+
 void mem_init(void) {
     const amiga_config_t *c = &A.cfg;
     memset(banks, 0, sizeof banks);
@@ -82,6 +152,9 @@ void mem_init(void) {
     if (c->ext_rom && c->ext_size)
         map(0xE0, 0x08, c->ext_rom, NULL, c->ext_size - 1, B_NONE);
     map(0xF8, 0x08, c->rom, NULL, c->rom_size - 1, B_NONE);
+    z2_base = 0;
+    z2_init();
+    if (c->fast_ram && c->fast_size) map(0xE8, 0x01, NULL, NULL, 0, B_AUTOCONF);
     overlay = true;
     map_low();
 }
@@ -94,11 +167,24 @@ void mem_set_overlay(bool on) {
 
 bool mem_overlay(void) { return overlay; }
 
-// Snapshots: the map is the configuration's (mem_init), only the overlay moves.
+// Snapshots: the map is the configuration's (mem_init); the overlay moves, and
+// the fast RAM board's configuration (at the end: older snapshots read it
+// unconfigured).
 void mem_state(st_t *s) {
     bool ov = overlay;
     st_bool(s, &ov);
     if (s->mode == ST_LOAD) mem_set_overlay(ov);
+    bool done = z2_done;
+    uint32_t base = z2_base;
+    st_bool(s, &done); st_u8(s, &z2_lo); st_u32(s, &base);
+    if (s->mode == ST_LOAD) {
+        z2_unmap();
+        z2_init();
+        if (A.cfg.fast_ram && A.cfg.fast_size) {
+            if (base) z2_map(base);
+            z2_done = done;
+        }
+    }
 }
 
 // ---- I/O banks --------------------------------------------------------------
@@ -117,6 +203,8 @@ AMIGA_HOT static uint8_t io_read8(uint32_t a, int io) {
         return gayle_read(a);
     case B_GAYLE_ID:
         return gayle_id_read(a);
+    case B_AUTOCONF:
+        return z2_read8(a);
     default:
         return 0;
     }
@@ -136,6 +224,7 @@ AMIGA_HOT static uint16_t io_read16(uint32_t a, int io) {
     case B_GAYLE:
         return gayle_read16(a);
     case B_GAYLE_ID:                // a byte at a time, the high one first, as WinUAE
+    case B_AUTOCONF:
         return (uint16_t)((io_read8(a, io) << 8) | io_read8(a + 1, io));
     default:
         return 0;
@@ -161,6 +250,9 @@ AMIGA_HOT static void io_write8(uint32_t a, uint8_t v, int io) {
     case B_GAYLE_ID:
         gayle_id_write();
         break;
+    case B_AUTOCONF:
+        z2_write8(a, v);
+        break;
     default:
         break;
     }
@@ -184,6 +276,9 @@ AMIGA_HOT static void io_write16(uint32_t a, uint16_t v, int io) {
     case B_GAYLE_ID:
         io_write8(a, (uint8_t)(v >> 8), io);
         io_write8(a + 1, (uint8_t)v, io);
+        break;
+    case B_AUTOCONF:                // the board's registers sit on the even byte
+        z2_write8(a, (uint8_t)(v >> 8));
         break;
     default:
         break;

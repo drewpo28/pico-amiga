@@ -111,6 +111,12 @@
   $C00000-$D7FFFF, no clock. An empty IDE port reads $7F in the status register
   and $FF elsewhere (WinUAE's "IDE killer"): KS 2.05 writes $12 to the cylinder
   register, reads $FF back and boots at once instead of waiting ~30 s.
+- **Fast RAM is a Zorro II autoconfig board (mem.c, WinUAE's expansion.cpp)**:
+  er_Type $E0 | size (Zorro II, memory, linked into the free list), the other
+  registers inverted nibbles; Kickstart writes $4A then $48 (the base, $200000)
+  and the board maps there. Any reset and the RESET instruction unconfigure it:
+  ColdReboot (WHDLoad's quit) runs RESET, then the ROM configures it again.
+  Snapshots keep the base (MEM's end) and the contents (FAST).
 - **AGA (A.aga; the firmware's A1200, the bench's `--aga`)**:
   Alice $23 / Lisa $F8; Lisa's 256 colours - the producer (denise_write) resolves
   BANK, drops LOCT writes (low nibbles: the 12-bit output does not show them) and
@@ -128,6 +134,11 @@
   track, 1 surface, 2 reserved, the image from block 32). The hard disk can also be
   an SD partition (pico-speccy's raw IDE window, ide_mbr.h; machine.cpp), never
   writable over the card's own FAT volume; the PC firmware takes `--sd card.img`.
+  Two drives (master, slave: `amiga_set_hdf(unit, ..)`, the bench's `--hdf2`) share one
+  task file and one transfer - a command runs on the drive bit 4 of the select
+  register names; with one drive the other's status reads $01 and its registers 0
+  (WinUAE's absent half of a pair), whichever of the two it is. A bare partition
+  on the slave is DH1 in its virtual RDB (two DH0s would be renamed by the boot).
 - **FFS validates a new partition in RAM**: Format in 2.x writes the root block with the
   bitmap flag clear and FFS builds the bitmap at the first mount, holding blocks/8
   bytes at once. A 2 GB Work (4.17M blocks, ~520 KB) on a 1 MB A600 reports "Volume

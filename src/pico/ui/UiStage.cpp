@@ -67,7 +67,7 @@ static bool hook_df0wp(int32_t, int32_t) {
     return path.empty() || machine_insert(0, path.c_str(), Config::df0_wp);
 }
 
-// Devices > Disks > DF0 with an .m3u set: which of its disks is in the drive.  Read for
+// Devices > Floppy drives > DF0 with an .m3u set: which of its disks is in the drive.  Read for
 // the pick list's marker; the list itself swaps disks (machine_set_select).
 static int32_t get_df0disk() { return machine_set_index(); }
 static void    put_df0disk(int32_t v) { Config::df0_disk = (uint8_t)v; }
@@ -102,6 +102,10 @@ static bool hook_chipbus(int32_t, int32_t) {
 }
 static bool hook_a600chip(int32_t, int32_t) {
     return Config::machine != MACHINE_A600 || machine_apply_kickstart();
+}
+NM_INT_ACCESS (fastram,   fast_ram,   uint8_t)
+static bool hook_fastram(int32_t, int32_t) {
+    return (Config::machine != MACHINE_A600 && Config::machine != MACHINE_A1200) || machine_apply_kickstart();
 }
 // Kickstart looks for drives at reset: a new count resets the Amiga.
 static bool hook_drives(int32_t, int32_t) {
