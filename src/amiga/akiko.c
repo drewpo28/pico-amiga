@@ -34,8 +34,13 @@
 // in BCD and the mode) at +12 and the data at +16.  cd.device checks nothing
 // behind the data, so the EDC / ECC bytes are whatever the platform left.
 //
-// CD audio: the play command runs (the notifications, the position in subcode
-// Q, the end), but silently - no samples are mixed in yet.
+// CD audio: a play command over audio tracks is heard - akiko_audio, called by
+// Paula for each output sample (31300 Hz), takes the disc's 44100 Hz frames
+// from the platform a sector (588 frames) at a time, the nearest one for each
+// sample, and adds them at half level to Paula's (clamped).  Both clocks are
+// counted from the lines (75 sectors and 31300 samples a second), so the audio's
+// own sector follows play_pos; it is put back on it when they part (a pause, a
+// snapshot).
 #include <string.h>
 #include "amiga_int.h"
 #include "m68k.h"
@@ -87,6 +92,12 @@ static uint8_t  seek_delay, tx_delay, rx_delay;
 static uint32_t play_pos, play_end;      // CD audio, sectors
 static uint16_t tick_acc, play_acc;      // line counters: a sector's time
 static uint8_t  led;
+
+// CD audio's read position: not in snapshots (it follows play_pos).
+static const uint8_t *a_ptr;             // the sector being played, NULL: silence
+static uint32_t a_lsn;
+static uint16_t a_frame, a_frac;         // the frame in it, and 313ths of the next
+static bool     a_on;
 
 // Activity (amiga_cd_status): not in snapshots.
 static uint32_t act_frame, act_lsn, act_sectors;
@@ -218,8 +229,34 @@ static uint8_t c2p_read(int off) {
     return (uint8_t)(c2p_out[c2p_rd] >> (8 * (3 - off)));
 }
 
+// ---- CD audio ---------------------------------------------------------------------------
+AMIGA_HOT void akiko_audio(int32_t *l, int32_t *r) {
+    if (playing != 2 || paused || !cd.audio) { a_on = false; return; }
+    const uint32_t d = a_lsn > play_pos ? a_lsn - play_pos : play_pos - a_lsn;
+    if (!a_on || d > 2) {                                 // (re)start on the drive's sector
+        a_on = true;
+        a_lsn = play_pos; a_frame = 0; a_frac = 0;
+        a_ptr = cd.audio(cd.ctx, a_lsn);
+    }
+    if (a_ptr) {
+        int16_t s[2];
+        memcpy(s, a_ptr + 4u * a_frame, 4);
+        int32_t x = *l + s[0] / 2, y = *r + s[1] / 2;
+        *l = x > 32767 ? 32767 : x < -32768 ? -32768 : x;
+        *r = y > 32767 ? 32767 : y < -32768 ? -32768 : y;
+    }
+    a_frac += 441;                                        // 44100 / 31300 frames a sample
+    a_frame += a_frac / 313; a_frac %= 313;
+    if (a_frame >= 588) {
+        a_frame -= 588;
+        a_lsn++;
+        a_ptr = a_lsn < play_end ? cd.audio(cd.ctx, a_lsn) : NULL;
+    }
+}
+
 // ---- the drive ------------------------------------------------------------------------
 static void audio_stop(void) {
+    a_on = false; a_ptr = NULL;
     audiotimeout = 0;
     paused = false;
     playing = 0;
@@ -472,6 +509,7 @@ static void run_read(void) {
     const uint32_t off = (addr_data + (uint32_t)n * 4096u) & 0xFFFFFF;
     if (off + 4096u > A.cfg.chip_size) return;            // the CD32 has chip RAM only
     uint8_t *p = A.cfg.chip_ram + off;
+    a_on = false; a_ptr = NULL;                           // the platform's buffer is the read's now
     const int mode = cd.read(cd.ctx, sector, p + 16);
     if (mode < 0) return;                                 // it comes round again
     p[0] = p[1] = p[2] = 0;
@@ -767,5 +805,6 @@ void akiko_state(st_t *s) {
         c2p_wr &= 7;
         ee_addr &= 1023;
         disk = cd.tracks != 0;
+        a_on = false; a_ptr = NULL;
     }
 }

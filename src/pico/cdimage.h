@@ -40,9 +40,9 @@ bool cd_parse_cue(const char *text, uint32_t len, cd_toc_t *toc, cd_file_fn file
 // An .iso of `size` bytes: one data track, file 0.
 bool cd_from_iso(uint32_t size, cd_toc_t *toc);
 
-// Where a data sector is: its file, the byte offset of its stored bytes there,
+// Where a sector is (mode 0: an audio track's, 2352 bytes of samples): its file, the byte offset of its stored bytes there,
 // how many a sector (2048 / 2336 / 2352), its mode, and how many sectors of the
-// track follow from it (itself included) at that spacing.  False: in no data track.
+// track follow from it (itself included) at that spacing.  False: in no track.
 bool cd_locate(const cd_toc_t *toc, uint32_t lsn, int *file, uint32_t *off, uint32_t *secsize, int *mode, uint32_t *run);
 // A sector as stored (secsize bytes at src) into Akiko's 2336 bytes at dst.
 void cd_unpack_sector(const uint8_t *src, uint32_t secsize, uint8_t *dst);

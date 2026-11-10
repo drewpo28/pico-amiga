@@ -18,7 +18,7 @@ picture and sound over HDMI, or picture over VGA.
 | A500 | 68000 at 7.09 MHz, OCS, 512 KB chip RAM + 512 KB slow RAM |
 | A500+ | ECS (super-hires, the 8375 Agnus / 8373 Denise IDs), 1 MB chip RAM, battery clock |
 | A600 | as the A500+, with Gayle and no clock; IDE hard disks (master and slave): an HDF (with an RDB or one bare partition) or an SD card partition |
-| CD32 | AGA, a 68EC020, 2 MB chip RAM, Akiko: the CD drive (an `.iso`, or a `.cue` with its BINARY track files), the NVRAM for saves, chunky-to-planar, the pad. CD audio tracks play silently for now |
+| CD32 | AGA, a 68EC020, 2 MB chip RAM, Akiko: the CD drive (an `.iso`, or a `.cue` with its BINARY track files), the NVRAM for saves, chunky-to-planar, the pad. CD audio tracks (a `.cue` with AUDIO tracks, 2352 bytes a sector) are mixed in with Paula |
 | Display | lowres, hires at its full 640 pixels, HAM, interlace with both fields, sprites, copper, blitter |
 | Sound | Paula, 4 DMA channels |
 | Disks | DF0-DF3: ADF streamed from the SD card and written back to it; DMS unpacked into PSRAM (write-protected); `.m3u` disk sets |

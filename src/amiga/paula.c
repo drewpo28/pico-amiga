@@ -117,10 +117,12 @@ AMIGA_HOT void paula_half_line(void) {
         int32_t s = c->sample * v;              // -8192 .. 8128
         if (i == 0 || i == 3) l += s; else r += s;
     }
+    l *= 2; r *= 2;
+    if (A.cfg.akiko) akiko_audio(&l, &r);
     if (A.cfg.audio_ring) {
         uint32_t idx = (audio_pos & (A.cfg.audio_frames - 1)) * 2;
-        A.cfg.audio_ring[idx]     = (int16_t)(l * 2);
-        A.cfg.audio_ring[idx + 1] = (int16_t)(r * 2);
+        A.cfg.audio_ring[idx]     = (int16_t)l;
+        A.cfg.audio_ring[idx + 1] = (int16_t)r;
     }
     audio_pos++;
 }

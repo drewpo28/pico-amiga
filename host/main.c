@@ -240,6 +240,13 @@ static void cd_track(void *ctx __attribute__((unused)), int n, uint32_t *lsn, ui
     *lsn = cd_toc.t[n - 1].lsn;
     *ctrl = cd_toc.t[n - 1].mode ? 4 : 0;
 }
+static const uint8_t *cd_audio(void *ctx __attribute__((unused)), uint32_t lsn) {
+    static uint8_t buf[2352];
+    int file, mode;
+    uint32_t off, ss, run;
+    if (!cd_locate(&cd_toc, lsn, &file, &off, &ss, &mode, &run) || mode || !cd_fread(NULL, file, off, buf, 2352)) return NULL;
+    return buf;
+}
 static bool cd_open(const char *path) {
     const char *slash = strrchr(path, '/');
     snprintf(cd_dir, sizeof cd_dir, "%.*s", slash ? (int)(slash - path + 1) : 0, path);
@@ -259,7 +266,7 @@ static bool cd_open(const char *path) {
         fprintf(stderr, "cd: track %d %s/%u, sectors %u+%u, file %u at %u\n", i + 1,
                 cd_toc.t[i].mode ? cd_toc.t[i].mode == 1 ? "MODE1" : "MODE2" : "AUDIO", cd_toc.t[i].secsize,
                 cd_toc.t[i].lsn, cd_toc.t[i].sectors, cd_toc.t[i].file, cd_toc.t[i].foff);
-    const amiga_cd_t cd = { cd_sector, cd_track, NULL, (uint8_t)cd_toc.tracks, cd_toc.leadout };
+    const amiga_cd_t cd = { cd_sector, cd_track, cd_audio, NULL, (uint8_t)cd_toc.tracks, cd_toc.leadout };
     amiga_set_cd(&cd);
     return true;
 }

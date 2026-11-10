@@ -147,7 +147,6 @@ bool cd_locate(const cd_toc_t *toc, uint32_t lsn, int *file, uint32_t *off, uint
     for (int i = 0; i < toc->tracks; i++) {
         const cd_track_t *t = &toc->t[i];
         if (lsn < t->lsn || lsn >= t->lsn + t->sectors) continue;
-        if (!t->mode) return false;
         *file = t->file;
         *off = t->foff + (lsn - t->lsn) * t->secsize;
         *secsize = t->secsize;
@@ -166,7 +165,7 @@ void cd_unpack_sector(const uint8_t *src, uint32_t secsize, uint8_t *dst) {
 int cd_read_sector(const cd_toc_t *toc, uint32_t lsn, uint8_t *dst, cd_read_fn rd, void *ctx) {
     int file, mode;
     uint32_t off, ss, run;
-    if (!cd_locate(toc, lsn, &file, &off, &ss, &mode, &run)) return -1;
+    if (!cd_locate(toc, lsn, &file, &off, &ss, &mode, &run) || !mode) return -1;
     if (ss == 2048) {
         if (!rd(ctx, file, off, dst, 2048)) return -1;
         memset(dst + 2048, 0, 2336 - 2048);

@@ -200,11 +200,17 @@ bool amiga_cd_nvram_dirty(void);
 // 2336 bytes that follow a sector's 16-byte header at dst (a MODE1 sector: its
 // 2048 data bytes, the rest as it comes) and returns the sector's mode (1 or 2),
 // or a negative number when it cannot be read.  track() gives track n's (1..tracks)
-// first sector and control nibble (4 = data, 0 = audio).  NULL or no tracks: no
+// first sector and control nibble (4 = data, 0 = audio).  An audio track plays
+// through audio(), mixed into the audio ring with Paula.  NULL or no tracks: no
 // disc.  May change while the Amiga runs (the drive reports the change).
 typedef struct {
     int  (*read)(void *ctx, uint32_t lsn, uint8_t *dst);
     void (*track)(void *ctx, int n, uint32_t *lsn, uint8_t *ctrl);
+    // CD audio: sector lsn of an audio track as 588 stereo frames (2352 bytes,
+    // 16-bit little-endian, left first: the disc's own order) in the platform's
+    // memory, valid until the next call of read or audio; NULL = silence (a gap,
+    // no audio support).  May be NULL altogether.
+    const uint8_t *(*audio)(void *ctx, uint32_t lsn);
     void *ctx;
     uint8_t  tracks;         // 1..99
     uint32_t leadout;        // the sector after the last track

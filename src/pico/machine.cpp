@@ -234,23 +234,38 @@ static bool cd_read_cb(void *ctx, int index, uint32_t off, void *dst, uint32_t l
     UINT n = 0;
     return f_lseek(&d->f, off) == FR_OK && f_read(&d->f, dst, len, &n) == FR_OK && n == len;
 }
-static int cd_sector(void *, uint32_t lsn, uint8_t *dst) {
-    CdDisc *d = s_cd;
-    if (!d) return -1;
+// The sector as its file holds it, from the read-ahead buffer (filled from lsn on
+// when it is not there); NULL: in no track, unreadable, or no buffer.
+static const uint8_t *cd_cached(CdDisc *d, uint32_t lsn) {
     uint8_t *buf = s_dms_area && s_dms_size + CD_AHEAD <= s_dms_total - s_fast_size ? s_dms_area + s_dms_total - CD_AHEAD : NULL;
-    if (!buf) return cd_read_sector(&d->toc, lsn, dst, cd_read_cb, d);
+    if (!buf) return NULL;
     if (lsn < d->c_lsn || lsn >= d->c_lsn + d->c_n) {
         int file, mode;
         uint32_t off, ss, run;
         d->c_n = 0;
-        if (!cd_locate(&d->toc, lsn, &file, &off, &ss, &mode, &run)) return -1;
+        if (!cd_locate(&d->toc, lsn, &file, &off, &ss, &mode, &run)) return NULL;
         uint32_t n = run < CD_RUN ? run : CD_RUN;
         if (n * ss > CD_AHEAD) n = CD_AHEAD / ss;
-        if (!cd_read_cb(d, file, off, buf, n * ss)) return -1;
+        if (!cd_read_cb(d, file, off, buf, n * ss)) return NULL;
         d->c_lsn = lsn; d->c_n = n; d->c_ss = ss; d->c_mode = mode;
     }
-    cd_unpack_sector(buf + (lsn - d->c_lsn) * d->c_ss, d->c_ss, dst);
+    return buf + (lsn - d->c_lsn) * d->c_ss;
+}
+static int cd_sector(void *, uint32_t lsn, uint8_t *dst) {
+    CdDisc *d = s_cd;
+    if (!d) return -1;
+    const uint8_t *p = cd_cached(d, lsn);
+    if (!p) return d->c_n ? -1 : cd_read_sector(&d->toc, lsn, dst, cd_read_cb, d);   // no buffer: a sector a read
+    if (!d->c_mode) return -1;
+    cd_unpack_sector(p, d->c_ss, dst);
     return d->c_mode;
+}
+// CD audio (akiko_audio): the sector's samples where they are in the buffer.
+static const uint8_t *cd_audio(void *, uint32_t lsn) {
+    CdDisc *d = s_cd;
+    if (!d) return NULL;
+    const uint8_t *p = cd_cached(d, lsn);
+    return p && !d->c_mode && d->c_ss == 2352 ? p : NULL;
 }
 static void cd_track(void *, int n, uint32_t *lsn, uint8_t *ctrl) {
     if (!s_cd || n < 1 || n > s_cd->toc.tracks) return;
@@ -296,7 +311,7 @@ bool machine_set_cd(const char *path) {
     s_cd_path = path;
     printf("cd: %s, %d track%s, %u MB\n", path, d->toc.tracks, d->toc.tracks == 1 ? "" : "s",
            (unsigned)(d->toc.leadout / 512));
-    const amiga_cd_t cd = { cd_sector, cd_track, NULL, (uint8_t)d->toc.tracks, d->toc.leadout };
+    const amiga_cd_t cd = { cd_sector, cd_track, cd_audio, NULL, (uint8_t)d->toc.tracks, d->toc.leadout };
     amiga_set_cd(&cd);
     return true;
 }

@@ -204,6 +204,31 @@ if [ -f "$CD" ] && [ -f "$KS/kick40060.CD32" ] && [ -f "$KS/kick40060.CD32.ext" 
     $BIN --rom "$KS/kick40060.CD32" --ext "$KS/kick40060.CD32.ext" --cd32 --cd "$CD" --frames 1000 \
          --state-load "$OUT/cd32.state" --shot 1000:"$OUT/cd32-b.png" > /dev/null 2>&1
     if cmp -s "$OUT/cd32-a.png" "$OUT/cd32-b.png"; then echo "PASS cd32 snapshot round trip"; else echo "FAIL cd32 snapshot round trip"; fail=1; fi
+    # CD audio: a disc of two AUDIO tracks holding a 440 Hz tone (left at full
+    # level, right inverted at half); the red button starts it, and the bench's
+    # WAV then has the tone at half level - 440 cycles a second, L + 2R = 0.
+    mkdir -p "$OUT/cda"
+    python3 - "$OUT/cda" <<'PY'
+import sys, struct, math
+o = sys.argv[1]
+d = bytearray()
+for i in range(44100 * 40):
+    v = int(12000 * math.sin(2 * math.pi * 440 * i / 44100))
+    d += struct.pack('<hh', v, -v // 2)
+open(o + '/a.bin', 'wb').write(d[:len(d) // 2352 * 2352])
+open(o + '/a.cue', 'w').write('FILE "a.bin" BINARY\n  TRACK 01 AUDIO\n    INDEX 01 00:00:00\n  TRACK 02 AUDIO\n    INDEX 01 00:20:00\n')
+PY
+    $BIN --rom "$KS/kick40060.CD32" --ext "$KS/kick40060.CD32.ext" --cd32 --cd "$OUT/cda/a.cue" --frames 1700 \
+         --pad 1500:32 --pad 1520:0 --wav "$OUT/cda/a.wav" > /dev/null 2>&1
+    python3 - "$OUT/cda/a.wav" <<'PY' && echo "PASS cd32 cd audio" || { echo "FAIL cd32 cd audio"; fail=1; }
+import sys, wave, struct
+w = wave.open(sys.argv[1]); r = w.getframerate(); n = w.getnframes()
+d = struct.unpack('<%dh' % (2 * n), w.readframes(n))
+L = d[2 * 32 * r:2 * 33 * r:2]; R = d[2 * 32 * r + 1:2 * 33 * r:2]
+zc = sum(1 for i in range(1, len(L)) if (L[i - 1] < 0) != (L[i] < 0)) // 2
+ok = 438 <= zc <= 442 and 11900 <= max(L) - min(L) <= 12100 and max(abs(a + 2 * b) for a, b in zip(L, R)) <= 2
+sys.exit(0 if ok else 1)
+PY
 fi
 
 exit $fail

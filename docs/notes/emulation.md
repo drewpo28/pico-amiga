@@ -339,8 +339,12 @@
   24C08 bit-banged on $B80030 (1 KB of the platform's; machine.cpp keeps it in
   /pico-amiga/cd32.nvram). The pad (port 2): POTGO pin 5 as an output and low
   makes it a shift register clocked by CIA-A PRA bit 7, read on POTGOR bit 14 -
-  blue, red, yellow, green, forward, reverse, play, then 1, then 0s. CD audio:
-  the play command, its notifications and subcode Q run, no samples are mixed.
+  blue, red, yellow, green, forward, reverse, play, then 1, then 0s. CD audio
+  (akiko_audio, from paula_half_line): the disc's 44100 Hz frames a sector at a
+  time through amiga_cd_t.audio (a pointer into the platform's memory: the
+  firmware's read-ahead buffer), the nearest frame for each 31300 Hz sample, at
+  half level over Paula's, clamped; its sector follows play_pos (both counted
+  from the lines). Checked with a made-up tone disc only (smoke), no game yet.
 - **An interlaced row with one field over 16 colours stays DIRECT for both** (w_begin,
   amiga_row_t.pad = 1 + the field that overflowed): entering LACE4 for the other
   field blanked the first one's line until it was drawn and overflowed again - a

@@ -323,6 +323,7 @@ void     akiko_write(uint32_t a, uint8_t v);
 void     akiko_write16(uint32_t a, uint16_t v);
 void     akiko_write32(uint32_t a, uint32_t v);
 void     akiko_line(void);                          // per line: the drive, its interrupt
+void     akiko_audio(int32_t *l, int32_t *r);       // per output sample (paula.c): CD audio added in
 
 // ---- the IDE drive behind Gayle (ide.c) ------------------------------------
 void     ide_insert(int unit, const amiga_disk_t *d);   // 0 master, 1 slave; NULL: no drive

@@ -158,7 +158,6 @@ static int describeCd(int32_t tag, DescLine* out, int max) {
         n = rule(out, n, max, "A .cue with its track");
         n = rule(out, n, max, "files beside it");
         n = rule(out, n, max, "The CD32 restarts");
-        n = rule(out, n, max, "CD audio is silent");
         break;
     case DRV_T_EJECT:
         n = rule(out, n, max, "The drive is empty");
