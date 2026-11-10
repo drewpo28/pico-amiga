@@ -704,7 +704,7 @@ static const Option* hdOpts(int u, uint8_t& cnt) {
     uint8_t n = 0;
     const char* p = machine_hdf(u);
     if (*p) {
-        snprintf(name, sizeof name, "%s: %s%s", baseName(p), machine_hdf_kind(u), machine_hdf_ro(u) ? ", RO" : "");
+        snprintf(name, sizeof name, "%s", baseName(p));     // what it holds: the description (UiDesc.cpp)
         o[n++] = { name, DRV_T_INFO, nullptr };
     }
     o[n++] = { "Mount...", DRV_T_INSERT, nullptr };

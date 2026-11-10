@@ -117,6 +117,34 @@ static int describeDrive(int d, int32_t tag, DescLine* out, int max) {
     return n;
 }
 
+// Devices > Hard disk > Master / Slave: what the drive holds (the row is its name
+// alone: the pane is ~24 glyphs), and what the verbs do.
+static int describeHard(int u, int32_t tag, DescLine* out, int max) {
+    int n = 0;
+    const bool in = *machine_hdf(u) != 0;
+    switch (tag) {
+    case DRV_T_INFO:
+        if (!in) break;
+        n = sub(out, n, max, machine_hdf_is_raw(u) ? "SD partition" : "Image", "", DESC_PLAIN);
+        n = rule(out, n, max, machine_hdf_kind(u));
+        n = rule(out, n, max, machine_hdf_ro(u) ? "Read-only" : "Writable");
+        if (strcmp(machine_hdf_kind(u), "RDB") && strcmp(machine_hdf_kind(u), "Amiga partition"))
+            n = rule(out, n, max, "Workbench shows no icon");
+        break;
+    case DRV_T_INSERT:
+        n = sub(out, n, max, "Takes", u ? "HDF" : "HDF, LHA", DESC_PLAIN);
+        n = rule(out, n, max, "or a partition of the");
+        n = rule(out, n, max, "SD card");
+        n = rule(out, n, max, "The Amiga restarts");
+        break;
+    case DRV_T_EJECT:
+        n = rule(out, n, max, "The Amiga restarts");
+        break;
+    default: break;
+    }
+    return n;
+}
+
 // Devices > Floppy drives > Drives.
 static int describeDrives(int32_t v, DescLine* out, int max) {
     int n = 0;
@@ -329,6 +357,8 @@ int describe(const Node& n, int32_t value, DescLine* out, int max) {
         n.setting == SET_FRAME_SKIP)
         return describeOnOff(n.setting, value, out, max);
     if (n.setting == SET_DRIVES) return describeDrives(value, out, max);
+    if (n.kind == K_PICK && !strcmp(n.label, "Master")) return describeHard(0, value, out, max);
+    if (n.kind == K_PICK && !strcmp(n.label, "Slave")) return describeHard(1, value, out, max);
     if (n.kind == K_PICK && n.label[0] == 'D' && n.label[1] == 'F')
         return describeDrive(n.label[2] - '0', value, out, max);
     return 0;
