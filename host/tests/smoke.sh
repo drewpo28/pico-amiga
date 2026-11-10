@@ -44,6 +44,16 @@ $BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --a1200 --adf "$OUT/b
      --frames 1200 > "$OUT/aros1200.log" 2>&1
 check "aros bootblock on the A1200" "BOOTBLOCK OK" "$OUT/aros1200.log"
 
+# 3t. Trace mode (Musashi's traced loop, m68krun.h): SR's T1 traces every
+#     instruction, a 68020's T0 the changes of flow only (make_trace_adf.py).
+python3 host/tests/make_trace_adf.py "$OUT/trace.adf"
+$BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --slow --adf "$OUT/trace.adf" \
+     --frames 900 > "$OUT/trace.log" 2>&1
+check "trace on the 68000" "TRACE PA" "$OUT/trace.log"
+$BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --slow --cpu020 --adf "$OUT/trace.adf" \
+     --frames 900 > "$OUT/trace020.log" 2>&1
+check "trace on the 68EC020" "TRACE PG" "$OUT/trace020.log"
+
 # 3b. Snapshots: saved mid-boot (disk DMA running), loaded, the same picture 500
 #     frames on as without the round trip.
 $BIN --rom "$ROMS/aros-rom.bin" --ext "$ROMS/aros-ext.bin" --slow --adf "$OUT/boot.adf" \

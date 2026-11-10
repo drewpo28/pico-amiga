@@ -343,6 +343,24 @@ void m68k_end_timeslice(void);          /* End timeslice now */
  * addresses [lo, lo + len) fetch from ptr + (address - lo); len 0 closes it. */
 void m68k_set_fetch_window(const unsigned char *ptr, unsigned int lo, unsigned int len);
 
+/* PICO-AMIGA PATCH: memory the opcode handlers reach without a callback
+ * (m68krun.h).  Per 64 KB bank of the 24-bit map: the host address of the
+ * bank's address 0 for reads and for writes (address + pointer is the byte),
+ * or NULL where the callback must run (I/O, nothing, a ROM's writes).  The
+ * platform fills it and keeps it current (mem.c).
+ * The banks below M68K_FAST_CHIP_TOP are chip RAM's: an access there counts in
+ * m68k_fast_data() (the chip bus model), and a write to a 4 KB page whose
+ * m68k_fast_wmap[] entry is not 0 is passed on to m68k_fast_mirror() (the
+ * copper list mirror; value as stored, size 1 or 2). */
+typedef struct { const unsigned char *rd; unsigned char *wr; } m68k_fast_t;
+#define M68K_FAST_CHIP_TOP 0x200000u
+#define M68K_FAST_WMAP     (M68K_FAST_CHIP_TOP >> 12)
+/* Both live in the CPU's own structure (the handlers hold its address). */
+extern m68k_fast_t *const m68k_fast;             /* [256] */
+extern unsigned char *const m68k_fast_wmap;      /* [M68K_FAST_WMAP] */
+void m68k_fast_mirror(unsigned int address, unsigned int value, unsigned int size);
+unsigned int m68k_fast_data(void);
+
 /* Set the IPL0-IPL2 pins on the CPU (IRQ).
  * A transition from < 7 to 7 will cause a non-maskable interrupt (NMI).
  * Setting IRQ to 0 will clear an interrupt request.

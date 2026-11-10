@@ -163,7 +163,9 @@ def main():
     tb = text.rindex("/* ====", 0, tb)
     body = text[:tb] + "#if !M68K_CONST_TABLES\n" + text[tb:]
     # The 68000 set (this file compiled as it is) fixes its CPU type too.
-    body = body.replace('#include "m68kcpu.h"', '#ifndef M68KI_FIXED_EC020\n#define M68KI_FIXED_000 1\n#endif\n#include "m68kcpu.h"', 1)
+    # ...and the handlers' view of the CPU state: register variables, declared
+    # before anything else in the file (m68kregs.h).
+    body = '#ifndef M68KI_FIXED_EC020\n#define M68KI_FIXED_000 1\n#endif\n#include "m68kregs.h"\n' + body
     eof = body.rindex("/* ======================================================================== */\n/* ============================== END OF FILE")
     out = [body[:eof], "#endif /* !M68K_CONST_TABLES */\n\n",
            "#if M68K_CONST_TABLES\n",
@@ -176,9 +178,13 @@ def main():
            " * handler index is the same for every CPU type (a handler that only a 68020\n",
            " * has raises the illegal-instruction exception on a 68000 itself). */\n",
            "#ifdef M68KI_FIXED_EC020\n#define M68KI_SET(x) x##_020\n#else\n#define M68KI_SET(x) x##_000\n#endif\n",
+           # Slot 0, the illegal instruction, charges its own cycles (they vary by
+           # opcode), so the loop takes every handler's from the table (m68krun.h).
+           "static void m68ki_op_illegal_cycles(void);\n",
            "void (*const M68KI_SET(m68ki_handlers)[%d])(void) = {\n" % len(used)]
-    for k in range(0, len(used), 4):
-        out.append("\t" + ", ".join(used[k:k + 4]) + ",\n")
+    slots = ["m68ki_op_illegal_cycles"] + used[1:]
+    for k in range(0, len(slots), 4):
+        out.append("\t" + ", ".join(slots[k:k + 4]) + ",\n")
     out.append("};\n\nconst unsigned char M68KI_SET(m68ki_handler_cycles)[%d] = {\n#ifdef M68KI_FIXED_EC020\n" % len(used))
     for k in range(0, len(used), 32):
         out.append("\t" + ",".join(str(v) for v in hcyc20[k:k + 32]) + ",\n")
@@ -197,7 +203,9 @@ def main():
     out.append("};\n\nconst unsigned char m68ki_cycles_000[0x10000] = {\n")
     for k in range(0, 0x10000, 32):
         out.append("\t" + ",".join(str(v) for v in cycles[k:k + 32]) + ",\n")
-    out.append("};\n#endif /* M68KI_FIXED_EC020 */\n#endif /* M68K_CONST_TABLES */\n\n")
+    out.append("};\n#endif /* M68KI_FIXED_EC020 */\n")
+    # The set's loop and memory accessors, in the handlers' view.
+    out.append('#include "m68krun.h"\n#endif /* M68K_CONST_TABLES */\n\n')
     out.append(body[eof:])
     open(os.path.join(OUT, "m68kops.c"), "w").write("".join(out))
     open(os.path.join(OUT, "m68kops.h"), "w").write(hdr)

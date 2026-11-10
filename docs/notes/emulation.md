@@ -8,7 +8,7 @@
   Local changes to Musashi are marked `PICO-AMIGA PATCH` (m68kcpu.c) and
   `PICO-AMIGA:` (m68kconf.h). Re-run the generator after touching m68k_in.c or
   m68kconf.h or tools/musashi_hot*.txt (the 250 hottest handlers, placed in
-  SRAM; musashi_hot_020.txt: the 68EC020's 128, from AGA runs; the generator
+  SRAM; musashi_hot_020.txt: the 68EC020's, from AGA runs; the generator
   also orders m68ki_handlers[] by it and emits per-handler
   cycles, which m68k_execute() uses instead of the 64 KB opcode table). The
   handlers are compiled twice, gen/m68kops.c for the 68000 and gen/m68kops_020.c
@@ -32,9 +32,11 @@
   hires DDF $3C/$D0 for a 640-px screen; a "units = (stop-start)/4 + 2" hires
   formula gives 39 words and a sheared picture.
 - **Instruction fetch reads a window, not the memory map** (AMIGA_FETCH_WINDOW,
-  m68kcpu.h / mem.c): m68ki_read_imm_16/32 read the 64 KB bank the code runs in
-  straight from its RAM / ROM; a miss goes through m68ki_fetch_slow16, which moves
-  the window (m68k_set_fetch_window); map() / map_low() close it. Musashi's test
+  m68kcpu.h / mem.c): m68ki_read_imm_16/32 read the block the code runs in
+  (chip RAM, a ROM: the run of 64 KB banks that are one copy of it; one bank
+  until 2026-11-10) straight from its RAM / ROM; a miss goes through
+  m68ki_fetch_slow16, which moves the window (m68k_set_fetch_window); map() /
+  map_low() close it. Musashi's test
   driver builds without it. The window lives in m68ki_cpu_core (its address is in
   a register in every handler, so a fetch loads no literals), ADDRESS_68K is the
   constant 24-bit mask, m68k_execute counts instructions in a register, and the
@@ -51,6 +53,68 @@
   them (its own A/B is the 19:54 log against the firmware after it).  What the
   PSRAM costs the CPU is its misses (the demo's data, 14-26k a frame), not the
   hits.
+- **The handlers see the CPU state in registers** (2026-11-10; m68kregs.h,
+  m68krun.h, m68kcpu.h's "two views").  gen/m68kops.c starts with m68kregs.h:
+  GCC global register variables for the base of m68ki_cpu, REG_PC, the cycles
+  left and REG_IR (r11, r10, r9, r8 on the board; r15-r12 on an x86-64 host, so
+  the PC tests run the same scheme; any other compiler or M68K_NO_REGVARS: the
+  memory copies).  Only the handler sets are compiled that way.  m68kcpu.c, the
+  emulator and every callback see m68ki_cpu.pc / .ir and m68ki_remaining_cycles,
+  which are current outside m68k_execute() and inside a memory callback:
+  m68krun.h's accessors store the registers before one and load PC and cycles
+  after (M68KI_SAVE / M68KI_LOAD), so m68k_cycles_run(), m68k_end_timeslice()
+  and a bus error pulsed from a callback work as before.  Rules that follow: a
+  new function a handler calls that reads or changes the PC or the cycles from
+  outside gen/m68kops.c needs the same pair around the call; nothing in a
+  handler set may be called from outside but through m68ki_run_* (they save
+  and restore the caller's registers); m68k_in.c must use REG_PC / GET_CYCLES()
+  / SET_CYCLES(), never m68ki_cpu.pc or m68ki_remaining_cycles.
+  The loop is m68krun.h's m68ki_loop, one per handler set, in the set's SRAM
+  window: 18 ARM instructions a turn, written in assembly for the board (GCC
+  made 25 of the C version, which the hosts and the bench's AMIGA_STATS build
+  run); the offsets it uses are _Static_assert-ed.  Slot 0 of the handler
+  table is m68ki_op_illegal_cycles, so the loop takes every handler's cycles
+  from m68ki_handler_cycles[] without a test.
+- **Trace runs in a loop of its own** (m68ki_run_traced_*, Musashi's loop as it
+  was): the plain loop does not look at the trace flags.  m68k_execute() picks
+  by FLAG_T1 | FLAG_T0; an instruction that sets one (m68ki_trace_changed() in
+  the SR setters) ends the plain loop by taking its cycles away (kept in
+  m68ki_trace_rest, given back by m68k_execute(), which goes on in the traced
+  loop; m68k_end_timeslice() drops them).  host/tests/make_trace_adf.py is its
+  test: 15 traces under T1 on both CPUs, 6 under T0 on the 68EC020 ("TRACE PA" /
+  "TRACE PG"), the same counts and final state as the old loop.
+- **RAM and ROM data accesses do not go through the callbacks** (m68krun.h's
+  m68kf_r8..w32, mem.c's fast_bank): m68ki_cpu.fast[256] has, per 64 KB bank,
+  the host address of the bank's address 0 for reads and for writes (NULL: I/O,
+  nothing, a ROM's writes - the callback runs).  A bank is in it only if its
+  block is 64 KB or more and it is chip RAM exactly below M68K_FAST_CHIP_TOP
+  ($200000): the accessors count an access below that for the chip bus model
+  (m68k_fast_data(), added to A.bus_data in bus_wait) and pass a chip RAM write
+  to the copper list mirror only when its 4 KB page is marked in
+  m68ki_cpu.fast_wmap[] (copper.c's mir_set keeps the counts; it was three
+  window compares on every chip write).  The tables are in m68ki_cpu so the
+  handlers need no address for them (+2.5 KB of SRAM, which the smaller
+  handlers give back: the two sets shrank by 2.4 KB, .text by 39 KB).
+- **What it gave, counted** (tools/m68kbench: the core with the firmware's
+  flags on a Cortex-M33 under QEMU, a TCG plugin counting ARM instructions by
+  function from a snapshot of the host bench; no XIP / PSRAM misses in it):
+  ARM instructions per 68k instruction, before -> after, "With cache": Roots'
+  zigzag 76.6 -> 52.8 (loop 32.6 -> 21.7 with the per-slice entry, handlers
+  23.6 -> 21.5, memory 17.9 -> 8.6), its 8-plane part 99.7 -> 63.6, A-Type 98.9
+  -> 67.0, Roswell 69.9 -> 49.8.  Every step but the last was bit-identical to
+  the old core (final snapshots of 14 runs on the PC, chip RAM and framebuffer
+  CRCs of 4 on the Cortex-M33; Musashi's suites as before, also without the
+  register variables).  The last, the fetch window as a block, changes the
+  A1200's chip bus count: a window move in chip RAM counts as a chip access
+  (mem.c, as before), and there are fewer moves - Roots under "With cache"
+  runs 0-6% more instructions a frame (11% in the frames of the 8-plane part
+  measured, where 9% of the instructions had moved it), the parts start on the
+  same frames, audw is unchanged; with the bus model off and on the 68000
+  machines it is still bit-identical.  NOT measured on the board yet.
+  What is left in the loop is the fetch window check (5 of its 18
+  instructions, 7 more per extension word): a PC kept as a host pointer would
+  take ~8 more off (~15%), at the price of every PC write being checked and a
+  staged path for an instruction at a window's end - not done.
 - **Musashi samples interrupts only on entry to m68k_execute()** (and on SR
   writes): `amiga_update_ipl()` calls m68k_end_timeslice() when the level rises
   inside the CPU, otherwise an interrupt would wait for the end of the slice.

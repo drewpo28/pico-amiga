@@ -38,9 +38,31 @@ typedef struct {
 static bank_t banks[256];
 static bool   overlay;
 
+// What the opcode handlers reach themselves (m68k.h, m68krun.h): a direct bank
+// as the host address of its address 0, for reads and for writes.  A bank is in
+// it when its block is 64 KB or more (so the mask only folds the bank number)
+// and, as the handlers count an access below M68K_FAST_CHIP_TOP for the chip bus
+// and no other, when it is chip RAM exactly there.  Kept current by fast_bank().
+static void fast_bank(int i) {
+    const bank_t *b = &banks[i];
+    const uint32_t base = (uint32_t)i << 16;
+    const bool ok = (b->chip != 0) == (base < M68K_FAST_CHIP_TOP);
+    m68k_fast[i].rd = b->rd && b->mask >= 0xFFFF && ok
+        ? (const uint8_t *)((uintptr_t)b->rd + (base & b->mask) - base) : NULL;
+    m68k_fast[i].wr = b->wr && b->wmask >= 0xFFFF && ok
+        ? (uint8_t *)((uintptr_t)b->wr + (base & b->wmask) - base) : NULL;
+}
+
+// The copper list mirror's share of a write the handlers made (m68k_fast_wmap).
+AMIGA_HOT void m68k_fast_mirror(unsigned int a, unsigned int v, unsigned int size) {
+    if (size == 1) cop_mir_w8(a & A.chip_mask, (uint8_t)v);
+    else cop_mir_w16(a & A.chip_mask, (uint16_t)v);
+}
+
 // Musashi's instruction fetch window (m68kcpu.h, AMIGA_FETCH_WINDOW, set with
-// m68k_set_fetch_window): the 64 KB bank the code last ran in, read straight
-// from its RAM / ROM.  Any change to banks[] closes it.
+// m68k_set_fetch_window): the block the code last ran in (chip RAM, a ROM: the
+// run of 64 KB banks that are one copy of it), read straight from its memory.
+// Any change to banks[] closes it.
 uint8_t mem_fetch_chip;        // ...and it is a chip bank (the chip bus model)
 
 static void map(int first, int count, const uint8_t *rd, uint8_t *wr, uint32_t mask, int io) {
@@ -49,6 +71,7 @@ static void map(int first, int count, const uint8_t *rd, uint8_t *wr, uint32_t m
         banks[i].rd = rd; banks[i].wr = wr; banks[i].mask = mask; banks[i].wmask = mask;
         banks[i].io = (uint8_t)io;
         banks[i].chip = (rd && rd == A.cfg.chip_ram) || io == B_CUSTOM;
+        fast_bank(i);
     }
 }
 
@@ -62,6 +85,7 @@ static void map_low(void) {
         for (int i = 0; i < 8; i++) {
             banks[i].rd = c->rom;
             banks[i].mask = c->rom_size - 1;     // wr/wmask stay chip RAM
+            fast_bank(i);
         }
     }
 }
@@ -137,6 +161,7 @@ static void z2_write8(uint32_t a, uint8_t v) {
 void mem_init(void) {
     const amiga_config_t *c = &A.cfg;
     memset(banks, 0, sizeof banks);
+    memset(m68k_fast, 0, 256 * sizeof m68k_fast[0]);
     map(0xDF, 0x01, NULL, NULL, 0, B_CUSTOM);
     if (c->gayle) {
         map(0xBF, 0x01, NULL, NULL, 0, B_CIA);
@@ -359,9 +384,19 @@ AMIGA_HOT unsigned int m68k_read_memory_16(unsigned int a) {
 AMIGA_HOT unsigned int m68ki_fetch_slow16(unsigned int a) {
     a &= 0xFFFFFF;
     const bank_t *b = &banks[a >> 16];
-    if (b->rd && b->mask >= 0xFFFF) {                    // the whole bank is one block
-        const uint32_t lo = a & 0xFF0000;
-        m68k_set_fetch_window(b->rd + (lo & b->mask), lo, 0x10000);
+    if (b->rd && b->mask >= 0xFFFF) {
+        // The window: this bank and its neighbours of the same block (one copy of
+        // it: a mirror is another window), so code that calls across 64 KB - 9%
+        // of Roots' 8-plane part's instructions came through here - stays in it.
+        const uint32_t blk = a & ~b->mask;
+        uint32_t first = a >> 16, last = first;
+#define SAME(j) (banks[j].rd == b->rd && banks[j].mask == b->mask && banks[j].chip == b->chip && \
+                 (((uint32_t)(j) << 16) & ~b->mask) == blk)
+        while (first > 0 && SAME(first - 1)) first--;
+        while (last < 255 && SAME(last + 1)) last++;
+#undef SAME
+        const uint32_t lo = first << 16;
+        m68k_set_fetch_window(b->rd + (lo & b->mask), lo, (last - first + 1) << 16);
         mem_fetch_chip = b->chip;
     }
     return m68k_read_memory_16(a);

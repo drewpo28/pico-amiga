@@ -9510,8 +9510,9 @@ M68KMAKE_OP(stop, 0, ., .)
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
 		CPU_STOPPED |= STOP_LEVEL_STOP;
 		m68ki_set_sr(new_sr);
-		if(m68ki_remaining_cycles >= CYC_INSTRUCTION[REG_IR])
-			m68ki_remaining_cycles = CYC_INSTRUCTION[REG_IR];
+		/* PICO-AMIGA: through the macros (the cycles may be in a register, m68kregs.h) */
+		if(GET_CYCLES() >= CYC_INSTRUCTION[REG_IR])
+			SET_CYCLES(CYC_INSTRUCTION[REG_IR]);
 		else
 			USE_ALL_CYCLES();
 		return;

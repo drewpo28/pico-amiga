@@ -61,6 +61,10 @@ extern unsigned char m68ki_handler_cycles[];
 extern void (*const m68ki_handlers_000[])(void), (*const m68ki_handlers_020[])(void);
 extern const unsigned char m68ki_handler_cycles_000[], m68ki_handler_cycles_020[];
 extern const unsigned m68ki_handler_count;
+/* PICO-AMIGA PATCH: each set's loops (m68krun.h) */
+extern void m68ki_run_000(void), m68ki_run_020(void), m68ki_run_traced_000(void), m68ki_run_traced_020(void);
+static void (*m68ki_run)(void) = m68ki_run_000;
+static void (*m68ki_run_traced)(void) = m68ki_run_traced_000;
 #define M68KI_CYCLES(n)     ((n) == 2 ? m68ki_cycles_020 : m68ki_cycles_000)
 #define M68KI_DISPATCH(op)  m68ki_handlers[m68ki_handler_index[op]]()
 #else
@@ -81,6 +85,7 @@ extern void m68ki_build_opcode_table(void);
 int  m68ki_initial_cycles;
 int  m68ki_remaining_cycles = 0;                     /* Number of clocks remaining */
 uint m68ki_tracing = 0;
+int  m68ki_trace_rest = 0;                           /* PICO-AMIGA: cycles m68ki_trace_changed() put aside */
 uint m68ki_address_space;
 
 #ifdef M68K_LOG_ENABLE
@@ -823,6 +828,8 @@ static void m68ki_select_handlers(unsigned int cpu_type)
 	       m68ki_handler_count * sizeof m68ki_handlers[0]);
 	memcpy(m68ki_handler_cycles, ec020 ? m68ki_handler_cycles_020 : m68ki_handler_cycles_000,
 	       m68ki_handler_count);
+	m68ki_run = ec020 ? m68ki_run_020 : m68ki_run_000;
+	m68ki_run_traced = ec020 ? m68ki_run_traced_020 : m68ki_run_traced_000;
 #else
 	(void)cpu_type;
 #endif
@@ -1009,6 +1016,7 @@ M68KI_HOT int m68k_execute(int num_cycles)
 	/* Set our pool of clock cycles available */
 	SET_CYCLES(num_cycles);
 	m68ki_initial_cycles = num_cycles;
+	m68ki_trace_rest = 0;
 
 	/* See if interrupts came in */
 	m68ki_check_interrupts();
@@ -1021,6 +1029,36 @@ M68KI_HOT int m68k_execute(int num_cycles)
 
 		m68ki_check_bus_error_trap();
 
+#if M68K_CONST_TABLES
+		/* PICO-AMIGA PATCH: the handler set's own loop (m68krun.h), which keeps
+		 * the PC, the cycles and the instruction word in registers; the one
+		 * that traces while a trace flag is set.  An instruction that sets one
+		 * ends the plain loop (m68ki_trace_changed()), with the cycles it had
+		 * left in m68ki_trace_rest. */
+		for(;;)
+		{
+			if(FLAG_T1 | FLAG_T0)
+				m68ki_run_traced();
+			else
+			{
+				m68ki_clear_trace();
+				m68ki_run();
+			}
+			if(m68ki_trace_rest)
+			{
+				m68ki_initial_cycles += m68ki_trace_rest;
+				ADD_CYCLES(m68ki_trace_rest);
+				m68ki_trace_rest = 0;
+			}
+			if(GET_CYCLES() <= 0)
+				break;
+			if(CPU_STOPPED)
+			{
+				SET_CYCLES(0);
+				break;
+			}
+		}
+#else
 		/* Main loop.  Keep going until we run out of clock cycles */
 #ifdef AMIGA_FETCH_WINDOW
 		unsigned instr = 0;   /* PICO-AMIGA PATCH: the chip bus model's instruction count, in a register */
@@ -1080,6 +1118,8 @@ M68KI_HOT int m68k_execute(int num_cycles)
 		amiga_bus_instr += instr;
 #endif
 
+#endif /* M68K_CONST_TABLES */
+
 		/* set previous PC to current PC for the next entry into the loop */
 		REG_PPC = REG_PC;
 	}
@@ -1094,6 +1134,21 @@ M68KI_HOT int m68k_execute(int num_cycles)
 M68KI_HOT int m68k_cycles_run(void)
 {
 	return m68ki_initial_cycles - GET_CYCLES();
+}
+
+/* PICO-AMIGA PATCH: the tables of memory the handlers reach without a callback
+ * (m68k.h), and the chip RAM accesses they made that way. */
+#ifdef AMIGA_FETCH_WINDOW
+m68k_fast_t *const m68k_fast = m68ki_cpu.fast;
+unsigned char *const m68k_fast_wmap = m68ki_cpu.fast_wmap;
+#endif
+unsigned int m68k_fast_data(void)
+{
+#ifdef AMIGA_FETCH_WINDOW
+	return m68ki_cpu.bus_data;
+#else
+	return 0;
+#endif
 }
 
 /* PICO-AMIGA PATCH: mem.c moves the fetch window (a bank change closes it). */
@@ -1125,6 +1180,7 @@ M68KI_HOT void m68k_end_timeslice(void)
 {
 	m68ki_initial_cycles -= GET_CYCLES();
 	SET_CYCLES(0);
+	m68ki_trace_rest = 0;   /* PICO-AMIGA: ...and the cycles a trace flag put aside */
 }
 
 

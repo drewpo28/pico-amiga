@@ -212,8 +212,9 @@ static inline uint16_t chip_rw(uint32_t addr) {
 }
 // The copper list mirror (copper.c): COP_MIR_N windows of COP_MIR_SIZE bytes
 // of chip RAM (from cop_mir_lo[w]) kept in SRAM, read by the copper instead of
-// PSRAM.  Every chip RAM writer keeps them current: the CPU (mem.c), chip_ww
-// (the blitter, the disk); a bulk change (reset, a snapshot) drops them
+// PSRAM.  Every chip RAM writer keeps them current: the CPU (m68krun.h, mem.c),
+// chip_ww (the blitter, the disk), the blitter's clear / copy path (blitter.c,
+// which writes chip RAM itself); a bulk change (reset, a snapshot) drops them
 // (copper_reset).  Two windows: a demo alternating two lists (Roots' zigzag
 // part) has both mirrored.
 #define COP_MIR_N    2
@@ -226,6 +227,7 @@ extern uint32_t cop_mir_lo[COP_MIR_N];      // chip offset of each window, or CO
 #define COP_RA_SIZE  256
 extern uint8_t  cop_ra[COP_RA_SIZE];
 extern uint32_t cop_ra_lo;
+void cop_ra_drop(void);                     // forget it (a DMA write went through it)
 static inline void cop_mir_w8(uint32_t off, uint8_t v) {
     for (int w = 0; w < COP_MIR_N; w++) {
         const uint32_t i = off - cop_mir_lo[w];

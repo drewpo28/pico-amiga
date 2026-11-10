@@ -60,6 +60,14 @@ verified on the host bench; "hw" means verified on a board.
       row above's entries saves ~0.5 ms a frame for 6 KB of SRAM - not taken
 - [x] Busy-wait loops skipped (idle.c): dbra Dn,* and test + Bcc on an unchanged value
 - [ ] prof_switch only while the PERF line is on (~2.6% of core 0 always)
+- [x] Musashi's plumbing (2026-11-10, docs/notes/emulation.md "The handlers see the
+      CPU state in registers"): the PC, the cycles and the instruction word in
+      registers, the loop in assembly, RAM / ROM data accesses without the
+      callbacks, trace in its own loop, the fetch window a block instead of a
+      bank.  tools/m68kbench (QEMU, ARM instructions): 77 -> 53 per 68k instruction
+      in Roots' zigzag, 100 -> 64 in its 8-plane part.  Board: not measured
+- [ ] The PC as a host pointer (no window check per fetched word: ~8 of the 53
+      instructions), after the above is confirmed on the board
 - [ ] Instruction fetch without the bank lookup call (a PC page pointer)
 - [ ] PSRAM: check XIP cache behaviour with chip RAM traffic; consider an SRAM
       copy of the most-used chip RAM page(s)

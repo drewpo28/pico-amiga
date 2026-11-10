@@ -7,6 +7,7 @@
 // modelled is the cycle interleaving with the CPU (a program racing the
 // blitter through memory sees the final data early).
 #include "amiga_int.h"
+#include "m68k.h"
 
 enum { BA, BB, BC, BD };
 
@@ -105,10 +106,15 @@ AMIGA_HOT static uint32_t area_blit(void) {
                 // stays clean and is not written back to PSRAM (Hero Quest's
                 // language screen copies and clears the same 40,000 words every
                 // frame, 89% of them unchanged).
-                uint8_t *d = cr + (pt[BD] & cm);
+                const uint32_t off = pt[BD] & cm;
+                uint8_t *d = cr + off;
                 uint16_t o;
                 memcpy(&o, d, 2);
-                if (o != v) memcpy(d, &v, 2);
+                // ...and the copper list mirror follows it, as it does chip_ww:
+                // Arte clears and fills its copper lists with such blits, and the
+                // copper went on with the mirror's old words (its tunnel's walls
+                // missing or left over; seen once frames were skipped).
+                if (o != v) { memcpy(d, &v, 2); if (m68k_fast_wmap[off >> 12]) cop_mir_w16(off, v); }
                 pt[BD] += inc;
                 if (copy && y == h - 1 && x == w - 1) adat = __builtin_bswap16(v);
             }

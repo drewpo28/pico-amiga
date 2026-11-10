@@ -125,9 +125,10 @@ static void bus_auto_frame(void) {
 }
 AMIGA_HOT static void bus_wait(int h0, int h1) {
     static uint32_t instr_last, data_last, miss_last;
-    const uint32_t instr = amiga_bus_instr - instr_last, data = A.bus_data - data_last;
+    const uint32_t data_now = A.bus_data + m68k_fast_data();        // mem.c's callbacks + the handlers' own
+    const uint32_t instr = amiga_bus_instr - instr_last, data = data_now - data_last;
     const uint32_t miss = amiga_icache_miss - miss_last;
-    instr_last = amiga_bus_instr; data_last = A.bus_data; miss_last = amiga_icache_miss;
+    instr_last = amiga_bus_instr; data_last = data_now; miss_last = amiga_icache_miss;
     if (!instr && !data) return;
     // bus_fetch8 255 (the bench's --bus-tune only: the tags are kept under
     // AMIGA_STATS, m68kcpu.h): the instruction cache's misses are the fetches

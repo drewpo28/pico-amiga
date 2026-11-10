@@ -902,7 +902,7 @@ extern jmp_buf m68ki_aerr_trap;
 #define USE_CYCLES(A)    m68ki_remaining_cycles -= (A)
 #define SET_CYCLES(A)    m68ki_remaining_cycles = A
 #define GET_CYCLES()     m68ki_remaining_cycles
-#define USE_ALL_CYCLES() m68ki_remaining_cycles %= CYC_INSTRUCTION[REG_IR]
+#define USE_ALL_CYCLES() SET_CYCLES(GET_CYCLES() % CYC_INSTRUCTION[REG_IR])   /* PICO-AMIGA: through the macros (m68kregs.h) */
 
 
 
@@ -951,7 +951,7 @@ typedef union
 	double f;
 } fp_reg;
 
-typedef struct
+typedef struct m68ki_cpu_core_s   /* PICO-AMIGA: tagged (m68kregs.h) */
 {
 	uint cpu_type;     /* CPU Type: 68000, 68008, 68010, 68EC020, 68020, 68EC030, 68030, 68EC040, or 68040 */
 	uint dar[16];      /* Data and Address Registers */
@@ -1038,6 +1038,13 @@ typedef struct
 	const unsigned char *fetch_ptr;
 	uint fetch_lo;
 	uint fetch_len;
+	/* ...and the data accesses the handlers made to chip RAM themselves
+	 * (m68krun.h's accessors; m68k_fast_data()). */
+	uint bus_data;
+	/* m68k.h's m68k_fast_wmap[] and m68k_fast[], here for the handlers: no
+	 * address to load, the structure's is in a register. */
+	unsigned char fast_wmap[M68K_FAST_WMAP];
+	m68k_fast_t fast[256];
 #endif
 } m68ki_cpu_core;
 
@@ -1045,6 +1052,68 @@ typedef struct
 extern m68ki_cpu_core m68ki_cpu;
 extern sint           m68ki_remaining_cycles;
 extern uint           m68ki_tracing;
+
+/* PICO-AMIGA PATCH: the two views of the CPU state (m68kregs.h).  A handler set
+ * (M68KI_OPS: gen/m68kops.c) with register variables has the base of m68ki_cpu,
+ * REG_PC, the cycles left and REG_IR in registers; M68KI_SAVE() stores them
+ * where everything else looks (m68ki_cpu.pc / .ir, m68ki_remaining_cycles),
+ * M68KI_LOAD() takes back what a callback may have changed (the PC and SR of
+ * an interrupt it raised never are: Musashi takes those between instructions;
+ * the cycles are, by m68k_end_timeslice()). */
+extern sint           m68ki_initial_cycles;
+extern sint           m68ki_trace_rest;
+#if defined(M68KI_OPS) && defined(M68KI_REGVARS)
+static inline m68ki_cpu_core *m68ki_cpu_mem(void) { return &m68ki_cpu; }
+static inline sint *m68ki_cycles_mem(void) { return &m68ki_remaining_cycles; }
+#define m68ki_cpu (*m68ki_rcpu)
+#undef  REG_PC
+#define REG_PC           m68ki_rpc
+#undef  REG_IR
+#define REG_IR           m68ki_rir
+#undef  ADD_CYCLES
+#undef  USE_CYCLES
+#undef  SET_CYCLES
+#undef  GET_CYCLES
+#define ADD_CYCLES(A)    m68ki_rcyc += (A)
+#define USE_CYCLES(A)    m68ki_rcyc -= (A)
+#define SET_CYCLES(A)    m68ki_rcyc = A
+#define GET_CYCLES()     m68ki_rcyc
+#define M68KI_SAVE() do { m68ki_cpu.pc = m68ki_rpc; m68ki_cpu.ir = m68ki_rir; *m68ki_cycles_mem() = m68ki_rcyc; } while (0)
+#define M68KI_LOAD() do { m68ki_rpc = m68ki_cpu.pc; m68ki_rcyc = *m68ki_cycles_mem(); } while (0)
+#else
+#define M68KI_SAVE() ((void)0)
+#define M68KI_LOAD() ((void)0)
+#endif
+
+/* PICO-AMIGA PATCH: memory accesses.  A handler set goes through m68krun.h's
+ * accessors: RAM and ROM straight from the host's memory (m68k_fast[], mem.c),
+ * the rest through the callbacks with the registers stored around them.
+ * m68kcpu.c (exceptions taken at the start of m68k_execute(), resets) calls
+ * the callbacks as ever.  The address is ADDRESS_68K()'s. */
+#ifdef M68KI_OPS
+static uint m68kf_r8(uint a);
+static uint m68kf_r16(uint a);
+static uint m68kf_r32(uint a);
+static void m68kf_w8(uint a, uint v);
+static void m68kf_w16(uint a, uint v);
+static void m68kf_w32(uint a, uint v);
+static uint m68kf_fetch(uint a);
+#define M68KI_RD8(a)      m68kf_r8(a)
+#define M68KI_RD16(a)     m68kf_r16(a)
+#define M68KI_RD32(a)     m68kf_r32(a)
+#define M68KI_WR8(a, v)   m68kf_w8(a, v)
+#define M68KI_WR16(a, v)  m68kf_w16(a, v)
+#define M68KI_WR32(a, v)  m68kf_w32(a, v)
+#define M68KI_FETCH_SLOW(a) m68kf_fetch(a)
+#else
+#define M68KI_RD8(a)      m68k_read_memory_8(a)
+#define M68KI_RD16(a)     m68k_read_memory_16(a)
+#define M68KI_RD32(a)     m68k_read_memory_32(a)
+#define M68KI_WR8(a, v)   m68k_write_memory_8(a, v)
+#define M68KI_WR16(a, v)  m68k_write_memory_16(a, v)
+#define M68KI_WR32(a, v)  m68k_write_memory_32(a, v)
+#define M68KI_FETCH_SLOW(a) m68ki_fetch_slow16(a)
+#endif
 extern const uint8    m68ki_shift_8_table[];
 extern const uint16   m68ki_shift_16_table[];
 extern const uint     m68ki_shift_32_table[];
@@ -1105,6 +1174,22 @@ extern unsigned int *amiga_pc_hist;     /* the bench's --pchist: instructions by
 #define AMIGA_STAT_FETCH(n) ((void)0)
 #endif
 
+/* PICO-AMIGA PATCH: a big-endian word of the fetch window.  On ARM one halfword
+ * load and a REV16 (GCC adds a zero-extension to __builtin_bswap16 and to the
+ * two-byte form). */
+static inline uint m68ki_fetch_be16(const unsigned char *p)
+{
+#if defined(__arm__) && defined(__thumb2__) && defined(__ARMEL__)
+	unsigned short w;
+	uint v;
+	__builtin_memcpy(&w, p, 2);
+	__asm__("rev16 %0, %1" : "=r"(v) : "r"((uint)w));
+	return v;
+#else
+	return ((uint)p[0] << 8) | p[1];
+#endif
+}
+
 /* Handles all immediate reads, does address error check, function code setting,
  * and prefetching if they are enabled in m68kconf.h
  */
@@ -1144,9 +1229,9 @@ M68KI_HOT2 static inline uint m68ki_read_imm_16(void)
 		AMIGA_ICACHE_FETCH(a);
 		if (o < m68ki_cpu.fetch_len) {
 			const unsigned char *p = m68ki_cpu.fetch_ptr + o;
-			return ((uint)p[0] << 8) | p[1];
+			return m68ki_fetch_be16(p);
 		}
-		return m68ki_fetch_slow16(a);
+		return M68KI_FETCH_SLOW(a);
 	}
 #else
 	REG_PC += 2;
@@ -1202,7 +1287,7 @@ M68KI_HOT2 static inline uint m68ki_read_imm_32(void)
 			const unsigned char *p = m68ki_cpu.fetch_ptr + o;
 			return ((uint)p[0] << 24) | ((uint)p[1] << 16) | ((uint)p[2] << 8) | p[3];
 		}
-		return (m68ki_fetch_slow16(a) << 16) | m68ki_fetch_slow16(a + 2);
+		{ const uint hi = M68KI_FETCH_SLOW(a); return (hi << 16) | M68KI_FETCH_SLOW(a + 2); }
 	}
 #else
 	m68ki_set_fc(FLAG_S | FUNCTION_CODE_USER_PROGRAM); /* auto-disable (see m68kcpu.h) */
@@ -1230,7 +1315,7 @@ M68KI_HOT2 static inline uint m68ki_read_8_fc(uint address, uint fc)
 	    address = pmmu_translate_addr(address);
 #endif
 
-	return m68k_read_memory_8(ADDRESS_68K(address));
+	return M68KI_RD8(ADDRESS_68K(address));
 }
 M68KI_HOT2 static inline uint m68ki_read_16_fc(uint address, uint fc)
 {
@@ -1243,7 +1328,7 @@ M68KI_HOT2 static inline uint m68ki_read_16_fc(uint address, uint fc)
 	    address = pmmu_translate_addr(address);
 #endif
 
-	return m68k_read_memory_16(ADDRESS_68K(address));
+	return M68KI_RD16(ADDRESS_68K(address));
 }
 M68KI_HOT2 static inline uint m68ki_read_32_fc(uint address, uint fc)
 {
@@ -1256,7 +1341,7 @@ M68KI_HOT2 static inline uint m68ki_read_32_fc(uint address, uint fc)
 	    address = pmmu_translate_addr(address);
 #endif
 
-	return m68k_read_memory_32(ADDRESS_68K(address));
+	return M68KI_RD32(ADDRESS_68K(address));
 }
 
 M68KI_HOT2 static inline void m68ki_write_8_fc(uint address, uint fc, uint value)
@@ -1269,7 +1354,7 @@ M68KI_HOT2 static inline void m68ki_write_8_fc(uint address, uint fc, uint value
 	    address = pmmu_translate_addr(address);
 #endif
 
-	m68k_write_memory_8(ADDRESS_68K(address), value);
+	M68KI_WR8(ADDRESS_68K(address), value);
 }
 M68KI_HOT2 static inline void m68ki_write_16_fc(uint address, uint fc, uint value)
 {
@@ -1282,7 +1367,7 @@ M68KI_HOT2 static inline void m68ki_write_16_fc(uint address, uint fc, uint valu
 	    address = pmmu_translate_addr(address);
 #endif
 
-	m68k_write_memory_16(ADDRESS_68K(address), value);
+	M68KI_WR16(ADDRESS_68K(address), value);
 }
 M68KI_HOT2 static inline void m68ki_write_32_fc(uint address, uint fc, uint value)
 {
@@ -1295,7 +1380,7 @@ M68KI_HOT2 static inline void m68ki_write_32_fc(uint address, uint fc, uint valu
 	    address = pmmu_translate_addr(address);
 #endif
 
-	m68k_write_memory_32(ADDRESS_68K(address), value);
+	M68KI_WR32(ADDRESS_68K(address), value);
 }
 
 #if M68K_SIMULATE_PD_WRITES
@@ -1639,6 +1724,22 @@ M68KI_HOT2 static inline void m68ki_set_ccr(uint value)
 	FLAG_C = BIT_0(value)  << 8;
 }
 
+/* PICO-AMIGA PATCH: m68krun.h's loop does not look at the trace flags: a status
+ * register that sets one ends it after this instruction (the cycles it had
+ * left are kept in m68ki_trace_rest), and m68k_execute() goes on with the
+ * loop that traces. */
+static inline void m68ki_trace_changed(void)
+{
+#if M68K_EMULATE_TRACE
+	if((FLAG_T1 | FLAG_T0) && GET_CYCLES() > 0)
+	{
+		m68ki_trace_rest += GET_CYCLES();
+		m68ki_initial_cycles -= GET_CYCLES();
+		SET_CYCLES(0);
+	}
+#endif
+}
+
 /* Set the status register but don't check for interrupts */
 M68KI_HOT2 static inline void m68ki_set_sr_noint(uint value)
 {
@@ -1648,6 +1749,7 @@ M68KI_HOT2 static inline void m68ki_set_sr_noint(uint value)
 	/* Now set the status register */
 	FLAG_T1 = BIT_F(value);
 	FLAG_T0 = BIT_E(value);
+	m68ki_trace_changed();
 	FLAG_INT_MASK = value & 0x0700;
 	m68ki_set_ccr(value);
 	m68ki_set_sm_flag((value >> 11) & 6);
@@ -1664,6 +1766,7 @@ static inline void m68ki_set_sr_noint_nosp(uint value)
 	/* Now set the status register */
 	FLAG_T1 = BIT_F(value);
 	FLAG_T0 = BIT_E(value);
+	m68ki_trace_changed();
 	FLAG_INT_MASK = value & 0x0700;
 	m68ki_set_ccr(value);
 	m68ki_set_sm_flag_nosp((value >> 11) & 6);

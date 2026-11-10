@@ -1,7 +1,8 @@
-#include <stdio.h>
 #ifndef M68KI_FIXED_EC020
 #define M68KI_FIXED_000 1
 #endif
+#include "m68kregs.h"
+#include <stdio.h>
 #include "m68kcpu.h"
 extern void m68040_fpu_op0(void);
 extern void m68040_fpu_op1(void);
@@ -30678,8 +30679,9 @@ static void m68k_op_stop(void)
 		m68ki_trace_t0();			   /* auto-disable (see m68kcpu.h) */
 		CPU_STOPPED |= STOP_LEVEL_STOP;
 		m68ki_set_sr(new_sr);
-		if(m68ki_remaining_cycles >= CYC_INSTRUCTION[REG_IR])
-			m68ki_remaining_cycles = CYC_INSTRUCTION[REG_IR];
+		/* PICO-AMIGA: through the macros (the cycles may be in a register, m68kregs.h) */
+		if(GET_CYCLES() >= CYC_INSTRUCTION[REG_IR])
+			SET_CYCLES(CYC_INSTRUCTION[REG_IR]);
 		else
 			USE_ALL_CYCLES();
 		return;
@@ -36496,8 +36498,9 @@ void m68ki_build_opcode_table(void)
 #else
 #define M68KI_SET(x) x##_000
 #endif
+static void m68ki_op_illegal_cycles(void);
 void (*const M68KI_SET(m68ki_handlers)[1967])(void) = {
-	m68k_op_illegal, m68k_op_bne_8, m68k_op_tst_8_di, m68k_op_bmi_8,
+	m68ki_op_illegal_cycles, m68k_op_bne_8, m68k_op_tst_8_di, m68k_op_bmi_8,
 	m68k_op_move_16_d_ai, m68k_op_dbf_16, m68k_op_bne_16, m68k_op_cmp_32_a,
 	m68k_op_movea_32_a, m68k_op_move_8_d_di, m68k_op_addq_32_a, m68k_op_moveq_32,
 	m68k_op_bhi_16, m68k_op_cmpi_16_ai, m68k_op_rts_32, m68k_op_movea_32_di,
@@ -45327,6 +45330,7 @@ const unsigned char m68ki_cycles_000[0x10000] = {
 	4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
 };
 #endif /* M68KI_FIXED_EC020 */
+#include "m68krun.h"
 #endif /* M68K_CONST_TABLES */
 
 /* ======================================================================== */

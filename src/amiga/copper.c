@@ -11,6 +11,7 @@
 // slots is not modelled yet.
 #include <string.h>
 #include "amiga_int.h"
+#include "m68k.h"
 
 enum { COP_RUN, COP_WAIT, COP_STOP };
 
@@ -28,6 +29,22 @@ static uint32_t pc;
 // Arte start with a stub that jumps to the real list.
 uint8_t  cop_mir[COP_MIR_N][COP_MIR_SIZE];
 uint32_t cop_mir_lo[COP_MIR_N] = { COP_MIR_NONE, COP_MIR_NONE };
+// The CPU's own chip RAM writes (the opcode handlers', m68krun.h) come to the
+// mirror only for the 4 KB pages marked here: how many windows (the read-ahead
+// too) have bytes in the page, at every address chip RAM appears at.  A window
+// counts from the byte before it: a word written there has its low byte in it.
+AMIGA_HOT static void mir_pages(uint32_t lo, uint32_t size, int d) {
+    if (lo == COP_MIR_NONE) return;
+    const uint32_t chip = A.chip_mask + 1;
+    for (uint32_t p = (lo ? lo - 1 : 0) >> 12; p <= (lo + size - 1) >> 12; p++)
+        for (uint32_t a = p << 12; a < M68K_FAST_CHIP_TOP; a += chip) m68k_fast_wmap[a >> 12] += (uint8_t)d;
+}
+// Move a window (*var: its chip offset, or COP_MIR_NONE).
+AMIGA_HOT static void mir_set(uint32_t *var, uint32_t lo, uint32_t size) {
+    mir_pages(*var, size, -1);
+    *var = lo;
+    mir_pages(lo, size, 1);
+}
 #define MIR_ADOPT 3
 #define MIR_BLK    4096
 #define MIR_BLOCKS (0x200000 / MIR_BLK)              // chip RAM is 2 MB at most
@@ -88,7 +105,7 @@ static void mir_vblank(void) {
     }
     if (victim < 0) return;
     memcpy(cop_mir[victim], A.cfg.chip_ram + cand, COP_MIR_SIZE);
-    cop_mir_lo[victim] = cand;
+    mir_set(&cop_mir_lo[victim], cand, COP_MIR_SIZE);
     mir_cand = COP_MIR_NONE; mir_cand_n = 0;
 }
 
@@ -105,8 +122,9 @@ AMIGA_HOT static void ra_load(uint32_t a) {
     const uint32_t lo = a & ~7u;
     const uint8_t *src = A.cfg.chip_ram + lo;
     for (uint32_t i = 0; i < COP_RA_SIZE; i += 4) { uint32_t w; memcpy(&w, src + i, 4); memcpy(cop_ra + i, &w, 4); }
-    cop_ra_lo = lo;
+    mir_set(&cop_ra_lo, lo, COP_RA_SIZE);
 }
+void cop_ra_drop(void) { mir_set(&cop_ra_lo, COP_MIR_NONE, COP_RA_SIZE); }
 
 // Both words of an instruction in one read: the list is in PSRAM, and a copper
 // background runs ~13,000 instructions a frame (State of the Art).
@@ -349,6 +367,7 @@ void copper_reset(void) {
     cop_h = 0;
     for (int w = 0; w < COP_MIR_N; w++) cop_mir_lo[w] = COP_MIR_NONE;   // chip RAM changed under it (reset, a snapshot)
     cop_ra_lo = COP_MIR_NONE;
+    memset(m68k_fast_wmap, 0, M68K_FAST_WMAP);
     memset(cop_rec, 0, sizeof cop_rec);
     cop_play = NULL; cop_ran = false;
     mir_cand = COP_MIR_NONE; mir_cand_n = 0;

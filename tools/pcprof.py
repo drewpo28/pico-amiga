@@ -2,14 +2,15 @@
 """Sum the PC profiler's PROF lines (Debug > PC profiler, board.c) from a UART log
 and name the hot code from the firmware's ELF.
 
-  tools/pcprof.py LOG ELF [--core 0|1] [--mode off|x2|x2+8|x3|x3+8] [--from N] [--to N] [--top N]
+  tools/pcprof.py LOG ELF [--core 0|1] [--cpu 000|020] [--mode off|x2|x2+8|x3|x3+8] [--from N] [--to N] [--top N]
 
 Each second the firmware prints "PROF <samples> smp: ADDR:permille ..." (+ "PROF+"
 continuation lines) after its PERF line for core 0, and "PROF1" / "PROF1+" lines
 for core 1 (the scanout and Denise's stages); --core picks one (default 0).  The buckets are 64 bytes of code; this
 weights each second by its sample count, sums by bucket and by function
 (addr2line -f), and prints both, with where the code runs from (SRAM / flash).
---mode keeps the seconds whose PERF line has that A1200 load test; --from / --to
+--cpu names the handler overlay's code by that CPU's set (default: the 68EC020's
+when the log's boot line is an A1200's or a CD32's).  --mode keeps the seconds whose PERF line has that A1200 load test; --from / --to
 pick PERF lines by number (1-based)."""
 import re, subprocess, sys
 from collections import defaultdict
@@ -76,6 +77,23 @@ def main():
     a2l = subprocess.run([addr2line(), "-f", "-e", elf] + [hex(a) for a in addrs],
                          capture_output=True, text=True).stdout.split("\n")
     names = {a: a2l[2 * i] for i, a in enumerate(addrs)}
+    # Musashi's two handler sets share one SRAM window (the overlay), so an
+    # address there has two names: take the running CPU's set, and of its
+    # functions the one with the most bytes in the bucket.
+    cpu = opt("--cpu") or ("020" if re.search(r"^(A1200|CD32) \(", open(log, errors="replace").read(), re.M) else "000")
+    syms = []
+    out = subprocess.run([addr2line().replace("addr2line", "objdump"), "-t", "-j", "m68k_ovl_" + cpu, elf],
+                         capture_output=True, text=True).stdout
+    for l in out.split("\n"):
+        f = l.split()
+        if len(f) >= 5 and f[-3] == "m68k_ovl_" + cpu and not f[-1].startswith("$") and int(f[-2], 16):
+            syms.append((int(f[0], 16), int(f[-2], 16), f[-1]))
+    if syms:
+        lo_ovl, hi_ovl = min(x[0] for x in syms), max(x[0] + x[1] for x in syms)
+        for a in addrs:
+            if lo_ovl <= a < hi_ovl:
+                best = max(syms, key=lambda x: min(a + 64, x[0] + x[1]) - max(a, x[0]))
+                if min(a + 64, best[0] + best[1]) > max(a, best[0]): names[a] = best[2]
     funcs = defaultdict(float)
     for a, n in buckets.items(): funcs[(names[a], region(a))] += n
     named = sum(buckets.values())
