@@ -20,6 +20,7 @@
 //                    volume too - C/WHDLoad, Devs/Kickstarts/kickN.M + .RTB, S/WHDLoad.prefs)
 //                   [--frames N] [--shot N:file.png]... [--wav out.wav]
 //                   [--slow] [--a500plus | --a600] [--vcentre] [--key N:code:down]... [--status K]
+//                   [--skip-odd | --skip-rand P] (frames not drawn: every other one, or P% of them without a pattern)
 //                   [--joy N:dirs:fire]... [--mouse N:dx:dy:buttons]...
 // --joy sets game port 2 from frame N on (dirs: bit0 up 1 down 2 left 3 right);
 // --mouse moves the port 1 mouse once at frame N (buttons: bit0 left 1 right).
@@ -409,6 +410,7 @@ int main(int argc, char **argv) {
     bool slow = false, render_thread_on = false, plus = false, a600 = false, a601 = false, cpu020 = false, a1200 = false, aga = false, vcentre = false, write_back = false;
     int chip_bus = -1;                                 // --chip-bus / --fast-bus; default: on with --a1200
     bool skip_odd = false, bus_auto = false;
+    int skip_rand = 0;                                 // --skip-rand P: P% of the frames not drawn, in runs of up to 4 (as the board's lateness skips)
     int bus_fetch8 = 6, bus_cost8 = 16;
     const char *hist_path = NULL, *pchist_path = NULL;
     shot_t shots[64]; int nshots = 0;
@@ -453,6 +455,7 @@ int main(int argc, char **argv) {
         else if (!strcmp(a, "--chip-bus")) chip_bus = 1;
         else if (!strcmp(a, "--fast-bus")) chip_bus = 0;
         else if (!strcmp(a, "--skip-odd")) skip_odd = true;     // odd frames not drawn (amiga_set_render_skip)
+        else if (!strcmp(a, "--skip-rand") && v) { skip_rand = atoi(v); i++; }
         else if (!strcmp(a, "--bus-auto")) bus_auto = true;     // amiga_set_chip_bus_auto
         else if (!strcmp(a, "--bus-tune") && v) { sscanf(v, "%d,%d", &bus_fetch8, &bus_cost8); i++; }   // amiga_set_chip_bus_params
         else if (!strcmp(a, "--hist") && v) { hist_path = v; i++; }
@@ -589,7 +592,17 @@ int main(int argc, char **argv) {
                     amiga_insert_disk(swaps[k].a, &d);
                 }
             }
-        amiga_set_render_skip(skip_odd && (f & 1));
+        {
+            // --skip-rand: without a pattern, as the board skips when it is late; a
+            // program that alternates two copper lists a frame (Agony) meets every
+            // order of drawn and skipped lists only so.
+            static uint32_t lcg = 12345; static int run;
+            lcg = lcg * 1664525u + 1013904223u;
+            bool skip = skip_odd && (f & 1);
+            if (skip_rand) skip = (int)((lcg >> 16) % 100) < skip_rand && run < 4;
+            run = skip ? run + 1 : 0;
+            amiga_set_render_skip(skip);
+        }
         amiga_trace_reg = f + 1 == trace_frame ? trace_reg : NULL;
         amiga_run_frame();
         for (int k = 0; k < ndumps; k++) if (dumps[k].frame == f + 1) {

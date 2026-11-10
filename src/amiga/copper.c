@@ -30,21 +30,30 @@ static uint32_t pc;
 // Arte start with a stub that jumps to the real list.
 uint8_t  cop_mir[COP_MIR_N][COP_MIR_SIZE];
 uint32_t cop_mir_lo[COP_MIR_N] = { COP_MIR_NONE, COP_MIR_NONE };
-// The CPU's own chip RAM writes (the opcode handlers', m68krun.h) come to the
-// mirror only for the 4 KB pages marked here: how many windows (the read-ahead
-// too) have bytes in the page, at every address chip RAM appears at.  A window
-// counts from the byte before it: a word written there has its low byte in it.
-AMIGA_HOT static void mir_pages(uint32_t lo, uint32_t size, int d) {
+// The CPU's own chip RAM writes (the opcode handlers', m68krun.h) and the
+// blitter's clears come to the mirror only for the 4 KB pages marked here: a bit
+// a page with bytes of a window (the read-ahead too) in it, at every address
+// chip RAM appears at.  A window counts from the byte before it: a word written
+// there has its low byte in it.  64 bytes (a count a page was 512: the menu's
+// heap on PICO_DV is what SRAM leaves), rebuilt whenever a window moves.
+AMIGA_HOT static void mir_pages(uint32_t lo, uint32_t size) {
     if (lo == COP_MIR_NONE) return;
     const uint32_t chip = A.chip_mask + 1;
     for (uint32_t p = (lo ? lo - 1 : 0) >> 12; p <= (lo + size - 1) >> 12; p++)
-        for (uint32_t a = p << 12; a < M68K_FAST_CHIP_TOP; a += chip) m68k_fast_wmap[a >> 12] += (uint8_t)d;
+        for (uint32_t a = p << 12; a < M68K_FAST_CHIP_TOP; a += chip) m68k_fast_wmap[a >> 15] |= (uint8_t)(1u << ((a >> 12) & 7));
 }
-// Move a window (*var: its chip offset, or COP_MIR_NONE).
+// Move a window (*var: its chip offset, or COP_MIR_NONE).  The read-ahead moves
+// a few hundred times a frame: the map is cleared here, not by libc's memset in
+// flash (the attribute keeps GCC from making the loop that call).
+#if defined(__GNUC__) && !defined(__clang__)
+__attribute__((optimize("no-tree-loop-distribute-patterns")))
+#endif
 AMIGA_HOT static void mir_set(uint32_t *var, uint32_t lo, uint32_t size) {
-    mir_pages(*var, size, -1);
     *var = lo;
-    mir_pages(lo, size, 1);
+    for (unsigned i = 0; i < M68K_FAST_WMAP; i++) m68k_fast_wmap[i] = 0;
+    for (int w = 0; w < COP_MIR_N; w++) mir_pages(cop_mir_lo[w], COP_MIR_SIZE);
+    mir_pages(cop_ra_lo, COP_RA_SIZE);
+    (void)size;
 }
 #define MIR_ADOPT 3
 #define MIR_BLK    4096
@@ -207,14 +216,11 @@ AMIGA_HOT static int wait_until(int from, int to) {
 // at the next drawn frame (5 frames at most).
 #define COP_REC_N  2
 #define COP_EV_MAX 8
-#define COP_JMP_MAX 4
 typedef struct {
-    uint32_t key;                                       // the list's start (COP1LC at the frame's start)
+    uint32_t key, key2;                                 // the list: COP1LC and COP2LC at the frame's start
     uint8_t  n;
     bool     on, over;
-    uint8_t  njmp;
     struct { uint32_t pc; uint16_t vpos; uint16_t ir1; uint8_t h; } ev[COP_EV_MAX];   // ir1: the MOVE's first word
-    struct { uint32_t pc, to; uint16_t ir1; } jmp[COP_JMP_MAX];                       // the COPJMP strobes it ran: where, where to
 } cop_rec_t;
 static cop_rec_t  cop_rec[COP_REC_N], cop_cur;          // by list; the frame running
 static const cop_rec_t *cop_play;                      // the skipped frame's record, or NULL: the copper runs
@@ -243,32 +249,32 @@ static void cop_replay(int until) {
 static void cop_frame(void) {
     if (cop_ran) {                                      // the frame that ran: its record, over its list's old one
         int w = -1;
-        for (int k = 0; k < COP_REC_N; k++) if (cop_rec[k].on && cop_rec[k].key == cop_cur.key) w = k;
+        for (int k = 0; k < COP_REC_N; k++)
+            if (cop_rec[k].on && cop_rec[k].key == cop_cur.key && cop_rec[k].key2 == cop_cur.key2) w = k;
         if (w < 0) { w = cop_rec_next; cop_rec_next = (cop_rec_next + 1) % COP_REC_N; }
         cop_rec[w] = cop_cur;
         cop_rec[w].on = true;
     }
     cop_ran = false;
-    cop_cur.key = lc[0]; cop_cur.n = 0; cop_cur.njmp = 0; cop_cur.over = false;
+    // COP2LC is part of the list's name: Agony's frames all start at one COP1LC,
+    // jump (COPJMP2) to one of two second lists in turn, and each of those sets
+    // COP2LC to the other for the next frame.  Under COP1LC alone a skipped frame
+    // replayed the MOVEs of the list drawn last - COP2LC to the skipped frame's
+    // own list again, so the next frame showed the list the game was not ready
+    // to show: its background flickered on the board whenever frames were
+    // skipped (2026-11-10).  With both, each list has its record.
+    cop_cur.key = lc[0]; cop_cur.key2 = lc[1]; cop_cur.n = 0; cop_cur.over = false;
     cop_play = NULL; cop_play_i = 0;
     if (!A.render_skip) return;
     for (int k = 0; k < COP_REC_N; k++)
-        if (cop_rec[k].on && cop_rec[k].key == lc[0] && !cop_rec[k].over) cop_play = &cop_rec[k];
-    // The record is the list's only while the list is what it was.  Roots' plasma
-    // near its end has its list where the part before had one that jumped (COPJMP2)
-    // to a second list with a MOVE to DMACON in it; that part's record, replayed
-    // for the plasma's first skipped frame, read the MOVE from the second list -
-    // still in memory, never reached now - and set BLTPRI for good: the plasma's
-    // 128 blits a frame then overran each other and it was six stripes.  So each
-    // recorded MOVE must still be there, and each jump the record's list made
-    // still there and to the same place; if not, the list runs (and is recorded).
+        if (cop_rec[k].on && cop_rec[k].key == lc[0] && cop_rec[k].key2 == lc[1] && !cop_rec[k].over) cop_play = &cop_rec[k];
+    // The record is the list's only while the list is what it was: each recorded
+    // MOVE must still be there (its first word), or the list runs and is recorded
+    // anew - another part may have built its own list at the same address.
     if (cop_play) {
         const cop_rec_t *r = cop_play;
-        bool same = true;
-        for (int i = 0; i < r->n && same; i++) same = chip_rw(r->ev[i].pc) == r->ev[i].ir1;
-        for (int i = 0; i < r->njmp && same; i++)
-            same = chip_rw(r->jmp[i].pc) == r->jmp[i].ir1 && lc[(r->jmp[i].ir1 & 0x1FE) == R_COPJMP2] == r->jmp[i].to;
-        if (!same) cop_play = NULL;
+        for (int i = 0; i < r->n; i++)
+            if (chip_rw(r->ev[i].pc) != r->ev[i].ir1) { cop_play = NULL; break; }
     }
 }
 
@@ -321,10 +327,12 @@ AMIGA_HOT void copper_run(int from, int until) {
         // a MOVE lands with the second - at cop_h when every cycle is free, as
         // before.  One that lands in a later slice waits for that slice (this
         // one's CPU writes come first), its first word's cycle kept.
-        const int s1 = denise_copper_slot(cop_h - 2);
-        const int s2 = denise_copper_slot(s1 + 2);
-        if (s2 >= until) { cop_h = s1 + 2; cop_defer = true; return; }
-        cop_h = s2;
+        if (denise_cop_steal) {
+            const int s1 = denise_copper_slot(cop_h - 2);
+            const int s2 = denise_copper_slot(s1 + 2);
+            if (s2 >= until) { cop_h = s1 + 2; cop_defer = true; return; }
+            cop_h = s2;
+        }
         const uint32_t w = fetch(pc);
         ir1 = (uint16_t)(w >> 16);
         ir2 = (uint16_t)w;
@@ -343,14 +351,6 @@ AMIGA_HOT void copper_run(int from, int until) {
                 AMIGA_TRACE_REG(reg, ir2, cop_h, 1);
                 denise_bplpt(reg, ir2, cop_h);
             } else {
-                if (reg == R_COPJMP1 || reg == R_COPJMP2) {
-                    if (cop_cur.njmp < COP_JMP_MAX) {
-                        cop_cur.jmp[cop_cur.njmp].pc = pc - 4;
-                        cop_cur.jmp[cop_cur.njmp].ir1 = ir1;
-                        cop_cur.jmp[cop_cur.njmp].to = lc[reg == R_COPJMP2];
-                        cop_cur.njmp++;
-                    } else cop_cur.over = true;
-                }
                 if (!display_only(reg)) {
                     if (cop_cur.n < COP_EV_MAX) {
                         cop_cur.ev[cop_cur.n].pc = pc - 4;

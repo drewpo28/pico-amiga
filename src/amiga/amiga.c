@@ -26,8 +26,12 @@
 
 amiga_t A;
 unsigned int amiga_bus_instr;                    // instructions run (m68k_execute)
-unsigned short amiga_icache_tag[64];             // the 68020's instruction cache, by line (m68kcpu.h)
+#ifdef AMIGA_STATS
+unsigned short amiga_icache_tag[64];             // the 68020's instruction cache, by line (m68kcpu.h): the bench's
 unsigned int amiga_icache_miss;
+#else
+#define amiga_icache_miss 0u                     // the board keeps no tags (SRAM: the menu's heap)
+#endif
 unsigned int amiga_stat_data, amiga_stat_fetch, amiga_stat_audw;  // AMIGA_STATS counters
 #ifdef AMIGA_STATS
 unsigned int amiga_stat_hist[2048];                                // 8 KB: the bench only

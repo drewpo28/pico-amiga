@@ -214,7 +214,7 @@ M68KI_HOT2 static __attribute__((noinline)) void m68kf_w8(uint a, uint v)
 		if(a < M68K_FAST_CHIP_TOP)
 		{
 			m68ki_cpu.bus_data++;
-			if(m68ki_cpu.fast_wmap[a >> 12])
+			if(M68K_FAST_WPAGE(m68ki_cpu.fast_wmap, a))
 				m68k_fast_mirror(a, v, 1);
 		}
 		return;
@@ -235,7 +235,7 @@ M68KI_HOT2 static __attribute__((noinline)) void m68kf_w16(uint a, uint v)
 		if(a < M68K_FAST_CHIP_TOP)
 		{
 			m68ki_cpu.bus_data++;
-			if(m68ki_cpu.fast_wmap[a >> 12])
+			if(M68K_FAST_WPAGE(m68ki_cpu.fast_wmap, a))
 				m68k_fast_mirror(a, w, 2);
 		}
 		return;

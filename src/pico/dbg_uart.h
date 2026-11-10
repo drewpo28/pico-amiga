@@ -20,6 +20,11 @@ void dbg_uart_pump(void);
 // and the baud rate again after a clock change (clk_peri follows clk_sys).
 void dbg_uart_flush(void);
 void dbg_uart_reclock(void);
+// The ring's 4 KB moved to `mem` (PSRAM, once it is up) and given back to the
+// heap: the menu's heap on PICO_DV is ~14 KB, and with the log on the Snapshots
+// list had too little of it left ("Out of memory").
+void dbg_uart_move_ring(void *mem);
+#define DBG_UART_RING 4096u
 
 // Once a second while the console runs: emulated frame time, FPS and the
 // profiler's split, one line ("PERF ..."). Call after every amiga_run_frame().

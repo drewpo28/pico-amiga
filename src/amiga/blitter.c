@@ -30,6 +30,28 @@ static bool     busy, zero = true;
 static uint64_t done_cyc;
 static uint32_t nblits;
 
+// The minterm as two selections (WinUAE's tables, without the 256 functions):
+// bit i of LF is the result for (A, B, C) = i >> 2, i >> 1, i, so with each bit
+// a 0 / $FFFF mask m[i], C picks within each pair, B within each pair of pairs,
+// A between the halves - 14 operations a word for any LF.  Roots' plasma near
+// its end runs 128 blits of A | B | C a frame: the eight terms tested one by
+// one were a third of the blitter's instructions.  Checked against them for all
+// 256 LFs.
+typedef struct { uint16_t m0, m2, m4, m6, k10, k32, k54, k76; } mt_t;
+static inline mt_t mt_make(uint8_t lf) {
+    uint16_t m[8];
+    for (int i = 0; i < 8; i++) m[i] = (lf >> i) & 1 ? 0xFFFF : 0;
+    const mt_t t = { m[0], m[2], m[4], m[6], (uint16_t)(m[1] ^ m[0]), (uint16_t)(m[3] ^ m[2]),
+                     (uint16_t)(m[5] ^ m[4]), (uint16_t)(m[7] ^ m[6]) };
+    return t;
+}
+static inline uint16_t mt_eval(const mt_t *t, uint16_t a, uint16_t b, uint16_t c) {
+    const uint16_t l0 = t->m0 ^ (c & t->k10), l1 = t->m2 ^ (c & t->k32);
+    const uint16_t h0 = t->m4 ^ (c & t->k54), h1 = t->m6 ^ (c & t->k76);
+    const uint16_t gl = l0 ^ (b & (l1 ^ l0)), gh = h0 ^ (b & (h1 ^ h0));
+    return (uint16_t)(gl ^ (a & (gh ^ gl)));
+}
+
 static inline uint16_t minterm(uint16_t a, uint16_t b, uint16_t c, uint8_t lf) {
     switch (lf) {                       // the common ones (State of the Art: clear, copy)
     case 0x00: return 0;
@@ -114,7 +136,7 @@ AMIGA_HOT static uint32_t area_blit(void) {
                 // Arte clears and fills its copper lists with such blits, and the
                 // copper went on with the mirror's old words (its tunnel's walls
                 // missing or left over; seen once frames were skipped).
-                if (o != v) { memcpy(d, &v, 2); if (m68k_fast_wmap[off >> 12]) cop_mir_w16(off, v); }
+                if (o != v) { memcpy(d, &v, 2); if (M68K_FAST_WPAGE(m68k_fast_wmap, off)) cop_mir_w16(off, v); }
                 pt[BD] += inc;
                 if (copy && y == h - 1 && x == w - 1) adat = __builtin_bswap16(v);
             }
@@ -131,6 +153,7 @@ AMIGA_HOT static uint32_t area_blit(void) {
     // after the DMA.  B is always read, its shifter state outlives the blit.
     const bool needA = (lf >> 4) != (lf & 15);
     const bool needC = ((lf >> 1) & 0x55) != (lf & 0x55);
+    const mt_t mt = mt_make(lf);
     for (int y = 0; y < h; y++) {
         bool carry = (con1 & 0x0004) != 0;
         uint16_t mask = afwm;
@@ -148,7 +171,7 @@ AMIGA_HOT static uint32_t area_blit(void) {
                 bhold = desc ? shift_desc(bdat, bold, bsh) : shift_asc(bdat, bold, bsh);
                 bold = bdat;
             }
-            uint16_t d = minterm(ahold, bhold, cdat, lf);
+            uint16_t d = mt_eval(&mt, ahold, bhold, cdat);
             if (dofill) d = fill(d, &carry, excl);
             if (d) z = false;
             if (useD) {                     // as above: an unchanged word is not written

@@ -25,6 +25,7 @@ extern "C" bool dbg_uart_start(bool want) { dbg_on = want; return want; }
 extern "C" bool dbg_uart_active(void) { return dbg_on; }
 extern "C" void dbg_uart_pump(void) { fflush(stdout); }
 extern "C" void dbg_uart_flush(void) { fflush(stdout); }
+extern "C" void dbg_uart_move_ring(void *) {}                  // stdout has no ring
 extern "C" void dbg_uart_reclock(void) {}
 
 // board.h: the profiler's clock (nanoseconds on a PC).

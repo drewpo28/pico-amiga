@@ -355,12 +355,13 @@ void m68k_fetch_stage(unsigned int address, unsigned char *buf, unsigned int n);
  * or NULL where the callback must run (I/O, nothing, a ROM's writes).  The
  * platform fills it and keeps it current (mem.c).
  * The banks below M68K_FAST_CHIP_TOP are chip RAM's: an access there counts in
- * m68k_fast_data() (the chip bus model), and a write to a 4 KB page whose
- * m68k_fast_wmap[] entry is not 0 is passed on to m68k_fast_mirror() (the
- * copper list mirror; value as stored, size 1 or 2). */
+ * m68k_fast_data() (the chip bus model), and a write to a 4 KB page whose bit
+ * is set in m68k_fast_wmap[] (M68K_FAST_WPAGE()) is passed on to
+ * m68k_fast_mirror() (the copper list mirror; value as stored, size 1 or 2). */
 typedef struct { const unsigned char *rd; unsigned char *wr; } m68k_fast_t;
 #define M68K_FAST_CHIP_TOP 0x200000u
-#define M68K_FAST_WMAP     (M68K_FAST_CHIP_TOP >> 12)
+#define M68K_FAST_WMAP     (M68K_FAST_CHIP_TOP >> 15)          /* bytes: a bit per 4 KB page */
+#define M68K_FAST_WPAGE(map, a) (((map)[(a) >> 15] >> (((a) >> 12) & 7)) & 1)
 /* Both live in the CPU's own structure (the handlers hold its address). */
 extern m68k_fast_t *const m68k_fast;             /* [256] */
 extern unsigned char *const m68k_fast_wmap;      /* [M68K_FAST_WMAP] */

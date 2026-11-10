@@ -381,6 +381,7 @@ AMIGA_HOT static void spread_shres(const uint16_t wd[8][4], int np, int first, i
 }
 
 // Fetch stage: unit k's words, from the ring, spread into the playfield.
+static void cop_steal_update(void);                      // denise_cop_steal (below)
 static uint32_t f_seq;                                   // the fetch stage's line (pf_written)
 AMIGA_HOT static void fetch_unit(int k) {
     const agnus_t *f = &fetch_st;
@@ -516,7 +517,6 @@ static inline uint16_t pf_color(uint8_t v, int *which) {
 //     that pair, BPLCON2's PF1P / PF2P.
 static uint16_t spr_col[32];
 static uint8_t  pf_front[3];
-static bool     spr_all_front;              // no playfield is in front of any pair: no test a pixel
 static bool     spr_mix_dirty = true;
 static inline uint16_t sprite_mix(int x, uint16_t c, int which) {
     const uint8_t s = spl[x];
@@ -531,7 +531,6 @@ AMIGA_HOT static void spr_mix_update(void) {
     pf_front[0] = 0;
     pf_front[1] = (uint8_t)(0xF << (bplcon2 & 7));             // pair >= PF1P
     pf_front[2] = (uint8_t)(0xF << ((bplcon2 >> 3) & 7));
-    spr_all_front = !((pf_front[1] | pf_front[2]) & 0xF);
 }
 // A colour write to entry n: the sprites' colours changed?
 static inline void spr_col_written(unsigned n) {
@@ -891,12 +890,7 @@ AMIGA_HOT static void output(int x0, int x1) {
     if (!hires) {
         if (w_mode == AMIGA_ROW_DIRECT) {        // the AGA rule: straight into the row (Roots'
             uint16_t *d = fbrow->px.rgb - f0;    // sprite part outputs ~14 ranges a line)
-            if (spr_all_front) {                 // ...of sprites over everything: 83,000 pixels a frame
-                for (int x = wa; x < wb; x++) {
-                    const uint8_t s = spl[x];
-                    d[x] = (s & 0x80) ? spr_col[((s >> 2) & 16) | (s & 15)] : lut[pf_o[x]];
-                }
-            } else if (lut_pf_plain) {           // one playfield (colour 0 is behind every sprite):
+            if (lut_pf_plain) {           // one playfield (colour 0 is behind every sprite):
                 const unsigned front = pf_front[2];   // its priority in a register, no lut_pf a pixel
                 for (int x = wa; x < wb; x++) {
                     const uint8_t s = spl[x], v = pf_o[x];
@@ -1273,11 +1267,14 @@ AMIGA_HOT static void vwin_apply(agnus_t *f) {
                      (f->dmacon & (DMAF_MASTER | DMAF_RASTER)) == (DMAF_MASTER | DMAF_RASTER);
 }
 
+// The registers the copper's cycles depend on (denise_cop_steal) update it in
+// their cases: the colours, BPLCON1-4 and the modulos, most of the writes, not.
+#define STEAL() do { if (f == &dma_st) cop_steal_update(); } while (0)
 AMIGA_HOT static void a_apply(agnus_t *f, uint32_t reg, uint16_t v) {
     switch (reg) {
-    case R_BPLCON0: f->bplcon0 = v; if (A.aga && f->fetch_k == 0) compute_ddf(f); break;   // AGA: the unit's length
+    case R_BPLCON0: f->bplcon0 = v; if (A.aga && f->fetch_k == 0) compute_ddf(f); STEAL(); break;   // AGA: the unit's length
     case R_BPLCON1: f->bplcon1 = v; break;
-    case R_FMODE:   f->fmode = v; if (f->fetch_k == 0) compute_ddf(f); break;
+    case R_FMODE:   f->fmode = v; if (f->fetch_k == 0) compute_ddf(f); STEAL(); break;
     // The vertical window the line's bitplane DMA follows is the one at its
     // DDFSTRT: a DIWSTRT written before it counts for this line, one after it
     // from the next line.  Sanity's Arte puts its vblank setup (DIWSTRT $2981,
@@ -1285,11 +1282,11 @@ AMIGA_HOT static void a_apply(agnus_t *f, uint32_t reg, uint16_t v) {
     // and the picture's plane pointers at colour clocks 114-170 of that line:
     // fetched on line 32 after the writes, the planes started 5-9 words apart
     // and the picture was a shredded, triple one.
-    case R_DIWSTRT: f->diwstrt = v; f->diwhigh = 0; vwin_apply(f); break;
-    case R_DIWSTOP: f->diwstop = v; f->diwhigh = 0; vwin_apply(f); break;
-    case R_DIWHIGH: f->diwhigh = (uint16_t)(v | DIWHIGH_ON); vwin_apply(f); break;
-    case R_DDFSTRT: f->ddfstrt = v; if (f->fetch_k == 0) compute_ddf(f); break;
-    case R_DDFSTOP: f->ddfstop = v; if (f->fetch_k == 0) compute_ddf(f); break;
+    case R_DIWSTRT: f->diwstrt = v; f->diwhigh = 0; vwin_apply(f); STEAL(); break;
+    case R_DIWSTOP: f->diwstop = v; f->diwhigh = 0; vwin_apply(f); STEAL(); break;
+    case R_DIWHIGH: f->diwhigh = (uint16_t)(v | DIWHIGH_ON); vwin_apply(f); STEAL(); break;
+    case R_DDFSTRT: f->ddfstrt = v; if (f->fetch_k == 0) compute_ddf(f); STEAL(); break;
+    case R_DDFSTOP: f->ddfstop = v; if (f->fetch_k == 0) compute_ddf(f); STEAL(); break;
     case R_DMACON: {
         // Bitplane DMA turned off mid-line fetches no further unit (nor adds the
         // modulos); turned on, it fetches the units from here on.  A-Type's panel
@@ -1302,11 +1299,13 @@ AMIGA_HOT static void a_apply(agnus_t *f, uint32_t reg, uint16_t v) {
                      (v & (DMAF_MASTER | DMAF_RASTER)) == (DMAF_MASTER | DMAF_RASTER);
         if (f->bpl_dma && !was)
             while (f->fetch_k < f->nunits && f->ds + f->fetch_k * f->unit_cc < f->r_h) f->fetch_k++;
+        STEAL();
         break;
     }
     default: break;
     }
 }
+#undef STEAL
 
 AMIGA_HOT static void f_apply(uint32_t reg, uint16_t v) { a_apply(&fetch_st, reg, v); }
 
@@ -1385,6 +1384,7 @@ static void c_reset(void) {
     diwstrt = 0x2C81; diwstop = 0xF4C1; diwhigh = 0;
     const agnus_t init = AGNUS_INIT;
     dma_st = fetch_st = init;
+    denise_cop_steal = 0;
     memset(bplpt, 0, sizeof bplpt);
     bplmod[0] = bplmod[1] = 0;
     memset(color, 0, sizeof color);
@@ -1649,6 +1649,7 @@ AMIGA_HOT void denise_line_start(void) {
     }
     dma_st.vpos = A.vpos; dma_st.dmacon = A.dmacon;
     a_line_start(&dma_st);
+    cop_steal_update();
     if (A.vpos == 0) { dma_lines_last = dma_lines; dma_lines = 0; }
     if (dma_st.bpl_dma) dma_lines++;
     push(EV_LINE, A.dmacon, (uint16_t)A.vpos, (uint16_t)((A.lof ? 1 : 0) | (A.lines << 1)));
@@ -1803,6 +1804,18 @@ AMIGA_HOT int denise_bus_busy8(int h0, int h1) {
 // Agony (6 planes, dual playfield) turns COLOR00 into its sky's colour with a
 // WAIT for $42 and a MOVE on every line; without this the MOVE came 8 pixels
 // before the window's left edge and the sky showed there as a stripe.
+uint8_t denise_cop_steal;
+// In flash: a few register writes and the line starts call it (the menu's heap
+// on PICO_DV is what SRAM has left).  denise_copper_slot below is NOT: Agony
+// calls it ~1,000 times a frame, and from flash - XIP misses against the chip
+// RAM traffic - its frames ran over 20 ms, were skipped, and the sky it dithers
+// in time flickered again (2026-11-10).
+__attribute__((noinline)) static void cop_steal_update(void) {
+    const agnus_t *f = &dma_st;
+    const int np = planes(f->bplcon0), r = res(f->bplcon0);
+    denise_cop_steal = f->bpl_dma && f->nunits > 0 && fmode_i(f) == 0 &&
+                       (r == LORES ? np > 4 : r == HIRES ? np > 2 : false);
+}
 AMIGA_HOT int denise_copper_slot(int h) {
     const agnus_t *f = &dma_st;
     if (!f->bpl_dma || f->nunits <= 0 || fmode_i(f) != 0) return h;

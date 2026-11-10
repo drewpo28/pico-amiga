@@ -5,6 +5,7 @@
 // default) its 4 KB stay the heap's.
 #include "dbg_uart.h"
 #include <stdlib.h>
+#include <string.h>
 #include "pico/stdlib.h"
 #include "pico/stdio/driver.h"
 #include "hardware/uart.h"
@@ -15,8 +16,9 @@
 #define DBG_UART_INST (((DBG_UART_TX_PIN + 4) / 8) % 2 ? uart1 : uart0)
 #endif
 
-#define RING 4096u
+#define RING DBG_UART_RING
 static char    *ring;
+static bool     ring_heap;      // the ring is malloc's (until dbg_uart_move_ring)
 static uint32_t wr, rd;
 static bool     on;
 
@@ -53,11 +55,29 @@ void dbg_uart_reclock(void) {
 #endif
 }
 
+void dbg_uart_move_ring(void *mem) {
+#ifdef DBG_UART_TX_PIN
+    if (!ring_heap || !mem) return;
+    // Only core 0 prints this early (core 1 is not started): nothing writes the
+    // ring while it moves.
+    memcpy(mem, ring, RING);
+    char *old = ring;
+    ring = mem;
+    ring_heap = false;
+    free(old);
+#else
+    (void)mem;
+#endif
+}
+
 bool dbg_uart_start(bool want) {
 #ifdef DBG_UART_TX_PIN
     if (!want || on) return on;
-    ring = malloc(RING);
-    if (!ring) return false;
+    if (!ring) {
+        ring = malloc(RING);
+        if (!ring) return false;
+        ring_heap = true;
+    }
     uart_init(DBG_UART_INST, 115200);
     gpio_set_function(DBG_UART_TX_PIN, GPIO_FUNC_UART);
     stdio_set_driver_enabled(&drv, true);

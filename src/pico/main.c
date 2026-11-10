@@ -13,8 +13,9 @@
 //            at +32 KB the audio ring (16 KB: Paula writes it, the audio tick reads
 //            it - no DMA; 16 KB of SRAM given back, 2026-11-09)
 //            at +48 KB the PC profiler's tables (4 KB: the heap had no 4 KB left
-//            with the menu open, and the SDK's calloc panics)
-//   +2.0 MB + 52 KB  DMS images: the decoder's work area, then 880 KB per drive
+//            with the menu open, and the SDK's calloc panics), at +52 KB the
+//            UART log's ring (4 KB, the same reason: Snapshots ran out with it)
+//   +2.0 MB + 56 KB  DMS images: the decoder's work area, then 880 KB per drive
 //            (machine.cpp; DF0..DF3 fit in 8 MB, a 2 MB PSRAM takes no DMS
 //            and has no Win+F8 band)
 // With 8 MB or more the chip RAM area is 2 MB (the A600 with an A601: Machine >
@@ -183,7 +184,7 @@ int main(void) {
     // 2 MB PSRAM has no band, and its track comes from the heap.
     const uint32_t chip_area = psram >= 8 * MB ? 2 * MB : 1 * MB;
     uint8_t *const hi = ps + chip_area + 1 * MB;
-    const uint32_t misc = 52 * KB;
+    const uint32_t misc = 56 * KB;
     if (ui_stats_buffer_size() > 16 * KB || AMIGA_TRACK_WORDS * 2 > 16 * KB)
         fail(0xF00);                 // a build error in all but name
     const bool more = psram > chip_area + 1 * MB + misc;
@@ -193,6 +194,7 @@ int main(void) {
     int16_t *audio_ring = more ? (int16_t *)(hi + 32 * KB) : malloc(AUDIO_FRAMES * 4);
     if (!audio_ring) fail(0xF00);
     if (more) board_pcprof_mem(hi + 48 * KB);   // Debug > PC profiler's tables (4 KB)
+    if (more) dbg_uart_move_ring(hi + 52 * KB); // Debug > UART log's ring (4 KB), out of the heap
     machine_init(ps + chip_area, ps + chip_area + 512 * KB, more ? hi + misc : NULL,
                  more ? psram - (chip_area + 1 * MB) - misc : 0, chip_area);
 

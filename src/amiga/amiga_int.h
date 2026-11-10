@@ -2,6 +2,7 @@
 #pragma once
 #include <string.h>
 #include "amiga.h"
+#include "m68k.h"
 
 #ifndef AMIGA_HOT
 // Placement hook for the hottest functions (the firmware maps it to SRAM).
@@ -250,7 +251,7 @@ static inline void chip_ww(uint32_t addr, uint16_t v) {
     const uint32_t off = addr & A.chip_mask & ~1u;
     v = __builtin_bswap16(v);
     memcpy(A.cfg.chip_ram + off, &v, 2);
-    cop_mir_w16(off, v);
+    if (M68K_FAST_WPAGE(m68k_fast_wmap, off)) cop_mir_w16(off, v);   // a page with a window (m68k.h)
 }
 
 // ---- custom chip register dispatch (custom.c) ------------------------------
@@ -293,6 +294,11 @@ bool     denise_lace(void);                         // BPLCON0 LACE
 void     denise_status(amiga_status_t *st);          // bplcon0, fmode, dma_lines
 int      denise_bus_busy8(int h0, int h1);           // bitplane DMA's chip cycles in [h0, h1), in eighths
 int      denise_copper_slot(int h);                  // the copper's first free cycle from h on (bitplane DMA takes some)
+// ...and whether the bitplane DMA can take any on this line now (5+ lowres or 3+
+// hires planes, FMODE 0, the line fetching): the copper asks only then.  Roots'
+// sprite part runs 14,000 copper instructions a frame, and asking each time was
+// ~1M ARM instructions a frame on the emulation's core: below 50 fps again.
+extern uint8_t denise_cop_steal;
 void     denise_sync(void);                         // wait for the render core (async)
 uint32_t denise_core1_ticks(void);
 

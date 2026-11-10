@@ -509,6 +509,31 @@
   (8.8% of its width in, there 8.7%; with the stripe 11.3%).  The pictures of
   51 frames of 8 other programs did not move; State of the Art's final
   snapshot did (5 and 6 planes: its copper runs on other cycles now).
+  Asked only while it can matter (denise_cop_steal, kept by a_apply's
+  DIW / DDF / BPLCON0 / FMODE / DMACON cases and the line start): asked for
+  every copper instruction it cost ~1M ARM instructions a frame on core 0 in
+  Roots' sprite part (14,000 instructions a frame, one plane) and the part fell
+  below 50 fps on the board; gated, +40k (the test in copper_run).
+- **Roots' plasma near its end is blitter-bound** (2026-11-10, board log 18:54:
+  blt 7.4 ms, cpu 8.8, emu 21.5, 45 fps): 128 blits a frame of D = A | B | C,
+  4 rows of 20 words with modulos of 3 KB - all four channels strided through
+  PSRAM.  ~1.9M ARM instructions of it (QEMU) were code: the minterm is now two
+  selections over precomputed masks (14 operations for any LF, checked against
+  the eight terms for all 256), chip_ww updates the copper mirror only on a
+  marked page: 1.34M.  The rest of the 7.4 ms is PSRAM misses.  It ran at 50
+  fps before only while broken (the skipped-frame BLTPRI bug starved the CPU).
+- **The replay record is the list's by COP1LC and COP2LC** (cop_rec key, key2;
+  2026-11-10).  Agony's frames start at one COP1LC and COPJMP2 to one of two
+  second lists in turn, each setting COP2LC to the other for the next frame.
+  With COP1LC alone a skipped frame replayed the MOVEs of the list drawn last
+  and set COP2LC to its own list again: on the board the background flickered
+  whenever frames were skipped.  (The commit before had it right by another
+  road, a record of the list's jumps that sent such a frame through the whole
+  list; dropped for its SRAM.)  Bench: `--skip-rand 50` - COP2LC at each
+  frame's start alternates as in an unskipped run.  denise_copper_slot must
+  stay in SRAM: from flash Agony's 1,000 calls a frame cost it frames.
+  A WHDLoad run on the bench is not the same twice at different times (the
+  volume is built with the PC's clock): compare only runs started together.
 - **Agony's sky flickers by design**: it dithers its sky in time (two copper
   lists in turn, two shades a frame apart on 278 lines); recordings of the real
   machine flicker the same way.  Skipping frames in pairs for such programs was
