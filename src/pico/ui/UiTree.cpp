@@ -24,6 +24,7 @@
 #include "UiGfx.h"
 #include "UiRender.h"
 #include "UiSnap.h"
+#include "UiJoy.h"
 #include "app/Config.h"
 #include "roms.h"
 #include "machine.h"
@@ -609,20 +610,21 @@ static void page_hotkeys() {
         "Alt+Win+F4  Save to the current quick slot\n"
         "Win+F8      Performance band (with the drive's track and\n"
         "            sector): summary, breakdown, off\n"
-        "Ctrl+J      Cursor keys as joystick on/off\n"
+        "Ctrl+J      Keyboard as joystick on/off\n"
         "F1..F10     Amiga function keys\n"
         "\n"
-        "Joystick (game port 2) while cursor keys are a joystick:\n"
+        "Joystick (game port 2) while the keyboard is one:\n"
         "  Cursor keys   directions\n"
-        "  Left Ctrl     fire\n"
+        "  Left Ctrl     fire (red), Right Ctrl blue\n"
         "\n"
         "Amiga keys on a PC keyboard:\n"
         "  Win / PgDn / PgUp   left / left / right Amiga\n"
         "  Insert              Help\n"
         "  Home, End           keypad ( )\n"
         "\n"
-        "CD32 pad: fire is red, Right Ctrl / button B blue,\n"
-        "  Start play, Select green.\n"
+        "The pad's buttons and the keys that stand in for it\n"
+        "  (the CD32 pad's seven; red is fire, blue the second\n"
+        "  button): Devices > Input.\n"
         "\n"
         "Mouse: port 1. A USB/XInput/NES pad drives port 2.");
 }
@@ -1025,7 +1027,9 @@ static const Node kOptions[] = {
 };
 
 static const Node kInput[] = {
-    NM_BOOL ("Arrows as joystick",      SET_CURSOR_JOY, nullptr),
+    NM_PAGE ("Pad buttons",             joyPadPage,  nullptr),
+    NM_BOOL ("Keyboard as joystick",    SET_CURSOR_JOY, nullptr),
+    NM_PAGE ("Keyboard keys",           joyKeysPage, nullptr),
     NM_RADIO("Mouse speed",             SET_MOUSE_SENS, opt_mouse_sens, nullptr),
     NM_RADIO("Swap mouse buttons",      SET_MOUSE_SWAP, opt_mouse_swap, nullptr),
 };

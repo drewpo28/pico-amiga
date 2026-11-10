@@ -7,6 +7,7 @@
 #include <string.h>
 #include <vector>
 #include "ff.h"
+#include "joymap.h"
 
 using std::string;
 using std::vector;
@@ -54,6 +55,24 @@ std::string Config::hdf_raw   = "";
 std::string Config::hdf2      = "";
 std::string Config::hdf2_raw  = "";
 std::string Config::cd        = "";
+uint8_t  Config::joydef[14];
+uint16_t Config::joykey[12];
+
+// "3,4,1,..." <-> an array (the pad's and the keyboard's maps).
+template <typename T> static void listGet(const std::string& s, T* out, int n) {
+    const char* p = s.c_str();
+    for (int i = 0; i < n && *p; i++) {
+        out[i] = (T)strtoul(p, nullptr, 10);
+        while (*p && *p != ',') p++;
+        if (*p) p++;
+    }
+}
+template <typename T> static std::string listPut(const T* v, int n) {
+    std::string s;
+    char b[8];
+    for (int i = 0; i < n; i++) { snprintf(b, sizeof b, i ? ",%u" : "%u", (unsigned)v[i]); s += b; }
+    return s;
+}
 bool     Config::df0_wp       = false;
 uint8_t  Config::df0_disk     = 0;
 uint8_t  Config::persist_slot = 1;
@@ -169,6 +188,14 @@ void Config::load() {
     if (!nvs_get_str("hdf2",     hdf2,         sts)) hdf2.clear();
     if (!nvs_get_str("hdf2_raw", hdf2_raw,     sts)) hdf2_raw.clear();
     if (!nvs_get_str("cd",       cd,           sts)) cd.clear();
+    joymap_pad_defaults(joydef);
+    joymap_key_defaults(joykey);
+    {
+        std::string m;
+        if (nvs_get_str("joydef", m, sts)) listGet(m, joydef, 14);
+        if (nvs_get_str("joykey", m, sts)) listGet(m, joykey, 12);
+        for (uint8_t& a : joydef) if (a >= JOY_ACTIONS) a = JOY_A_NONE;
+    }
     nvs_get_u8 ("df0_disk",      df0_disk,     sts);
     nvs_get_u8 ("persist_slot",  persist_slot, sts);
     if (persist_slot < 1 || persist_slot > 40) persist_slot = 1;
@@ -270,6 +297,8 @@ bool Config::save() {
     nvs_set_str(buf, "hdf2",        hdf2.c_str());
     nvs_set_str(buf, "hdf2_raw",    hdf2_raw.c_str());
     nvs_set_str(buf, "cd",          cd.c_str());
+    nvs_set_str(buf, "joydef",      listPut(joydef, 14).c_str());
+    nvs_set_str(buf, "joykey",      listPut(joykey, 12).c_str());
     nvs_set_i(buf, "df0_disk",      df0_disk);
     nvs_set_i(buf, "persist_slot",  persist_slot);
     nvs_set_i(buf, "drives",        drives);

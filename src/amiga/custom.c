@@ -49,7 +49,8 @@ AMIGA_HOT uint16_t custom_read(uint32_t reg) {
             if (s == 0 || (s >= 2 && (A.pad_buttons & (1u << (s - 2))))) v &= (uint16_t)~0x4000;
             return v;
         }
-        return (uint16_t)(0xFF00 & ~(A.mouse_rmb ? 0x0400 : 0));
+        // ...and a joystick's second button (the pad's blue) DATRY.
+        return (uint16_t)(0xFF00 & ~(A.mouse_rmb ? 0x0400 : 0) & ~((A.pad_buttons & AMIGA_PAD_BLUE) ? 0x4000 : 0));
     case R_SERDATR: return 0x3800;                       // TBE | TSRE | RXD idle
     case R_DSKBYTR: return floppy_read(reg);
     case R_INTENAR: return A.intena;
@@ -109,7 +110,14 @@ AMIGA_HOT void custom_write(uint32_t reg, uint16_t v, int hpos, bool from_copper
         amiga_set_intreq(INTF_TBE);                      // the "transmission" is instant
         break;
     case R_SERPER: A.serper = v; break;
-    case R_POTGO:  A.potgo = v; break;
+    case R_POTGO:
+        A.potgo = v;
+        // The CD32 pad leaves its shift mode (pin 5 no longer driven low): the
+        // register starts over.  Cannon Fodder reads POTGOR in between only while
+        // no button is held - with the reset on that read alone, the first press
+        // of blue left the register at its end and every button read as held.
+        if (!(v & 0x2000) || (v & 0x1000)) A.pad_shift = 8;
+        break;
     case R_JOYTEST:
         A.joy0dat = (uint16_t)((A.joy0dat & 0x0303) | (v & 0xFCFC));
         A.joy1dat = (uint16_t)((A.joy1dat & 0x0303) | (v & 0xFCFC));

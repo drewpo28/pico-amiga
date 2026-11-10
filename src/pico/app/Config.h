@@ -51,6 +51,8 @@ public:
                                     // 2 writable; part 1-8, 0 typed; card sectors), "" = none
     static std::string hdf2;        // the IDE slave's image and SD window, as hdf / hdf_raw
     static std::string hdf2_raw;
+    static uint8_t  joydef[14];     // the pad's map: joymap.h JOY_A_* per JOY_S_* control
+    static uint16_t joykey[12];     // the keyboard's: a fabgl virtual key per JOY_A_* action (0 none)
     static std::string cd;          // the CD32's disc: an .iso or .cue (card path), "" = none
     static uint8_t  a600_chip;      // the A600's chip RAM in MB: 1, or 2 (an A601; 8 MB PSRAM)
     static uint8_t  fast_ram;       // Machine > A600 / A1200 > Fast RAM, MB: 0, 1, 2, 4 (a Zorro II board; PSRAM permitting)

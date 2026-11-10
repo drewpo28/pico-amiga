@@ -47,11 +47,16 @@ static void nespad_tick1(void) {
         { DPAD_DOWN,   fabgl::VirtualKey::VK_MENU_DOWN,  fabgl::VirtualKey::VK_DPAD_DOWN    },
         { DPAD_LEFT,   fabgl::VirtualKey::VK_MENU_LEFT,  fabgl::VirtualKey::VK_DPAD_LEFT    },
         { DPAD_RIGHT,  fabgl::VirtualKey::VK_MENU_RIGHT, fabgl::VirtualKey::VK_DPAD_RIGHT   },
+        // A SNES pad's other four, as the USB pads' (joymap.h: X, Y, Z = L, C = R).
+        { DPAD_X,      fabgl::VirtualKey::VK_NONE,       fabgl::VirtualKey::VK_JOY_X        },
+        { DPAD_Y,      fabgl::VirtualKey::VK_NONE,       fabgl::VirtualKey::VK_JOY_Y        },
+        { DPAD_LT,     fabgl::VirtualKey::VK_NONE,       fabgl::VirtualKey::VK_JOY_Z        },
+        { DPAD_RT,     fabgl::VirtualKey::VK_NONE,       fabgl::VirtualKey::VK_JOY_C        },
     };
     for (auto &m : map) {
         if (!((pressed | released) & m.bit)) continue;
         const bool down = (pressed & m.bit) != 0;
-        joyPushData(m.menu, down);
+        if (m.menu != fabgl::VirtualKey::VK_NONE) joyPushData(m.menu, down);
         if (Config::secondJoy != 1) joyPushData(m.dpad, down);
     }
 }

@@ -121,7 +121,19 @@
   first (insertCd). The disc's TOC and one open track file are on the heap while
   it is in. The NVRAM (1 KB on the heap while the machine is a CD32) goes to
   /pico-amiga/cd32.nvram a second after the Amiga last wrote it (machine_frame).
-  The pad comes from the VK_DPAD_* keys (input.cpp): fire red, ALTFIRE blue, START
-  play, SELECT green; yellow and the shoulder buttons have no key yet. Win+F8's
+  The pad: see the pad's map below. Win+F8's
   disk line and the drive icon show the CD as they do the hard disk (UiStats
   diskStatus).
+- The pad's map (joymap.h, input.cpp, ui/UiJoy.cpp; pico-speccy's joydef without its
+  joystick types and profiles): Config::joydef[14] gives each control of the pad
+  (pico-speccy's slots: the drivers push the directions, A, B, Start, Select as
+  VK_DPAD_*, the rest - X, Y, Z = L, C = R, L2, R2 - as VK_JOY_*; a SNES pad's four
+  extra buttons too, input_devices.cpp) an action JOY_A_*: a direction, one of the
+  CD32 pad's seven buttons, or none. Config::joykey[12] gives each action a key
+  (a fabgl VK, letters as lower case), used while Keyboard as joystick is on
+  (Config::CursorAsJoy, Ctrl+J): such a key no longer reaches the Amiga. input_frame
+  ORs both into amiga_joystick (red = fire) and amiga_cd32_pad; off a CD32 blue is
+  the second fire button (POTGOR DATRY). Both in storage.nvs as "joydef" /
+  "joykey" lists. Devices > Input > Pad buttons / Keyboard keys are pico-speccy's
+  spatial page (cells where the controls are, the cursor moving to the nearest
+  cell that way, Test lighting what is held); a key is assigned by pressing it.

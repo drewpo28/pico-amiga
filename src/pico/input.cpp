@@ -29,6 +29,7 @@
 #include "ui/UiPlatform.h"
 #include "ui/ui.h"
 #include "input_devices.h"
+#include "joymap.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-compare"      // pico-speccy's headers
 #include "drivers/input/keyboard.h"
@@ -234,35 +235,26 @@ static fabgl::VirtualKey map_key(uint8_t kc) {
 
 static void kbdExtraMapping(fabgl::VirtualKey virtualKey, bool pressed) {
     switch(virtualKey) {
-        case fabgl::VirtualKey::VK_RCTRL: if (Config::CursorAsJoy) joyPushData(fabgl::VirtualKey::VK_DPAD_ALTFIRE, pressed); break;
         case fabgl::VirtualKey::VK_HOME: joyPushData(fabgl::VirtualKey::VK_MENU_HOME, pressed); break;
         case fabgl::VirtualKey::VK_UP: {
-            if (Config::CursorAsJoy) joyPushData(fabgl::VirtualKey::VK_DPAD_UP, pressed);
             joyPushData(fabgl::VirtualKey::VK_MENU_UP, pressed);
             break;
         }
         case fabgl::VirtualKey::VK_DOWN: {
-            if (Config::CursorAsJoy) joyPushData(fabgl::VirtualKey::VK_DPAD_DOWN, pressed);
             joyPushData(fabgl::VirtualKey::VK_MENU_DOWN, pressed);
             break;
         }
         case fabgl::VirtualKey::VK_LEFT: {
-            if (Config::CursorAsJoy) joyPushData(fabgl::VirtualKey::VK_DPAD_LEFT, pressed);
             joyPushData(fabgl::VirtualKey::VK_MENU_LEFT, pressed);
             break;
         }
         case fabgl::VirtualKey::VK_RIGHT: {
-            if (Config::CursorAsJoy) joyPushData(fabgl::VirtualKey::VK_DPAD_RIGHT, pressed);
             joyPushData(fabgl::VirtualKey::VK_MENU_RIGHT, pressed);
             break;
         }
         case fabgl::VirtualKey::VK_BACKSPACE: joyPushData(fabgl::VirtualKey::VK_MENU_BS, pressed); break;
         // Space doubles as Enter in menus, but inside a line editor it is a character.
         case fabgl::VirtualKey::VK_SPACE:     if (!g_ui_text_entry) joyPushData(fabgl::VirtualKey::VK_MENU_ENTER, pressed); break;
-        // Cursor-as-joystick fire on Left Ctrl (Right Ctrl = alt fire, above).
-        case fabgl::VirtualKey::VK_LCTRL:
-            if (Config::CursorAsJoy) joyPushData(fabgl::VirtualKey::VK_DPAD_FIRE, pressed);
-            break;
         case fabgl::VirtualKey::VK_RETURN:    joyPushData(fabgl::VirtualKey::VK_MENU_ENTER, pressed); break;
         default: break;
     }
@@ -418,9 +410,82 @@ static void release_amiga_keys(void) {
         if (amiga_down[c >> 3] & (1u << (c & 7))) send_amiga_key(c, false);
 }
 
-static bool cursor_key(fabgl::VirtualKey vk) {
-    return vk == fabgl::VirtualKey::VK_UP || vk == fabgl::VirtualKey::VK_DOWN ||
-           vk == fabgl::VirtualKey::VK_LEFT || vk == fabgl::VirtualKey::VK_RIGHT;
+// ---- the pad's map (joymap.h) ---------------------------------------------------------
+// The pad's controls arrive as VK_DPAD_* (directions, A, B, Start, Select: the
+// drivers' joyPushData) and VK_JOY_* (the rest: their kbdPushData); the keyboard's
+// keys as themselves.  Each frame the held ones are turned into actions through
+// Config::joydef / Config::joykey (the keys only with Keyboard as joystick on).
+const char *const joymap_action_name[JOY_ACTIONS] = {
+    "None", "Up", "Down", "Left", "Right", "Red", "Blue", "Green", "Yellow", "Play", "Reverse", "Forward" };
+const char *const joymap_slot_name[JOY_SLOTS] = {
+    "Left", "Right", "Up", "Down", "Start", "Select", "A", "B", "C", "X", "Y", "Z", "L2", "R2" };
+static const fabgl::VirtualKey kSlotVk[JOY_SLOTS] = {
+    fabgl::VirtualKey::VK_DPAD_LEFT, fabgl::VirtualKey::VK_DPAD_RIGHT, fabgl::VirtualKey::VK_DPAD_UP,
+    fabgl::VirtualKey::VK_DPAD_DOWN, fabgl::VirtualKey::VK_DPAD_START, fabgl::VirtualKey::VK_DPAD_SELECT,
+    fabgl::VirtualKey::VK_DPAD_FIRE, fabgl::VirtualKey::VK_DPAD_ALTFIRE, fabgl::VirtualKey::VK_JOY_C,
+    fabgl::VirtualKey::VK_JOY_X, fabgl::VirtualKey::VK_JOY_Y, fabgl::VirtualKey::VK_JOY_Z,
+    fabgl::VirtualKey::VK_JOY_L2, fabgl::VirtualKey::VK_JOY_R2 };
+
+// A is red (fire), B blue, X green, Y yellow - the CD32 pad's diamond on a SNES /
+// XInput one; the shoulders and the triggers reverse and forward; Start play.
+void joymap_pad_defaults(uint8_t out[JOY_SLOTS]) {
+    static const uint8_t k[JOY_SLOTS] = { JOY_A_LEFT, JOY_A_RIGHT, JOY_A_UP, JOY_A_DOWN, JOY_A_PLAY, JOY_A_NONE,
+        JOY_A_RED, JOY_A_BLUE, JOY_A_FFW, JOY_A_GREEN, JOY_A_YELLOW, JOY_A_RWD, JOY_A_RWD, JOY_A_FFW };
+    memcpy(out, k, sizeof k);
+}
+void joymap_key_defaults(uint16_t out[JOY_ACTIONS]) {
+    memset(out, 0, JOY_ACTIONS * sizeof out[0]);
+    out[JOY_A_UP] = fabgl::VK_UP; out[JOY_A_DOWN] = fabgl::VK_DOWN;
+    out[JOY_A_LEFT] = fabgl::VK_LEFT; out[JOY_A_RIGHT] = fabgl::VK_RIGHT;
+    out[JOY_A_RED] = fabgl::VK_LCTRL; out[JOY_A_BLUE] = fabgl::VK_RCTRL;
+}
+bool joymap_slot_down(int slot) { return slot >= 0 && slot < JOY_SLOTS && kbd.isVKDown(kSlotVk[slot]); }
+static bool is_lower(uint16_t vk) { return vk >= fabgl::VK_a && vk <= fabgl::VK_z; }
+bool joymap_key_down(uint16_t vk) {
+    if (!vk) return false;
+    if (kbd.isVKDown((fabgl::VirtualKey)vk)) return true;
+    return is_lower(vk) && kbd.isVKDown((fabgl::VirtualKey)(vk - fabgl::VK_a + fabgl::VK_A));
+}
+uint16_t joymap_key_norm(uint16_t vk) {
+    if (vk == fabgl::VK_NONE || vk >= fabgl::VK_JOY_RIGHT) return 0;       // the pad's and the menu's own
+    if (vk >= fabgl::VK_A && vk <= fabgl::VK_Z) return (uint16_t)(vk - fabgl::VK_A + fabgl::VK_a);
+    return vk;
+}
+const char *joymap_key_name(uint16_t vk, char out[16]) {
+    static const struct { uint16_t vk; const char *n; } k[] = {
+        { fabgl::VK_SPACE, "Space" }, { fabgl::VK_UP, "Up" }, { fabgl::VK_DOWN, "Down" }, { fabgl::VK_LEFT, "Left" },
+        { fabgl::VK_RIGHT, "Right" }, { fabgl::VK_LCTRL, "Left Ctrl" }, { fabgl::VK_RCTRL, "Right Ctrl" },
+        { fabgl::VK_LSHIFT, "Left Shift" }, { fabgl::VK_RSHIFT, "Right Shift" }, { fabgl::VK_LALT, "Left Alt" },
+        { fabgl::VK_RALT, "Right Alt" }, { fabgl::VK_RETURN, "Enter" }, { fabgl::VK_TAB, "Tab" },
+        { fabgl::VK_BACKSPACE, "Backspace" }, { fabgl::VK_INSERT, "Insert" }, { fabgl::VK_DELETE, "Delete" },
+        { fabgl::VK_HOME, "Home" }, { fabgl::VK_END, "End" }, { fabgl::VK_PAGEUP, "PgUp" }, { fabgl::VK_PAGEDOWN, "PgDn" },
+        { fabgl::VK_CAPSLOCK, "Caps Lock" }, { fabgl::VK_KP_ENTER, "KP Enter" }, { fabgl::VK_KP_PLUS, "KP +" },
+        { fabgl::VK_KP_MINUS, "KP -" }, { fabgl::VK_KP_MULTIPLY, "KP *" }, { fabgl::VK_KP_DIVIDE, "KP /" },
+        { fabgl::VK_KP_PERIOD, "KP ." }, { fabgl::VK_COMMA, "," }, { fabgl::VK_PERIOD, "." }, { fabgl::VK_SLASH, "/" },
+        { fabgl::VK_SEMICOLON, ";" }, { fabgl::VK_QUOTE, "'" }, { fabgl::VK_LEFTBRACKET, "[" },
+        { fabgl::VK_RIGHTBRACKET, "]" }, { fabgl::VK_BACKSLASH, "\\" }, { fabgl::VK_MINUS, "-" }, { fabgl::VK_EQUALS, "=" },
+        { fabgl::VK_GRAVEACCENT, "`" },
+    };
+    if (!vk) snprintf(out, 16, "None");
+    else if (is_lower(vk)) snprintf(out, 16, "%c", 'A' + (vk - fabgl::VK_a));
+    else if (vk >= fabgl::VK_A && vk <= fabgl::VK_Z) snprintf(out, 16, "%c", 'A' + (vk - fabgl::VK_A));
+    else if (vk >= fabgl::VK_0 && vk <= fabgl::VK_9) snprintf(out, 16, "%c", '0' + (vk - fabgl::VK_0));
+    else if (vk >= fabgl::VK_KP_0 && vk <= fabgl::VK_KP_9) snprintf(out, 16, "KP %c", '0' + (vk - fabgl::VK_KP_0));
+    else if (vk >= fabgl::VK_F1 && vk <= fabgl::VK_F12) snprintf(out, 16, "F%d", 1 + (vk - fabgl::VK_F1));
+    else {
+        const char *n = NULL;
+        for (const auto &e : k) if (e.vk == vk) n = e.n;
+        if (n) snprintf(out, 16, "%s", n); else snprintf(out, 16, "Key %u", (unsigned)vk);
+    }
+    return out;
+}
+
+// A key the map uses while the keyboard is the joystick: the Amiga does not get it.
+static bool joy_key(fabgl::VirtualKey vk) {
+    const uint16_t n = joymap_key_norm((uint16_t)vk);
+    if (!n) return false;
+    for (int a = 1; a < JOY_ACTIONS; a++) if (Config::joykey[a] == n) return true;
+    return false;
 }
 
 void input_frame(void) {
@@ -490,23 +555,26 @@ void input_frame(void) {
             kbd.emptyVirtualKeyQueue();
             continue;
         }
-        if (Config::CursorAsJoy && cursor_key(item.vk)) continue;
+        if (Config::CursorAsJoy && joy_key(item.vk)) continue;
         uint8_t code = vk_to_amiga(item.vk);
         if (code != AK_NONE) send_amiga_key(code, item.down);
     }
 
-    // Game port 2: whatever drives VK_DPAD_* (USB/XInput/NES pad 1, cursor keys).
-    uint8_t dirs = (kbd.isVKDown(fabgl::VirtualKey::VK_DPAD_UP)    ? 1 : 0) |
-                   (kbd.isVKDown(fabgl::VirtualKey::VK_DPAD_DOWN)  ? 2 : 0) |
-                   (kbd.isVKDown(fabgl::VirtualKey::VK_DPAD_LEFT)  ? 4 : 0) |
-                   (kbd.isVKDown(fabgl::VirtualKey::VK_DPAD_RIGHT) ? 8 : 0);
-    amiga_joystick(1, dirs, kbd.isVKDown(fabgl::VirtualKey::VK_DPAD_FIRE));
-    // The CD32's pad (the same port): fire is red, the second button (Right Ctrl
-    // with the cursor keys as a joystick) blue, Start play / pause, Select green.
-    amiga_cd32_pad((uint8_t)((kbd.isVKDown(fabgl::VirtualKey::VK_DPAD_FIRE)    ? AMIGA_PAD_RED : 0) |
-                             (kbd.isVKDown(fabgl::VirtualKey::VK_DPAD_ALTFIRE) ? AMIGA_PAD_BLUE : 0) |
-                             (kbd.isVKDown(fabgl::VirtualKey::VK_DPAD_START)   ? AMIGA_PAD_PLAY : 0) |
-                             (kbd.isVKDown(fabgl::VirtualKey::VK_DPAD_SELECT)  ? AMIGA_PAD_GREEN : 0)));
+    // Game port 2: the pad's controls through its map, and the keyboard's keys.
+    uint32_t act = 0;
+    for (int i = 0; i < JOY_SLOTS; i++)
+        if (kbd.isVKDown(kSlotVk[i])) act |= 1u << Config::joydef[i];
+    if (Config::CursorAsJoy)
+        for (int a = 1; a < JOY_ACTIONS; a++)
+            if (joymap_key_down(Config::joykey[a])) act |= 1u << a;
+    const auto on = [act](int a) { return (act >> a) & 1u; };
+    amiga_joystick(1, (uint8_t)(on(JOY_A_UP) | on(JOY_A_DOWN) << 1 | on(JOY_A_LEFT) << 2 | on(JOY_A_RIGHT) << 3),
+                   on(JOY_A_RED));
+    // The other buttons: the CD32 pad's; blue is the second fire button anywhere.
+    amiga_cd32_pad((uint8_t)((on(JOY_A_RED) ? AMIGA_PAD_RED : 0) | (on(JOY_A_BLUE) ? AMIGA_PAD_BLUE : 0) |
+                             (on(JOY_A_GREEN) ? AMIGA_PAD_GREEN : 0) | (on(JOY_A_YELLOW) ? AMIGA_PAD_YELLOW : 0) |
+                             (on(JOY_A_PLAY) ? AMIGA_PAD_PLAY : 0) | (on(JOY_A_RWD) ? AMIGA_PAD_RWD : 0) |
+                             (on(JOY_A_FFW) ? AMIGA_PAD_FFW : 0)));
 
     // Port 1 mouse: hid_app.cpp accumulates Mouse::x / y (y up-positive).
     static int32_t last_x, last_y;
@@ -520,6 +588,10 @@ void input_frame(void) {
 void input_init(void) {
     kbd.begin(true, true, 0, false);
     input_devices_init();
+    if (!Config::loaded) {                       // no card: the maps' defaults
+        joymap_pad_defaults(Config::joydef);
+        joymap_key_defaults(Config::joykey);
+    }
 }
 
 void input_poll(void) { repeat_me_for_input(); }

@@ -79,6 +79,7 @@ if(SDL2_FOUND)
         ${ROOT}/src/pico/ui/UiStage.cpp
         ${ROOT}/src/pico/ui/UiTree.cpp
         ${ROOT}/src/pico/ui/UiSnap.cpp
+        ${ROOT}/src/pico/ui/UiJoy.cpp
         ${ROOT}/src/pico/ui/UiDesc.cpp
         ${ROOT}/src/pico/ui/UiLogo.c
         ${ROOT}/src/pico/ui/UiPlatform.cpp

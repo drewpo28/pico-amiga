@@ -83,7 +83,7 @@ describes each mode beside the list.
 
 The folder was `/amiga` before: a card with `/amiga` and no `/pico-amiga` has it renamed at the next boot (the settings' paths follow).
 
-A CD image (`.iso`, `.cue`) opened with Win+F5 or Devices > CD drive runs on the CD32: the machine is switched to it when it is another. The pad: fire is red, the second button (Right Ctrl with the cursor keys as a joystick) blue, Start play, Select green.
+A CD image (`.iso`, `.cue`) opened with Win+F5 or Devices > CD drive runs on the CD32: the machine is switched to it when it is another. The pad (port 2): a NES / SNES pad or a USB / XInput one, each control given its action in Devices > Input > Pad buttons (A red - the joystick's fire on every machine, B blue - the second fire button, X green, Y yellow, the shoulders reverse / forward, Start play); Devices > Input > Keyboard keys gives the same actions to keys (the cursor keys, Left Ctrl red, Right Ctrl blue by default), used while Keyboard as joystick is on (Ctrl+J).
 
 A Kickstart picked from the card (Machine > Custom ROM) can have a 512 KB
 `ext.rom` beside it (AROS needs one). An `.m3u` is a list of disk files, one per
