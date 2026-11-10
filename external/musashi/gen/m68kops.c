@@ -209,7 +209,7 @@ static void m68k_op_add_8_er_ai(void)
 }
 
 
-static void m68k_op_add_8_er_pi(void)
+M68KI_HOT_020 static void m68k_op_add_8_er_pi(void)
 {
 	uint* r_dst = &DX;
 	uint src = OPER_AY_PI_8();
@@ -1180,7 +1180,7 @@ static void m68k_op_adda_16_pd(void)
 }
 
 
-M68KI_HOT_020 static void m68k_op_adda_16_di(void)
+static void m68k_op_adda_16_di(void)
 {
 	uint* r_dst = &AX;
 	uint src = MAKE_INT_16(OPER_AY_DI_16());
@@ -1509,7 +1509,7 @@ static void m68k_op_addi_8_al(void)
 }
 
 
-M68KI_HOT static void m68k_op_addi_16_d(void)
+M68KI_HOT2 static void m68k_op_addi_16_d(void)
 {
 	uint* r_dst = &DY;
 	uint src = OPER_I_16();
@@ -1861,7 +1861,7 @@ static void m68k_op_addq_8_pd7(void)
 }
 
 
-M68KI_HOT2 static void m68k_op_addq_8_di(void)
+M68KI_HOT static void m68k_op_addq_8_di(void)
 {
 	uint src = (((REG_IR >> 9) - 1) & 7) + 1;
 	uint ea = EA_AY_DI_8();
@@ -3432,7 +3432,7 @@ static void m68k_op_andi_16_tos(void)
 }
 
 
-M68KI_HOT_020 static void m68k_op_asr_8_s(void)
+static void m68k_op_asr_8_s(void)
 {
 	uint* r_dst = &DY;
 	uint shift = (((REG_IR >> 9) - 1) & 7) + 1;
@@ -3454,7 +3454,7 @@ M68KI_HOT_020 static void m68k_op_asr_8_s(void)
 }
 
 
-M68KI_HOT2 static void m68k_op_asr_16_s(void)
+M68KI_HOT static void m68k_op_asr_16_s(void)
 {
 	uint* r_dst = &DY;
 	uint shift = (((REG_IR >> 9) - 1) & 7) + 1;
@@ -3823,7 +3823,7 @@ static void m68k_op_asl_16_s(void)
 }
 
 
-M68KI_HOT2 static void m68k_op_asl_32_s(void)
+M68KI_HOT static void m68k_op_asl_32_s(void)
 {
 	uint* r_dst = &DY;
 	uint shift = (((REG_IR >> 9) - 1) & 7) + 1;
@@ -4372,7 +4372,7 @@ static void m68k_op_bpl_16(void)
 }
 
 
-static void m68k_op_bmi_16(void)
+M68KI_HOT_020 static void m68k_op_bmi_16(void)
 {
 	if(COND_MI())
 	{
@@ -4387,7 +4387,7 @@ static void m68k_op_bmi_16(void)
 }
 
 
-M68KI_HOT static void m68k_op_bge_16(void)
+M68KI_HOT2 static void m68k_op_bge_16(void)
 {
 	if(COND_GE())
 	{
@@ -4402,7 +4402,7 @@ M68KI_HOT static void m68k_op_bge_16(void)
 }
 
 
-M68KI_HOT static void m68k_op_blt_16(void)
+M68KI_HOT2 static void m68k_op_blt_16(void)
 {
 	if(COND_LT())
 	{
@@ -4432,7 +4432,7 @@ M68KI_HOT_020 static void m68k_op_bgt_16(void)
 }
 
 
-M68KI_HOT_020 static void m68k_op_ble_16(void)
+static void m68k_op_ble_16(void)
 {
 	if(COND_LE())
 	{
@@ -5310,7 +5310,7 @@ static void m68k_op_bfchg_32_d(void)
 }
 
 
-static void m68k_op_bfchg_32_ai(void)
+M68KI_HOT_020 static void m68k_op_bfchg_32_ai(void)
 {
 	if(CPU_TYPE_IS_EC020_PLUS(CPU_TYPE))
 	{
@@ -10085,7 +10085,7 @@ static void m68k_op_clr_8_ai(void)
 }
 
 
-M68KI_HOT_020 static void m68k_op_clr_8_pi(void)
+static void m68k_op_clr_8_pi(void)
 {
 	m68ki_write_8(EA_AY_PI_8(), 0);
 
@@ -10129,7 +10129,7 @@ static void m68k_op_clr_8_pd7(void)
 }
 
 
-M68KI_HOT2 static void m68k_op_clr_8_di(void)
+M68KI_HOT static void m68k_op_clr_8_di(void)
 {
 	m68ki_write_8(EA_AY_DI_8(), 0);
 
@@ -10505,7 +10505,7 @@ static void m68k_op_cmp_8_pcix(void)
 }
 
 
-static void m68k_op_cmp_8_i(void)
+M68KI_HOT_020 static void m68k_op_cmp_8_i(void)
 {
 	uint src = OPER_I_8();
 	uint dst = MASK_OUT_ABOVE_8(DX);
@@ -10674,7 +10674,7 @@ M68KI_HOT_020 static void m68k_op_cmp_16_i(void)
 }
 
 
-M68KI_HOT2 static void m68k_op_cmp_32_d(void)
+M68KI_HOT static void m68k_op_cmp_32_d(void)
 {
 	uint src = DY;
 	uint dst = DX;
@@ -11129,7 +11129,7 @@ static void m68k_op_cmpa_32_pcix(void)
 }
 
 
-M68KI_HOT static void m68k_op_cmpa_32_i(void)
+M68KI_HOT2 static void m68k_op_cmpa_32_i(void)
 {
 	uint src = OPER_I_32();
 	uint dst = AX;
@@ -11360,7 +11360,7 @@ static void m68k_op_cmpi_16_pd(void)
 }
 
 
-M68KI_HOT static void m68k_op_cmpi_16_di(void)
+M68KI_HOT2 static void m68k_op_cmpi_16_di(void)
 {
 	uint src = OPER_I_16();
 	uint dst = OPER_AY_DI_16();
@@ -15406,7 +15406,7 @@ static void m68k_op_eor_32_ai(void)
 }
 
 
-static void m68k_op_eor_32_pi(void)
+M68KI_HOT_020 static void m68k_op_eor_32_pi(void)
 {
 	uint ea = EA_AY_PI_32();
 	uint res = DX ^ m68ki_read_32(ea);
@@ -15930,7 +15930,7 @@ M68KI_HOT2 static void m68k_op_ext_16(void)
 }
 
 
-M68KI_HOT static void m68k_op_ext_32(void)
+M68KI_HOT2 static void m68k_op_ext_32(void)
 {
 	uint* r_dst = &DY;
 
@@ -16787,7 +16787,7 @@ static void m68k_op_move_8_d_pi7(void)
 }
 
 
-M68KI_HOT_020 static void m68k_op_move_8_d_pd(void)
+static void m68k_op_move_8_d_pd(void)
 {
 	uint res = OPER_AY_PD_8();
 	uint* r_dst = &DX;
@@ -17991,7 +17991,7 @@ static void m68k_op_move_8_di_pcix(void)
 }
 
 
-M68KI_HOT2 static void m68k_op_move_8_di_i(void)
+M68KI_HOT static void m68k_op_move_8_di_i(void)
 {
 	uint res = OPER_I_8();
 	uint ea = EA_AX_DI_8();
@@ -18565,7 +18565,7 @@ M68KI_HOT2 static void m68k_op_move_16_d_d(void)
 }
 
 
-M68KI_HOT_020 static void m68k_op_move_16_d_a(void)
+static void m68k_op_move_16_d_a(void)
 {
 	uint res = MASK_OUT_ABOVE_16(AY);
 	uint* r_dst = &DX;
@@ -18915,7 +18915,7 @@ static void m68k_op_move_16_pi_a(void)
 }
 
 
-static void m68k_op_move_16_pi_ai(void)
+M68KI_HOT_020 static void m68k_op_move_16_pi_ai(void)
 {
 	uint res = OPER_AY_AI_16();
 	uint ea = EA_AX_PI_16();
@@ -19265,7 +19265,7 @@ M68KI_HOT static void m68k_op_move_16_di_ai(void)
 }
 
 
-static void m68k_op_move_16_di_pi(void)
+M68KI_HOT_020 static void m68k_op_move_16_di_pi(void)
 {
 	uint res = OPER_AY_PI_16();
 	uint ea = EA_AX_DI_16();
@@ -20063,7 +20063,7 @@ M68KI_HOT2 static void m68k_op_move_32_d_i(void)
 }
 
 
-M68KI_HOT static void m68k_op_move_32_ai_d(void)
+M68KI_HOT2 static void m68k_op_move_32_ai_d(void)
 {
 	uint res = DY;
 	uint ea = EA_AX_AI_32();
@@ -20259,7 +20259,7 @@ static void m68k_op_move_32_pi_a(void)
 }
 
 
-static void m68k_op_move_32_pi_ai(void)
+M68KI_HOT_020 static void m68k_op_move_32_pi_ai(void)
 {
 	uint res = OPER_AY_AI_32();
 	uint ea = EA_AX_PI_32();
@@ -20621,7 +20621,7 @@ static void m68k_op_move_32_di_ai(void)
 }
 
 
-static void m68k_op_move_32_di_pi(void)
+M68KI_HOT_020 static void m68k_op_move_32_di_pi(void)
 {
 	uint res = OPER_AY_PI_32();
 	uint ea = EA_AX_DI_32();
@@ -21359,7 +21359,7 @@ M68KI_HOT2 static void m68k_op_movea_32_di(void)
 }
 
 
-M68KI_HOT2 static void m68k_op_movea_32_ix(void)
+M68KI_HOT static void m68k_op_movea_32_ix(void)
 {
 	AX = OPER_AY_IX_32();
 }
@@ -27048,7 +27048,7 @@ static void m68k_op_or_8_er_i(void)
 }
 
 
-static void m68k_op_or_16_er_d(void)
+M68KI_HOT_020 static void m68k_op_or_16_er_d(void)
 {
 	uint res = MASK_OUT_ABOVE_16((DX |= MASK_OUT_ABOVE_16(DY)));
 
@@ -28466,7 +28466,7 @@ M68KI_HOT_020 static void m68k_op_rol_16_s(void)
 }
 
 
-M68KI_HOT2 static void m68k_op_rol_32_s(void)
+M68KI_HOT static void m68k_op_rol_32_s(void)
 {
 	uint* r_dst = &DY;
 	uint shift = (((REG_IR >> 9) - 1) & 7) + 1;
@@ -28730,7 +28730,7 @@ static void m68k_op_roxr_16_s(void)
 }
 
 
-M68KI_HOT_020 static void m68k_op_roxr_32_s(void)
+static void m68k_op_roxr_32_s(void)
 {
 #if M68K_USE_64_BIT
 
@@ -31650,7 +31650,7 @@ static void m68k_op_sub_32_re_al(void)
 }
 
 
-static void m68k_op_suba_16_d(void)
+M68KI_HOT_020 static void m68k_op_suba_16_d(void)
 {
 	uint* r_dst = &AX;
 
@@ -32710,7 +32710,7 @@ static void m68k_op_subq_32_al(void)
 }
 
 
-M68KI_HOT_020 static void m68k_op_subx_8_rr(void)
+static void m68k_op_subx_8_rr(void)
 {
 	uint* r_dst = &DX;
 	uint src = MASK_OUT_ABOVE_8(DY);
@@ -33823,7 +33823,7 @@ M68KI_HOT static void m68k_op_tst_8_ai(void)
 }
 
 
-M68KI_HOT static void m68k_op_tst_8_pi(void)
+M68KI_HOT2 static void m68k_op_tst_8_pi(void)
 {
 	uint res = OPER_AY_PI_8();
 
@@ -34052,7 +34052,7 @@ static void m68k_op_tst_16_aw(void)
 }
 
 
-static void m68k_op_tst_16_al(void)
+M68KI_HOT_020 static void m68k_op_tst_16_al(void)
 {
 	uint res = OPER_AL_16();
 
@@ -34122,7 +34122,7 @@ M68KI_HOT2 static void m68k_op_tst_32_d(void)
 }
 
 
-M68KI_HOT_020 static void m68k_op_tst_32_a(void)
+static void m68k_op_tst_32_a(void)
 {
 	if(CPU_TYPE_IS_EC020_PLUS(CPU_TYPE))
 	{
