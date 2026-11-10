@@ -66,8 +66,11 @@ verified on the host bench; "hw" means verified on a board.
       callbacks, trace in its own loop, the fetch window a block instead of a
       bank.  tools/m68kbench (QEMU, ARM instructions): 77 -> 53 per 68k instruction
       in Roots' zigzag, 100 -> 64 in its 8-plane part.  Board: not measured
-- [ ] The PC as a host pointer (no window check per fetched word: ~8 of the 53
-      instructions), after the above is confirmed on the board
+      (2026-11-10, log 15:30: runs, 50 fps; Kickstart's first second cpu 12.6 ->
+      10.8 ms, the loop 13% of core 0's samples where the dispatch was 24%)
+- [x] The PC as a host pointer (no window check per fetched word): 53 -> 46 in the
+      zigzag, 64 -> 58 in the 8-plane part.  Board: not measured
+- [ ] A slice's entry and exit (~100 ARM instructions for ~20 of the 68k's)
 - [ ] Instruction fetch without the bank lookup call (a PC page pointer)
 - [ ] PSRAM: check XIP cache behaviour with chip RAM traffic; consider an SRAM
       copy of the most-used chip RAM page(s)

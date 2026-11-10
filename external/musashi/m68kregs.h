@@ -18,24 +18,33 @@
 
 #if M68K_CONST_TABLES
 #define M68KI_OPS 1          /* this file is a handler set: m68kcpu.h's register view */
+/* With the platform's fetch window (AMIGA_FETCH_WINDOW) the handlers' PC is a
+ * host pointer into the memory the code runs from (m68kcpu.h "The PC as a host
+ * pointer"); without it (Musashi's test driver) it is the 68k address. */
+#ifdef AMIGA_FETCH_WINDOW
+#define M68KI_PCPTR 1
+typedef const unsigned char *m68ki_pc_t;
+#else
+typedef unsigned int m68ki_pc_t;
+#endif
 #if !defined(M68K_NO_REGVARS) && defined(__GNUC__) && !defined(__clang__)
 struct m68ki_cpu_core_s;
 #if defined(__arm__)
 #define M68KI_REGVARS 1
 register struct m68ki_cpu_core_s *m68ki_rcpu __asm__("r11");
-register unsigned int             m68ki_rpc  __asm__("r10");
+register m68ki_pc_t               m68ki_rpc  __asm__("r10");
 register int                      m68ki_rcyc __asm__("r9");
 register unsigned int             m68ki_rir  __asm__("r8");
 /* The caller's values of the four (they are callee-saved), around the loop. */
 #define M68KI_REGS_ENTER() \
 	struct m68ki_cpu_core_s *const m68ki_s0 = m68ki_rcpu; \
-	const unsigned int m68ki_s1 = m68ki_rpc, m68ki_s3 = m68ki_rir; const int m68ki_s2 = m68ki_rcyc
+	const m68ki_pc_t m68ki_s1 = m68ki_rpc; const unsigned int m68ki_s3 = m68ki_rir; const int m68ki_s2 = m68ki_rcyc
 #define M68KI_REGS_LEAVE() \
 	do { m68ki_rcpu = m68ki_s0; m68ki_rpc = m68ki_s1; m68ki_rcyc = m68ki_s2; m68ki_rir = m68ki_s3; } while (0)
 #elif defined(__x86_64__)
 #define M68KI_REGVARS 1
 register struct m68ki_cpu_core_s *m68ki_rcpu __asm__("r15");
-register unsigned int             m68ki_rpc  __asm__("r14");
+register m68ki_pc_t               m68ki_rpc  __asm__("r14");
 register int                      m68ki_rcyc __asm__("r13");
 register unsigned int             m68ki_rir  __asm__("r12");
 /* 64-bit registers behind 32-bit variables: saved whole. */

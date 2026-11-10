@@ -381,9 +381,15 @@ AMIGA_HOT unsigned int m68k_read_memory_16(unsigned int a) {
     return io_read16(a, b->io);
 }
 
-AMIGA_HOT unsigned int m68ki_fetch_slow16(unsigned int a) {
+// The fetch window moved to the block `a` is in (m68k.h; the handlers' PC left
+// the old one), if it is one: RAM or ROM of 64 KB or more.  The move is the
+// CPU's access to that memory - counted for the chip bus, as the read of the
+// first word there was.
+AMIGA_HOT void m68k_fetch_window(unsigned int a) {
     a &= 0xFFFFFF;
     const bank_t *b = &banks[a >> 16];
+    AMIGA_STAT(amiga_stat_data);
+    A.bus_data += b->chip;
     if (b->rd && b->mask >= 0xFFFF) {
         // The window: this bank and its neighbours of the same block (one copy of
         // it: a mirror is another window), so code that calls across 64 KB - 9%
@@ -399,6 +405,28 @@ AMIGA_HOT unsigned int m68ki_fetch_slow16(unsigned int a) {
         m68k_set_fetch_window(b->rd + (lo & b->mask), lo, (last - first + 1) << 16);
         mem_fetch_chip = b->chip;
     }
+}
+
+// An instruction's bytes where the window cannot give them (m68k.h): the end of
+// a block, memory that is not there.  No side effects: I/O reads as 0.
+void m68k_fetch_stage(unsigned int a, unsigned char *buf, unsigned int n) {
+    for (unsigned int i = 0; i < n; i++) {
+        const uint32_t x = (a + i) & 0xFFFFFF;
+        const bank_t *b = &banks[x >> 16];
+        buf[i] = b->rd ? b->rd[x & b->mask] : 0;
+    }
+}
+
+// Musashi's own fetch (a build without the pointer PC, m68kcpu.h).
+AMIGA_HOT unsigned int m68ki_fetch_slow16(unsigned int a) {
+    a &= 0xFFFFFF;
+    const bank_t *b = &banks[a >> 16];
+    const bool chip = b->chip;
+    m68k_fetch_window(a);
+    A.bus_data -= chip;                                  // m68k_read_memory_16 counts it
+#ifdef AMIGA_STATS
+    amiga_stat_data--;
+#endif
     return m68k_read_memory_16(a);
 }
 

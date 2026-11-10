@@ -35,10 +35,12 @@ end
 if $amiga_slow && A.cfg.slow_ram != 0
   dump binary memory /tmp/pico-amiga_slow.bin A.cfg.slow_ram (A.cfg.slow_ram + A.cfg.slow_size)
 end
-# While the CPU runs a slice its PC is in a register (m68kregs.h) and
-# m68ki_cpu.pc is the slice's first (or the last callback's); m68ki_cpu.ppc,
-# the instruction being run, is stored every instruction: the dump is around it.
-set $apc = m68ki_cpu.ppc & 0xFFFFFF
+# While the CPU runs a slice its PC is in a register, as a pointer into the
+# host's memory (m68kregs.h, m68kcpu.h), and m68ki_cpu.pc / .ppc are the slice's
+# first (or the last callback's).  The instruction being run is stored every
+# instruction as such a pointer: ppc_h - pc_bias is its address.
+set $appc = (unsigned)(m68ki_cpu.ppc_h - m68ki_cpu.pc_bias)
+set $apc = $appc & 0xFFFFFF
 if $apc >= 0xF80000
   set $p = A.cfg.rom + (($apc - 64) & (A.cfg.rom_size - 1))
 else
@@ -50,7 +52,7 @@ set logging file /tmp/pico-amiga_state.txt
 set logging overwrite on
 set logging redirect on
 set logging enabled on
-printf "PC %06X\nPPC %06X\n", m68ki_cpu.ppc, m68ki_cpu.ppc
+printf "PC %06X\nPPC %06X\n", $appc, $appc
 printf "D %08X %08X %08X %08X %08X %08X %08X %08X\n", m68ki_cpu.dar[0], m68ki_cpu.dar[1], m68ki_cpu.dar[2], m68ki_cpu.dar[3], m68ki_cpu.dar[4], m68ki_cpu.dar[5], m68ki_cpu.dar[6], m68ki_cpu.dar[7]
 printf "A %08X %08X %08X %08X %08X %08X %08X %08X\n", m68ki_cpu.dar[8], m68ki_cpu.dar[9], m68ki_cpu.dar[10], m68ki_cpu.dar[11], m68ki_cpu.dar[12], m68ki_cpu.dar[13], m68ki_cpu.dar[14], m68ki_cpu.dar[15]
 printf "USP %08X\nSSP %08X\n", m68ki_cpu.sp[0], m68ki_cpu.sp[4]

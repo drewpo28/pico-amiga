@@ -41,6 +41,7 @@ extern "C" {
 
 #include <assert.h>
 #include <limits.h>
+#include <stdint.h>
 
 #include <setjmp.h>
 
@@ -1041,6 +1042,18 @@ typedef struct m68ki_cpu_core_s   /* PICO-AMIGA: tagged (m68kregs.h) */
 	/* ...and the data accesses the handlers made to chip RAM themselves
 	 * (m68krun.h's accessors; m68k_fast_data()). */
 	uint bus_data;
+	/* The PC as a host pointer (below): REG_PC - pc_bias is the 68k PC, ppc_h
+	 * the pointer the instruction began at; [safe_ptr, safe_ptr + safe_len) is
+	 * the part of the window an instruction may begin in without a check
+	 * (fetch_ptr and the length less M68KI_PC_GUARD); pcp is the pointer's home
+	 * without register variables; stage holds an instruction that begins
+	 * outside that part. */
+	uintptr_t pc_bias;
+	uintptr_t ppc_h;
+	const unsigned char *safe_ptr;
+	uint safe_len;
+	const unsigned char *pcp;
+	unsigned char stage[32];
 	/* m68k.h's m68k_fast_wmap[] and m68k_fast[], here for the handlers: no
 	 * address to load, the structure's is in a register. */
 	unsigned char fast_wmap[M68K_FAST_WMAP];
@@ -1078,11 +1091,59 @@ static inline sint *m68ki_cycles_mem(void) { return &m68ki_remaining_cycles; }
 #define USE_CYCLES(A)    m68ki_rcyc -= (A)
 #define SET_CYCLES(A)    m68ki_rcyc = A
 #define GET_CYCLES()     m68ki_rcyc
-#define M68KI_SAVE() do { m68ki_cpu.pc = m68ki_rpc; m68ki_cpu.ir = m68ki_rir; *m68ki_cycles_mem() = m68ki_rcyc; } while (0)
-#define M68KI_LOAD() do { m68ki_rpc = m68ki_cpu.pc; m68ki_rcyc = *m68ki_cycles_mem(); } while (0)
+#define M68KI_SAVE_REGS() do { m68ki_cpu.ir = m68ki_rir; *m68ki_cycles_mem() = m68ki_rcyc; } while (0)
+#define M68KI_LOAD_REGS() do { m68ki_rcyc = *m68ki_cycles_mem(); } while (0)
+#else
+#define M68KI_SAVE_REGS() ((void)0)
+#define M68KI_LOAD_REGS() ((void)0)
+#endif
+
+/* PICO-AMIGA PATCH: the PC as a host pointer (M68KI_PCPTR: a handler set built
+ * with the platform's fetch window).  REG_PC points at the next instruction
+ * word in the host's memory, so a fetch is a load and an add: no window check.
+ * That holds because of where an instruction may BEGIN: at most
+ * M68KI_PC_BUDGET instructions run between two looks at the PC (m68krun.h's
+ * loop), every write of the PC that is not "the next word" is checked
+ * (m68ki_set_pc(), m68ki_pc_check()), and a PC within M68KI_PC_GUARD bytes of
+ * the window's end or outside every window sends the loop back to its caller,
+ * which runs that instruction from a copy (m68ki_cpu.stage).
+ *   REG_PC          the pointer: only += / -= a constant inside an instruction
+ *   M68KI_PC()      the 68k PC (pointer - m68ki_cpu.pc_bias)
+ *   M68KI_PPC()     the 68k address this instruction began at
+ *   M68KI_SET_PC(v) jump
+ * Without M68KI_PCPTR the same names work on the 68k PC itself. */
+#define M68KI_PC_BUDGET 128
+#define M68KI_PC_GUARD  (M68KI_PC_BUDGET * 24 + 24)     /* an instruction is 22 bytes at most */
+#ifdef M68KI_PCPTR
+#ifndef M68KI_REGVARS
+#undef  REG_PC
+#define REG_PC           m68ki_cpu.pcp
+#endif
+#define M68KI_PC()       ((uint)((uintptr_t)REG_PC - m68ki_cpu.pc_bias))
+#define M68KI_PPC()      ((uint)(m68ki_cpu.ppc_h - m68ki_cpu.pc_bias))
+#define M68KI_SET_PC(v)  m68ki_set_pc(v)
+static void m68kf_pc_far(uint pc);
+static void m68kf_break(void);
+/* Before a callback: what it may read.  After: what it may have changed - the
+ * cycles, the PC (a bus error pulsed from it), the memory map (the window is
+ * closed: this instruction's remaining words still come from where it began). */
+#define M68KI_SAVE() do { m68ki_cpu.pc = M68KI_PC(); m68ki_cpu.ppc = M68KI_PPC(); M68KI_SAVE_REGS(); } while (0)
+#define M68KI_LOAD() do { \
+	M68KI_LOAD_REGS(); \
+	if(m68ki_cpu.pc != M68KI_PC()) m68kf_pc_far(m68ki_cpu.pc); \
+	else if((uintptr_t)(REG_PC - m68ki_cpu.safe_ptr) >= m68ki_cpu.safe_len) m68kf_break(); \
+} while (0)
+#else
+#define M68KI_PC()       REG_PC
+#define M68KI_PPC()      REG_PPC
+#define M68KI_SET_PC(v)  (REG_PC = (v))
+#if defined(M68KI_OPS) && defined(M68KI_REGVARS)
+#define M68KI_SAVE() do { m68ki_cpu.pc = m68ki_rpc; M68KI_SAVE_REGS(); } while (0)
+#define M68KI_LOAD() do { m68ki_rpc = m68ki_cpu.pc; M68KI_LOAD_REGS(); } while (0)
 #else
 #define M68KI_SAVE() ((void)0)
 #define M68KI_LOAD() ((void)0)
+#endif
 #endif
 
 /* PICO-AMIGA PATCH: memory accesses.  A handler set goes through m68krun.h's
@@ -1097,7 +1158,9 @@ static uint m68kf_r32(uint a);
 static void m68kf_w8(uint a, uint v);
 static void m68kf_w16(uint a, uint v);
 static void m68kf_w32(uint a, uint v);
+#ifndef M68KI_PCPTR
 static uint m68kf_fetch(uint a);
+#endif
 #define M68KI_RD8(a)      m68kf_r8(a)
 #define M68KI_RD16(a)     m68kf_r16(a)
 #define M68KI_RD32(a)     m68kf_r32(a)
@@ -1219,6 +1282,17 @@ M68KI_HOT2 static inline uint m68ki_read_imm_16(void)
 	CPU_PREF_DATA = m68k_read_immediate_16(ADDRESS_68K(CPU_PREF_ADDR));
 	return result;
 }
+#elif defined(M68KI_PCPTR)
+	/* PICO-AMIGA PATCH: the PC is a host pointer (see "The PC as a host pointer"). */
+	{
+		const unsigned char *const p = REG_PC;
+		REG_PC += 2;
+		AMIGA_STAT_FETCH(1);
+#ifdef AMIGA_STATS
+		AMIGA_ICACHE_FETCH(ADDRESS_68K(M68KI_PC() - 2));
+#endif
+		return m68ki_fetch_be16(p);
+	}
 #elif defined(AMIGA_FETCH_WINDOW)
 	/* PICO-AMIGA PATCH: straight from the 64 KB bank the code runs in (mem.c's
 	 * fetch window), else through the memory map, which moves the window. */
@@ -1276,6 +1350,19 @@ M68KI_HOT2 static inline uint m68ki_read_imm_32(void)
 	CPU_PREF_DATA = m68k_read_immediate_16(ADDRESS_68K(CPU_PREF_ADDR));
 
 	return temp_val;
+#elif defined(M68KI_PCPTR)
+	{
+		const unsigned char *const p = REG_PC;
+		unsigned int l;
+		REG_PC += 4;
+		AMIGA_STAT_FETCH(2);
+#ifdef AMIGA_STATS
+		AMIGA_ICACHE_FETCH(ADDRESS_68K(M68KI_PC() - 4));
+		AMIGA_ICACHE_FETCH(ADDRESS_68K(M68KI_PC() - 2));
+#endif
+		__builtin_memcpy(&l, p, 4);
+		return __builtin_bswap32(l);
+	}
 #elif defined(AMIGA_FETCH_WINDOW)
 	{
 		const uint a = ADDRESS_68K(REG_PC), o = a - m68ki_cpu.fetch_lo;
@@ -1406,7 +1493,7 @@ M68KI_HOT2 static inline void m68ki_write_32_pd_fc(uint address, uint fc, uint v
  */
 static inline uint m68ki_get_ea_pcdi(void)
 {
-	uint old_pc = REG_PC;
+	uint old_pc = M68KI_PC();
 	m68ki_use_program_space(); /* auto-disable */
 	return old_pc + MAKE_INT_16(m68ki_read_imm_16());
 }
@@ -1415,7 +1502,7 @@ static inline uint m68ki_get_ea_pcdi(void)
 M68KI_HOT2 static inline uint m68ki_get_ea_pcix(void)
 {
 	m68ki_use_program_space(); /* auto-disable */
-	return m68ki_get_ea_ix(REG_PC);
+	return m68ki_get_ea_ix(M68KI_PC());
 }
 
 /* Indexed addressing modes are encoded as follows:
@@ -1641,16 +1728,45 @@ static inline void m68ki_fake_pull_32(void)
  * These functions will also call the pc_changed callback if it was enabled
  * in m68kconf.h.
  */
+#ifdef M68KI_PCPTR
+/* PICO-AMIGA PATCH: the PC as a host pointer.  A jump: into the part of the
+ * window instructions may begin in, or the long way (another window, the
+ * window's end, no window: m68krun.h).  ppc_h moves with the bias, so that
+ * M68KI_PPC() still is this instruction's address. */
+M68KI_HOT2 static inline void m68ki_set_pc(uint v)
+{
+	const uint o = ADDRESS_68K(v) - m68ki_cpu.fetch_lo;
+	if(o < m68ki_cpu.safe_len)
+	{
+		const unsigned char *const p = m68ki_cpu.fetch_ptr + o;
+		const uintptr_t b = (uintptr_t)p - v;
+		m68ki_cpu.ppc_h += b - m68ki_cpu.pc_bias;
+		m68ki_cpu.pc_bias = b;
+		REG_PC = p;
+	}
+	else
+		m68kf_pc_far(v);
+}
+/* After a relative change of the PC. */
+M68KI_HOT2 static inline void m68ki_pc_check(void)
+{
+	if((uintptr_t)(REG_PC - m68ki_cpu.safe_ptr) >= m68ki_cpu.safe_len)
+		m68kf_pc_far(M68KI_PC());
+}
+#else
+#define m68ki_pc_check() ((void)0)
+#endif
+
 M68KI_HOT2 static inline void m68ki_jump(uint new_pc)
 {
-	REG_PC = new_pc;
+	M68KI_SET_PC(new_pc);
 	m68ki_pc_changed(REG_PC);
 }
 
 M68KI_HOT2 static inline void m68ki_jump_vector(uint vector)
 {
-	REG_PC = (vector<<2) + REG_VBR;
-	REG_PC = m68ki_read_data_32(REG_PC);
+	const uint new_pc = m68ki_read_data_32((vector<<2) + REG_VBR);
+	M68KI_SET_PC(new_pc);
 	m68ki_pc_changed(REG_PC);
 }
 
@@ -1662,17 +1778,20 @@ M68KI_HOT2 static inline void m68ki_jump_vector(uint vector)
  */
 M68KI_HOT2 static inline void m68ki_branch_8(uint offset)
 {
-	REG_PC += MAKE_INT_8(offset);
+	REG_PC += (sint)MAKE_INT_8(offset);
+	m68ki_pc_check();
 }
 
 M68KI_HOT2 static inline void m68ki_branch_16(uint offset)
 {
-	REG_PC += MAKE_INT_16(offset);
+	REG_PC += (sint)MAKE_INT_16(offset);
+	m68ki_pc_check();
 }
 
 M68KI_HOT2 static inline void m68ki_branch_32(uint offset)
 {
-	REG_PC += offset;
+	REG_PC += (sint)offset;
+	m68ki_pc_check();
 	m68ki_pc_changed(REG_PC);
 }
 
@@ -1835,9 +1954,9 @@ static inline void m68ki_stack_frame_0001(uint pc, uint sr, uint vector)
  */
 static inline void m68ki_stack_frame_0010(uint sr, uint vector)
 {
-	m68ki_push_32(REG_PPC);
+	m68ki_push_32(M68KI_PPC());
 	m68ki_push_16(0x2000 | (vector<<2));
-	m68ki_push_32(REG_PC);
+	m68ki_push_32(M68KI_PC());
 	m68ki_push_16(sr);
 }
 
@@ -1846,7 +1965,7 @@ static inline void m68ki_stack_frame_0010(uint sr, uint vector)
  */
 static inline void m68ki_stack_frame_buserr(uint sr)
 {
-	m68ki_push_32(REG_PC);
+	m68ki_push_32(M68KI_PC());
 	m68ki_push_16(sr);
 	m68ki_push_16(REG_IR);
 	m68ki_push_32(m68ki_aerr_address);	/* access address */
@@ -2038,7 +2157,7 @@ M68KI_HOT2 static inline void m68ki_exception_trap(uint vector)
 	uint sr = m68ki_init_exception();
 
 	if(CPU_TYPE_IS_010_LESS(CPU_TYPE))
-		m68ki_stack_frame_0000(REG_PC, sr, vector);
+		m68ki_stack_frame_0000(M68KI_PC(), sr, vector);
 	else
 		m68ki_stack_frame_0010(sr, vector);
 
@@ -2061,7 +2180,7 @@ M68KI_HOT2 static inline void m68ki_exception_trapN(uint vector)
 	    return;
 
 	uint sr = m68ki_init_exception();
-	m68ki_stack_frame_0000(REG_PC, sr, vector);
+	m68ki_stack_frame_0000(M68KI_PC(), sr, vector);
 	m68ki_jump_vector(vector);
 
 	/* Use up some clock cycles and undo the instruction's cycles */
@@ -2081,7 +2200,7 @@ M68KI_HOT2 static inline void m68ki_exception_trace(void)
 			CPU_INSTR_MODE = INSTRUCTION_NO;
 		}
 		#endif /* M68K_EMULATE_ADDRESS_ERROR */
-		m68ki_stack_frame_0000(REG_PC, sr, EXCEPTION_TRACE);
+		m68ki_stack_frame_0000(M68KI_PC(), sr, EXCEPTION_TRACE);
 	}
 	else
 		m68ki_stack_frame_0010(sr, EXCEPTION_TRACE);
@@ -2107,7 +2226,7 @@ M68KI_HOT2 static inline void m68ki_exception_privilege_violation(void)
 	}
 	#endif /* M68K_EMULATE_ADDRESS_ERROR */
 
-	m68ki_stack_frame_0000(REG_PPC, sr, EXCEPTION_PRIVILEGE_VIOLATION);
+	m68ki_stack_frame_0000(M68KI_PPC(), sr, EXCEPTION_PRIVILEGE_VIOLATION);
 	m68ki_jump_vector(EXCEPTION_PRIVILEGE_VIOLATION);
 
 	/* Use up some clock cycles and undo the instruction's cycles */
@@ -2148,7 +2267,7 @@ static inline void m68ki_exception_bus_error(void)
 	uint sr = m68ki_init_exception();
 
 	/* Note: This is implemented for 68010 only! */
-	m68ki_stack_frame_1000(REG_PPC, sr, EXCEPTION_BUS_ERROR);
+	m68ki_stack_frame_1000(M68KI_PPC(), sr, EXCEPTION_BUS_ERROR);
 
 	m68ki_jump_vector(EXCEPTION_BUS_ERROR);
 
@@ -2170,7 +2289,7 @@ static inline void m68ki_exception_1010(void)
 #endif
 
 	sr = m68ki_init_exception();
-	m68ki_stack_frame_0000(REG_PPC, sr, EXCEPTION_1010);
+	m68ki_stack_frame_0000(M68KI_PPC(), sr, EXCEPTION_1010);
 	m68ki_jump_vector(EXCEPTION_1010);
 
 	/* Use up some clock cycles and undo the instruction's cycles */
@@ -2189,7 +2308,7 @@ static inline void m68ki_exception_1111(void)
 #endif
 
 	sr = m68ki_init_exception();
-	m68ki_stack_frame_0000(REG_PPC, sr, EXCEPTION_1111);
+	m68ki_stack_frame_0000(M68KI_PPC(), sr, EXCEPTION_1111);
 	m68ki_jump_vector(EXCEPTION_1111);
 
 	/* Use up some clock cycles and undo the instruction's cycles */
@@ -2224,7 +2343,7 @@ M68KI_HOT2 static inline void m68ki_exception_illegal(void)
 	}
 	#endif /* M68K_EMULATE_ADDRESS_ERROR */
 
-	m68ki_stack_frame_0000(REG_PPC, sr, EXCEPTION_ILLEGAL_INSTRUCTION);
+	m68ki_stack_frame_0000(M68KI_PPC(), sr, EXCEPTION_ILLEGAL_INSTRUCTION);
 	m68ki_jump_vector(EXCEPTION_ILLEGAL_INSTRUCTION);
 
 	/* Use up some clock cycles and undo the instruction's cycles */
@@ -2235,7 +2354,7 @@ M68KI_HOT2 static inline void m68ki_exception_illegal(void)
 static inline void m68ki_exception_format_error(void)
 {
 	uint sr = m68ki_init_exception();
-	m68ki_stack_frame_0000(REG_PC, sr, EXCEPTION_FORMAT_ERROR);
+	m68ki_stack_frame_0000(M68KI_PC(), sr, EXCEPTION_FORMAT_ERROR);
 	m68ki_jump_vector(EXCEPTION_FORMAT_ERROR);
 
 	/* Use up some clock cycles and undo the instruction's cycles */
@@ -2326,13 +2445,13 @@ M68KI_HOT2 static inline void m68ki_exception_interrupt(uint int_level)
 		new_pc = m68ki_read_data_32((EXCEPTION_UNINITIALIZED_INTERRUPT<<2) + REG_VBR);
 
 	/* Generate a stack frame */
-	m68ki_stack_frame_0000(REG_PC, sr, vector);
+	m68ki_stack_frame_0000(M68KI_PC(), sr, vector);
 	if(FLAG_M && CPU_TYPE_IS_EC020_PLUS(CPU_TYPE))
 	{
 		/* Create throwaway frame */
 		m68ki_set_sm_flag(FLAG_S);	/* clear M */
 		sr |= 0x2000; /* Same as SR in master stack frame except S is forced high */
-		m68ki_stack_frame_0001(REG_PC, sr, vector);
+		m68ki_stack_frame_0001(M68KI_PC(), sr, vector);
 	}
 
 	m68ki_jump(new_pc);

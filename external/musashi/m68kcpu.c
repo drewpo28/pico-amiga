@@ -1158,6 +1158,9 @@ void m68k_set_fetch_window(const unsigned char *ptr, unsigned int lo, unsigned i
 	m68ki_cpu.fetch_ptr = ptr;
 	m68ki_cpu.fetch_lo = lo;
 	m68ki_cpu.fetch_len = len;
+	/* Where an instruction may begin with no check of its words (m68kcpu.h). */
+	m68ki_cpu.safe_ptr = ptr;
+	m68ki_cpu.safe_len = len > M68KI_PC_GUARD ? len - M68KI_PC_GUARD : 0;
 #else
 	(void)ptr; (void)lo; (void)len;
 #endif

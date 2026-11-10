@@ -111,10 +111,40 @@
   measured, where 9% of the instructions had moved it), the parts start on the
   same frames, audw is unchanged; with the bus model off and on the 68000
   machines it is still bit-identical.  NOT measured on the board yet.
-  What is left in the loop is the fetch window check (5 of its 18
-  instructions, 7 more per extension word): a PC kept as a host pointer would
-  take ~8 more off (~15%), at the price of every PC write being checked and a
-  staged path for an instruction at a window's end - not done.
+- **The handlers' PC is a host pointer** (M68KI_PCPTR, 2026-11-10 evening;
+  m68kcpu.h "The PC as a host pointer", m68krun.h).  REG_PC points at the next
+  instruction word in the fetch window's memory, so a fetch is a load and an
+  add, and the loop is 13 instructions a turn (was 18; the window check was 5
+  of them and 7 more per extension word).  What makes the unchecked fetch safe
+  is where an instruction may BEGIN: every PC write that is not "the next word"
+  is checked (m68ki_set_pc() for jumps, m68ki_pc_check() after a relative
+  branch) against the window less M68KI_PC_GUARD bytes at its end, and the loop
+  runs at most M68KI_PC_BUDGET (128) instructions of at most 24 bytes before
+  its caller looks at the PC again (m68kf_pc_enter(), every m68ki_run_* call).
+  A target outside that part - another block, the window's end, no block -
+  gets a pointer that only stands for the address and ends the loop
+  (m68kf_break(): the cycles left are put aside as for a trace flag);
+  m68kf_pc_enter() then moves the window (m68k_fetch_window(), mem.c: at the
+  next instruction, which is when the old fetch moved it, so the chip bus
+  counts are the same), gives a smaller budget near a block's end, and for the
+  last 48 bytes of a block or memory that is no block copies the instruction
+  to m68ki_cpu.stage (m68k_fetch_stage(), no side effects) and runs that one.
+  Names: REG_PC is the pointer (only `+=` / `-=` inside an instruction),
+  M68KI_PC() the 68k PC (pointer - pc_bias), M68KI_PPC() the instruction's
+  address (the loop stores the pointer in ppc_h; a jump moves it with the
+  bias), M68KI_SET_PC(v) a jump; m68k_in.c and m68kcpu.h use those, and a
+  REG_PC read as a number does not compile.  A callback that changes the PC or
+  the memory map is seen by M68KI_LOAD.  An instruction must not fetch after
+  it has changed the PC (none does).  Without the fetch window (Musashi's test
+  driver) REG_PC is the 68k address as before.
+  Bit-identical to the commit before it (the same 14 host runs, 4 on the
+  Cortex-M33); Musashi's suites also pass through this path with every
+  instruction staged (the driver given AMIGA_FETCH_WINDOW and no window) and
+  without register variables.  tools/m68kbench, ARM instructions a 68k
+  instruction: Roots' zigzag 52.8 -> 45.6, its 8-plane part 63.6 -> 58.2,
+  A-Type 67.0 -> 61.0, Roswell 49.8 -> 43.1.  What a slice costs to enter and
+  leave (m68k_execute + m68ki_run_* + m68kf_pc_enter: ~100 instructions, a
+  slice being ~20 68k instructions) is now 5 of those 45.  NOT on the board yet.
 - **Musashi samples interrupts only on entry to m68k_execute()** (and on SR
   writes): `amiga_update_ipl()` calls m68k_end_timeslice() when the level rises
   inside the CPU, otherwise an interrupt would wait for the end of the slice.

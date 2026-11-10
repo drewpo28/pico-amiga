@@ -342,6 +342,12 @@ void m68k_end_timeslice(void);          /* End timeslice now */
 /* PICO-AMIGA PATCH: the instruction fetch window (m68kcpu.h, AMIGA_FETCH_WINDOW):
  * addresses [lo, lo + len) fetch from ptr + (address - lo); len 0 closes it. */
 void m68k_set_fetch_window(const unsigned char *ptr, unsigned int lo, unsigned int len);
+/* ...and what the handlers ask of the platform (mem.c) when the PC leaves it:
+ * the window moved to the block `address` is in, if it is memory the code can
+ * be read from in place; `n` bytes from `address` on, without side effects,
+ * for an instruction that cannot be (the last bytes of a block, I/O). */
+void m68k_fetch_window(unsigned int address);
+void m68k_fetch_stage(unsigned int address, unsigned char *buf, unsigned int n);
 
 /* PICO-AMIGA PATCH: memory the opcode handlers reach without a callback
  * (m68krun.h).  Per 64 KB bank of the 24-bit map: the host address of the
