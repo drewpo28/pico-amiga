@@ -161,6 +161,18 @@
   with stride 0; it also took over the old clear / copy path.  Roots' plasma:
   128 blits of D = A | B | C a frame, 108 -> ~55 ARM instructions a word.  Its
   own function at -Os: inlined at -O2 it cost 1.4 KB of SRAM.
+- **Shifted blits that do not read C have one too** (blitter.c area_shift,
+  2026-11-11): the rows that cannot wrap at chip RAM's end are counted first
+  and run with the pointers carried along; a 1-word column is one row of h
+  words.  Roots' particle part with fast RAM (4 x 1 x 1536 a frame, the
+  chunky buffer into planes, half descending): ~180 -> ~60 ARM instructions a
+  word, board blt 4.7 -> 2.9 ms.  Blits that read C (cookie cuts) and fills
+  stay in area_blit's loop: two more loops would cost 1.5 KB of SRAM.
+- **A long write to fast or chip RAM is one store** (m68krun.h m68kf_w32,
+  2026-11-11), counted and mirrored as the two words it was: QEMU 55.1 -> 52.5
+  ARM instructions per 68k instruction in the particle part.  There the CPU's
+  time is mostly the guest's data waiting on PSRAM (the load in m68kf_r32: 20%
+  of core 0 - pcprof names that bucket m68ki_get_ea_ix, which starts in it).
 - **The slices are merged while the copper waits** (amiga.c run_line,
   2026-11-10): a slice costs ~330 ARM instructions whatever runs in it, so
   from the second one on it is as long as the copper's next move

@@ -181,9 +181,15 @@ static const char* baseName(const char* p) {
 static bool p_diskSet() { return machine_set_count() > 1; }
 
 #define SET_ROWS 17                                   // machine.cpp's 16 disks + Other disk...
+// PICO-AMIGA: the labels in PSRAM (ui_psram_scratch), out of the heap.
+static char (*s_set_labels)[48];
+void uiSetLabelsBuffer(void* p) { s_set_labels = (char (*)[48])p; }
+
 static const Option* setOpts(uint8_t& cnt) {
     static Option opts[SET_ROWS];
-    static char labels[SET_ROWS][48];
+    if (!s_set_labels) s_set_labels = (char (*)[48])malloc(SET_ROWS * sizeof *s_set_labels);
+    if (!s_set_labels) { opts[0] = { "Other disk...", machine_set_count(), nullptr }; cnt = 1; return opts; }
+    char (*const labels)[48] = s_set_labels;
     const int n = machine_set_count();
     for (int i = 0; i < n && i < SET_ROWS - 1; i++) {
         const char* disk = machine_set_disk(i);

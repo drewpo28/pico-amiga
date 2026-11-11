@@ -6,6 +6,7 @@
 #include "OSDNewMenu.h"
 
 #include <string.h>
+#include <stdlib.h>
 
 #include "UiGfx.h"
 #include "UiFont.h"
@@ -178,6 +179,10 @@ void gfxEnd() {}
 
 // ── pixels ─────────────────────────────────────────────────────────────────────
 
+// PICO-AMIGA: gfxRowToDirect's line in PSRAM (ui_psram_scratch), 1.4 KB of SRAM for the heap.
+static uint16_t* s_line;
+void gfxLineBuffer(void* p) { s_line = (uint16_t*)p; }
+
 // The menu draws lowres 0x0RGB: a hires or interlaced row is first turned into a
 // DIRECT one showing the same picture (the left pixel of each hires pair, the
 // upper output line).  Denise rewrites every row on its next frame anyway.
@@ -187,7 +192,9 @@ uint16_t* gfxRowDirect(int row) {
 
 uint16_t* gfxRowToDirect(amiga_row_t* r) {
     if (r->mode != AMIGA_ROW_DIRECT) {
-        static uint16_t line[AMIGA_OUT_W];
+        if (!s_line) s_line = (uint16_t*)malloc(AMIGA_OUT_W * sizeof *s_line);
+        if (!s_line) return nullptr;
+        uint16_t* const line = s_line;
         amiga_fb_line(r, 0, line);
         for (int x = 0; x < AMIGA_FB_W; x++) r->px.rgb[x] = line[2 * x];
         r->mode = AMIGA_ROW_DIRECT;

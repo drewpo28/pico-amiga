@@ -166,6 +166,158 @@ AMIGA_HOT __attribute__((noinline, optimize("Os"))) static int area_plain(const 
     return y0;
 }
 
+// Any shift, masks and direction, no fill, D on: area_blit's loop through
+// pointers.  Roots' particle part (with fast RAM) merges its chunky buffer
+// into planes with 4 blits of 1 x 1536 words a frame, shifted, half of them
+// descending: the general loop took ~180 ARM instructions a word there, most
+// of it the row's bookkeeping.  So the rows that cannot wrap at the end of chip
+// RAM are counted first and run with the pointers carried from row to row; the
+// rest is left to area_blit's loop (the rows done are returned, A's shifter in
+// *aoldp).  A channel the minterm does not look at is a constant with a stride
+// of 0 (its last word is read afterwards, for BLTxDAT); B off is BLTBDAT's
+// shifted word.  C is not read here (area_blit's loop does the blits that read
+// it, cookie cuts): the minterm's C terms are constants, four registers
+// instead of eight (spills cost more than the minterm).  A column (1 word wide)
+// runs as one row of h words.  Two loops (ascending, descending), Os: 1.5 KB of
+// SRAM; with the C-reading pair and O2 it was 4 KB, below the menu's heap floor.
+
+// The rows from offset o (stepping s a row, a row's words at o .. o + span
+// ascending, o - span .. o descending) that stay within 0 .. lim.
+static inline int rows_in(uint32_t o, int32_t s, uint32_t span, uint32_t lim, bool desc, int h) {
+    const uint32_t lo = desc ? o - span : o;
+    if (lo > lim) return 0;
+    if (s == 0) return h;
+    const uint32_t n = s > 0 ? (lim - lo) / (uint32_t)s + 1 : lo / (uint32_t)-s + 1;
+    return n < (uint32_t)h ? (int)n : h;
+}
+
+typedef struct {
+    const uint8_t *pa, *pb, *pc; uint8_t *pd;
+    int32_t ra, rb, rc, rd;                 // added after a row's words
+    int32_t sa, sb, sc, sd;                 // a word's step: 0 for a constant
+    uint32_t fw, mw, lw;                    // A's mask: a row's first word, the others; the last's AND
+    int sha, shb;
+    uint32_t aold, bo, bh, va, vc;
+    bool mir;                               // D's words reach a page of the copper list mirror
+    bool any;
+} shift_run_t;
+
+// One direction (and C read or not: area_shift uses only "not"), inlined into its own loop.
+__attribute__((always_inline)) static inline void shift_rows(shift_run_t *r, const mt_t *mtp, int rows, int words, bool useB, const bool desc, const bool creg) {
+    const uint8_t *pa = r->pa, *pb = r->pb, *pc = r->pc;
+    uint8_t *pd = r->pd;
+    const int32_t sa = r->sa, sb = r->sb, sd = r->sd;
+    const int sha = r->sha, shb = r->shb;
+    uint32_t aold = r->aold, bo = r->bo, bh = r->bh, va = r->va, vc = r->vc;
+    uint32_t any = 0;
+    // C's terms: with C not read, l0 / x1 (l1 ^ l0) / h0 / x2 (h1 ^ h0) once
+    uint32_t c0 = mtp->m0, c1 = mtp->m2, c2 = mtp->m4, c3 = mtp->m6;
+    if (!creg) {
+        const uint32_t l0 = c0 ^ (vc & mtp->k10), l1 = c1 ^ (vc & mtp->k32);
+        const uint32_t h0 = c2 ^ (vc & mtp->k54), h1 = c3 ^ (vc & mtp->k76);
+        c0 = l0; c1 = l1 ^ l0; c2 = h0; c3 = h1 ^ h0;
+    }
+    for (int y = rows; y > 0; y--) {
+        uint32_t mask = r->fw;
+        for (int n = words; n > 0; n--) {
+            uint16_t t;
+            if (n == 1) mask &= r->lw;
+            memcpy(&t, pa, 2); va = __builtin_bswap16(t); pa += sa;
+            const uint32_t am = va & mask;
+            const uint32_t ah = desc ? ((am << 16) | aold) >> sha : ((aold << 16) | am) >> sha;
+            aold = am;
+            if (useB) {
+                memcpy(&t, pb, 2); pb += sb;
+                const uint32_t vb = __builtin_bswap16(t);
+                bh = desc ? ((vb << 16) | bo) >> shb : ((bo << 16) | vb) >> shb;
+                bo = vb;
+            }
+            uint32_t gl, gh;
+            if (creg) {
+                memcpy(&t, pc, 2); vc = __builtin_bswap16(t); pc += r->sc;
+                const uint32_t l0 = c0 ^ (vc & mtp->k10), l1 = c1 ^ (vc & mtp->k32);
+                const uint32_t h0 = c2 ^ (vc & mtp->k54), h1 = c3 ^ (vc & mtp->k76);
+                gl = l0 ^ (bh & (l1 ^ l0)); gh = h0 ^ (bh & (h1 ^ h0));
+            } else {
+                gl = c0 ^ (bh & c1); gh = c2 ^ (bh & c3);
+            }
+            const uint16_t s = __builtin_bswap16((uint16_t)(gl ^ (ah & (gh ^ gl))));
+            any |= s;
+            memcpy(&t, pd, 2);
+            if (t != s) {                   // as area_plain: an unchanged word is not written
+                memcpy(pd, &s, 2);
+                if (r->mir) {
+                    const uint32_t o = (uint32_t)(pd - A.cfg.chip_ram);
+                    if (M68K_FAST_WPAGE(m68k_fast_wmap, o)) mir_w16(o, s);
+                }
+            }
+            pd += sd;
+            mask = r->mw;
+        }
+        pa += r->ra; pb += r->rb; pd += r->rd;
+        if (creg) pc += r->rc;
+    }
+    r->aold = aold; r->bo = bo; r->bh = bh; r->va = va; r->vc = vc;
+    r->any = any != 0;
+}
+
+AMIGA_HOT __attribute__((noinline, optimize("Os"))) static int area_shift(const mt_t *mtp, bool needA, bool needC, bool *z, uint16_t *aoldp) {
+    const bool useA = con0 & 0x0800, useB = con0 & 0x0400, useC = con0 & 0x0200, desc = con1 & 0x0002;
+    const int w = bw, h = bh;
+    uint8_t *cr = A.cfg.chip_ram;
+    const uint32_t cm = A.chip_mask & ~1u, span = 2u * (uint32_t)(w - 1);
+    const uint32_t lim = A.cfg.chip_size - 2u - span;     // a row's lowest word at or below it
+    const bool rA = useA && needA, rC = useC && needC;
+    const int inc = desc ? -2 : 2;
+    const int32_t row = inc * w;                      // a row's step: its words and the modulo
+    const int32_t ma = row + (desc ? -mod[BA] : mod[BA]), mb = row + (desc ? -mod[BB] : mod[BB]);
+    const int32_t mc = row + (desc ? -mod[BC] : mod[BC]), md = row + (desc ? -mod[BD] : mod[BD]);
+    const uint32_t oa = pt[BA] & cm, ob = pt[BB] & cm, oc = pt[BC] & cm, od = pt[BD] & cm;
+    int n = rows_in(od, md, span, lim, desc, h);
+    if (rA) { const int k = rows_in(oa, ma, span, lim, desc, h); if (k < n) n = k; }
+    if (useB) { const int k = rows_in(ob, mb, span, lim, desc, h); if (k < n) n = k; }
+    if (rC) { const int k = rows_in(oc, mc, span, lim, desc, h); if (k < n) n = k; }
+    if (n <= 0) return 0;
+    static uint16_t ka, kc;                           // the constants as stored (static: not spilled for)
+    ka = __builtin_bswap16(adat); kc = __builtin_bswap16(cdat);
+    shift_run_t r = {
+        .pa = rA ? cr + oa : (const uint8_t *)&ka, .pb = cr + ob, .pc = rC ? cr + oc : (const uint8_t *)&kc,
+        .pd = cr + od,
+        .ra = rA ? ma - row : 0, .rb = useB ? mb - row : 0, .rc = rC ? mc - row : 0, .rd = md - row,
+        .sa = rA ? inc : 0, .sb = useB ? inc : 0, .sc = rC ? inc : 0, .sd = inc,
+        .fw = afwm, .mw = 0xFFFF, .lw = alwm,
+        .sha = desc ? 16 - (con0 >> 12) : con0 >> 12, .shb = desc ? 16 - (con1 >> 12) : con1 >> 12,
+        .aold = *aoldp, .bo = bold, .bh = bhold, .va = adat, .vc = cdat,
+    };
+    // The pages D's words reach: none with a window, no look at the map a word.
+    {
+        const uint32_t d0 = desc ? od - span : od, d1 = d0 + (uint32_t)((n - 1) * md);
+        const uint32_t lo = d0 < d1 ? d0 : d1, hi = (d0 < d1 ? d1 : d0) + span + 1;
+        for (uint32_t pg = lo >> 12; pg <= hi >> 12 && !r.mir; pg++) r.mir = M68K_FAST_WPAGE(m68k_fast_wmap, pg << 12);
+    }
+    int rows = n, words = w;
+    if (w == 1) {                           // a column: one row of n words, every word first and last
+        rows = 1; words = n;
+        r.sa += r.ra; r.sb += r.rb; r.sc += r.rc; r.sd += r.rd;
+        r.ra = r.rb = r.rc = r.rd = 0;
+        r.fw = r.mw = (uint32_t)(afwm & alwm); r.lw = 0xFFFF;
+    }
+    if (desc) shift_rows(&r, mtp, rows, words, useB, true, false);
+    else      shift_rows(&r, mtp, rows, words, useB, false, false);
+    if (n == h) {                           // the last words of A and C as the DMA leaves them
+        const uint32_t l = (uint32_t)(inc * (w - 1));
+        if (useA && !rA) r.va = chip_rw(pt[BA] + (uint32_t)((h - 1) * ma) + l);
+        if (useC && !rC) r.vc = chip_rw(pt[BC] + (uint32_t)((h - 1) * mc) + l);
+    }
+    if (useA) { pt[BA] += (uint32_t)(n * ma); if (rA || n == h) adat = (uint16_t)r.va; }
+    if (useB) { pt[BB] += (uint32_t)(n * mb); bdat = bold = (uint16_t)r.bo; bhold = (uint16_t)r.bh; }
+    if (useC) { pt[BC] += (uint32_t)(n * mc); if (rC || n == h) cdat = (uint16_t)r.vc; }
+    pt[BD] += (uint32_t)(n * md);
+    *aoldp = (uint16_t)r.aold;
+    if (r.any) *z = false;
+    return n;
+}
+
 // In SRAM: run from flash, the blits competed with chip RAM (PSRAM) for the XIP
 // cache (State of the Art's intro clears and fills ~12,000 words a frame).
 AMIGA_HOT static uint32_t area_blit(void) {
@@ -190,6 +342,8 @@ AMIGA_HOT static uint32_t area_blit(void) {
     // Hero Quest's language screen clears 20x1000 words a frame with A on.)
     if (useD && !dofill && !desc && (!needA || (!ash && afwm == 0xFFFF && alwm == 0xFFFF)) && (!useB || !bsh))
         y0 = area_plain(&mt, needA, needC, &z);
+    else if (useD && !dofill && !(useC && needC))
+        y0 = area_shift(&mt, needA, needC, &z, &aold);
     for (int y = y0; y < h; y++) {
         bool carry = (con1 & 0x0004) != 0;
         uint16_t mask = afwm;

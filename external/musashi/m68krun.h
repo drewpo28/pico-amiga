@@ -244,12 +244,34 @@ M68KI_HOT2 static __attribute__((noinline)) void m68kf_w16(uint a, uint v)
 	m68kf_w16_slow(a, v);
 }
 
-/* Two word writes, as m68k_write_memory_32() makes them (and counts them). */
+/* Two word writes, as m68k_write_memory_32() makes them (and counts them):
+ * in one bank one store, counted and mirrored as the two words (the copper
+ * list mirror a word at a time, each in its own page); across a bank's end
+ * the two words apart.  A 68020 long write to a buffer in fast RAM was two
+ * calls of m68kf_w16, ~40 ARM instructions (Roots' particle part: move.l
+ * Dn,(An)+ 15% of its instructions). */
 M68KI_HOT2 static __attribute__((noinline)) void m68kf_w32(uint a, uint v)
 {
 #ifdef AMIGA_FETCH_WINDOW
-	if(m68ki_cpu.fast[a >> 16].wr)
+	unsigned char *const p = m68ki_cpu.fast[a >> 16].wr;
+	if(p)
 	{
+		if(((a + 2) & 0xffff) >= 2)              /* both halves in this bank */
+		{
+			const unsigned int l = __builtin_bswap32(v);
+			M68KF_STAT();
+			M68KF_STAT();
+			memcpy(p + a, &l, 4);
+			if(a < M68K_FAST_CHIP_TOP)
+			{
+				m68ki_cpu.bus_data += 2;
+				if(M68K_FAST_WPAGE(m68ki_cpu.fast_wmap, a))
+					m68k_fast_mirror(a, l & 0xffff, 2);
+				if(M68K_FAST_WPAGE(m68ki_cpu.fast_wmap, a + 2))
+					m68k_fast_mirror(a + 2, l >> 16, 2);
+			}
+			return;
+		}
 		m68kf_w16(a, v >> 16);
 		m68kf_w16(ADDRESS_68K(a + 2), v & 0xffff);
 		return;

@@ -37,6 +37,11 @@ void settings_apply_video(void);     // picture position, centring (Video), rend
 // The band's pixels (ui_stats_buffer_size() bytes, PSRAM); without one Win+F8 does nothing.
 size_t ui_stats_buffer_size(void);
 void ui_stats_buffer(void *p);
+// UI_PSRAM_SCRATCH bytes of PSRAM for the menu's buffers that only the CPU
+// touches (UiGfx's line, UiTree's disk set labels); without it they come from
+// the heap when first needed.
+#define UI_PSRAM_SCRATCH 4096
+void ui_psram_scratch(void *p);
 void ui_stats_toggle(void);
 bool ui_stats_active(void);    // the band is shown (it reads the core's profile)
 void ui_stats_frame(uint32_t emu_us, bool skipped);   // skipped: the frame was not drawn

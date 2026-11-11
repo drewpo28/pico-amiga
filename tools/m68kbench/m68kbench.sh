@@ -15,9 +15,11 @@
 #
 #   m68kbench.sh plugin
 #   m68kbench.sh build [-DNAME=VALUE ...]         -> $WORK/bench.elf
-#   m68kbench.sh snap  ROM ADF FRAME OUT.state    the host bench's snapshot after FRAME
-#   m68kbench.sh run   ROM ADF STATE FRAMES [WARM] [FETCH8,COST8]   totals only
-#   m68kbench.sh prof  ROM ADF STATE FRAMES [WARM] [FETCH8,COST8]   by function
+#   m68kbench.sh snap  ROM ADF FRAME OUT.state [HOST ARGS]   the host bench's snapshot after FRAME
+#   m68kbench.sh run   ROM ADF STATE FRAMES [WARM] [FETCH8,COST8] [FAST_MB]   totals only
+#   m68kbench.sh prof  ROM ADF STATE FRAMES [WARM] [FETCH8,COST8] [FAST_MB]   by function
+#
+# Fast RAM: the snapshot taken with `--fast N` (HOST ARGS), FAST_MB the same N.
 #
 # ADF / STATE "-": none (a cold boot of the ROM).  The chip bus model defaults
 # to the menu's "With cache" (2,16); 0 = off (the CPU runs free).
@@ -57,10 +59,11 @@ build() {
 }
 
 snap() {
-    "$REPO/build-host/pico-amiga-host" --a1200 --aga --rom "$1" --adf "$2" --frames "$3" --state-save "$3:$4"
+    local rom="$1" adf="$2" n="$3" out="$4"; shift 4
+    "$REPO/build-host/pico-amiga-host" --a1200 --aga --rom "$rom" --adf "$adf" --frames "$n" --state-save "$n:$out" "$@"
 }
 
-args() { local IFS='|'; echo "bench|$*"; }
+args() { local IFS='|' a; a="bench|$*"; echo "${a//,/,,}"; }   # QEMU's option syntax: a comma doubled
 
 run() {
     local mark; mark=0x$(arm-none-eabi-nm "$WORK/bench.elf" | awk '$3=="bench_mark"{print $1}')

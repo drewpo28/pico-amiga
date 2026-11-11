@@ -2,7 +2,7 @@
 // compiled with the firmware's flags) on a Cortex-M33 under QEMU (mps2-an505),
 // running an A1200 from a snapshot the host bench saved.  A TCG plugin counts
 // the ARM instructions each function executes from bench_mark() on.
-// argv: rom adf state frames [warm-up frames] [fetch8,cost8]
+// argv: rom adf state frames [warm-up frames] [fetch8,cost8] [fast RAM MB, as the snapshot's]
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +10,7 @@
 
 #define BIG __attribute__((section(".bigmem")))
 BIG static uint8_t chip[2 << 20];
+BIG static uint8_t fast[8 << 20];
 BIG static uint8_t rom[512 << 10];
 BIG static uint8_t adf[901120];
 BIG static amiga_row_t fb[AMIGA_FB_H];
@@ -50,6 +51,7 @@ int main(int argc, char **argv) {
     cfg.framebuffer = fb;
     cfg.audio_ring = audio; cfg.audio_frames = 4096;
     cfg.track = track;
+    if (argc > 7 && atoi(argv[7]) > 0) { cfg.fast_ram = fast; cfg.fast_size = (uint32_t)atoi(argv[7]) << 20; }
     amiga_init(&cfg);
     amiga_set_chip_bus(fetch8 != 0);
     if (fetch8) amiga_set_chip_bus_params(fetch8, cost8);

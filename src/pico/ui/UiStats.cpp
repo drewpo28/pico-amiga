@@ -154,6 +154,13 @@ extern "C" size_t ui_stats_buffer_size(void) { return sizeof(uint16_t) * nm::BAN
 
 extern "C" void ui_stats_buffer(void* p) { nm::s_px = (uint16_t (*)[nm::BAND_W])p; }
 
+// PICO-AMIGA: the menu's CPU-only buffers in PSRAM (ui.h).
+extern "C" void ui_psram_scratch(void* p) {
+    static_assert(AMIGA_OUT_W * 2 <= 1536 && 1536 + 17 * 48 <= UI_PSRAM_SCRATCH, "ui_psram_scratch layout");
+    nm::gfxLineBuffer(p);
+    nm::uiSetLabelsBuffer((uint8_t*)p + 1536);
+}
+
 extern "C" bool ui_stats_active(void) { return nm::s_px && nm::s_page != 0; }
 
 // The hard disk's activity - or, on the CD32 (machine 4, machine.h: no IDE port),

@@ -184,7 +184,7 @@ int main(void) {
     // 2 MB PSRAM has no band, and its track comes from the heap.
     const uint32_t chip_area = psram >= 8 * MB ? 2 * MB : 1 * MB;
     uint8_t *const hi = ps + chip_area + 1 * MB;
-    const uint32_t misc = 56 * KB;
+    const uint32_t misc = 60 * KB;
     if (ui_stats_buffer_size() > 16 * KB || AMIGA_TRACK_WORDS * 2 > 16 * KB)
         fail(0xF00);                 // a build error in all but name
     const bool more = psram > chip_area + 1 * MB + misc;
@@ -195,6 +195,7 @@ int main(void) {
     if (!audio_ring) fail(0xF00);
     if (more) board_pcprof_mem(hi + 48 * KB);   // Debug > PC profiler's tables (4 KB)
     if (more) dbg_uart_move_ring(hi + 52 * KB); // Debug > UART log's ring (4 KB), out of the heap
+    if (more) ui_psram_scratch(hi + 56 * KB);   // the menu's line and labels (4 KB), out of the heap
     machine_init(ps + chip_area, ps + chip_area + 512 * KB, more ? hi + misc : NULL,
                  more ? psram - (chip_area + 1 * MB) - misc : 0, chip_area);
 
