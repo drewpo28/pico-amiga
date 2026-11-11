@@ -18,6 +18,12 @@ static unsigned sck(unsigned mhz, unsigned limit) {
     return mhz / d;
 }
 
+static unsigned thr_min = ~0u, thr_max;
+void perf_log_throttle(unsigned t8) {
+    if (t8 < thr_min) thr_min = t8;
+    if (t8 > thr_max) thr_max = t8;
+}
+
 void perf_log_frame(uint32_t emu_us, bool skipped) {
     static uint32_t frames, emu_sum, t0, slow, skips;
     static amiga_profile_t last;
@@ -64,7 +70,7 @@ void perf_log_frame(uint32_t emu_us, bool skipped) {
     printf("PERF fps %u.%u emu %u.%u ms (%u%%, %u slow, %u skip) | cpu %u.%u ren %u.%u+bpl %u.%u+rd %u.%u cop %u.%u blt %u.%u"
            " aud %u.%u line %u.%u dsk %u.%u oth %u.%u wait %u.%u (irq %u.%u) | core1 render %u.%u irq %u.%u enc %u.%u"
            " | cpu %u flash %u psram %u MHz | late %u stall %u | au hold %u skip %u hdmi starve %u full %u min %u"
-           " | xip %uk/fr miss %uk/fr%s\n",
+           " | xip %uk/fr miss %uk/fr | thr %u-%u%s\n",
            (unsigned)(fps10 / 10), (unsigned)(fps10 % 10),
            (unsigned)(emu10 / 10), (unsigned)(emu10 % 10),
            (unsigned)(emu_avg ? 2000000u / emu_avg : 0), (unsigned)slow, (unsigned)skips,   // 20 ms = 100%
@@ -76,9 +82,11 @@ void perf_log_frame(uint32_t emu_us, bool skipped) {
            sck((unsigned)settings_cpu_mhz(), settings_psram_mhz() < 135 ? (unsigned)settings_psram_mhz() : 135u),
            (unsigned)late, (unsigned)stall, (unsigned)dh, (unsigned)ds, (unsigned)dst, (unsigned)df, (unsigned)qmin,
            (unsigned)(xacc / nf / 1000), (unsigned)((xacc - xhit) / nf / 1000),
+           thr_max ? thr_min : 0u, thr_max,
            kLoadTest[settings_load_test() >= 0 && settings_load_test() <= 4 ? settings_load_test() : 0]);
     board_pcprof_dump();                                    // Debug > PC profiler's lines, if on
     last = p;
     frames = emu_sum = slow = skips = 0;
+    thr_min = ~0u; thr_max = 0;
     t0 = now;
 }

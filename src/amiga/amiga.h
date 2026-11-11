@@ -248,6 +248,12 @@ void amiga_set_chip_bus_params(int fetch8, int cost8);
 // The stock parameters, the cache's fetch credit while the program's music
 // routine runs every other frame only (amiga.c bus_auto_frame).
 void amiga_set_chip_bus_auto(bool on);
+// Code in fast RAM slowed down (the platform's lever for frames that run late):
+// each instruction run from the fast RAM board costs t8 / 8 more colour clocks,
+// 0 = none (the default).  The program gets fewer instructions a frame - as
+// with its code in chip RAM - and the board less to emulate.  Takes effect at
+// once; not in snapshots.
+void amiga_set_fast_throttle(unsigned t8);
 
 // The geometry the drive reports in IDENTIFY (0s: no drive).
 void amiga_hdf_geometry(int unit, uint16_t *cyls, uint8_t *heads, uint8_t *sectors);

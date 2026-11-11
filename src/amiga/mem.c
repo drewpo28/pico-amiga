@@ -64,6 +64,7 @@ AMIGA_HOT void m68k_fast_mirror(unsigned int a, unsigned int v, unsigned int siz
 // run of 64 KB banks that are one copy of it), read straight from its memory.
 // Any change to banks[] closes it.
 uint8_t mem_fetch_chip;        // ...and it is a chip bank (the chip bus model)
+uint8_t mem_fetch_fast;        // ...or the fast RAM board's (amiga_set_fast_throttle)
 
 static void map(int first, int count, const uint8_t *rd, uint8_t *wr, uint32_t mask, int io) {
     m68k_set_fetch_window(NULL, 0, 0);
@@ -404,6 +405,7 @@ AMIGA_HOT void m68k_fetch_window(unsigned int a) {
         const uint32_t lo = first << 16;
         m68k_set_fetch_window(b->rd + (lo & b->mask), lo, (last - first + 1) << 16);
         mem_fetch_chip = b->chip;
+        mem_fetch_fast = A.cfg.fast_ram && b->rd == A.cfg.fast_ram;
     }
 }
 

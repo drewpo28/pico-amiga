@@ -238,6 +238,17 @@ static int describeOnOff(uint16_t setting, int32_t v, DescLine* out, int max) {
             n = rule(out, n, max, "fast RAM: twice the work");
         }
         break;
+    case SET_FAST_RAM:
+        if (v) {
+            n = rule(out, n, max, "For WHDLoad and games");
+            n = rule(out, n, max, "that need the memory;");
+            n = rule(out, n, max, "demos run better");
+            n = rule(out, n, max, "without it");
+        } else {
+            n = rule(out, n, max, "None, as it came:");
+            n = rule(out, n, max, "best for demos");
+        }
+        break;
     case SET_FRAME_SKIP:
         if (v) {
             n = rule(out, n, max, "A frame after one that");
@@ -380,7 +391,7 @@ int describe(const Node& n, int32_t value, DescLine* out, int max) {
     if (n.setting == SET_VIDEO_MODE) return describeVideoMode(value, out, max);
     if (n.setting == SET_HPOS) return describePosition(value, out, max);
     if (n.setting == SET_VCENTRE || n.setting == SET_DISK_LED || n.setting == SET_HDMI_CAPTURE || n.setting == SET_CHIP_BUS ||
-        n.setting == SET_FRAME_SKIP)
+        n.setting == SET_FRAME_SKIP || n.setting == SET_FAST_RAM)
         return describeOnOff(n.setting, value, out, max);
     if (n.setting == SET_DRIVES) return describeDrives(value, out, max);
     if (n.kind == K_PICK && !strcmp(n.label, "CD drive")) return describeCd(value, out, max);

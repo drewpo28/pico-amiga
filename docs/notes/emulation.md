@@ -173,6 +173,21 @@
   ARM instructions per 68k instruction in the particle part.  There the CPU's
   time is mostly the guest's data waiting on PSRAM (the load in m68kf_r32: 20%
   of core 0 - pcprof names that bucket m68ki_get_ea_ix, which starts in it).
+- **Code in fast RAM is slowed down while frames run late** (amiga.c
+  amiga_set_fast_throttle, main.c; 2026-11-11): each instruction run with the
+  fetch window in the fast RAM board's memory (mem.c mem_fetch_fast, per slice
+  as bus_wait counts fetches) costs t8 / 8 more colour clocks.  main.c raises
+  t8 by 2 for a frame NOT drawn that still took > 15 ms (up to 48), gives one
+  back every 4 frames emulated in < 13 ms (19 ms never fired in the particle
+  part: its skipped frames are 17-19.5 ms).  Raising it for any late frame
+  (first version, board log 11:25) throttled Roots' AGA title stills to 48:
+  they are late from the drawing (rd + ren 10-15 ms, cpu 2-5), and the demo's
+  fades crawled.  Bench (Roots' particle part, set from boot): 0 -> 42k
+  instructions a frame, 8 -> 27k, 16 -> 20k (chip RAM, Stock: 16k).  Off (0)
+  the core is bit for bit as before.  Not tried, by estimate: a SRAM cache of
+  the opcode -> handler index (+5 ARM instructions every instruction, ~0.35 ms
+  a frame, against a few hundred flash misses of the index, ~0.1 ms); the
+  index itself as blocks does not shrink below ~32 KB.
 - **The slices are merged while the copper waits** (amiga.c run_line,
   2026-11-10): a slice costs ~330 ARM instructions whatever runs in it, so
   from the second one on it is as long as the copper's next move

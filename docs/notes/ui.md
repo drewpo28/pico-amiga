@@ -104,6 +104,12 @@
   board from the end of the DMS area (machine_fast_max keeps the builder's arena;
   drives whose DMS slot it takes are ejected). WHDLoad's ExpMem ("other memory")
   needs it: UFO CD32 asks for 1.5 MB ("Can't allocate ExpMem" without).
+  Its description says it is for WHDLoad and games that need the memory: on
+  this board demos run better without it (a 68EC020 in fast RAM runs twice the
+  instructions, the demo fills them, and the board pays in PSRAM misses).
+  With a board on, main.c slows code in fast RAM down while frames run late
+  from the emulation (amiga_set_fast_throttle; not a setting, always on); the
+  PERF line's `thr a-b` is its range that second.
 - Checked: HeroQuest (A600 KS 2.05 / 3.1, A1200), UFO Enemy Unknown CD32 (A1200 + 4 MB);
   install-only archives (HATE.lha: the installer and slave, no data) stop in
   WHDLoad with "object not found", as on a real Amiga.

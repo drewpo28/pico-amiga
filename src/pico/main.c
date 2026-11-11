@@ -261,9 +261,39 @@ int main(void) {
         const bool skip = settings_frame_skip() && late > total / 20 && skipped < SKIP_MAX;
         amiga_set_render_skip(skip);
         skipped = skip ? skipped + 1 : 0;
+        // Code in fast RAM slows down when late (always, with a fast RAM board):
+        // there a 68EC020 runs twice the instructions it does from chip RAM, and
+        // the demo fills
+        // them (Roots' particle part: 42k a frame, ~14 ms of core 0, mostly
+        // PSRAM misses of its own data - a faster core cannot make up for them).
+        // Only when the emulation itself is what runs late: a frame that was not
+        // drawn (or any over 19 ms, with skipping off) and still took over 15 ms
+        // charges each instruction from fast RAM an eighth of a colour clock
+        // more (two such a frame); frames emulated in under 13 ms give one back
+        // every 4.  (19 ms for skipped frames, log 11:30, never fired in Roots'
+        // particle part: its skipped frames take 17-19.5 ms, and with the drawn
+        // ones it still fell behind - 20-28 skips a second.)  A late
+        // frame alone is no reason: Roots' AGA title stills are late from their
+        // drawing (rd + ren 10-15 ms, cpu 2-5) - throttled to 48 there (log
+        // 11:25) its fades crawled and it took 15 s to come back.  The CPU so
+        // settles where the board keeps up, at full speed wherever it does.
+        // Bench: 8 -> ~27k instructions a frame there, 16 -> ~20k (chip RAM: 16k).
+        enum { THR_MAX = 48 };
+        static uint8_t thr, thr_calm;
+        static uint32_t emu_last;
+        static bool skip_last;
+        if (machine_fast_size()) {
+            const bool over = settings_frame_skip() ? skip_last && emu_last > 15000 : emu_last > 19000;
+            if (over) { thr = thr + 2 > THR_MAX ? THR_MAX : thr + 2; thr_calm = 0; }
+            else if (thr && emu_last < 13000 && ++thr_calm >= 4) { thr--; thr_calm = 0; }
+        } else thr = 0;
+        amiga_set_fast_throttle(thr);
+        perf_log_throttle(thr);
         const uint32_t t_emu = time_us_32();
         amiga_run_frame();
         const uint32_t emu_us = time_us_32() - t_emu;
+        emu_last = emu_us;
+        skip_last = skip;
         ui_stats_frame(emu_us, skip);
         machine_frame();
         perf_log_frame(emu_us, skip);

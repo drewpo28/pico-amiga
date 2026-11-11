@@ -199,6 +199,24 @@ AMIGA_HOT static void bus_wait(int h0, int h1) {
     A.bus_stall += cc;
 }
 
+// amiga_set_fast_throttle: per slice, the instructions run while the CPU fetched
+// from fast RAM at its end (as bus_wait counts its fetches) are charged t8 / 8
+// colour clocks each.  A parked CPU (idle.c) runs none and pays nothing.
+static unsigned fast_thr8;
+static uint32_t thr_instr_last;
+void amiga_set_fast_throttle(unsigned t8) {
+    if (t8 && !fast_thr8) thr_instr_last = amiga_bus_instr;
+    fast_thr8 = t8;
+}
+AMIGA_HOT static void fast_throttle(void) {
+    const uint32_t instr = amiga_bus_instr - thr_instr_last;
+    thr_instr_last = amiga_bus_instr;
+    if (!mem_fetch_fast || !instr) return;
+    const uint32_t t8 = instr * fast_thr8 + A.thr_rem8;
+    A.thr_rem8 = (uint8_t)(t8 % 8);
+    A.cpu_cyc += 2u * (t8 / 8);
+}
+
 void amiga_set_chip_bus(bool on) { A.chip_bus = on; }
 void amiga_set_render_skip(bool on) { A.render_skip = on; }
 
@@ -398,6 +416,7 @@ AMIGA_HOT __attribute__((noinline)) static void run_line(void) {
             if (hc < h) h = hc;
         }
         if (A.chip_bus && A.cpu_clock > 1) bus_wait(h0, h);
+        if (fast_thr8) fast_throttle();
         prof_switch(AMIGA_PROF_OTHER);
         blitter_poll();
         if (h == SPRITE_DMA_CC) {

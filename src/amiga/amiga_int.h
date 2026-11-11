@@ -81,6 +81,7 @@ typedef struct {
     uint32_t bus_data;
     uint64_t bus_stall;
     uint8_t  bus_rem8;
+    uint8_t  thr_rem8;         // amiga_set_fast_throttle's eighths over
 
     // Beam / time. One colour clock = 2 CPU cycles.
     uint32_t frame;
@@ -111,7 +112,7 @@ extern amiga_t A;
 // Instructions run (m68k_execute's loop: the chip bus model's fetch estimate,
 // the bench's count), and the window the CPU fetches from is a chip bank (mem.c).
 extern unsigned int amiga_bus_instr;
-extern uint8_t  mem_fetch_chip;
+extern uint8_t  mem_fetch_chip, mem_fetch_fast;
 // AMIGA_STATS (the host bench): data accesses and instruction words fetched,
 // counted where they happen (mem.c, m68kcpu.h).
 extern unsigned int amiga_stat_data, amiga_stat_fetch, amiga_stat_audw;   // audw: writes to AUDx registers

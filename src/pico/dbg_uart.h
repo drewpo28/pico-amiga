@@ -29,6 +29,7 @@ void dbg_uart_move_ring(void *mem);
 // Once a second while the console runs: emulated frame time, FPS and the
 // profiler's split, one line ("PERF ..."). Call after every amiga_run_frame().
 void perf_log_frame(uint32_t emu_us, bool skipped);   // skipped: the frame was not drawn
+void perf_log_throttle(unsigned t8);   // the fast RAM throttle this frame (amiga_set_fast_throttle): the line's "thr"
 
 #ifdef __cplusplus
 }
