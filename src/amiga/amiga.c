@@ -286,6 +286,7 @@ void amiga_joystick(int port, uint8_t dirs, bool fire) {
 void amiga_insert_disk(int drive, const amiga_disk_t *disk) { floppy_insert(drive, disk); }
 void amiga_eject_disk(int drive) { floppy_eject(drive); }
 void amiga_set_drives(int n) { floppy_set_drives(n); }
+int amiga_lace_field(void) { return denise_lace() ? (A.lof ? 0 : 1) : -1; }
 void amiga_set_hdf(int unit, const amiga_disk_t *disk) { ide_insert(unit, disk); ide_reset(); }
 void amiga_floppy_status(amiga_floppy_t *st) { floppy_status(st); }
 // Read from the output IRQs (audio_out.c, hdmi_audio.c), hence AMIGA_HOT.

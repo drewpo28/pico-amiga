@@ -48,7 +48,6 @@ extern "C" void ui_load_settings(void) { Config::load(); }
 extern "C" void ui_init(amiga_row_t *framebuffer) { nm::gfxSetFramebuffer(framebuffer); }
 
 extern "C" int settings_cpu_mhz(void)   { return Config::cpu_mhz; }
-extern "C" int settings_load_test(void) { return Config::load_test; }
 extern "C" bool settings_frame_skip(void) { return Config::frame_skip; }
 extern "C" int settings_vreg_mv(void)   { return Config::vreg_mv; }
 // Audio > Output: 3 (HDMI only) means nothing on a VGA display - the DAC then.
@@ -82,7 +81,7 @@ extern "C" void settings_apply_video(void) {
     video_set_hpos(Config::hpos);
     amiga_set_fb_x0(Config::hpos ? AMIGA_FB_X0_WIDE : AMIGA_FB_X0_CENTRE);
     amiga_set_vcentre(Config::vcentre);
-    amiga_render_async(Config::render_c1);
+    amiga_render_async(true);            // Denise's rendering shared with core 1, always
     settings_apply_chip_bus();
 }
 

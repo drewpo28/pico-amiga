@@ -25,7 +25,8 @@
 // eject and insert) was not noticed - Dune II waited for disk 5 forever with
 // it in DF0. KS 1.3 needs about half a second; two are given.
 //
-// DF0..DF(n-1) are connected (floppy_set_drives). Kickstart finds the external
+// DF0..DF(n-1) are connected (floppy_set_drives; none on the CD32: every line
+// high, a disk left in a drive is not read). Kickstart finds the external
 // ones by their ID, shifted out on /RDY while the motor is off: a 3.5" DD drive
 // answers all ones (/RDY low), an empty port all zeros (every line high).
 #include <string.h>
@@ -216,7 +217,7 @@ static void dma_start_(void) {
     dma_write = (dsklen & 0x4000) != 0;
     dma_on = true;
     dma_lines_left = words / (2 * FLOPPY_TURBO) + 1;
-    if (sel < 0 || !drv[sel].inserted || !drv[sel].motor) {
+    if (sel < 0 || sel >= ndrives || !drv[sel].inserted || !drv[sel].motor) {
         return;   // nothing spinning: the transfer never completes, as on hardware
     }
     last_sector = (uint8_t)(rot_pos % TRACK_WORDS / SECTOR_WORDS);
@@ -295,7 +296,7 @@ AMIGA_HOT void floppy_line(void) {
     }
     // One index pulse per revolution on CIA-B /FLAG while a selected drive spins
     // (FLOPPY_TURBO times as often during a transfer, as the transfer itself).
-    if (sel >= 0 && drv[sel].motor && drv[sel].inserted) {
+    if (sel >= 0 && sel < ndrives && drv[sel].motor && drv[sel].inserted) {
         index_lines += dma_on ? 2 * FLOPPY_TURBO : 2;
         if (index_lines >= TRACK_WORDS) { index_lines -= TRACK_WORDS; cia_flag(1); }
     }
@@ -322,7 +323,7 @@ void floppy_cia_prb(uint8_t prb) {
 }
 
 void floppy_status(amiga_floppy_t *st) {
-    const int d = sel >= 0 ? sel : last_drive;
+    const int d = !ndrives ? -1 : sel >= 0 ? sel : last_drive;   // no drives: Kickstart's probing is no access
     st->drive = (int8_t)d;
     st->cyl = d >= 0 ? drv[d].cyl : 0;
     st->side = (uint8_t)side;
@@ -334,7 +335,7 @@ void floppy_status(amiga_floppy_t *st) {
 }
 
 void floppy_set_drives(int n) {
-    ndrives = n < 1 ? 1 : n > NDRIVES ? NDRIVES : n;
+    ndrives = n < 0 ? 0 : n > NDRIVES ? NDRIVES : n;   // 0: none, not even DF0 (the CD32)
 }
 
 uint8_t floppy_cia_pra(void) {
@@ -412,7 +413,7 @@ void floppy_state(st_t *s) {
     st_u32(s, &index_lines);
     if (s->mode == ST_LOAD) {
         trk_drive = -1;                                   // encoded again from the image
-        if (ndrives < 1 || ndrives > NDRIVES) ndrives = 1;
+        if (ndrives < 0 || ndrives > NDRIVES) ndrives = 1;
         if (sel < -1 || sel >= NDRIVES) sel = -1;
         if (dma_drive < -1 || dma_drive >= NDRIVES) dma_drive = -1;
         rot_pos %= TRACK_WORDS;

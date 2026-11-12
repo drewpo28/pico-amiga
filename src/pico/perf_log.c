@@ -64,13 +64,11 @@ void perf_log_frame(uint32_t emu_us, bool skipped) {
     uint32_t xhit, xacc;                                    // the XIP cache, this second (both cores)
     board_xip_counts(&xhit, &xacc);
     const uint32_t fps10 = (uint32_t)((uint64_t)frames * 10000000u / (now - t0));
-    static const char *const kLoadTest[] = { "", " | LOAD TEST cpu x2", " | LOAD TEST cpu x2 + 8 planes",
-                                             " | LOAD TEST cpu x3", " | LOAD TEST cpu x3 + 8 planes" };
 #define MS(i) (unsigned)(ms10[i] / 10), (unsigned)(ms10[i] % 10)
     printf("PERF fps %u.%u emu %u.%u ms (%u%%, %u slow, %u skip) | cpu %u.%u ren %u.%u+bpl %u.%u+rd %u.%u cop %u.%u blt %u.%u"
            " aud %u.%u line %u.%u dsk %u.%u oth %u.%u wait %u.%u (irq %u.%u) | core1 render %u.%u irq %u.%u enc %u.%u"
            " | cpu %u flash %u psram %u MHz | late %u stall %u | au hold %u skip %u hdmi starve %u full %u min %u"
-           " | xip %uk/fr miss %uk/fr | thr %u-%u%s\n",
+           " | xip %uk/fr miss %uk/fr | thr %u-%u\n",
            (unsigned)(fps10 / 10), (unsigned)(fps10 % 10),
            (unsigned)(emu10 / 10), (unsigned)(emu10 % 10),
            (unsigned)(emu_avg ? 2000000u / emu_avg : 0), (unsigned)slow, (unsigned)skips,   // 20 ms = 100%
@@ -82,8 +80,7 @@ void perf_log_frame(uint32_t emu_us, bool skipped) {
            sck((unsigned)settings_cpu_mhz(), settings_psram_mhz() < 135 ? (unsigned)settings_psram_mhz() : 135u),
            (unsigned)late, (unsigned)stall, (unsigned)dh, (unsigned)ds, (unsigned)dst, (unsigned)df, (unsigned)qmin,
            (unsigned)(xacc / nf / 1000), (unsigned)((xacc - xhit) / nf / 1000),
-           thr_max ? thr_min : 0u, thr_max,
-           kLoadTest[settings_load_test() >= 0 && settings_load_test() <= 4 ? settings_load_test() : 0]);
+           thr_max ? thr_min : 0u, thr_max);
     board_pcprof_dump();                                    // Debug > PC profiler's lines, if on
     last = p;
     frames = emu_sum = slow = skips = 0;

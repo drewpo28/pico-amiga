@@ -10,7 +10,7 @@ endif()
 set(ROOT ${CMAKE_CURRENT_LIST_DIR}/..)
 include(${ROOT}/cmake/amiga_core.cmake)
 # The bench's counters (amiga_status_t: instructions, accesses), host only.
-target_compile_definitions(amiga_core PUBLIC AMIGA_STATS=1)
+target_compile_definitions(amiga_core PUBLIC AMIGA_STATS=1 AMIGA_LOAD_TEST=1)   # and --load-test's two more planes
 
 add_executable(pico-amiga-host main.c ${ROOT}/src/pico/dms.c ${ROOT}/src/pico/lha.c ${ROOT}/src/pico/ffs.c ${ROOT}/src/pico/whdboot.c ${ROOT}/src/pico/cdimage.c)
 target_include_directories(pico-amiga-host PRIVATE ${ROOT}/src/pico)

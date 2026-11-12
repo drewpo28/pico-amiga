@@ -258,7 +258,23 @@ int main(void) {
         // when the CPU alone takes over 20 ms the picture still moves.
         enum { SKIP_MAX = 4 };
         static uint8_t skipped;
-        const bool skip = settings_frame_skip() && late > total / 20 && skipped < SKIP_MAX;
+        bool skip = settings_frame_skip() && late > total / 20 && skipped < SKIP_MAX;
+        // Interlace that does not fit (the CD32's boot screen: 8 planes of hires,
+        // 23 ms a drawn frame, 12 of them PSRAM reads): one field is drawn, on
+        // both fields' lines (denise.c), and the other field's frames are not -
+        // 25 pictures a second at an even pace, half the lines.  Skipped by
+        // lateness the same field came up again and again while the other's
+        // lines stayed frames old (stripes that jumped), and in pairs the
+        // picture moved two frames in four.  Back to both fields once 50 drawn
+        // frames in a row took under 18 ms.
+        static bool one_field;
+        static uint8_t fits;
+        const int lace = amiga_lace_field();
+        if (lace < 0) one_field = false;
+        else {
+            if (skip && !one_field) { one_field = true; fits = 0; }
+            if (one_field && lace == 1) skip = true;
+        }
         amiga_set_render_skip(skip);
         skipped = skip ? skipped + 1 : 0;
         // Code in fast RAM slows down when late (always, with a fast RAM board):
@@ -294,6 +310,10 @@ int main(void) {
         const uint32_t emu_us = time_us_32() - t_emu;
         emu_last = emu_us;
         skip_last = skip;
+        if (one_field && !skip) {
+            if (emu_us >= 18000) fits = 0;
+            else if (++fits >= 50) one_field = false;
+        }
         ui_stats_frame(emu_us, skip);
         machine_frame();
         perf_log_frame(emu_us, skip);

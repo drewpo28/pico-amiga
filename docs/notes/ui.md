@@ -126,7 +126,10 @@
   $E00000 - roms.cmake's machine "-" lists a ROM under no row; a Custom ROM takes
   ext.rom from its folder). Devices > CD drive (Config::cd, `machine_set_cd`): an
   `.iso` or `.cue` (BROWSE_CD); Win+F5 on one switches the machine to the CD32
-  first (insertCd). The disc's TOC and one open track file are on the heap while
+  first (insertCd). The CD32 has no floppy port: `drives_wanted()` is 0 there
+  (amiga_set_drives(0): every drive line high, the disk left in DF0 not read and
+  back with the next machine), Devices > Floppy drives is hidden, an ADF opened
+  with Win+F5 gets a toast. The disc's TOC and one open track file are on the heap while
   it is in. The NVRAM (1 KB on the heap while the machine is a CD32) goes to
   /pico-amiga/cd32.nvram a second after the Amiga last wrote it (machine_frame).
   The pad: see the pad's map below. Win+F8's

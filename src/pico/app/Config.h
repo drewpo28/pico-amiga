@@ -30,8 +30,6 @@ public:
     static uint8_t  audio_out;      // 0 auto (+ HDMI), 1 PWM, 2 I2S, 3 HDMI only (audio_out.c)
     static bool     dbg_uart;       // Debug > UART log (dbg_uart.c)
     static bool     pcprof;         // Debug > PC profiler (board_pcprof; never saved)
-    static uint8_t  load_test;      // Debug > A1200 load test: 0 off, 1 CPU x2, 2 + 8 planes, 3 CPU x3, 4 + 8 planes (never saved)
-    static bool     render_c1;      // Debug > Render on core 1 (amiga_render_async)
     // Sound
     static uint8_t  volume;         // 0..16 (16 = full scale)
     static bool     hdmi_audio;     // retired: HDMI audio is audio_out 0 (with the DAC) or 3

@@ -73,6 +73,11 @@ void amiga_set_vcentre(bool on);
 // last picture; the display registers, sprites and copper are run as ever.
 // The platform sets it for a frame when the one before overran (main.c).
 void amiga_set_render_skip(bool on);
+// The coming frame's field when the display is interlaced (BPLCON0 LACE): 0 the
+// long one, 1 the short one; -1 when it is not.  A frame is then one field of
+// the picture, and one that is drawn after a skipped frame shows on the other
+// field's lines too - so the frames to skip are those of one field.
+int amiga_lace_field(void);
 // Framebuffer rows [y0, y1) carry a platform overlay (row_done); y1 <= y0: none.
 // Two ranges (`which` 0 or 1), so two overlays far apart (a band at the bottom,
 // an icon at the top) do not send every row between them through row_done.
@@ -181,7 +186,8 @@ void amiga_run_frame(void);              // one PAL frame (312 or 313 lines)
 
 void amiga_insert_disk(int drive, const amiga_disk_t *disk);  // drive 0..3
 void amiga_eject_disk(int drive);
-// How many drives are connected (1..4, DF0 first; default 1). Kickstart looks for
+// How many drives are connected (0..4, DF0 first; default 1; 0: the CD32, which
+// has no floppy drive - a disk left in one is not read). Kickstart looks for
 // them at reset, so a change wants one.
 void amiga_set_drives(int n);
 

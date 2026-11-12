@@ -637,6 +637,7 @@ bool machine_apply_kickstart(void) {
     settings_apply_chip_bus();
     hdf_attach(0);
     hdf_attach(1);
+    machine_apply_drives();                 // the CD32 has none; the others get theirs back
     amiga_reset(true);
     return true;
 }
@@ -1182,8 +1183,11 @@ static int s_drives = 1;
 int machine_drives(void) { return s_drives; }
 
 // The drives Config::drives connects: Auto is one per disk of the set (or its
-// #DRIVES line), up to 4.
+// #DRIVES line), up to 4.  None on the CD32, which has no floppy port: the
+// disk in DF0 stays where it is (the core does not read it) and is back when
+// another machine is chosen.
 static int drives_wanted(void) {
+    if (Config::machine == MACHINE_CD32) return 0;
     int n = Config::drives;
     if (!n && s_set_count && s_set_drives) n = s_set_drives;                 // Auto, the set's #DRIVES
     if (!n) n = s_set_count > 1 ? (s_set_count < 4 ? s_set_count : 4) : 1;   // Auto
@@ -1296,11 +1300,11 @@ void machine_restore_disks(void) {
             ? machine_load_set(Config::df0.c_str(), Config::df0_disk)
             : machine_insert(0, Config::df0.c_str(), Config::df0_wp);
         if (!ok) Config::df0.clear();
-        machine_apply_drives();
-        return;
+    } else {
+        // The card layout before the menu existed: /pico-amiga/df0.adf goes in by itself.
+        machine_insert(0, "/pico-amiga/df0.adf", false);
     }
-    // The card layout before the menu existed: /pico-amiga/df0.adf goes in by itself.
-    machine_insert(0, "/pico-amiga/df0.adf", false);
+    machine_apply_drives();
 }
 
 // ---- LHA archives: WHDLoad installs as the hard disk (whdboot.c) -------------------------

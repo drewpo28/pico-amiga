@@ -53,6 +53,13 @@
 #endif
 
 #define PF_SIZE  1024
+// The load test's two extra planes (amiga_set_load_test): the host bench only.
+// In the firmware its scratch line and reads were 1.2 KB of SRAM, the menu's heap.
+#ifdef AMIGA_LOAD_TEST
+#define LOAD_PLANES A.load_planes
+#else
+#define LOAD_PLANES false
+#endif
 #define SPL_SIZE 512
 
 // The output stage's registers.
@@ -88,6 +95,8 @@ uint32_t denise_stat_evk[0x200];                                 // events by re
 // moves the pointers, the fetch stage spreads nothing, the output stage keeps
 // its registers (colours, BPLCON, sprites) and touches no framebuffer row.
 static bool     dma_skip, f_skip, o_skip;
+static bool     o_both;                 // interlace: this field's lines go to the other field's too
+static bool     w_enter;                // ...this row's does: it has just become LACE4
 // A skipped frame's display writes are not queued (Roots' copper makes 9,000 a
 // frame): the last value of each register / colour entry is kept and queued as
 // one batch at the frame's end (flush_pending), before the next frame's events.
@@ -322,6 +331,33 @@ AMIGA_HOT static void dma_unit(int k) {
     const uint8_t *cr = A.cfg.chip_ram;
     const uint32_t cm = A.chip_mask & ~1u;
     uint32_t hd = atomic_load_explicit(&ws_head, memory_order_relaxed);
+    // A unit of whole word pairs that does not wrap in the ring, its planes not
+    // across chip RAM's end: a plane's two words are one load and one store,
+    // the bytes of each swapped (the CD32's boot screen reads 108,000 words a
+    // field, 19 ARM instructions a word through the loop below: 1.7 M a frame).
+    const uint32_t hat = hd & (WS_SIZE - 1);
+    if (!(nw & 1) && np && hat + (uint32_t)(np * nw) <= WS_SIZE && !LOAD_PLANES) {
+        const uint32_t top = A.chip_mask + 1u - 2u * (uint32_t)nw, keep = ~align;
+        bool in = true;
+        for (int p = 0; p < np; p++) in &= (bplpt[p] & keep & cm) <= top;
+        if (in) {
+            uint16_t *d = ws + hat;
+            const bool last = k == dma_st.nunits - 1;    // the modulo, after the line's last unit
+            for (int p = 0; p < np; p++, d += nw) {
+                const uint32_t pt = bplpt[p] & keep;
+                const uint8_t *s = cr + (pt & cm);
+                for (int j = 0; j < nw; j += 2) {
+                    uint32_t v;
+                    memcpy(&v, s + 2 * j, 4);
+                    v = (v & 0xFF00FF00u) >> 8 | (v & 0x00FF00FFu) << 8;
+                    memcpy(d + j, &v, 4);
+                }
+                bplpt[p] = pt + 2u * (uint32_t)nw + (last ? (uint32_t)(int32_t)bplmod[p & 1] : 0u);
+            }
+            atomic_store_explicit(&ws_head, hd + (uint32_t)(np * nw), memory_order_release);
+            return;
+        }
+    }
     for (int p = 0; p < np; p++) {
         const uint32_t pt = bplpt[p] & ~align;
         if (nw == 1) {
@@ -343,7 +379,7 @@ AMIGA_HOT static void dma_unit(int k) {
         }
         bplpt[p] = pt + 2u * (uint32_t)nw;
     }
-    if (A.load_planes && np && nw <= 2)                 // load test: planes 7 and 8's reads
+    if (LOAD_PLANES && np && nw <= 2)                 // load test: planes 7 and 8's reads
         for (int p = 0; p < 2; p++)
             for (int j = 0; j < nw; j++)
                 ws[hd++ & (WS_SIZE - 1)] = U16BE(cr + ((bplpt[p] + 0x2000u + 2u * (uint32_t)j) & cm));
@@ -370,6 +406,33 @@ AMIGA_HOT static void spread_planes(const uint16_t wd[8][4], int np, int first, 
             or32(pf_f + pos + o + 4, hi);
         }
     }
+}
+
+// Five planes and more, two words a plane (AGA's wider fetch units; the CD32's
+// boot screen is 8 planes of hires with FMODE 3: 181,000 pixels a field, and
+// spread8 above cost 13 ARM instructions a plane's byte - 14 ms of core 1 a
+// frame): 32 pixels of all eight planes at once.  w[p] is plane p's 32 bits,
+// the leftmost pixel in bit 31.  A merge swaps a bit of the plane number with
+// a bit of the pixel number; after three (shifts 1, 2, 4) each register holds
+// four whole pixels, two more (8, 16) put them in order, bytes reversed.
+#define C2P_MERGE(a, b, s, m) do { const uint32_t t_ = (((a) >> (s)) ^ (b)) & (m); (b) ^= t_; (a) ^= t_ << (s); } while (0)
+AMIGA_HOT static inline void spread32(uint32_t w0, uint32_t w1, uint32_t w2, uint32_t w3,
+                                      uint32_t w4, uint32_t w5, uint32_t w6, uint32_t w7, uint8_t *d) {
+    C2P_MERGE(w0, w1, 1, 0x55555555u); C2P_MERGE(w2, w3, 1, 0x55555555u);
+    C2P_MERGE(w4, w5, 1, 0x55555555u); C2P_MERGE(w6, w7, 1, 0x55555555u);
+    C2P_MERGE(w0, w2, 2, 0x33333333u); C2P_MERGE(w1, w3, 2, 0x33333333u);
+    C2P_MERGE(w4, w6, 2, 0x33333333u); C2P_MERGE(w5, w7, 2, 0x33333333u);
+    C2P_MERGE(w0, w4, 4, 0x0F0F0F0Fu); C2P_MERGE(w1, w5, 4, 0x0F0F0F0Fu);
+    C2P_MERGE(w2, w6, 4, 0x0F0F0F0Fu); C2P_MERGE(w3, w7, 4, 0x0F0F0F0Fu);
+    C2P_MERGE(w0, w1, 8, 0x00FF00FFu); C2P_MERGE(w2, w3, 8, 0x00FF00FFu);
+    C2P_MERGE(w4, w5, 8, 0x00FF00FFu); C2P_MERGE(w6, w7, 8, 0x00FF00FFu);
+    C2P_MERGE(w0, w2, 16, 0x0000FFFFu); C2P_MERGE(w1, w3, 16, 0x0000FFFFu);
+    C2P_MERGE(w4, w6, 16, 0x0000FFFFu); C2P_MERGE(w5, w7, 16, 0x0000FFFFu);
+    // Register R = r2 r1 r0 now holds the pixels 4k..4k+3 of k = ~r1 ~r0 ~r2.
+    or32(d +  0, __builtin_bswap32(w7)); or32(d +  4, __builtin_bswap32(w3));
+    or32(d +  8, __builtin_bswap32(w6)); or32(d + 12, __builtin_bswap32(w2));
+    or32(d + 16, __builtin_bswap32(w5)); or32(d + 20, __builtin_bswap32(w1));
+    or32(d + 24, __builtin_bswap32(w4)); or32(d + 28, __builtin_bswap32(w0));
 }
 
 // Super-hires: a plane's four words (64 pixels) at pf position pos, 32 entries.
@@ -413,12 +476,12 @@ AMIGA_HOT static void fetch_unit(int k) {
     }
     const int d1 = 2 * s1, d2 = 2 * s2;
     const int div = r == LORES ? 2 : 1;                          // pf entries: lowres pixels in a lowres line
-    uint16_t wd[8][4];
     uint32_t tl = atomic_load_explicit(&ws_tail, memory_order_relaxed);
+    uint16_t wd[8][4];
     for (int p = 0; p < np; p++)
         for (int j = 0; j < nw; j++) wd[p][j] = ws[tl++ & (WS_SIZE - 1)];
     uint16_t wx[8][4];
-    const bool extra = A.load_planes && np && nw <= 2;   // load test: dma_unit's two more planes
+    const bool extra = LOAD_PLANES && np && nw <= 2;   // load test: dma_unit's two more planes
     if (extra)
         for (int p = 0; p < 2; p++)
             for (int j = 0; j < nw; j++) wx[p][j] = ws[tl++ & (WS_SIZE - 1)];
@@ -624,8 +687,10 @@ AMIGA_HOT static void w_begin(amiga_row_t *row, int mode, int field) {
     w_mode = mode; w_field = field; w_n = 0;
     w_base = mode == AMIGA_ROW_LACE4 ? 16 * field : 0;
     w_max = mode == AMIGA_ROW_LACE4 ? 16 : 64;
-    if (mode == AMIGA_ROW_LACE4 && row->mode != AMIGA_ROW_LACE4) {
-        // Entering interlace: the other field's line is unknown until it is drawn.
+    w_enter = mode == AMIGA_ROW_LACE4 && row->mode != AMIGA_ROW_LACE4;
+    if (w_enter) {
+        // Entering interlace: the other field's line is unknown until it is drawn
+        // (black for a line that goes DIRECT below; else this field's, at the line's end).
         int o = field ^ 1;
         row->pal[16 * o] = color[0];
         row->ncol[o] = 1;
@@ -737,7 +802,22 @@ AMIGA_HOT static void w_plain(int x0, int x1, bool hires) {
         if (!(any & 0xF0F0F0F0u)) return;
         ilut_ident = false;
     }
+    const bool lace_hi = hires && w_mode == AMIGA_ROW_LACE4;
     for (int x = x0; x < x1; x++) {
+        if (lace_hi) {
+            // Hires interlace (the CD32's boot screen: 215 such rows of 384
+            // columns a field): the pixels whose colours have their entries, in
+            // a loop that keeps its pointers in registers (the byte stores
+            // below made the compiler load them again for every pixel).
+            const uint8_t *const s = pf_o, *const il = ilut;
+            uint8_t *const d = row->px.nib[w_field] - f0;
+            for (; x < x1; x++) {
+                const unsigned i0 = il[s[2 * x]], i1 = il[s[2 * x + 1]];
+                if ((i0 | i1) & 0x80) break;
+                d[x] = (uint8_t)((i0 << 4) | i1);
+            }
+            if (x >= x1) break;
+        }
         uint8_t v0 = hires ? pf_o[2 * x] : pf_o[x], v1 = hires ? pf_o[2 * x + 1] : v0;
         uint8_t i0 = ilut[v0], i1 = ilut[v1];
         if ((i0 | i1) & 0x80) {                 // first use on this line: allocate
@@ -1021,12 +1101,59 @@ AMIGA_HOT static void dma_to(int h) {
     prof_switch(prof);
 }
 
+// Units of five planes and more with one scroll and whole word pairs (AGA's
+// wider fetch: the CD32's boot screen, Roots' 8-plane parts), as many as are
+// due: what fetch_unit works out for each unit is worked out once, and 32
+// pixels of all the planes are spread at a time, straight from the ring
+// (spread32).  A unit it cannot take (off the line's ends, wrapping in the
+// ring) is fetch_unit's; false when the mode is not one of these.
+AMIGA_HOT static bool fetch_wide(int h) {
+    agnus_t *f = &fetch_st;
+    const int r = res(f->bplcon0), nw = unit_words(f), np = planes(f->bplcon0);
+    if (f_skip || np < 5 || (nw & 1) || r == SHRES || LOAD_PLANES) return false;
+    int s1 = f->bplcon1 & 15, s2 = (f->bplcon1 >> 4) & 15;
+    if (A.aga) {
+        const int mask = 16 * nw / (1 << r) - 1;
+        s1 = (s1 | (f->bplcon1 & 0x0C00) >> 6) & mask;
+        s2 = (s2 | (f->bplcon1 & 0xC000) >> 10) & mask;
+    }
+    if (s1 != s2) return false;
+    const int lo = r == LORES;
+    const int x0 = 2 * (2 * f->ds + 2 * fm_maxplane[fmode_i(f)][r] + 1) + 2 * s1, xk = 4 * f->unit_cc;
+    const uint32_t n = (uint32_t)(np * nw);
+    uint32_t tl = atomic_load_explicit(&ws_tail, memory_order_relaxed);
+    while (units_due(f, h)) {
+        const int pos = (x0 + f->fetch_k * xk) >> lo;
+        if (pos < 0 || pos + 16 * nw > PF_SIZE) break;
+        const uint32_t at = tl & (WS_SIZE - 1);
+        if (at + n > WS_SIZE) break;                     // the unit wraps in the ring
+        for (int j = 0; j < nw; j += 2) {                // two words in one load: the first is the low half
+            const uint16_t *q = ws + at + j;
+#define WS_PAIR(p) ({ uint32_t v_; memcpy(&v_, q + (p) * nw, 4); v_ << 16 | v_ >> 16; })
+            spread32(WS_PAIR(0), WS_PAIR(1), WS_PAIR(2), WS_PAIR(3), WS_PAIR(4),
+                     np > 5 ? WS_PAIR(5) : 0, np > 6 ? WS_PAIR(6) : 0, np > 7 ? WS_PAIR(7) : 0, pf_f + pos + 16 * j);
+#undef WS_PAIR
+        }
+        tl += n;
+        atomic_store_explicit(&ws_tail, tl, memory_order_release);
+        pf_written[f_seq % PF_RING] = 1;
+        f->fetch_k++;
+    }
+    return true;
+}
+
 AMIGA_HOT static void f_to(int h) {
     if (h > AMIGA_CC_PER_LINE) h = AMIGA_CC_PER_LINE;
     if (h <= fetch_st.r_h) return;
     if (!units_due(&fetch_st, h)) { fetch_st.r_h = h; return; }
     const int prof = dprof(AMIGA_PROF_BPL);
-    units_to(&fetch_st, h, fetch_unit);
+    if (fetch_wide(h)) {
+        while (units_due(&fetch_st, h)) {                // the one it left, then on
+            fetch_unit(fetch_st.fetch_k++);
+            fetch_wide(h);
+        }
+        fetch_st.r_h = h;
+    } else units_to(&fetch_st, h, fetch_unit);
     dprof(prof);
 }
 
@@ -1326,6 +1453,17 @@ AMIGA_HOT static void c_line_finish(void) {
     if (fbrow) {
         const int x = 2 * AMIGA_CC_PER_LINE - fb_x0;
         w_fill(x < 0 ? 0 : x, AMIGA_FB_W, border());
+        if ((o_both || w_enter) && w_mode == AMIGA_ROW_LACE4) {
+            // A field drawn after a skipped frame: the other field's line is
+            // frames old (stripes on anything that moves or changes colour),
+            // so this one stands in for it.  main.c then draws one field only,
+            // every other frame: half the lines, but steady.  The same for a
+            // row that has just become LACE4: its other line was black.
+            const int o = w_field ^ 1;
+            memcpy(fbrow->px.nib[o], fbrow->px.nib[w_field], sizeof fbrow->px.nib[o]);
+            memcpy(fbrow->pal + 16 * o, fbrow->pal + 16 * w_field, 16 * sizeof fbrow->pal[0]);
+            fbrow->ncol[o] = fbrow->ncol[w_field];
+        }
         if (fbdest) {
             if (A.cfg.row_done) A.cfg.row_done(A.cfg.ctx, (int)(fbdest - A.cfg.framebuffer), fbrow);
             memcpy(fbdest, fbrow, sizeof *fbdest);
@@ -1583,6 +1721,7 @@ AMIGA_HOT static bool o_step(int step) {
         c_line_start(o_lines++);
     } else if (e->kind == EV_FRAME) {
         c_frame_start(e->v);
+        o_both = o_skip && !(e->x & 1);                       // the frame before was not drawn
         o_skip = (e->x & 1) != 0;
     } else {                                                  // EV_SPR: a sprite's DMA
         const int s = (e->kind - EV_SPR) & 7;

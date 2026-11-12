@@ -247,7 +247,7 @@ per gun (every scanout, the TMDS lookups and the menu are 0x0RGB; HAM8's
 
 Step 0 - is there room for it (hw, before anything else):
 
-- [ ] (switch ready: Debug > A1200 load test, the bench's --load-test 1-4 (x2, x2 + planes, x3, x3 + planes);
+- [ ] (switch ready: the bench's --load-test 1-4 (x2, x2 + planes, x3, x3 + planes);
       the 68000 runs twice the cycles per line - KS 1.3 reaches frame 100's PC at 50 -
       and two more planes are read and spread into a scratch line, an upper bound:
       AROS hires 4 planes went 79 -> 183 us of fetch, 38 -> 77 of reads on the host)

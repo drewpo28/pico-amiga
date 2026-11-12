@@ -257,6 +257,12 @@ static std::string extOf(const std::string& path) {
 // Config keeps it. False, with a toast, when it cannot be opened.
 static bool insertDf0(const std::string& path) {
     const bool set = extOf(path) == ".m3u";
+    if (Config::machine == MACHINE_CD32) {      // no floppy port; a CD goes through insertCd
+        gfxBegin();
+        uiToast("The CD32 has no floppy drive: Machine", true, 2500);
+        gfxEnd();
+        return false;
+    }
     if (set ? !machine_load_set(path.c_str(), 0) : !machine_insert(0, path.c_str(), Config::df0_wp)) {
         gfxBegin();
         uiToast(set ? "The disk set's first disk cannot be opened"
@@ -902,6 +908,7 @@ static const Node kHardDisk[] = {
 // Devices > CD drive (the CD32): the disc's name; its pane the disc, Insert
 // disc... (an .iso, or a .cue with its track files) and Eject.
 static bool p_cd32() { return Config::machine == MACHINE_CD32; }
+static bool p_floppy() { return Config::machine != MACHINE_CD32; }   // the CD32 has no floppy port
 static const char* cdShort() {
     const char* p = machine_cd();
     return *p ? baseName(p) : "empty";
@@ -1058,21 +1065,10 @@ static bool p_dbgUartPin() {
 #endif
 }
 
-// The A1200 headroom test (docs/PLAN.md, section 7, step 0): ms per frame with
-// a 14 MHz CPU's load, and with 8 planes' fetch; the PERF line says it is on.
-static const Option opt_load_test[] = {
-    { "Off", 0, "Off" }, { "CPU x2 (a 14 MHz CPU)", 1, "CPU x2" },
-    { "CPU x2 + 8 planes", 2, "x2+8pl" },
-    { "CPU x3 (an A1200's 68EC020)", 3, "CPU x3" }, { "CPU x3 + 8 planes", 4, "x3+8pl" },
-};
-
 static const Node kDebug[] = {
     // TX-only 115200 log on the board's DBG_UART_TX_PIN: boot messages and a
     // PERF line a second. Reboot-class (the keyboard may move off the pin).
     NM_BOOL("UART log", SET_DBG_UART, p_dbgUartPin),
-    // Denise's rendering shared with core 1 (off: all on core 0, as before).
-    NM_BOOL("Render on core 1", SET_RENDER_C1, nullptr),
-    NM_RADIO("A1200 load test", SET_LOAD_TEST, opt_load_test, nullptr),
     // Core 0's hot code, sampled 8000 times a second: PROF lines after each PERF
     // line (with UART log on); tools/pcprof.py names them from the ELF.
     NM_BOOL("PC profiler", SET_PCPROF, nullptr),
@@ -1107,7 +1103,7 @@ const Node* persistNodeFor() {
 
 // Devices: what is plugged into the Amiga (pico-speccy's Devices row).
 static const Node kDevices[] = {
-    NM_SUB("Floppy drives", kDisks,    nullptr),
+    NM_SUB("Floppy drives", kDisks,    p_floppy),
     NM_SUB("Hard disk",     kHardDisk, p_a600),
     NM_PICK("CD drive",     SET_NONE, cdOpts, cdKey, cdShort, opt_drive_foot, p_cd32),
     NM_SUB("Input",     kInput,     nullptr),

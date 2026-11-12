@@ -454,6 +454,43 @@
   9,000 writes a frame: queued, a skipped frame cost as much as a drawn one.  A
   drawn frame after skipped ones is byte-identical to the same frame without
   skipping (IK+, State of the Art, Roots, incl. the sprite part).
+- **Interlace that does not fit is drawn one field only** (main.c one_field,
+  amiga_lace_field; denise.c o_both in c_line_finish).  A frame is one field;
+  skipped by lateness alone, the CD32's boot screen drew the same field again
+  and again while the other's lines stayed frames old - stripes that jumped
+  when the pattern slipped (bench: `--skip-odd`).  Skipped in pairs the stripes
+  showed one frame in four and the picture moved two frames in four; with the
+  first field after a skip copied to the other's lines too, every outline
+  flickered at 12 Hz.  Now, once an interlaced frame is late, the short
+  field's frames are not drawn and the long field's go to both fields' lines
+  (LACE4 rows: nibbles, palette and count copied at the line's end; DIRECT rows
+  hold one line anyway): 25 pictures a second at an even pace, half the lines,
+  nothing stale (bench: `--skip-field`).  Both fields again after 50 drawn
+  frames in a row under 18 ms.  A row that has just become LACE4 gets the same
+  copy (w_enter): its other line was black until the next frame drew it.
+- **Five planes and more are spread 32 pixels at a time** (fetch_wide, spread32:
+  five rounds of bit merges over the planes' 32-bit words instead of spread8's
+  table lookup per plane byte; units of whole word pairs with one scroll, i.e.
+  AGA's FMODE 1-3).  The CD32's boot screen (8 planes, hires, laced, FMODE 3,
+  768 pixels fetched on 283 lines: 3,392 units a field) took 29 ms a drawn frame
+  on the board (log 2026-11-12 22:37: cpu 6.3 + rd 13 + core 0 helping the
+  render 8, core 1 render 15.5 + TMDS 7) and so drew every other frame.  Under
+  m68kbench (ARM instructions a frame): the fetch stage 4.69 M -> 1.26 M (the
+  per-unit setup once for all the units due, the ring's words loaded in pairs),
+  w_plain 2.2 M -> 1.63 M (hires LACE4 rows in a loop with its pointers in
+  registers: byte stores made the compiler reload them a pixel), the plane
+  reads 1.74 M -> 1.30 M (a pair of words is one load, rev16, one store; the
+  rest of dma_to is its calls).  Frames byte-identical (Roots, Roswell, Arte,
+  the boot screen).  The SRAM it took (1.7 KB: PICO_DV's heap fell to 13.1 KB,
+  where Snapshots run out of memory) came back from the load test's two extra
+  planes, now compiled only with AMIGA_LOAD_TEST (the host bench): heap 14.86 KB
+  as before.  On the board (log 23:10): core 0's share of the render 8 -> 2.4 ms a
+  drawn frame, core 1's 15.5 -> 13.6, but rd stayed at 12.5 ms: the PC profile
+  has 22% of core 0 in one 64-byte bucket of dma_unit, the load that waits for
+  PSRAM (27k XIP lines a field at ~460 ns; the instructions around it ran in
+  its shadow).  A drawn frame is still ~23.5 ms, so the screen is drawn one
+  field only (above).  What would make it fit is the plane reads off core 0's
+  clock - not found.
 - **Sprites are composed for the columns being drawn** (sprites_to from output():
   a sprite register write or DMA starts an epoch - the armed sprites' words are
   expanded once, four 2-bit values a lookup (spr4) - and each output range then

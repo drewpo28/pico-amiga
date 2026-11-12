@@ -20,7 +20,7 @@
 //                    volume too - C/WHDLoad, Devs/Kickstarts/kickN.M + .RTB, S/WHDLoad.prefs)
 //                   [--frames N] [--shot N:file.png]... [--wav out.wav]
 //                   [--slow] [--a500plus | --a600] [--vcentre] [--key N:code:down]... [--status K]
-//                   [--skip-odd | --skip-rand P] (frames not drawn: every other one, or P% of them without a pattern)
+//                   [--skip-odd | --skip-field | --skip-rand P] (frames not drawn: every other one, an interlaced picture's short field, or P% of them without a pattern)
 //                   [--joy N:dirs:fire]... [--mouse N:dx:dy:buttons]...
 // --joy sets game port 2 from frame N on (dirs: bit0 up 1 down 2 left 3 right);
 // --mouse moves the port 1 mouse once at frame N (buttons: bit0 left 1 right).
@@ -409,7 +409,7 @@ int main(int argc, char **argv) {
     int frames = 250, status_every = 0, scale = 1, drives_opt = 0;
     bool slow = false, render_thread_on = false, plus = false, a600 = false, a601 = false, cpu020 = false, a1200 = false, aga = false, vcentre = false, write_back = false;
     int chip_bus = -1;                                 // --chip-bus / --fast-bus; default: on with --a1200
-    bool skip_odd = false, bus_auto = false;
+    bool skip_odd = false, skip_field = false, bus_auto = false;
     int fast_thr = 0;
     int skip_rand = 0;                                 // --skip-rand P: P% of the frames not drawn, in runs of up to 4 (as the board's lateness skips)
     int bus_fetch8 = 6, bus_cost8 = 16;
@@ -455,6 +455,7 @@ int main(int argc, char **argv) {
         }
         else if (!strcmp(a, "--chip-bus")) chip_bus = 1;
         else if (!strcmp(a, "--fast-bus")) chip_bus = 0;
+        else if (!strcmp(a, "--skip-field")) skip_field = true;  // interlace: the short field's frames (the board's way when late)
         else if (!strcmp(a, "--skip-odd")) skip_odd = true;     // odd frames not drawn (amiga_set_render_skip)
         else if (!strcmp(a, "--skip-rand") && v) { skip_rand = atoi(v); i++; }
         else if (!strcmp(a, "--bus-auto")) bus_auto = true;     // amiga_set_chip_bus_auto
@@ -538,6 +539,7 @@ int main(int argc, char **argv) {
 
     static mem_disk_t md[8];
     int ndrv = nadf < 4 ? nadf : 4;
+    if (cd32) ndrv = 0;                        // the CD32 has no floppy drive: --adf stays out
     if (drives_opt > 0 && drives_opt < ndrv) ndrv = drives_opt;
     for (int k = 0; k < nadf; k++) {
         md[k].data = load_disk(adf_path[k], &md[k].size);
@@ -545,7 +547,7 @@ int main(int argc, char **argv) {
         amiga_disk_t d = { disk_read, disk_write, &md[k], md[k].size };
         amiga_insert_disk(k, &d);
     }
-    if (ndrv > 1) { amiga_set_drives(ndrv); amiga_reset(true); }   // Kickstart finds DF1+ at reset
+    if (ndrv > 1 || cd32) { amiga_set_drives(ndrv); amiga_reset(true); }   // Kickstart finds DF1+ at reset
     if (load_test) amiga_set_load_test(load_test >= 3 ? 3 : 2, load_test == 2 || load_test == 4);
     if (cd_path && !cd_open(cd_path)) return 1;
     FILE *hdf = NULL;
@@ -601,7 +603,7 @@ int main(int argc, char **argv) {
             // order of drawn and skipped lists only so.
             static uint32_t lcg = 12345; static int run;
             lcg = lcg * 1664525u + 1013904223u;
-            bool skip = skip_odd && (f & 1);
+            bool skip = skip_field ? amiga_lace_field() == 1 : skip_odd && (f & 1);
             if (skip_rand) skip = (int)((lcg >> 16) % 100) < skip_rand && run < 4;
             run = skip ? run + 1 : 0;
             amiga_set_render_skip(skip);

@@ -55,7 +55,7 @@ enum SettingFlags : uint16_t {
     X(SET_DBG_UART,    AC_REBOOT, 0,                           get_dbguart,   put_dbguart,   nullptr) \
     X(SET_DRIVES,      AC_LIVE, 0,                             get_drives,    put_drives,    hook_drives) \
     X(SET_HPOS,        AC_LIVE, 0,                             get_hpos,      put_hpos,      hook_hpos) \
-    X(SET_RENDER_C1,   AC_LIVE, 0,                             get_renderc1,  put_renderc1,  hook_hpos) \
+    X(SET_RENDER_C1,   AC_PURE, 0,                             get_retired,   put_retired,   nullptr) /* retired: always on */ \
     X(SET_DF0_DISK,    AC_LIVE, 0,                             get_df0disk,   put_df0disk,   nullptr) \
     /* Video > Output > Capture card mode: the PIO HDMI tables are built at boot */ \
     X(SET_HDMI_CAPTURE, AC_REBOOT, 0,                          get_hdmicapture, put_hdmicapture, nullptr) \
@@ -69,8 +69,8 @@ enum SettingFlags : uint16_t {
     X(SET_PERSIST_SLOT, AC_PURE, 0,                            get_pslot,     put_pslot,     nullptr) \
     /* Machine > A600 chip RAM: 1 MB, or 2 MB (an A601); a cold start of an A600 */ \
     X(SET_A600_CHIP,   AC_LIVE, 0,                             get_a600chip,  put_a600chip,  hook_a600chip) \
-    /* Debug > A1200 load test: amiga_set_load_test, this session only */ \
-    X(SET_LOAD_TEST,   AC_LIVE, 0,                             get_loadtest,  put_loadtest,  hook_loadtest) \
+    /* retired (was Debug > A1200 load test; the bench's --load-test has it) */ \
+    X(SET_LOAD_TEST,   AC_PURE, 0,                             get_retired,   put_retired,   nullptr) \
     /* Debug > PC profiler: board_pcprof, this session only */ \
     X(SET_PCPROF,      AC_LIVE, 0,                             get_pcprof,    put_pcprof,    hook_pcprof) \
     /* Machine > A1200 > Chip bus waits: amiga_set_chip_bus */ \

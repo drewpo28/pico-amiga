@@ -377,10 +377,6 @@ static int describeOther(uint16_t setting, int32_t v, DescLine* out, int max) {
         n = rule(out, n, max, "log, PERF each second");
         n = sub(out, n, max, "Applies", "after a reboot", DESC_PLAIN);
         break;
-    case SET_RENDER_C1:
-        n = rule(out, n, max, v ? "Denise on both cores" : "All on core 0: slower,");
-        if (!v) n = rule(out, n, max, "for debugging only");
-        break;
     }
     return n;
 }

@@ -90,15 +90,13 @@ NM_INT_ACCESS (psramfreq, max_psram_freq, uint16_t)
 NM_BOOL_ACCESS(dbguart,   dbg_uart)
 NM_INT_ACCESS (drives,    drives,     uint8_t)
 NM_INT_ACCESS (a600chip,  a600_chip,  uint8_t)
-NM_INT_ACCESS (loadtest,  load_test,  uint8_t)
+// Rows that left the menu (Debug > Render on core 1: always on; Debug > A1200
+// load test: the bench's --load-test): their ids stay, the table is append only.
+static int32_t get_retired() { return 0; }
+static void    put_retired(int32_t) {}
 NM_BOOL_ACCESS(pcprof,    pcprof)
 static bool hook_pcprof(int32_t, int32_t) {
     if (!board_pcprof(Config::pcprof)) Config::pcprof = false;
-    return true;
-}
-static bool hook_loadtest(int32_t, int32_t) {
-    const uint8_t t = Config::load_test;                  // 1, 2: x2 (+ planes); 3, 4: x3 (+ planes)
-    amiga_set_load_test(t >= 3 ? 3 : t ? 2 : 1, t == 2 || t == 4);
     return true;
 }
 // The A600's chip RAM: a cold start when the A600 is running (the menu says so).
@@ -120,7 +118,6 @@ static bool hook_drives(int32_t, int32_t) {
     return true;
 }
 NM_INT_ACCESS (hpos,      hpos,       uint8_t)
-NM_BOOL_ACCESS(renderc1,  render_c1)
 NM_BOOL_ACCESS(vcentre,   vcentre)
 NM_BOOL_ACCESS(diskled,   disk_led)
 NM_BOOL_ACCESS(frameskip, frame_skip)

@@ -15,7 +15,6 @@ void ui_init(amiga_row_t *framebuffer);
 
 // The settings main.c applies while booting (Config, from C).
 int  settings_cpu_mhz(void);
-int  settings_load_test(void);   // Debug > A1200 load test: 0 off, 1 CPU x2, 2 + 8 planes, 3 CPU x3, 4 + 8 planes
 bool settings_frame_skip(void);  // Video > Picture > Skip frames when late
 void settings_apply_chip_bus(void); // Machine > A1200 > Chip bus -> amiga_set_chip_bus(_params)
 int  settings_vreg_mv(void);            // core voltage, mV
