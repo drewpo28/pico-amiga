@@ -16,10 +16,13 @@
 #   m68kbench.sh plugin
 #   m68kbench.sh build [-DNAME=VALUE ...]         -> $WORK/bench.elf
 #   m68kbench.sh snap  ROM ADF FRAME OUT.state [HOST ARGS]   the host bench's snapshot after FRAME
-#   m68kbench.sh run   ROM ADF STATE FRAMES [WARM] [FETCH8,COST8] [FAST_MB]   totals only
-#   m68kbench.sh prof  ROM ADF STATE FRAMES [WARM] [FETCH8,COST8] [FAST_MB]   by function
+#   m68kbench.sh run   ROM ADF STATE FRAMES [WARM] [FETCH8,COST8] [FAST_MB] [EXT]   totals only
+#   m68kbench.sh prof  ROM ADF STATE FRAMES [WARM] [FETCH8,COST8] [FAST_MB] [EXT]   by function
 #
 # Fast RAM: the snapshot taken with `--fast N` (HOST ARGS), FAST_MB the same N.
+# EXT: a CD32's extended ROM - the machine is a CD32 (the snapshot from the host
+# bench's `--cd32 --ext ... --cd ...`; the drive is empty here, so a part that
+# does not read the disc).
 #
 # ADF / STATE "-": none (a cold boot of the ROM).  The chip bus model defaults
 # to the menu's "With cache" (2,16); 0 = off (the CPU runs free).

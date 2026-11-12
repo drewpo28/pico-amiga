@@ -3,6 +3,7 @@
 // running an A1200 from a snapshot the host bench saved.  A TCG plugin counts
 // the ARM instructions each function executes from bench_mark() on.
 // argv: rom adf state frames [warm-up frames] [fetch8,cost8] [fast RAM MB, as the snapshot's]
+//       [ext ROM: the machine is a CD32 (no Gayle, Akiko; no disc in the drive)]
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,6 +13,7 @@
 BIG static uint8_t chip[2 << 20];
 BIG static uint8_t fast[8 << 20];
 BIG static uint8_t rom[512 << 10];
+BIG static uint8_t ext[512 << 10];
 BIG static uint8_t adf[901120];
 BIG static amiga_row_t fb[AMIGA_FB_H];
 BIG static int16_t audio[4096 * 2];
@@ -51,6 +53,11 @@ int main(int argc, char **argv) {
     cfg.framebuffer = fb;
     cfg.audio_ring = audio; cfg.audio_frames = 4096;
     cfg.track = track;
+    static uint8_t nvram[1024];
+    if (argc > 8 && strcmp(argv[8], "-")) {
+        cfg.gayle = 0; cfg.akiko = true; cfg.nvram = nvram;
+        cfg.ext_rom = ext; cfg.ext_size = load(argv[8], ext, sizeof ext);
+    }
     if (argc > 7 && atoi(argv[7]) > 0) { cfg.fast_ram = fast; cfg.fast_size = (uint32_t)atoi(argv[7]) << 20; }
     amiga_init(&cfg);
     amiga_set_chip_bus(fetch8 != 0);
@@ -98,7 +105,7 @@ __attribute__((used, noreturn)) void start_c(void) {
     if (sh(0x15, &c) == 0) {
         // Arguments are separated by '|' (paths have spaces).
         char *s = cmdline;
-        while (*s && argc < 9) { argv_[argc++] = s; while (*s && *s != '|') s++; if (*s) *s++ = 0; }
+        while (*s && argc < 10) { argv_[argc++] = s; while (*s && *s != '|') s++; if (*s) *s++ = 0; }
     }
     exit(main(argc, argv_));
 }

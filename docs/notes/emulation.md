@@ -161,6 +161,19 @@
   with stride 0; it also took over the old clear / copy path.  Roots' plasma:
   128 blits of D = A | B | C a frame, 108 -> ~55 ARM instructions a word.  Its
   own function at -Os: inlined at -O2 it cost 1.4 KB of SRAM.
+  2026-11-12: it set its pointers up row by row, ~150 ARM instructions a row -
+  nothing for 20-word rows, everything for a column.  Battletoads (CD32)
+  redraws its whole screen every frame with 16 x 16 tiles of five interleaved
+  planes, ~220 copies of 1 x 80 words: 2.6M ARM instructions a frame, board blt
+  10 ms, 36 frames in 44 skipped.  Now as area_shift: the rows counted first,
+  the pointers carried, a column as one row; a blit that reads A alone (copy,
+  clear) in a loop of its own with the minterm folded to gl ^ (A & gx).
+  Battletoads 2.64M -> 0.41M a frame, Roots' plasma 0.47M -> 0.17M.  The
+  set-up loops over the channels (as straight code it was 0.2 KB more SRAM);
+  a channel's last word that the minterm does not read is read afterwards -
+  or is D's old word when it is the same one (a clear with A on over D).
+  What is left there is area_blit's loop for the cookie cuts (0.33M a frame)
+  and PSRAM: a tile column's 80 words are 80 cache lines, 44 bytes apart.
 - **Shifted blits that do not read C have one too** (blitter.c area_shift,
   2026-11-11): the rows that cannot wrap at chip RAM's end are counted first
   and run with the pointers carried along; a 1-word column is one row of h

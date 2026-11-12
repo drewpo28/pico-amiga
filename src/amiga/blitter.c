@@ -96,74 +96,140 @@ static inline uint16_t shift_desc(uint16_t nw, uint16_t old, int sh) {
 // out of the loops).
 __attribute__((noinline)) static void mir_w16(uint32_t off, uint16_t v) { cop_mir_w16(off, v); }
 
+// The rows from offset o (stepping s a row, a row's words at o .. o + span
+// ascending, o - span .. o descending) that stay within 0 .. lim.
+static inline int rows_in(uint32_t o, int32_t s, uint32_t span, uint32_t lim, bool desc, int h) {
+    const uint32_t lo = desc ? o - span : o;
+    if (lo > lim) return 0;
+    if (s == 0) return h;
+    const uint32_t n = s > 0 ? (lim - lo) / (uint32_t)s + 1 : lo / (uint32_t)-s + 1;
+    return n < (uint32_t)h ? (int)n : h;
+}
+
 // The words as they are - no shift, no mask, no fill, ascending: the minterm
 // works on them as chip RAM stores them (big-endian, no swaps), the rows
 // through pointers, a channel that is off or not looked at a constant with
 // a stride of 0.  Roots' plasma is 128 blits of D = A | B | C a frame, 20
-// words x 4 rows each: the loop below took 108 ARM instructions a word, 6 ms
-// of the board's frame.  Same order of reads and writes, word by word; a row
-// that would wrap at the end of chip RAM leaves the rest to area_blit's loop
-// (the rows done are returned).  A function of its own: inlined, the minterm's
-// eight masks and the four pointers cost area_blit 1.2 KB of SRAM in spills.
+// words x 4 rows each: area_blit's loop took 108 ARM instructions a word, 6 ms
+// of the board's frame.  Same order of reads and writes, word by word.  The
+// rows that cannot wrap at the end of chip RAM are counted first and run with
+// the pointers carried from row to row, a column (1 word wide) as one row of h
+// words; the rest is left to area_blit's loop (the rows done are returned).
+// Battletoads (CD32) redraws its whole screen every frame with 16 x 16 tiles
+// of five interleaved planes, 220 copies of 1 x 80 words: with the pointers
+// set up row by row a word cost ~150 ARM instructions, 2.6M a frame.  A blit
+// that reads A alone (a copy, a clear) is a loop of its own: B and C are
+// constants and so is the minterm but for A's term.  A function of its own:
+// inlined, the minterm's eight masks and the four pointers cost area_blit
+// 1.2 KB of SRAM in spills.
 AMIGA_HOT __attribute__((noinline, optimize("Os"))) static int area_plain(const mt_t *mtp, bool needA, bool needC, bool *z) {
-    const bool useA = con0 & 0x0800, useB = con0 & 0x0400, useC = con0 & 0x0200;
     const int w = bw, h = bh;
-    const uint32_t m0 = mtp->m0, m2 = mtp->m2, m4 = mtp->m4, m6 = mtp->m6;
-    const uint32_t k10 = mtp->k10, k32 = mtp->k32, k54 = mtp->k54, k76 = mtp->k76;
     uint8_t *cr = A.cfg.chip_ram;
-    const uint32_t cm = A.chip_mask & ~1u, top = A.cfg.chip_size - 2u * (uint32_t)w;
-    // k: the constants (BLTxDAT as stored); v: the words last read.
-    const uint16_t k[3] = { __builtin_bswap16(adat), __builtin_bswap16(useB ? bdat : bhold), __builtin_bswap16(cdat) };
-    uint16_t v[3] = { k[0], k[1], k[2] };
-    const int sa = useA && needA ? 2 : 0, sb = useB ? 2 : 0, sc = useC && needC ? 2 : 0;
-    uint16_t any = 0;
-    int y0 = 0;
-    for (; y0 < h; y0++) {
-        const uint32_t oa = pt[BA] & cm, ob = pt[BB] & cm, oc = pt[BC] & cm, od = pt[BD] & cm;
-        if ((useA && oa > top) || (useB && ob > top) || (useC && oc > top) || od > top) break;
-        const uint8_t *pa = sa ? cr + oa : (const uint8_t *)&k[0];
-        const uint8_t *pb = sb ? cr + ob : (const uint8_t *)&k[1];
-        const uint8_t *pc = sc ? cr + oc : (const uint8_t *)&k[2];
-        uint8_t *pd = cr + od;
-        // The blit's last word in a pass of its own: BLTxDAT end up holding
-        // the last words, also those of a channel the minterm does not look at.
-        int n = y0 == h - 1 ? w - 1 : w;
-        for (int pass = 0; pass < 2; pass++) {
-            for (; n > 0; n--, pa += sa, pb += sb, pc += sc, pd += 2) {
-                uint16_t o;
-                memcpy(&v[0], pa, 2); memcpy(&v[1], pb, 2); memcpy(&v[2], pc, 2);
+    const uint32_t cm = A.chip_mask & ~1u, span = 2u * (uint32_t)(w - 1);
+    const uint32_t lim = A.cfg.chip_size - 2u - span;     // a row's first word at or below it
+    // The channels by number (BA, BB, BC), the set-up in a loop: it is SRAM too.
+    // on: the channel's DMA; rd: its words are read here (B's always are).
+    const uint8_t on = (con0 >> 9) & 7, rd = on & (uint8_t)((needA ? 4 : 0) | 2 | (needC ? 1 : 0));
+    // k: the constants (BLTxDAT as stored); t: the words last read.
+    static uint16_t k[3];                             // static: not spilled for
+    k[0] = __builtin_bswap16(adat); k[1] = __builtin_bswap16(on & 2 ? bdat : bhold); k[2] = __builtin_bswap16(cdat);
+    const uint8_t *p[3];
+    int32_t st[3], ra[3];                             // a word's step, a row's
+    const int32_t md = 2 * w + mod[BD];
+    const uint32_t od = pt[BD] & cm;
+    int n = rows_in(od, md, span, lim, false, h);
+    for (int c = 0; c < 3; c++) {
+        p[c] = (const uint8_t *)&k[c]; st[c] = ra[c] = 0;
+        if (!(rd & (4 >> c))) continue;
+        const uint32_t o = pt[c] & cm;
+        const int q = rows_in(o, 2 * w + mod[c], span, lim, false, h);
+        if (q < n) n = q;
+        p[c] = cr + o; st[c] = 2; ra[c] = mod[c];
+    }
+    if (n <= 0) return 0;
+    int32_t sd = 2, rdd = mod[BD];
+    int rows = n, words = w;
+    if (w == 1) {                           // a column: one row of n words
+        rows = 1; words = n;
+        for (int c = 0; c < 3; c++) { st[c] += ra[c]; ra[c] = 0; }
+        sd += rdd; rdd = 0;
+    }
+    // The pages D's words reach: none with a copper list window (the usual
+    // case), no look at the map a word.
+    bool mir = false;
+    {
+        const uint32_t d1 = od + (uint32_t)((n - 1) * md);
+        const uint32_t lo = od < d1 ? od : d1, hi = (od < d1 ? d1 : od) + span + 1;
+        for (uint32_t pg = lo >> 12; pg <= hi >> 12 && !mir; pg++) mir = M68K_FAST_WPAGE(m68k_fast_wmap, pg << 12);
+    }
+    const uint8_t *pa = p[0], *pb = p[1], *pc = p[2];
+    uint8_t *pd = cr + od;
+    uint16_t t[3] = { k[0], k[1], k[2] }, o = 0, any = 0;
+    // A word that is already there is not written: its cache line stays clean
+    // and is not written back to PSRAM (Hero Quest copies and clears the same
+    // 40,000 words every frame, 89% of them unchanged).  The copper list mirror
+    // follows a write, as it does chip_ww (Arte clears and fills its copper
+    // lists with blits).
+#define PLAIN_OUT(d) do { \
+        any |= (d); \
+        memcpy(&o, pd, 2); \
+        if (o != (d)) { \
+            memcpy(pd, &(d), 2); \
+            if (mir && M68K_FAST_WPAGE(m68k_fast_wmap, (uint32_t)(pd - cr))) mir_w16((uint32_t)(pd - cr), (d)); \
+        } \
+        pd += sd; \
+    } while (0)
+    if (!(rd & 3)) {                        // A alone is read: D = gl ^ (A & gx)
+        const uint32_t l0 = mtp->m0 ^ (t[2] & mtp->k10), l1 = mtp->m2 ^ (t[2] & mtp->k32);
+        const uint32_t h0 = mtp->m4 ^ (t[2] & mtp->k54), h1 = mtp->m6 ^ (t[2] & mtp->k76);
+        const uint32_t gl = l0 ^ (t[1] & (l1 ^ l0)), gx = (h0 ^ (t[1] & (h1 ^ h0))) ^ gl;
+        const int32_t sa = st[0], rra = ra[0];
+        uint16_t ta = t[0];
+        for (int y = rows; y > 0; y--) {
+            for (int x = words; x > 0; x--) {
+                memcpy(&ta, pa, 2); pa += sa;
+                const uint16_t d = (uint16_t)(gl ^ (ta & gx));
+                PLAIN_OUT(d);
+            }
+            pa += rra; pd += rdd;
+        }
+        t[0] = ta;
+    } else {
+        for (int y = rows; y > 0; y--) {
+            for (int x = words; x > 0; x--) {
+                memcpy(&t[0], pa, 2); memcpy(&t[1], pb, 2); memcpy(&t[2], pc, 2);
+                pa += st[0]; pb += st[1]; pc += st[2];
                 // mt_eval, in the registers' width
-                const uint32_t va = v[0], vb = v[1], vc = v[2];
-                const uint32_t l0 = m0 ^ (vc & k10), l1 = m2 ^ (vc & k32);
-                const uint32_t h0 = m4 ^ (vc & k54), h1 = m6 ^ (vc & k76);
+                const uint32_t va = t[0], vb = t[1], vc = t[2];
+                const uint32_t l0 = mtp->m0 ^ (vc & mtp->k10), l1 = mtp->m2 ^ (vc & mtp->k32);
+                const uint32_t h0 = mtp->m4 ^ (vc & mtp->k54), h1 = mtp->m6 ^ (vc & mtp->k76);
                 const uint32_t gl = l0 ^ (vb & (l1 ^ l0)), gh = h0 ^ (vb & (h1 ^ h0));
                 const uint16_t d = (uint16_t)(gl ^ (va & (gh ^ gl)));
-                any |= d;
-                memcpy(&o, pd, 2);
-                // A word that is already there is not written: its cache line stays
-                // clean and is not written back to PSRAM (Hero Quest copies and clears
-                // the same 40,000 words every frame, 89% of them unchanged).  The
-                // copper list mirror follows a write, as it does chip_ww (Arte clears
-                // and fills its copper lists with blits).
-                if (o != d) { memcpy(pd, &d, 2); if (M68K_FAST_WPAGE(m68k_fast_wmap, (uint32_t)(pd - cr))) mir_w16((uint32_t)(pd - cr), d); }
+                PLAIN_OUT(d);
             }
-            if (pass || y0 != h - 1) break;
-            const uint32_t l = 2u * (uint32_t)(w - 1);
-            if (useA) pa = cr + oa + l;
-            if (useC) pc = cr + oc + l;
-            n = 1;
+            pa += ra[0]; pb += ra[1]; pc += ra[2]; pd += rdd;
         }
-        if (useA) pt[BA] += 2u * (uint32_t)w + mod[BA];
-        if (useB) pt[BB] += 2u * (uint32_t)w + mod[BB];
-        if (useC) pt[BC] += 2u * (uint32_t)w + mod[BC];
-        pt[BD] += 2u * (uint32_t)w + mod[BD];
     }
-    const uint16_t a = v[0], b = v[1], c = v[2];
-    if (useA) adat = __builtin_bswap16(a);
-    if (useB) { bdat = __builtin_bswap16(b); bold = bhold = bdat; }
-    if (useC) cdat = __builtin_bswap16(c);
+#undef PLAIN_OUT
+    // BLTxDAT end up holding the blit's last words, also those of a channel
+    // the minterm does not look at: read as the DMA does, before D's last word
+    // is written (o, when that is the same word: a clear with A on over D).
+    const uint32_t ld = pt[BD] + (uint32_t)((h - 1) * md) + span;
+    for (int c = 0; c < 3; c++) {
+        if (!(on & (4 >> c))) continue;
+        const int32_t m = 2 * w + mod[c];
+        if (n == h && !(rd & (4 >> c))) {
+            const uint32_t l = pt[c] + (uint32_t)((h - 1) * m) + span;
+            t[c] = ((l ^ ld) & cm) ? __builtin_bswap16(chip_rw(l)) : o;
+        }
+        pt[c] += (uint32_t)(n * m);
+    }
+    pt[BD] += (uint32_t)(n * md);
+    if (on & 4) adat = __builtin_bswap16(t[0]);
+    if (on & 2) { bdat = __builtin_bswap16(t[1]); bold = bhold = bdat; }
+    if (on & 1) cdat = __builtin_bswap16(t[2]);
     if (any) *z = false;
-    return y0;
+    return n;
 }
 
 // Any shift, masks and direction, no fill, D on: area_blit's loop through
@@ -180,16 +246,6 @@ AMIGA_HOT __attribute__((noinline, optimize("Os"))) static int area_plain(const 
 // instead of eight (spills cost more than the minterm).  A column (1 word wide)
 // runs as one row of h words.  Two loops (ascending, descending), Os: 1.5 KB of
 // SRAM; with the C-reading pair and O2 it was 4 KB, below the menu's heap floor.
-
-// The rows from offset o (stepping s a row, a row's words at o .. o + span
-// ascending, o - span .. o descending) that stay within 0 .. lim.
-static inline int rows_in(uint32_t o, int32_t s, uint32_t span, uint32_t lim, bool desc, int h) {
-    const uint32_t lo = desc ? o - span : o;
-    if (lo > lim) return 0;
-    if (s == 0) return h;
-    const uint32_t n = s > 0 ? (lim - lo) / (uint32_t)s + 1 : lo / (uint32_t)-s + 1;
-    return n < (uint32_t)h ? (int)n : h;
-}
 
 typedef struct {
     const uint8_t *pa, *pb, *pc; uint8_t *pd;
