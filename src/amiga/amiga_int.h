@@ -190,6 +190,7 @@ void     akiko_state(st_t *s);
 
 // Current horizontal position in colour clocks (0..226), from the CPU's clock.
 uint16_t amiga_hpos(void);
+void     amiga_bus_sync(void);          // amiga.c: the chip bus model's counters start from now (a snapshot's load)
 void     amiga_slice_cut(void);         // amiga.c: the CPU did something a long slice must not sit on
 uint64_t amiga_now(void);              // absolute CPU cycles "now"
 void     amiga_update_ipl(void);       // recompute the 68000 interrupt level

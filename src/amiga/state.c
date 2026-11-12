@@ -7,13 +7,17 @@
 // one with more), and an unknown block is skipped whole.
 //
 //   MACH  format version, chipset, chip / slow RAM size, ROM CRCs (checked first)
-//   SYS   beam, clock, DMACON / INTENA / INTREQ ..., keyboard controller (amiga.c)
+//   SYS   beam, clock, DMACON / INTENA / INTREQ ..., keyboard controller, the
+//         68EC020's clock and bus fractions, the CD32 pad's shift register (amiga.c)
 //   CPU   the 68000 (Musashi's registers, flags, STOP and interrupt state)
 //   MEM   the ROM overlay      CUST  CLXCON       CIAS  both 8520s
 //   RTC   clock control        COPR  copper       BLIT  blitter
 //   DENI  bitplane / sprite DMA and Denise's registers
 //   PAUL  the audio channels   FLOP  drives, disk DMA
 //   CHIP  chip RAM             SLOW  slow RAM (when fitted)
+//   GAYL  Gayle and its IDE drives' task file      FAST  the fast RAM board's memory
+//   AKIK  Akiko: the CD drive, the NVRAM's I2C lines, C2P (the NVRAM's contents
+//         are the platform's, as the disks')
 //
 // Taken between frames only: the Denise stages are idle then and the CPU is
 // outside m68k_execute(), so there is nothing in flight but what the modules
@@ -223,5 +227,10 @@ bool amiga_state_load(const amiga_stream_t *io) {
         if (!t.ok || !skip(io, t.n)) return false;
         seen |= 1u << b;
     }
+    // The CPU's fetch window where the PC now is, as the program had it (moved
+    // by its first instruction, the move is a chip access the bus model counts),
+    // and the model's counters from here on.
+    m68k_fetch_window(m68ki_cpu.pc);
+    amiga_bus_sync();
     return (seen & REQUIRED) == REQUIRED;
 }

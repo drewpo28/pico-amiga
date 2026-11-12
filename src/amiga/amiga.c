@@ -140,8 +140,8 @@ static void bus_auto_frame(void) {
         aud_hist = 0xFFFF;
     }
 }
+static uint32_t instr_last, data_last, miss_last;    // the counters as the last slice left them
 AMIGA_HOT static void bus_wait(int h0, int h1) {
-    static uint32_t instr_last, data_last, miss_last;
     const uint32_t data_now = A.bus_data + m68k_fast_data();        // mem.c's callbacks + the handlers' own
     const uint32_t instr = amiga_bus_instr - instr_last, data = data_now - data_last;
     const uint32_t miss = amiga_icache_miss - miss_last;
@@ -215,6 +215,14 @@ AMIGA_HOT static void fast_throttle(void) {
     const uint32_t t8 = instr * fast_thr8 + A.thr_rem8;
     A.thr_rem8 = (uint8_t)(t8 % 8);
     A.cpu_cyc += 2u * (t8 / 8);
+}
+
+// After a snapshot's load (state.c): what the reset and the load itself counted
+// is no slice's - the program's first one would wait for it.
+void amiga_bus_sync(void) {
+    instr_last = thr_instr_last = amiga_bus_instr;
+    data_last = A.bus_data + m68k_fast_data();
+    miss_last = amiga_icache_miss;
 }
 
 void amiga_set_chip_bus(bool on) { A.chip_bus = on; }
@@ -476,7 +484,17 @@ void amiga_sys_state(st_t *s) {
     st_uint(s, &kq_head); st_uint(s, &kq_tail);
     st_bool(s, &kb_waiting);
     st_u32(s, &kb_timeout);
+    // The 68EC020's clock and bus model: the fractions carried from slice to
+    // slice (at the end: older snapshots read 0, as the reset leaves them).
+    st_u8(s, &A.cpu_rem); st_u8(s, &A.bus_rem8); st_u8(s, &A.thr_rem8);
+    // The CD32 pad's shift register, as position + 1 (0, an older snapshot: at
+    // its start, as the reset leaves it), and its clock line.
+    uint8_t pad = (uint8_t)(A.pad_shift + 1);
+    st_u8(s, &pad); st_u8(s, &A.pad_clk);
     if (s->mode == ST_LOAD) {
+        if (A.cpu_rem >= (A.cpu_mul > 1 ? A.cpu_mul : 1)) A.cpu_rem = 0;
+        A.bus_rem8 &= 7; A.thr_rem8 &= 7;
+        A.pad_shift = pad && pad <= 9 ? (uint8_t)(pad - 1) : 8;
         A.vpos = 0;
         A.in_cpu = false;
         kq_head %= KQ; kq_tail %= KQ;

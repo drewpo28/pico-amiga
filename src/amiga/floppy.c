@@ -403,6 +403,7 @@ void floppy_state(st_t *s) {
     }
     st_int(s, &ndrives);
     st_u8(s, &prb_last); st_int(s, &side); st_int(s, &sel);
+    rot_pos %= TRACK_WORDS;                               // one number for one place
     st_u32(s, &rot_pos);
     st_u32(s, &dskpt); st_u16(s, &dsklen); st_u16(s, &dsklen_prev); st_u16(s, &dsksync);
     st_bool(s, &dma_on); st_bool(s, &dma_write); st_int(s, &dma_drive);
