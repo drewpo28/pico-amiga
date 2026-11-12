@@ -31,7 +31,7 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 pico_sdk_init()
 
-set(PORT_VERSION "0.1.0")
+set(PORT_VERSION "0.1.1")
 set(ROOT ${CMAKE_CURRENT_LIST_DIR})
 include(cmake/amiga_core.cmake)
 # The CPU's memory callbacks run in RAM (.time_critical.* is copied to SRAM).

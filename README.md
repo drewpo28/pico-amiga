@@ -18,15 +18,15 @@ picture and sound over HDMI, or picture over VGA.
 | A500 | 68000 at 7.09 MHz, OCS, 512 KB chip RAM + 512 KB slow RAM |
 | A500+ | ECS (super-hires, the 8375 Agnus / 8373 Denise IDs), 1 MB chip RAM, battery clock |
 | A600 | as the A500+, with Gayle and no clock; IDE hard disks (master and slave): an HDF (with an RDB or one bare partition) or an SD card partition |
+| A1200 | AGA (8 bitplanes, HAM8, 256 colours of 4,096 on screen), a 68EC020, 2 MB chip RAM, Gayle with the IDE hard disks as on the A600, Fast RAM of 1 / 2 / 4 MB; Machine > A1200 > Chip bus picks how much the CPU waits for the chip bus (a stock A1200, or with its instruction cache counted) |
 | CD32 | AGA, a 68EC020, 2 MB chip RAM, Akiko: the CD drive (an `.iso`, or a `.cue` with its BINARY track files), the NVRAM for saves, chunky-to-planar, the pad. CD audio tracks (a `.cue` with AUDIO tracks, 2352 bytes a sector) are mixed in with Paula |
-| Display | lowres, hires at its full 640 pixels, HAM, interlace with both fields, sprites, copper, blitter |
+| Display | lowres, hires at its full 640 pixels, HAM, interlace with both fields, sprites, copper, blitter. A frame the board has no time for is emulated but not drawn (Video > Picture > Skip frames when late), so the sound and the speed hold; an interlaced screen that is too heavy (the CD32's boot screen) shows one field, 25 pictures a second |
 | Sound | Paula, 4 DMA channels |
 | Disks | DF0-DF3: ADF streamed from the SD card and written back to it; DMS unpacked into PSRAM (write-protected); `.m3u` disk sets |
 | Kickstart | built into the firmware (see [Building](#building)) or any 256 / 512 KB ROM file from the card |
 
-The 68000 is [Musashi](https://github.com/kstenerud/Musashi); the A1200 (AGA,
-68020) is not there yet - [docs/PLAN.md](docs/PLAN.md) has what is
-missing and in which order.
+The 68000 and the 68EC020 are [Musashi](https://github.com/kstenerud/Musashi);
+[docs/PLAN.md](docs/PLAN.md) has what is missing and in which order.
 
 ## Hardware
 
